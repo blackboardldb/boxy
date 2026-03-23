@@ -101,13 +101,13 @@ export default function AdminClasesPage() {
 
 
   // Función para cargar clases con filtrado por fecha
-  const loadClassesForDate = useCallback(async () => {
+  const loadClassesForDate = useCallback(async (dateToLoad: Date) => {
     setIsLoading(true);
     try {
-      // Solicitamos un límite alto para garantizar que traiga las clases de la semana o mes
-      // Idealmente podríamos pasar format(selectedDate, 'yyyy-MM-dd') a fetchClassSessions
-      // pero para mantener compatibilidad solicitaremos 100 clases
-      await fetchClassSessions(undefined, undefined, 1, 100);
+      const formattedDate = format(dateToLoad, "yyyy-MM-dd");
+      // Pedimos a la API exactamente las clases de ESE día
+      await fetchClassSessions(formattedDate, formattedDate, 1, 100);
+      
       await Promise.all([
         fetchUsers(),
         disciplines?.length === 0 || !disciplines ? fetchDisciplines() : Promise.resolve(),
@@ -133,11 +133,10 @@ export default function AdminClasesPage() {
     toast,
   ]);
 
-  // Cargar clases al montar el componente
+  // Cargar clases al montar y cuando cambie la fecha
   useEffect(() => {
-    loadClassesForDate();
-  }, [loadClassesForDate]);
-
+    loadClassesForDate(selectedDate);
+  }, [selectedDate, loadClassesForDate]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {

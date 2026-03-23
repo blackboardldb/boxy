@@ -140,12 +140,13 @@ export default function CalendarPage() {
   );
 
   // Función para cargar clases con filtrado por fecha
-  const loadClassesForDate = useCallback(async () => {
+  const loadClassesForDate = useCallback(async (dateToLoad: Date) => {
     try {
       if (!instructors || instructors.length === 0) await fetchInstructors();
       if (!disciplines || disciplines.length === 0) await fetchDisciplines();
-      // Incrementar el limite para la vista de calendario
-      if (classSessions.length === 0) await fetchClassSessions(undefined, undefined, 1, 100);
+      
+      const formattedDate = format(dateToLoad, "yyyy-MM-dd");
+      await fetchClassSessions(formattedDate, formattedDate, 1, 100);
     } catch (error) {
       console.error("Error loading classes:", error);
       toast({
@@ -159,17 +160,16 @@ export default function CalendarPage() {
   }, [
     instructors?.length,
     disciplines?.length,
-    classSessions?.length,
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,
     toast,
   ]);
 
-  // Cargar clases al montar el componente
+  // Cargar clases al montar el componente y al cambiar la fecha o forzar recarga
   useEffect(() => {
-    loadClassesForDate();
-  }, [loadClassesForDate]);
+    loadClassesForDate(selectedDate);
+  }, [selectedDate, loadClassesForDate, refreshTrigger]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
