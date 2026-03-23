@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { UserService } from "@/lib/services/user-service";
+import { DisciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 
 // Initialize services
-const userService = new UserService();
+const disciplineService = new DisciplineService();
 
 export async function GET(
   request: NextRequest,
@@ -13,18 +13,29 @@ export async function GET(
   try {
     id = (await params).id;
 
-    // Use UserService to get user by ID
-    const response = await userService.getUserById(id);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Discipline ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use DisciplineService to get discipline by ID
+    const response = await disciplineService.getDisciplineById(id);
 
     // Return standardized response
     return NextResponse.json(response, {
-      status: response.success && response.data ? 200 : 404,
+      status: response.success
+        ? 200
+        : response.error?.code === "NOT_FOUND"
+        ? 404
+        : 400,
     });
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "getUserById",
-      resource: "users",
+      operation: "getDisciplineById",
+      resource: "disciplines",
       metadata: { id },
     });
   }
@@ -39,8 +50,15 @@ export async function PUT(
     id = (await params).id;
     const body = await request.json();
 
-    // Use UserService to update user with validation
-    const response = await userService.updateUser(id, body);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Discipline ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use DisciplineService to update discipline with validation
+    const response = await disciplineService.updateDiscipline(id, body);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -53,8 +71,8 @@ export async function PUT(
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "updateUser",
-      resource: "users",
+      operation: "updateDiscipline",
+      resource: "disciplines",
       metadata: { id },
     });
   }
@@ -68,8 +86,15 @@ export async function DELETE(
   try {
     id = (await params).id;
 
-    // Use UserService to delete user
-    const response = await userService.deleteUser(id);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Discipline ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use DisciplineService to delete discipline with validation
+    const response = await disciplineService.deleteDiscipline(id);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -82,8 +107,8 @@ export async function DELETE(
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "deleteUser",
-      resource: "users",
+      operation: "deleteDiscipline",
+      resource: "disciplines",
       metadata: { id },
     });
   }

@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, Menu, Settings, LogOut } from "lucide-react";
 import { useNotificationCount } from "@/lib/hooks/useNotificationCount";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({
   children,
@@ -22,6 +24,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const notificationCount = useNotificationCount();
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,7 +73,7 @@ export default function AdminLayout({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => (window.location.href = "/")}
+                onClick={handleLogout}
                 className="flex items-center text-red-600"
               >
                 <LogOut className="h-4 w-4 mr-2" />

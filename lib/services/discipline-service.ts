@@ -5,7 +5,7 @@ import { BaseService } from "./base-service";
 import { Discipline } from "../types";
 import { DisciplineRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
-import { generatedSchemas, validateWithSchema } from "../types/generator";
+import { generatedSchemas, createSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError } from "../errors/types";
 
 export class DisciplineService extends BaseService<Discipline> {
@@ -120,21 +120,19 @@ export class DisciplineService extends BaseService<Discipline> {
   // Validation hooks
 
   protected async validateCreateData(data: any): Promise<void> {
-    // Validate using generated schema
-    validateWithSchema(generatedSchemas.discipline, data);
+    console.log("[DisciplineService] validateCreateData received:", JSON.stringify(data));
+
+    // Validate using create schema (id is optional for creation)
+    validateWithSchema(createSchemas.discipline, data);
 
     // Additional business validation
     if (!data.name || data.name.trim().length === 0) {
       throw new ValidationError("Discipline name is required", "name");
     }
 
-    // Check for duplicate names
-    const existingDisciplines = await this.disciplineRepository.findMany();
-    const duplicateName = existingDisciplines.items.find(
-      (d) => d.name.toLowerCase() === data.name.toLowerCase()
-    );
-
-    if (duplicateName) {
+    // Check for duplicate names using findByName (efficient, case-insensitive)
+    const existing = await this.disciplineRepository.findByName(data.name.trim());
+    if (existing) {
       throw new ValidationError(
         "A discipline with this name already exists",
         "name"

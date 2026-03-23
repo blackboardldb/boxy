@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { UserService } from "@/lib/services/user-service";
+import { ClassService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 
 // Initialize services
-const userService = new UserService();
+const classService = new ClassService();
 
 export async function GET(
   request: NextRequest,
@@ -13,18 +13,29 @@ export async function GET(
   try {
     id = (await params).id;
 
-    // Use UserService to get user by ID
-    const response = await userService.getUserById(id);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Class ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use ClassService to get class by ID
+    const response = await classService.findById(id);
 
     // Return standardized response
     return NextResponse.json(response, {
-      status: response.success && response.data ? 200 : 404,
+      status: response.success
+        ? 200
+        : response.error?.code === "NOT_FOUND"
+        ? 404
+        : 400,
     });
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "getUserById",
-      resource: "users",
+      operation: "getClassById",
+      resource: "classes",
       metadata: { id },
     });
   }
@@ -39,8 +50,15 @@ export async function PUT(
     id = (await params).id;
     const body = await request.json();
 
-    // Use UserService to update user with validation
-    const response = await userService.updateUser(id, body);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Class ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use ClassService to update class with validation
+    const response = await classService.updateClass(id, body);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -53,8 +71,8 @@ export async function PUT(
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "updateUser",
-      resource: "users",
+      operation: "updateClass",
+      resource: "classes",
       metadata: { id },
     });
   }
@@ -68,8 +86,15 @@ export async function DELETE(
   try {
     id = (await params).id;
 
-    // Use UserService to delete user
-    const response = await userService.deleteUser(id);
+    if (!id) {
+      return NextResponse.json(
+        { error: "Class ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Use ClassService to delete class with validation
+    const response = await classService.deleteClass(id);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -82,8 +107,8 @@ export async function DELETE(
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
-      operation: "deleteUser",
-      resource: "users",
+      operation: "deleteClass",
+      resource: "classes",
       metadata: { id },
     });
   }

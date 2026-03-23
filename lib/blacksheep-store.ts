@@ -543,16 +543,23 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
             method: "DELETE",
           });
           if (!response.ok) {
-            console.error("No se pudo borrar desde la API, usando modo local.");
+            const errorResult = await response.json();
+            console.error("No se pudo borrar desde la API:", errorResult);
+            alert(errorResult.error?.message || errorResult.message || "No se pudo eliminar la disciplina. Probablemente esté en uso.");
+            // No lo eliminamos localmente si falló en el backend
+            return false;
           }
+
+          // Si tuvo éxito, se elimina de la UI de forma asíncrona pero visible
+          set((state) => ({
+            disciplines: state.disciplines.filter((d) => d.id !== disciplineId),
+          }));
+          return true;
         } catch (error) {
           console.error("Error eliminando disciplina de la API:", error);
+          alert("Error de conexión al eliminar la disciplina.");
+          return false;
         }
-
-        // De todas formas actualizamos la UI sincronamente
-        set((state) => ({
-          disciplines: state.disciplines.filter((d) => d.id !== disciplineId),
-        }));
       },
       fetchDisciplines: async (page = 1, limit = 50, isActive = "") => {
         try {
@@ -576,15 +583,22 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       createDiscipline: async (disciplineData: Partial<Discipline>) => {
         try {
           set({ isLoading: true, error: null });
+          
+          // Eliminar ID vacío para permitir que la BD (Prisma) lo autogenere
+          const payload = { ...disciplineData };
+          if (!payload.id) {
+            delete payload.id;
+          }
+          
           const response = await fetch("/api/disciplines", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(disciplineData),
+            body: JSON.stringify(payload),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Error creating discipline");
+            throw new Error(errorData.error?.message || errorData.message || "Error creating discipline");
           }
 
           const data = await response.json();
