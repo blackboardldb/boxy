@@ -362,45 +362,152 @@ export class MockPlanRepository
   }
 }
 
-// Prisma implementation skeleton (for future use)
+import { prisma } from "../../prisma";
+
 export class PrismaPlanRepository implements IPlanRepository {
+  private get prisma() {
+    return prisma;
+  }
+
   async findMany(params?: any): Promise<any> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const page = params?.page || 1;
+    const limit = params?.limit || params?.take || 10;
+    const skip = params?.skip !== undefined ? params.skip : (page - 1) * limit;
+
+    const [plans, total] = await Promise.all([
+      this.prisma.membershipPlan.findMany({
+        where: params?.where,
+        orderBy: params?.orderBy,
+        take: limit,
+        skip,
+      }),
+      this.prisma.membershipPlan.count({ where: params?.where })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: plans.map((p: any) => this.mapToEntity(p)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      }
+    };
   }
 
   async findUnique(params: any): Promise<MembershipPlan | null> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const plan = await this.prisma.membershipPlan.findUnique({
+      where: params.where,
+    });
+    return plan ? this.mapToEntity(plan) : null;
   }
 
   async create(data: any): Promise<MembershipPlan> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const created = await this.prisma.membershipPlan.create({
+      data: {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        duration: data.durationInMonths || 1,
+        isActive: data.isActive ?? true,
+        config: {
+          organizationId: data.organizationId || "org_blacksheep_001",
+          classLimit: data.classLimit,
+          disciplineAccess: data.disciplineAccess,
+          allowedDisciplines: data.allowedDisciplines,
+          canFreeze: data.canFreeze,
+          freezeDurationDays: data.freezeDurationDays,
+          autoRenews: data.autoRenews,
+        },
+      },
+    });
+    return this.mapToEntity(created);
   }
 
   async update(id: string, data: any): Promise<MembershipPlan> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const configData: any = {};
+    if (data.organizationId !== undefined) configData.organizationId = data.organizationId;
+    if (data.classLimit !== undefined) configData.classLimit = data.classLimit;
+    if (data.disciplineAccess !== undefined) configData.disciplineAccess = data.disciplineAccess;
+    if (data.allowedDisciplines !== undefined) configData.allowedDisciplines = data.allowedDisciplines;
+    if (data.canFreeze !== undefined) configData.canFreeze = data.canFreeze;
+    if (data.freezeDurationDays !== undefined) configData.freezeDurationDays = data.freezeDurationDays;
+    if (data.autoRenews !== undefined) configData.autoRenews = data.autoRenews;
+
+    // Obtener config existente para hacer merge si es necesario
+    const existing = await this.prisma.membershipPlan.findUnique({ where: { id } });
+    const mergedConfig = existing?.config 
+      ? { ...(existing.config as any), ...configData } 
+      : configData;
+
+    const updated = await this.prisma.membershipPlan.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        duration: data.durationInMonths,
+        isActive: data.isActive,
+        ...(Object.keys(configData).length > 0 && { config: mergedConfig }),
+      },
+    });
+    return this.mapToEntity(updated);
   }
 
   async delete(id: string): Promise<MembershipPlan> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const deleted = await this.prisma.membershipPlan.delete({
+      where: { id },
+    });
+    return this.mapToEntity(deleted);
   }
 
   async count(params?: any): Promise<number> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    return this.prisma.membershipPlan.count({
+      where: params?.where,
+    });
   }
 
   async findActive(): Promise<MembershipPlan[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    const active = await this.prisma.membershipPlan.findMany({
+      where: { isActive: true },
+    });
+    return active.map(this.mapToEntity);
   }
 
   async findByOrganization(organizationId: string): Promise<MembershipPlan[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaPlanRepository not implemented yet");
+    // Almacenamos el organizationId dentro del config temporalmente.
+    // Filtrar in-memory por el config temporal, hasta que normalicemos.
+    const all = await this.findMany();
+    return all.filter((p: any) => p.organizationId === organizationId);
+  }
+
+  // Mapper
+  private mapToEntity(prismaPlan: any): MembershipPlan {
+    const config = typeof prismaPlan.config === 'object' && prismaPlan.config !== null 
+      ? prismaPlan.config 
+      : {};
+
+    return {
+      id: prismaPlan.id,
+      name: prismaPlan.name,
+      description: prismaPlan.description || "",
+      price: prismaPlan.price,
+      durationInMonths: prismaPlan.duration,
+      isActive: prismaPlan.isActive,
+      
+      // Mapeado desde el JSON config
+      organizationId: config.organizationId || "org_blacksheep_001",
+      classLimit: config.classLimit ?? 0,
+      disciplineAccess: config.disciplineAccess || "all",
+      allowedDisciplines: config.allowedDisciplines || [],
+      canFreeze: config.canFreeze ?? false,
+      freezeDurationDays: config.freezeDurationDays ?? 0,
+      autoRenews: config.autoRenews ?? false,
+    } as MembershipPlan;
   }
 }

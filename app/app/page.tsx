@@ -39,8 +39,9 @@ export default function Page() {
   // --- 2. SELECCIÓN DE USUARIO Y TRANSFORMACIÓN DE DATOS ---
   // Se utiliza el store de Zustand para acceder a los datos y funciones de carga.
   const currentUser = useMemo(() => {
-    // Para la demo, se busca explícitamente a Antonia Ovejero por su ID correcto.
-    return users.find((user) => user.id === "usr_antonia_abc123");
+    // Si hay un selectedUser en el store lo usamos (más robusto si se implementa login real),
+    // si no, usamos el primer usuario activo devuelto desde la API real para poder visualizar la demo en marcha
+    return users.find((user) => user.role === "user" || user.membership?.status === "active") || users[0] || null;
   }, [users]);
 
   // Mover este hook aquí para cumplir con las Reglas de los Hooks.
@@ -104,7 +105,13 @@ export default function Page() {
   const monthlyPrice = currentUser.membership?.monthlyPrice ?? 25000;
 
   // Usar las estadísticas REALES del perfil del usuario en lugar de datos fijos
-  const currentMonthStats = currentUser.membership.centerStats.currentMonth;
+  const currentMonthStats = currentUser.membership?.centerStats?.currentMonth || {
+    classesContracted: 0,
+    classesAttended: 0,
+    noShows: 0,
+    remainingClasses: 0,
+    lastMinuteCancellations: 0,
+  };
 
   const progressPercentage =
     currentMonthStats.classesContracted > 0

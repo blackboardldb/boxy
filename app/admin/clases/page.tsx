@@ -104,8 +104,10 @@ export default function AdminClasesPage() {
   const loadClassesForDate = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Cargar datos básicos en paralelo
-      await fetchClassSessions();
+      // Solicitamos un límite alto para garantizar que traiga las clases de la semana o mes
+      // Idealmente podríamos pasar format(selectedDate, 'yyyy-MM-dd') a fetchClassSessions
+      // pero para mantener compatibilidad solicitaremos 100 clases
+      await fetchClassSessions(undefined, undefined, 1, 100);
       await Promise.all([
         fetchUsers(),
         disciplines?.length === 0 || !disciplines ? fetchDisciplines() : Promise.resolve(),

@@ -303,45 +303,128 @@ export class MockInstructorRepository
   }
 }
 
-// Prisma implementation skeleton (for future use)
+import { prisma } from "../../prisma";
+
 export class PrismaInstructorRepository implements IInstructorRepository {
+  private get prisma() {
+    return prisma;
+  }
+
   async findMany(params?: any): Promise<any> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const page = params?.page || 1;
+    const limit = params?.limit || params?.take || 10;
+    const skip = params?.skip !== undefined ? params.skip : (page - 1) * limit;
+
+    const [instructors, total] = await Promise.all([
+      this.prisma.instructor.findMany({
+        where: params?.where,
+        orderBy: params?.orderBy,
+        take: limit,
+        skip,
+      }),
+      this.prisma.instructor.count({ where: params?.where })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: instructors.map((i: any) => this.mapToEntity(i)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      }
+    };
   }
 
   async findUnique(params: any): Promise<Instructor | null> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const instructor = await this.prisma.instructor.findUnique({
+      where: params.where,
+    });
+    return instructor ? this.mapToEntity(instructor) : null;
   }
 
   async create(data: any): Promise<Instructor> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const created = await this.prisma.instructor.create({
+      data: {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        role: data.role || "coach",
+        isActive: data.isActive ?? true,
+        profile: { specialties: data.specialties || [] },
+      },
+    });
+    return this.mapToEntity(created);
   }
 
   async update(id: string, data: any): Promise<Instructor> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const profileData = data.specialties ? { specialties: data.specialties } : undefined;
+
+    const updated = await this.prisma.instructor.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        role: data.role,
+        isActive: data.isActive,
+        ...(profileData && { profile: profileData }),
+      },
+    });
+    return this.mapToEntity(updated);
   }
 
   async delete(id: string): Promise<Instructor> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const deleted = await this.prisma.instructor.delete({
+      where: { id },
+    });
+    return this.mapToEntity(deleted);
   }
 
   async count(params?: any): Promise<number> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    return this.prisma.instructor.count({
+      where: params?.where,
+    });
   }
 
   async findActive(): Promise<Instructor[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    const active = await this.prisma.instructor.findMany({
+      where: { isActive: true },
+    });
+    return active.map(this.mapToEntity);
   }
 
   async findBySpecialty(disciplineId: string): Promise<Instructor[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaInstructorRepository not implemented yet");
+    // Current workaround since specialties are inside JSON profile.
+    // We fetch active ones and filter manually until we normalize this to relationships table.
+    const active = await this.findActive();
+    return active.filter(instructor => instructor.specialties.includes(disciplineId));
+  }
+
+  // Mapper
+  private mapToEntity(prismaInstructor: any): Instructor {
+    const profile = typeof prismaInstructor.profile === 'object' && prismaInstructor.profile !== null 
+      ? prismaInstructor.profile 
+      : {};
+      
+    return {
+      id: prismaInstructor.id,
+      firstName: prismaInstructor.firstName,
+      lastName: prismaInstructor.lastName,
+      email: prismaInstructor.email,
+      phone: prismaInstructor.phone || undefined,
+      role: prismaInstructor.role as "admin" | "coach",
+      isActive: prismaInstructor.isActive,
+      specialties: Array.isArray(profile.specialties) ? profile.specialties : [],
+      // adding mock organization since previous db did not map it
+      organizationId: "org_blacksheep_001" 
+    };
   }
 }

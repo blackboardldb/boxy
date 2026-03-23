@@ -489,58 +489,157 @@ export class MockClassRepository
   }
 }
 
-// Prisma implementation skeleton (for future use)
+import { prisma } from "../../prisma";
+
 export class PrismaClassRepository implements IClassRepository {
+  private get prisma() {
+    return prisma;
+  }
+
   async findMany(params?: any): Promise<any> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const page = params?.page || 1;
+    const limit = params?.limit || params?.take || 10;
+    const skip = params?.skip !== undefined ? params.skip : (page - 1) * limit;
+
+    const [classes, total] = await Promise.all([
+      this.prisma.classSession.findMany({
+        where: params?.where,
+        orderBy: params?.orderBy,
+        take: limit,
+        skip,
+      }),
+      this.prisma.classSession.count({ where: params?.where })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: classes.map(this.mapToEntity),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      }
+    };
   }
 
   async findUnique(params: any): Promise<ClassSession | null> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const classSession = await this.prisma.classSession.findUnique({
+      where: params.where,
+    });
+    return classSession ? this.mapToEntity(classSession) : null;
   }
 
   async create(data: any): Promise<ClassSession> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const created = await this.prisma.classSession.create({
+      data: {
+        id: data.id,
+        organizationId: data.organizationId || "org_blacksheep_001",
+        disciplineId: data.disciplineId,
+        name: data.name,
+        dateTime: new Date(data.dateTime),
+        durationMinutes: data.durationMinutes || 60,
+        instructorId: data.instructorId,
+        capacity: data.capacity || 15,
+        registeredParticipantsIds: data.registeredParticipantsIds || [],
+        waitlistParticipantsIds: data.waitlistParticipantsIds || [],
+        status: data.status || "scheduled",
+        notes: data.notes,
+        isGenerated: data.isGenerated || false,
+      },
+    });
+    return this.mapToEntity(created);
   }
 
   async update(id: string, data: any): Promise<ClassSession> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const updated = await this.prisma.classSession.update({
+      where: { id },
+      data: {
+        disciplineId: data.disciplineId,
+        name: data.name,
+        dateTime: data.dateTime ? new Date(data.dateTime) : undefined,
+        durationMinutes: data.durationMinutes,
+        instructorId: data.instructorId,
+        capacity: data.capacity,
+        registeredParticipantsIds: data.registeredParticipantsIds,
+        waitlistParticipantsIds: data.waitlistParticipantsIds,
+        status: data.status,
+        notes: data.notes,
+        isGenerated: data.isGenerated,
+      },
+    });
+    return this.mapToEntity(updated);
   }
 
   async delete(id: string): Promise<ClassSession> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const deleted = await this.prisma.classSession.delete({
+      where: { id },
+    });
+    return this.mapToEntity(deleted);
   }
 
   async count(params?: any): Promise<number> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    return this.prisma.classSession.count({
+      where: params?.where,
+    });
   }
 
-  async findByDateRange(
-    startDate: string,
-    endDate: string
-  ): Promise<ClassSession[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+  async findByDateRange(startDate: string, endDate: string): Promise<ClassSession[]> {
+    const classes = await this.prisma.classSession.findMany({
+      where: {
+        dateTime: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      },
+      orderBy: { dateTime: 'asc' }
+    });
+    return classes.map(this.mapToEntity);
   }
 
   async findByDiscipline(disciplineId: string): Promise<ClassSession[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const classes = await this.prisma.classSession.findMany({
+      where: { disciplineId },
+      orderBy: { dateTime: 'asc' }
+    });
+    return classes.map(this.mapToEntity);
   }
 
   async findByInstructor(instructorId: string): Promise<ClassSession[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const classes = await this.prisma.classSession.findMany({
+      where: { instructorId },
+      orderBy: { dateTime: 'asc' }
+    });
+    return classes.map(this.mapToEntity);
   }
 
   async findByStatus(status: string): Promise<ClassSession[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaClassRepository not implemented yet");
+    const classes = await this.prisma.classSession.findMany({
+      where: { status },
+      orderBy: { dateTime: 'asc' }
+    });
+    return classes.map(this.mapToEntity);
+  }
+
+  private mapToEntity(prismaClass: any): ClassSession {
+    return {
+      id: prismaClass.id,
+      organizationId: prismaClass.organizationId,
+      disciplineId: prismaClass.disciplineId,
+      name: prismaClass.name,
+      dateTime: prismaClass.dateTime.toISOString(),
+      durationMinutes: prismaClass.durationMinutes,
+      instructorId: prismaClass.instructorId,
+      capacity: prismaClass.capacity,
+      registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
+      waitlistParticipantsIds: prismaClass.waitlistParticipantsIds || [],
+      status: prismaClass.status as any,
+      notes: prismaClass.notes || undefined,
+      isGenerated: prismaClass.isGenerated,
+    };
   }
 }
+

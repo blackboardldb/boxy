@@ -272,7 +272,6 @@ export class MockUserRepository
       membership: {
         ...user.membership,
         status: status as any,
-        updatedAt: new Date().toISOString(),
       },
     });
 
@@ -338,52 +337,221 @@ export class MockUserRepository
   }
 }
 
-// Prisma implementation skeleton (for future use)
+import { prisma } from "../../prisma";
+
 export class PrismaUserRepository implements IUserRepository {
+  private get prisma() {
+    return prisma;
+  }
+
   async findMany(params?: any): Promise<any> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const page = params?.page || 1;
+    const limit = params?.limit || params?.take || 10;
+    const skip = params?.skip !== undefined ? params.skip : (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: params?.where,
+        orderBy: params?.orderBy,
+        take: limit,
+        skip,
+      }),
+      this.prisma.user.count({ where: params?.where })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: users.map((u: any) => this.mapToEntity(u)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      }
+    };
   }
 
   async findUnique(params: any): Promise<FitCenterUserProfile | null> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const user = await this.prisma.user.findUnique({
+      where: params.where,
+    });
+    return user ? this.mapToEntity(user) : null;
   }
 
   async create(data: any): Promise<FitCenterUserProfile> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const created = await this.prisma.user.create({
+      data: {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        role: data.role || "user",
+        membership: data.membership,
+      },
+    });
+    return this.mapToEntity(created);
   }
 
   async update(id: string, data: any): Promise<FitCenterUserProfile> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        role: data.role,
+        membership: data.membership,
+      },
+    });
+    return this.mapToEntity(updated);
   }
 
   async delete(id: string): Promise<FitCenterUserProfile> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const deleted = await this.prisma.user.delete({
+      where: { id },
+    });
+    return this.mapToEntity(deleted);
   }
 
   async count(params?: any): Promise<number> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    return this.prisma.user.count({
+      where: params?.where,
+    });
   }
 
   async findByEmail(email: string): Promise<FitCenterUserProfile | null> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    return user ? this.mapToEntity(user) : null;
   }
 
   async findByRole(role: string): Promise<FitCenterUserProfile[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const users = await this.prisma.user.findMany({
+      where: { role },
+    });
+    return users.map((u: any) => this.mapToEntity(u));
   }
 
   async findByMembershipStatus(
     status: string
   ): Promise<FitCenterUserProfile[]> {
-    // TODO: Implement with Prisma
-    throw new Error("PrismaUserRepository not implemented yet");
+    const allUsers = await this.prisma.user.findMany();
+    const filtered = allUsers.filter(
+      (u: any) => u.membership && (u.membership as any).status === status
+    );
+    return filtered.map((u: any) => this.mapToEntity(u));
+  }
+
+  async getActiveUsers(): Promise<FitCenterUserProfile[]> {
+    return this.findByMembershipStatus("active");
+  }
+
+  async getPendingUsers(): Promise<FitCenterUserProfile[]> {
+    return this.findByMembershipStatus("pending");
+  }
+
+  async getExpiredUsers(): Promise<FitCenterUserProfile[]> {
+    return this.findByMembershipStatus("expired");
+  }
+
+  async getUsersWithExpiringMemberships(days: number = 7): Promise<FitCenterUserProfile[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + days);
+    const cutoffString = cutoffDate.toISOString().split("T")[0];
+
+    const allUsers = await this.prisma.user.findMany();
+    const result = allUsers.filter((user: any) => {
+      const membership = user.membership as any;
+      if (!membership || membership.status !== "active") return false;
+      return membership.currentPeriodEnd <= cutoffString;
+    });
+
+    return result.map((u: any) => this.mapToEntity(u));
+  }
+
+  async searchUsers(query: string): Promise<FitCenterUserProfile[]> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: query, mode: 'insensitive' } },
+          { lastName: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ]
+      }
+    });
+    return users.map((u: any) => this.mapToEntity(u));
+  }
+
+  async updateMembershipStatus(userId: string, status: string): Promise<FitCenterUserProfile> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User not found");
+    
+    let currentMembership = user.membership as any;
+    if (!currentMembership) throw new Error("User has no membership to update");
+    
+    currentMembership.status = status;
+    
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { membership: currentMembership }
+    });
+    
+    return this.mapToEntity(updatedUser);
+  }
+
+  async approveUser(userId: string): Promise<FitCenterUserProfile> {
+    return this.updateMembershipStatus(userId, "active");
+  }
+
+  async rejectUser(userId: string, reason: string, rejectedBy: string): Promise<FitCenterUserProfile> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User not found");
+
+    let currentMembership = user.membership as any;
+    if (currentMembership) {
+      currentMembership.status = "inactive";
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { 
+        membership: currentMembership,
+      }
+    });
+    return this.mapToEntity(updatedUser);
+  }
+
+  async getUserStats(): Promise<{ total: number; active: number; pending: number; expired: number; inactive: number; }> {
+    const users = await this.prisma.user.findMany();
+    let total = users.length;
+    let active = 0, pending = 0, expired = 0, inactive = 0;
+    
+    users.forEach((u: any) => {
+      const status = (u.membership as any)?.status;
+      if (status === "active") active++;
+      else if (status === "pending") pending++;
+      else if (status === "expired") expired++;
+      else if (status === "inactive") inactive++;
+    });
+
+    return { total, active, pending, expired, inactive };
+  }
+
+  private mapToEntity(prismaUser: any): FitCenterUserProfile {
+    return {
+      id: prismaUser.id,
+      firstName: prismaUser.firstName,
+      lastName: prismaUser.lastName,
+      email: prismaUser.email,
+      phone: prismaUser.phone,
+      role: prismaUser.role,
+      membership: prismaUser.membership || undefined,
+    } as FitCenterUserProfile;
   }
 }

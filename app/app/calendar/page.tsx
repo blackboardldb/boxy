@@ -72,9 +72,9 @@ export default function CalendarPage() {
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Obtener el usuario actual (emulando a Antonia)
+  // Obtener el usuario actual
   const currentUser = useMemo(
-    () => users.find((user) => user.id === "usr_antonia_abc123"),
+    () => users.find((user) => user.role === "user" || user.membership?.status === "active") || users[0] || null,
     [users]
   );
 
@@ -149,7 +149,8 @@ export default function CalendarPage() {
       if (users.length === 0) await fetchUsers();
       if (!instructors || instructors.length === 0) await fetchInstructors();
       if (!disciplines || disciplines.length === 0) await fetchDisciplines();
-      if (classSessions.length === 0) await fetchClassSessions();
+      // Incrementar el limite para la vista de calendario
+      if (classSessions.length === 0) await fetchClassSessions(undefined, undefined, 1, 100);
     } catch (error) {
       console.error("Error loading classes:", error);
       toast({

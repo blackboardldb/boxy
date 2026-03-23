@@ -45,7 +45,7 @@ async function main() {
         },
         create: {
           id: discipline.id,
-          organizationId: discipline.organizationId,
+          organizationId: discipline.organizationId || initialOrganization.id,
           name: discipline.name,
           description: discipline.description,
           color: discipline.color,
@@ -92,9 +92,9 @@ async function main() {
         update: {
           description: plan.description,
           price: plan.price,
-          duration: plan.duration,
+          duration: (plan as any).durationInMonths,
           isActive: plan.isActive,
-          features: plan.features as any,
+          features: undefined as any,
           config: plan as any,
         },
         create: {
@@ -102,9 +102,9 @@ async function main() {
           name: plan.name,
           description: plan.description,
           price: plan.price,
-          duration: plan.duration,
+          duration: (plan as any).durationInMonths,
           isActive: plan.isActive,
-          features: plan.features as any,
+          features: undefined as any,
           config: plan as any,
         },
       });
@@ -161,7 +161,7 @@ async function main() {
         name: "Evening Yoga",
         dateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
         durationMinutes: 90,
-        instructorId: initialInstructors[1].id,
+        instructorId: initialInstructors[0].id,
         capacity: 20,
         registeredParticipantsIds: [],
         waitlistParticipantsIds: [],

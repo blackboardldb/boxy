@@ -117,22 +117,9 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
   // Initialize Prisma client
   private async initializePrismaClient(): Promise<void> {
     try {
-      // TODO: Initialize actual Prisma client when Prisma is set up
-      // const { PrismaClient } = await import('@prisma/client');
-      //
-      // this.prismaClient = new PrismaClient({
-      //   datasources: {
-      //     db: {
-      //       url: this.config.connectionString,
-      //     },
-      //   },
-      //   log: this.config.enableLogging ? ['query', 'info', 'warn', 'error'] : ['error'],
-      // });
-
-      // For now, throw error to indicate Prisma is not set up
-      throw new InternalError(
-        "Prisma client not yet implemented. Please use mock provider for development."
-      );
+      // The prisma client is already a singleton in lib/prisma.ts, 
+      // but we import it dynamically or assume the repositories import it themselves.
+      this.prismaClient = require("../../prisma").prisma;
     } catch (error) {
       throw new InternalError(`Failed to initialize Prisma client: ${error}`);
     }
@@ -145,17 +132,14 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
         throw new InternalError("Prisma client not initialized");
       }
 
-      // TODO: Test connection when Prisma is set up
-      // await this.prismaClient.$connect();
-      //
-      // // Test with a simple query
-      // await this.prismaClient.$queryRaw`SELECT 1`;
+      // Test with a simple query
+      await this.prismaClient.$queryRaw`SELECT 1`;
 
       if (this.config.enableLogging) {
         console.log("[PrismaDataProvider] Database connection test successful");
       }
     } catch (error) {
-      throw new InternalError(`Database connection test failed: ${error}`);
+      throw new InternalError(`Database connection test failed: \${error}`);
     }
   }
 

@@ -254,23 +254,25 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       ) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
-
-          const response = await userService.getUsers({
-            page,
-            limit,
-            search: search || undefined,
-            role: role || undefined,
-            status: status || undefined,
+          const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
           });
+          if (search) params.append("search", search);
+          if (role) params.append("role", role);
+          if (status) params.append("status", status);
 
-          if (response.success) {
+          const response = await fetch(`/api/users?${params.toString()}`);
+          if (!response.ok) throw new Error("Failed to fetch users");
+          
+          const result = await response.json();
+          if (result.success) {
             set({
-              users: response.data,
-              pagination: response.pagination,
+              users: result.data,
+              pagination: result.meta?.pagination || result.pagination,
             });
           } else {
-            throw new Error(response.error?.message || "Error fetching users");
+            throw new Error(result.error?.message || "Error fetching users");
           }
         } catch (error) {
           console.error("Error fetching users:", error);
@@ -496,59 +498,32 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         limit: number = 10
       ) => {
         try {
-          // Cargar clases desde el mock database
-          const { prisma } = await import("@/lib/mock-database");
+          const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
+          });
+          if (startDate) params.append("startDate", startDate);
+          if (endDate) params.append("endDate", endDate);
 
-          // Obtener todas las clases del mock database
-          const allClasses = await prisma.classSession.findMany();
-
-          // Filtrar por fecha si se especifica
-          let filteredClasses = allClasses;
-          if (startDate || endDate) {
-            filteredClasses = allClasses.filter((session: ClassSession) => {
-              const sessionDate = new Date(session.dateTime);
-              const start = startDate ? new Date(startDate) : null;
-              const end = endDate ? new Date(endDate) : null;
-
-              if (start && end) {
-                return sessionDate >= start && sessionDate <= end;
-              } else if (start) {
-                return sessionDate >= start;
-              } else if (end) {
-                return sessionDate <= end;
-              }
-
-              return true;
-            });
+          const response = await fetch(`/api/classes?${params.toString()}`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch classes");
           }
 
-          // Aplicar paginación
-          const startIndex = (page - 1) * limit;
-          const endIndex = startIndex + limit;
-          const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
-
-          // Calcular metadatos de paginación
-          const totalClasses = filteredClasses.length;
-          const totalPages = Math.ceil(totalClasses / limit);
-
-          const result = {
-            classes: paginatedClasses,
-            pagination: {
-              page,
-              limit,
-              totalClasses,
-              totalPages,
-              hasNextPage: page < totalPages,
-              hasPrevPage: page > 1,
-            },
-          };
-
-          set({ classSessions: result.classes });
-          return result;
+          const result = await response.json();
+          if (result.success) {
+            set({ classSessions: result.data || [] });
+            return {
+              classes: result.data || [],
+              pagination: result.meta?.pagination || result.pagination
+            };
+          } else {
+            throw new Error(result.error?.message || "Error fetching classes");
+          }
         } catch (error) {
           console.error("Error fetching class sessions:", error);
-          // Fallback a datos locales en caso de error
-          set({ classSessions: initialClassSessions });
+          set({ classSessions: [] });
+          return { classes: [], pagination: null };
         }
       },
 
@@ -561,10 +536,24 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
             d.id === discipline.id ? discipline : d
           ),
         })),
-      deleteDiscipline: (disciplineId: string) =>
+      deleteDiscipline: async (disciplineId: string) => {
+        try {
+          // Intentar borrar desde la API real
+          const response = await fetch(`/api/disciplines/${disciplineId}`, {
+            method: "DELETE",
+          });
+          if (!response.ok) {
+            console.error("No se pudo borrar desde la API, usando modo local.");
+          }
+        } catch (error) {
+          console.error("Error eliminando disciplina de la API:", error);
+        }
+
+        // De todas formas actualizamos la UI sincronamente
         set((state) => ({
           disciplines: state.disciplines.filter((d) => d.id !== disciplineId),
-        })),
+        }));
+      },
       fetchDisciplines: async (page = 1, limit = 50, isActive = "") => {
         try {
           const params = new URLSearchParams({
@@ -1046,24 +1035,34 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
 
           // Update user with pending renewal
           const { users } = get();
-          const updatedUsers = users.map((user) => {
-            if (user.id === userId) {
-              return {
-                ...user,
-                membership: {
-                  ...user.membership,
-                  pendingRenewal: renewalRequest,
-                },
-              };
-            }
-            return user;
-          });
+          const targetUser = users.find((u) => u.id === userId);
+          if (targetUser) {
+             const updatedMembership = {
+               ...targetUser.membership,
+               pendingRenewal: renewalRequest,
+             };
 
-          // Add to membership renewals list
-          set((state) => ({
-            users: updatedUsers,
-            membershipRenewals: [...state.membershipRenewals, renewalRequest],
-          }));
+             // Guardar en backend si aplica
+             try {
+               await fetch(`/api/users/${userId}`, {
+                 method: "PUT",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({ membership: updatedMembership }),
+               });
+             } catch (err) {
+               console.error("Error saving pending renewal to backend", err);
+             }
+
+             const updatedUsers = users.map((user) =>
+               user.id === userId
+                 ? { ...user, membership: updatedMembership }
+                 : user
+             );
+             set((state) => ({
+               users: updatedUsers,
+               membershipRenewals: [...state.membershipRenewals, renewalRequest],
+             }));
+          }
         } catch (error) {
           console.error("Error requesting plan renewal:", error);
           set({
