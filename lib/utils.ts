@@ -1,0 +1,884 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+  }).format(amount);
+}
+
+export function formatDate(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(dateObj);
+}
+
+export function formatDateTime(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(dateObj);
+}
+
+export function formatTime(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(dateObj);
+}
+
+export function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + "...";
+}
+
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+export function isValidPhone(phone: string): boolean {
+  const phoneRegex = /^\+?[\d\s\-\(\)]+$/;
+  return phoneRegex.test(phone) && phone.replace(/\D/g, "").length >= 8;
+}
+
+export function generateId(): string {
+  return Math.random().toString(36).substr(2, 9);
+}
+
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+}
+
+export function deepClone<T>(obj: T): T {
+  if (obj === null || typeof obj !== "object") return obj;
+  if (obj instanceof Date) return new Date(obj.getTime()) as T;
+  if (obj instanceof Array) return obj.map(deepClone) as T;
+  if (typeof obj === "object") {
+    const clonedObj = {} as T;
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        clonedObj[key] = deepClone(obj[key]);
+      }
+    }
+    return clonedObj;
+  }
+  return obj;
+}
+
+export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
+  return array.reduce((groups, item) => {
+    const group = String(item[key]);
+    groups[group] = groups[group] || [];
+    groups[group].push(item);
+    return groups;
+  }, {} as { [key: string]: T[] });
+}
+
+export function sortBy<T>(
+  array: T[],
+  key: keyof T,
+  direction: "asc" | "desc" = "asc"
+): T[] {
+  return [...array].sort((a, b) => {
+    const aVal = a[key];
+    const bVal = b[key];
+
+    if (aVal < bVal) return direction === "asc" ? -1 : 1;
+    if (aVal > bVal) return direction === "asc" ? 1 : -1;
+    return 0;
+  });
+}
+
+export function validateScheduleRules(rules: any[]): string[] {
+  const errors: string[] = [];
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    errors.push("Debe haber al menos una regla de horario");
+    return errors;
+  }
+
+  const seenTimes = new Set();
+  const duplicateTimes = new Set();
+
+  rules.forEach((rule) => {
+    if (!rule.time) {
+      errors.push("Todas las reglas deben tener una hora especificada");
+      return;
+    }
+
+    if (seenTimes.has(rule.time)) {
+      duplicateTimes.add(rule.time);
+    }
+    seenTimes.add(rule.time);
+  });
+
+  if (duplicateTimes.size > 0) {
+    errors.push(`Horas duplicadas: ${[...duplicateTimes].join(", ")}`);
+  }
+
+  rules.forEach((rule, index) => {
+    if (!rule.day) {
+      errors.push(`Regla ${index + 1}: Día requerido`);
+    }
+
+    if (!rule.time) {
+      errors.push(`Regla ${index + 1}: Hora requerida`);
+    }
+
+    if (rule.capacity && (rule.capacity < 1 || rule.capacity > 50)) {
+      errors.push(`Regla ${index + 1}: Capacidad debe estar entre 1 y 50`);
+    }
+  });
+
+  return errors;
+}
+
+export function validateMembershipData(data: any): string[] {
+  const errors: string[] = [];
+
+  if (!data.membershipType) {
+    errors.push("Tipo de membresía es requerido");
+  }
+
+  if (!data.startDate) {
+    errors.push("Fecha de inicio es requerida");
+  }
+
+  if (!data.endDate) {
+    errors.push("Fecha de fin es requerida");
+  }
+
+  if (data.startDate && data.endDate) {
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+
+    if (start >= end) {
+      errors.push("La fecha de fin debe ser posterior a la fecha de inicio");
+    }
+  }
+
+  if (data.price && data.price < 0) {
+    errors.push("El precio no puede ser negativo");
+  }
+
+  return errors;
+}
+
+export function validateClassData(data: any): string[] {
+  const errors: string[] = [];
+
+  if (!data.disciplineId) {
+    errors.push("Disciplina es requerida");
+  }
+
+  if (!data.dateTime) {
+    errors.push("Fecha y hora son requeridas");
+  }
+
+  if (data.dateTime) {
+    const classDate = new Date(data.dateTime);
+    const now = new Date();
+
+    if (classDate <= now) {
+      errors.push("La clase debe programarse para una fecha futura");
+    }
+  }
+
+  if (data.capacity && (data.capacity < 1 || data.capacity > 100)) {
+    errors.push("La capacidad debe estar entre 1 y 100");
+  }
+
+  if (
+    data.durationMinutes &&
+    (data.durationMinutes < 15 || data.durationMinutes > 180)
+  ) {
+    errors.push("La duración debe estar entre 15 y 180 minutos");
+  }
+
+  return errors;
+}
+
+export function calculateAge(birthDate: Date | string): number {
+  const birth = typeof birthDate === "string" ? new Date(birthDate) : birthDate;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
+export function isExpired(date: Date | string): boolean {
+  const targetDate = typeof date === "string" ? new Date(date) : date;
+  return targetDate < new Date();
+}
+
+export function daysUntil(date: Date | string): number {
+  const targetDate = typeof date === "string" ? new Date(date) : date;
+  const today = new Date();
+  const diffTime = targetDate.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  if (hours === 0) {
+    return `${mins} min`;
+  }
+
+  if (mins === 0) {
+    return `${hours}h`;
+  }
+
+  return `${hours}h ${mins}min`;
+}
+
+export function getStatusColor(status: string): string {
+  switch (status.toLowerCase()) {
+    case "active":
+    case "scheduled":
+    case "completed":
+      return "text-green-600 bg-green-100";
+    case "pending":
+    case "waiting":
+      return "text-yellow-600 bg-yellow-100";
+    case "cancelled":
+    case "expired":
+    case "inactive":
+      return "text-red-600 bg-red-100";
+    default:
+      return "text-gray-600 bg-gray-100";
+  }
+}
+
+export function getStatusText(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    active: "Activo",
+    inactive: "Inactivo",
+    pending: "Pendiente",
+    expired: "Expirado",
+    cancelled: "Cancelado",
+    frozen: "Congelado",
+    suspended: "Suspendido",
+  };
+  return statusMap[status] || status;
+}
+
+export function calcularFechaTerminoMembresia(
+  startDate: string,
+  durationInMonths: number
+): string {
+  const start = new Date(startDate);
+  const end = new Date(start);
+
+  // Manejar duraciones decimales (como 0.5 para quincenal)
+  if (durationInMonths === 0.5) {
+    // Para quincenal: agregar 15 días
+    end.setDate(end.getDate() + 15);
+  } else {
+    // Para duraciones enteras: usar meses
+    end.setMonth(end.getMonth() + durationInMonths);
+
+    // Ajustar al último día del mes si es necesario
+    if (
+      start.getDate() ===
+      new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+    ) {
+      end.setDate(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate());
+    }
+  }
+
+  return end.toISOString().split("T")[0];
+}
+
+export function calcularClasesSegunDuracion(
+  classLimit: number,
+  durationInMonths: number
+): number {
+  // Si classLimit es 0, es ilimitado
+  if (classLimit === 0) return 0;
+
+  // Calcular clases totales según duración
+  if (durationInMonths === 0.5) {
+    // Quincenal: la mitad de las clases mensuales
+    return Math.ceil(classLimit / 2);
+  } else {
+    // Para duraciones enteras: multiplicar por meses
+    return classLimit * durationInMonths;
+  }
+}
+
+/**
+ * Determina el estado real del plan del usuario
+ * @param user - Usuario con membresía
+ * @returns Estado del plan: 'active', 'expired', 'pending'
+ */
+export function getPlanStatus(user: any): "active" | "expired" | "pending" {
+  // Si no hay usuario o membresía, está expirado
+  if (!user?.membership) return "expired";
+
+  // Si tiene renovación pendiente, el estado es pending
+  if (user.membership.pendingRenewal) {
+    return "pending";
+  }
+
+  // Si el estado de la membresía es explícitamente pending (usuarios nuevos)
+  if (user.membership.status === "pending") {
+    return "pending";
+  }
+
+  const now = new Date();
+  const endDate = new Date(user.membership.currentPeriodEnd);
+  const remainingClasses =
+    user.membership.centerStats.currentMonth.remainingClasses || 0;
+
+  // Validar si las fechas son válidas
+  if (isNaN(endDate.getTime())) {
+    console.warn("Invalid end date for user membership:", user.id);
+    return "expired";
+  }
+
+  // Verificar condiciones automáticas de expiración (fecha o clases agotadas)
+  const isExpiredByDate = now > endDate;
+  const isExpiredByClasses = remainingClasses <= 0;
+  const isAutomaticallyExpired = isExpiredByDate || isExpiredByClasses;
+
+  // Si está automáticamente expirado, siempre devolver expired
+  // (esto previene que un admin marque como "active" algo que realmente está expirado)
+  if (isAutomaticallyExpired) {
+    return "expired";
+  }
+
+  // Si el estado de la membresía es explícitamente expired (admin override)
+  // Solo se respeta si NO está automáticamente expirado
+  if (user.membership.status === "expired") {
+    return "expired";
+  }
+
+  return "active";
+}
+
+/**
+ * Verifica si el usuario puede inscribirse en clases
+ * @param user - Usuario con membresía
+ * @returns true si puede inscribirse, false si no
+ */
+export function canUserRegisterForClasses(user: any): boolean {
+  const status = getPlanStatus(user);
+  return status === "active";
+}
+
+/**
+ * Obtiene el motivo de expiración del plan
+ * @param user - Usuario con membresía
+ * @returns Motivo de expiración o null si no está expirado
+ */
+export function getPlanExpirationReason(user: any): string | null {
+  if (!user?.membership) return "Sin membresía";
+
+  const status = getPlanStatus(user);
+  if (status !== "expired") return null;
+
+  const now = new Date();
+  const endDate = new Date(user.membership.currentPeriodEnd);
+  const remainingClasses =
+    user.membership.centerStats.currentMonth.remainingClasses || 0;
+
+  // Verificar si expiró por fecha
+  if (now > endDate) {
+    return "Plan expirado por fecha";
+  }
+
+  // Verificar si expiró por clases agotadas
+  if (remainingClasses <= 0) {
+    return "Sin clases disponibles";
+  }
+
+  return "Plan expirado";
+}
+
+/**
+ * Verifica si un plan necesita renovación
+ * @param user - Usuario con membresía
+ * @returns true si necesita renovación, false si no
+ */
+export function doesPlanNeedRenewal(user: any): boolean {
+  const status = getPlanStatus(user);
+  return status === "expired";
+}
+
+/**
+ * Obtiene días restantes hasta la expiración del plan
+ * @param user - Usuario con membresía
+ * @returns Número de días restantes (negativo si ya expiró)
+ */
+export function getDaysUntilPlanExpiration(user: any): number {
+  if (!user?.membership) return -1;
+
+  const endDate = new Date(user.membership.currentPeriodEnd);
+  if (isNaN(endDate.getTime())) return -1;
+
+  return daysUntil(endDate);
+}
+
+export function convertClassSessionToClassItem(
+  session: any,
+  disciplines: any[],
+  instructors: any[],
+  currentUserId?: string
+) {
+  const discipline = disciplines?.find((d) => d.id === session.disciplineId);
+  const instructor = instructors?.find((i) => i.id === session.instructorId);
+
+  return {
+    id: session.id,
+    dateTime: session.dateTime,
+    discipline: discipline?.name || "Desconocida",
+    disciplineId: session.disciplineId,
+    instructor: instructor
+      ? `${instructor.firstName} ${instructor.lastName}`
+      : "Sin instructor",
+    instructorId: session.instructorId,
+    maxCapacity: session.maxCapacity || 20,
+    currentCapacity: session.registeredUsers?.length || 0,
+    isRegistered:
+      session.registeredUsers?.some((user: any) => user.id === currentUserId) ||
+      false,
+    isWaitlisted:
+      session.waitlistUsers?.some((user: any) => user.id === currentUserId) ||
+      false,
+    status: session.status || "scheduled",
+    color: discipline?.color || "#6b7280",
+  };
+}
+
+// ===== FUNCIONES DE MANEJO DE FECHAS CON ZONA HORARIA =====
+
+// Zona horaria de la organización (configurable)
+const ORGANIZATION_TIMEZONE = "America/Santiago";
+
+/**
+ * Convierte una fecha local a UTC para almacenamiento
+ * @param localDate - Fecha en zona horaria local
+ * @param timeString - Hora en formato "HH:mm"
+ * @returns ISO string en UTC
+ */
+export function localToUTC(localDate: Date, timeString: string): string {
+  const [hours, minutes] = timeString.split(":").map(Number);
+
+  // Crear fecha en zona horaria local
+  const localDateTime = new Date(localDate);
+  localDateTime.setHours(hours, minutes, 0, 0);
+
+  // Convertir a UTC
+  return localDateTime.toISOString();
+}
+
+/**
+ * Convierte una fecha UTC a la zona horaria local para mostrar
+ * @param utcDateString - Fecha UTC como string ISO
+ * @returns Date object en zona horaria local
+ */
+export function utcToLocal(utcDateString: string): Date {
+  return new Date(utcDateString);
+}
+
+/**
+ * Formatea una fecha para mostrar en la zona horaria local
+ * @param date - Date object o string ISO
+ * @param options - Opciones de formateo
+ * @returns String formateado
+ */
+export function formatDateLocal(
+  date: Date | string,
+  options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }
+): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: ORGANIZATION_TIMEZONE,
+    ...options,
+  }).format(dateObj);
+}
+
+/**
+ * Formatea una fecha y hora para mostrar en la zona horaria local
+ * @param date - Date object o string ISO
+ * @returns String formateado con fecha y hora
+ */
+export function formatDateTimeLocal(date: Date | string): string {
+  return formatDateLocal(date, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Formatea solo la hora para mostrar en la zona horaria local
+ * @param date - Date object o string ISO
+ * @returns String formateado con hora
+ */
+export function formatTimeLocal(date: Date | string): string {
+  return formatDateLocal(date, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Formatea fecha en formato corto (1 jun 2025)
+ * @param date - Date object o string ISO
+ * @returns String formateado
+ */
+export function formatDateShort(date: Date | string): string {
+  return formatDateLocal(date, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/**
+ * Formatea fecha para mostrar día de la semana
+ * @param date - Date object o string ISO
+ * @returns String formateado con día de la semana
+ */
+export function formatWeekday(date: Date | string): string {
+  return formatDateLocal(date, {
+    weekday: "long",
+  });
+}
+
+/**
+ * Formatea fecha para mostrar día y mes
+ * @param date - Date object o string ISO
+ * @returns String formateado
+ */
+export function formatDayMonth(date: Date | string): string {
+  return formatDateLocal(date, {
+    day: "numeric",
+    month: "long",
+  });
+}
+
+/**
+ * Crea una fecha local a partir de componentes
+ * @param year - Año
+ * @param month - Mes (1-12)
+ * @param day - Día
+ * @param hours - Hora (0-23)
+ * @param minutes - Minutos (0-59)
+ * @returns Date object en zona horaria local
+ */
+export function createLocalDate(
+  year: number,
+  month: number,
+  day: number,
+  hours: number = 0,
+  minutes: number = 0
+): Date {
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+}
+
+/**
+ * Obtiene la fecha actual en la zona horaria local
+ * @returns Date object
+ */
+export function getCurrentLocalDate(): Date {
+  return new Date();
+}
+
+/**
+ * Verifica si una fecha es hoy
+ * @param date - Date object o string ISO
+ * @returns boolean
+ */
+export function isToday(date: Date | string): boolean {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const today = getCurrentLocalDate();
+
+  return (
+    dateObj.getFullYear() === today.getFullYear() &&
+    dateObj.getMonth() === today.getMonth() &&
+    dateObj.getDate() === today.getDate()
+  );
+}
+
+/**
+ * Verifica si una fecha es en el futuro
+ * @param date - Date object o string ISO
+ * @returns boolean
+ */
+export function isFuture(date: Date | string): boolean {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return dateObj > getCurrentLocalDate();
+}
+
+/**
+ * Verifica si una fecha es en el pasado
+ * @param date - Date object o string ISO
+ * @returns boolean
+ */
+export function isPast(date: Date | string): boolean {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return dateObj < getCurrentLocalDate();
+}
+
+/**
+ * Verifica si una clase ya pasó (considerando fecha y hora)
+ * @param classDateTime - Fecha y hora de la clase (Date object o string ISO)
+ * @returns boolean
+ */
+export function isClassPast(classDateTime: Date | string): boolean {
+  const classDate =
+    typeof classDateTime === "string" ? new Date(classDateTime) : classDateTime;
+  const now = getCurrentLocalDate();
+  return classDate < now;
+}
+
+/**
+ * Obtiene el día de la semana como string corto
+ * @param date - Date object o string ISO
+ * @returns String del día de la semana
+ */
+export function getDayOfWeekShort(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const days = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
+  return days[dateObj.getDay()];
+}
+
+/**
+ * Convierte una fecha a string YYYY-MM-DD en zona horaria local
+ * @param date - Date object o string ISO
+ * @returns String en formato YYYY-MM-DD
+ */
+export function toDateString(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  // Usar zona horaria local en lugar de UTC para evitar problemas de corrimiento de fecha
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convierte una fecha a string HH:mm
+ * @param date - Date object o string ISO
+ * @returns String en formato HH:mm
+ */
+export function toTimeString(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return `${String(dateObj.getHours()).padStart(2, "0")}:${String(
+    dateObj.getMinutes()
+  ).padStart(2, "0")}`;
+}
+
+// ===== FUNCIONES DE CATEGORIZACIÓN DE PLANES =====
+
+/**
+ * Tipos para categorización de planes
+ */
+export type PlanCategory = "monthly" | "extended";
+
+export interface PlanCategoryInfo {
+  key: PlanCategory;
+  label: string;
+  description: string;
+  durations: number[];
+}
+
+/**
+ * Configuración de categorías de planes
+ */
+export const PLAN_CATEGORIES: PlanCategoryInfo[] = [
+  {
+    key: "monthly",
+    label: "Planes Mensuales",
+    description: "Planes de corto plazo y flexibles",
+    durations: [0.5, 1], // quincenal, mensual
+  },
+  {
+    key: "extended",
+    label: "Planes Extendidos",
+    description: "Planes de largo plazo con mejor valor",
+    durations: [3, 6, 12], // trimestral, semestral, anual
+  },
+];
+
+/**
+ * Categoriza un plan basado en su duración
+ * @param durationInMonths - Duración del plan en meses
+ * @returns Categoría del plan
+ */
+export function categorizePlan(durationInMonths: number): PlanCategory {
+  // Buscar en qué categoría encaja la duración
+  for (const category of PLAN_CATEGORIES) {
+    if (category.durations.includes(durationInMonths)) {
+      return category.key;
+    }
+  }
+
+  // Por defecto, duraciones no reconocidas van a 'extended'
+  return "extended";
+}
+
+/**
+ * Obtiene información de todas las categorías disponibles
+ * @returns Array con información de categorías
+ */
+export function getPlanCategories(): PlanCategoryInfo[] {
+  return PLAN_CATEGORIES;
+}
+
+/**
+ * Agrupa planes por categoría
+ * @param plans - Array de planes de membresía
+ * @returns Objeto con planes agrupados por categoría
+ */
+export function groupPlansByCategory<T extends { durationInMonths: number }>(
+  plans: T[]
+): Record<PlanCategory, T[]> {
+  const grouped: Record<PlanCategory, T[]> = {
+    monthly: [],
+    extended: [],
+  };
+
+  plans.forEach((plan) => {
+    const category = categorizePlan(plan.durationInMonths);
+    grouped[category].push(plan);
+  });
+
+  return grouped;
+}
+
+/**
+ * Obtiene información de una categoría específica
+ * @param category - Clave de la categoría
+ * @returns Información de la categoría o null si no existe
+ */
+export function getCategoryInfo(
+  category: PlanCategory
+): PlanCategoryInfo | null {
+  return PLAN_CATEGORIES.find((cat) => cat.key === category) || null;
+}
+
+/**
+ * Obtiene el label de una categoría
+ * @param category - Clave de la categoría
+ * @returns Label de la categoría
+ */
+export function getCategoryLabel(category: PlanCategory): string {
+  const info = getCategoryInfo(category);
+  return info?.label || category;
+}
+
+/**
+ * Verifica si una duración pertenece a una categoría específica
+ * @param durationInMonths - Duración en meses
+ * @param category - Categoría a verificar
+ * @returns true si la duración pertenece a la categoría
+ */
+export function isDurationInCategory(
+  durationInMonths: number,
+  category: PlanCategory
+): boolean {
+  const categoryInfo = getCategoryInfo(category);
+  return categoryInfo?.durations.includes(durationInMonths) || false;
+}
+
+/**
+ * Filtra planes por categoría
+ * @param plans - Array de planes
+ * @param category - Categoría a filtrar
+ * @returns Planes que pertenecen a la categoría especificada
+ */
+export function filterPlansByCategory<T extends { durationInMonths: number }>(
+  plans: T[],
+  category: PlanCategory
+): T[] {
+  return plans.filter(
+    (plan) => categorizePlan(plan.durationInMonths) === category
+  );
+}
+
+/**
+ * Obtiene estadísticas de categorización de planes
+ * @param plans - Array de planes
+ * @returns Estadísticas por categoría
+ */
+export function getPlanCategoryStats<T extends { durationInMonths: number }>(
+  plans: T[]
+): Record<PlanCategory, { count: number; percentage: number }> {
+  const grouped = groupPlansByCategory(plans);
+  const total = plans.length;
+
+  const stats: Record<PlanCategory, { count: number; percentage: number }> = {
+    monthly: {
+      count: grouped.monthly.length,
+      percentage:
+        total > 0 ? Math.round((grouped.monthly.length / total) * 100) : 0,
+    },
+    extended: {
+      count: grouped.extended.length,
+      percentage:
+        total > 0 ? Math.round((grouped.extended.length / total) * 100) : 0,
+    },
+  };
+
+  return stats;
+}
