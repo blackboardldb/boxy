@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { prisma } from "@/lib/prisma";
 import { ValidationService } from "@/lib/validation-service";
 
 export async function POST(
@@ -36,13 +36,16 @@ export async function POST(
     }
 
     // Get all class sessions for validation (needed for daily limit check)
-    const allClassSessions = await prisma.classSession.findMany({});
+    // Note: optimization needed here to not query ALL classes
+    const allClassSessions = await prisma.classSession.findMany({
+       where: { registeredParticipantsIds: { has: userId } }
+    });
 
     // Validate if user can register using the validation service
-    const validation = ValidationService.canUserRegisterToClass(
-      user,
-      classSession,
-      allClassSessions
+    const validation = await ValidationService.canUserRegisterToClass(
+      user as any,
+      classSession as any,
+      allClassSessions as any
     );
 
     if (!validation.canRegister) {
@@ -50,7 +53,7 @@ export async function POST(
     }
 
     // Use transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Update class session
       const updatedClassSession = await tx.classSession.update({
         where: { id: classId },
@@ -63,19 +66,18 @@ export async function POST(
       });
 
       // Update user's remaining classes if applicable
-      if (user.membership.planConfig.classLimit > 0) {
+      const memberData = user.membership as any;
+      if (memberData?.planConfig?.classLimit > 0) {
         await tx.user.update({
           where: { id: userId },
           data: {
             membership: {
-              ...user.membership,
+              ...memberData,
               centerStats: {
-                ...user.membership.centerStats,
+                ...memberData.centerStats,
                 currentMonth: {
-                  ...user.membership.centerStats.currentMonth,
-                  remainingClasses:
-                    user.membership.centerStats.currentMonth.remainingClasses -
-                    1,
+                  ...memberData.centerStats?.currentMonth,
+                  remainingClasses: Math.max(0, (memberData.centerStats?.currentMonth?.remainingClasses || 1) - 1),
                 },
               },
             },

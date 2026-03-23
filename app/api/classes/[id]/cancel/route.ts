@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { prisma } from "@/lib/prisma";
 import { ValidationService } from "@/lib/validation-service";
 
 export async function POST(
@@ -48,10 +48,10 @@ export async function POST(
     }
 
     // Validate if user can cancel using the validation service
-    const validation = ValidationService.canUserCancelClassWithRules(
-      user,
-      classSession,
-      discipline
+    const validation = await ValidationService.canUserCancelClassWithRules(
+      user as any,
+      classSession as any,
+      discipline as any
     );
 
     if (!validation.canCancel) {
@@ -59,35 +59,34 @@ export async function POST(
     }
 
     // Use transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Update class session
       const updatedClassSession = await tx.classSession.update({
         where: { id: classId },
         data: {
           registeredParticipantsIds:
             classSession.registeredParticipantsIds.filter(
-              (id) => id !== userId
+              (id: string) => id !== userId
             ),
           waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(
-            (id) => id !== userId
+            (id: string) => id !== userId
           ),
         },
       });
 
       // Update user's remaining classes if applicable
-      if (user.membership.planConfig.classLimit > 0) {
+      const memberData = user.membership as any;
+      if (memberData?.planConfig?.classLimit > 0) {
         await tx.user.update({
           where: { id: userId },
           data: {
             membership: {
-              ...user.membership,
+              ...memberData,
               centerStats: {
-                ...user.membership.centerStats,
+                ...memberData.centerStats,
                 currentMonth: {
-                  ...user.membership.centerStats.currentMonth,
-                  remainingClasses:
-                    user.membership.centerStats.currentMonth.remainingClasses +
-                    1,
+                  ...memberData.centerStats?.currentMonth,
+                  remainingClasses: (memberData.centerStats?.currentMonth?.remainingClasses || 0) + 1,
                 },
               },
             },

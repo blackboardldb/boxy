@@ -300,7 +300,7 @@ export default function CalendarPage() {
         });
 
         // Refrescar las clases para mostrar el cambio
-        await fetchClassSessions();
+        setRefreshTrigger((prev) => prev + 1);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al registrarse en la clase");
@@ -359,7 +359,7 @@ export default function CalendarPage() {
         });
 
         // Refrescar las clases para mostrar el cambio
-        await fetchClassSessions();
+        setRefreshTrigger((prev) => prev + 1);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al cancelar la inscripción");
