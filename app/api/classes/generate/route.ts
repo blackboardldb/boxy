@@ -1,34 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
-import { localToUTC, createLocalDate } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 
-// Helper function to create local date string without timezone conversion
-// Currently unused but kept for future use
-/*
-function createLocalDateTime(
+// Helper para asegurar la zona horaria sin offset raro (como Chile está UTC-3 o UTC-4)
+function createLocalDateTimeStr(
   date: Date,
   hours: number,
   minutes: number
 ): string {
-  // Crear la fecha usando los componentes individuales para evitar problemas de zona horaria
   const year = date.getFullYear();
-  const month = date.getMonth();
-  const day = date.getDate();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(hours).padStart(2, "0");
+  const minute = String(minutes).padStart(2, "0");
 
-  // Crear una nueva fecha con la hora específica
-  const localDate = new Date(year, month, day, hours, minutes, 0, 0);
-
-  // Format as YYYY-MM-DDTHH:mm:ss without timezone info
-  const formattedYear = localDate.getFullYear();
-  const formattedMonth = String(localDate.getMonth() + 1).padStart(2, "0");
-  const formattedDay = String(localDate.getDate()).padStart(2, "0");
-  const formattedHour = String(localDate.getHours()).padStart(2, "0");
-  const formattedMinute = String(localDate.getMinutes()).padStart(2, "0");
-  const formattedSecond = String(localDate.getSeconds()).padStart(2, "0");
-
-  return `${formattedYear}-${formattedMonth}-${formattedDay}T${formattedHour}:${formattedMinute}:${formattedSecond}`;
+  return `${year}-${month}-${day}T${hour}:${minute}:00.000-03:00`;
 }
-*/
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,29 +24,15 @@ export async function POST(request: NextRequest) {
       disciplineId,
       instructorId,
       time,
-      maxCapacity = 20,
+      maxCapacity = 15,
       notes = "Clase generada",
     } = await request.json();
 
-    console.log("=== API: Generando clases ===");
-    console.log("Datos recibidos:", {
-      startDate,
-      endDate,
-      disciplineId,
-      instructorId,
-      time,
-      maxCapacity,
-      notes,
-    });
+    console.log("=== API: Generando clases ===", { startDate, endDate, disciplineId, instructorId, time });
 
-    // Validate required fields
     if (!startDate || !endDate || !disciplineId || !instructorId || !time) {
-      console.error("❌ Campos requeridos faltantes");
       return NextResponse.json(
-        {
-          error:
-            "Missing required fields: startDate, endDate, disciplineId, instructorId, time",
-        },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
@@ -69,90 +41,67 @@ export async function POST(request: NextRequest) {
     const end = new Date(endDate);
     const generatedClasses = [];
 
-    // Parse time components
     const [hours, minutes] = time.split(":").map(Number);
+    const discipline = await prisma.discipline.findUnique({
+      where: { id: disciplineId }
+    });
 
-    // Generate classes for each day in the range
-    for (
-      let date = new Date(start);
-      date <= end;
-      date.setDate(date.getDate() + 1)
-    ) {
-      // Skip weekends only for regular classes, not for extra classes
+    if (!discipline) {
+      return NextResponse.json({ error: "Discipline not found" }, { status: 404 });
+    }
+
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
       const dayOfWeek = date.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const isExtraClass = notes.includes("Clase extra");
 
       if (isWeekend && !isExtraClass) {
-        console.log(
-          `⏭️ Saltando fin de semana: ${
-            date.toISOString().split("T")[0]
-          } (día ${dayOfWeek})`
-        );
         continue;
       }
 
-      console.log(
-        `✅ Generando clase para: ${
-          date.toISOString().split("T")[0]
-        } (día ${dayOfWeek}) - Extra: ${isExtraClass}`
-      );
+      const classDateTimeStr = createLocalDateTimeStr(date, hours, minutes);
+      const classDateTimeObj = new Date(classDateTimeStr);
 
-      // Create class for this day with correct local time using new utility function
-      const localDate = createLocalDate(
+      const dateStr = [
         date.getFullYear(),
-        date.getMonth() + 1,
-        date.getDate(),
-        hours,
-        minutes
-      );
-      const classDateTime = localToUTC(localDate, time);
-
-      console.log(
-        `📅 Fecha creada: ${classDateTime} (original: ${
-          date.toISOString().split("T")[0]
-        })`
-      );
-
-      // Format date for ID (YYYY-MM-DD)
-      const dateStr = date.toISOString().split("T")[0];
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+      ].join("-");
       const timeStr = time.replace(":", "");
 
-      const newClass = await prisma.classSession.create({
-        data: {
-          id: `cls_${dateStr}_${timeStr}_${disciplineId}`,
-          organizationId: "org_blacksheep_001",
-          disciplineId,
-          name: `Class ${time}`,
-          dateTime: classDateTime, // Use UTC time string
-          durationMinutes: 60,
-          instructorId,
-          capacity: maxCapacity,
-          registeredParticipantsIds: [],
-          waitlistParticipantsIds: [],
-          status: "scheduled",
-          notes,
-        },
+      // Evita claves duplicadas o re-generar
+      const classId = `cls_${dateStr}_${timeStr}_${disciplineId}`;
+      const existingClass = await prisma.classSession.findUnique({
+        where: { id: classId },
       });
 
-      generatedClasses.push(newClass);
+      if (!existingClass) {
+        const newClass = await prisma.classSession.create({
+          data: {
+            id: classId,
+            organizationId: discipline.organizationId || "org_blacksheep_001",
+            disciplineId,
+            name: `Class ${time}`,
+            dateTime: classDateTimeObj,
+            durationMinutes: 60,
+            instructorId,
+            capacity: maxCapacity,
+            registeredParticipantsIds: [],
+            waitlistParticipantsIds: [],
+            status: "scheduled",
+            notes,
+          },
+        });
+        generatedClasses.push(newClass);
+      }
     }
 
-    console.log("✅ Clases generadas:", generatedClasses.length);
-    console.log("Primera clase:", generatedClasses[0]);
-
-    return NextResponse.json(
-      {
+    return NextResponse.json({
         message: `Successfully generated ${generatedClasses.length} classes`,
         classes: generatedClasses,
-      },
-      { status: 201 }
-    );
+    }, { status: 201 });
   } catch (error) {
     console.error("Error generating classes:", error);
-    return NextResponse.json(
-      { error: "Failed to generate classes" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to generate classes" }, { status: 500 });
   }
 }

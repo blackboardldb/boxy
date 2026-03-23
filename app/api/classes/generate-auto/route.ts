@@ -1,35 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
-import { initialDisciplines, initialInstructors } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
-// Helper function to create local date string without timezone conversion
-function createLocalDateTime(
+// Helper function to create local date string representing the correct local time
+// Assuming America/Santiago (UTC-3 or UTC-4). By constructing an ISO string with -03:00,
+// Prisma will correctly parse it as UTC without losing the intended local hour.
+function createLocalDateTimeStr(
   date: Date,
   hours: number,
   minutes: number
 ): string {
-  const localDate = new Date(date);
-  localDate.setHours(hours, minutes, 0, 0);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(hours).padStart(2, "0");
+  const minute = String(minutes).padStart(2, "0");
 
-  const year = localDate.getFullYear();
-  const month = String(localDate.getMonth() + 1).padStart(2, "0");
-  const day = String(localDate.getDate()).padStart(2, "0");
-  const hour = String(localDate.getHours()).padStart(2, "0");
-  const minute = String(localDate.getMinutes()).padStart(2, "0");
-  const second = String(localDate.getSeconds()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+  // Al crear el string ISO con offset -03:00, Prisma lo guarda en UTC equivalente.
+  // Esto es mejor que dejarlo local del servidor.
+  return `${year}-${month}-${day}T${hour}:${minute}:00.000-03:00`;
 }
 
 // Map day abbreviations to day numbers
 const dayMap: { [key: string]: number } = {
+  dom: 0,
   lun: 1,
   mar: 2,
   mie: 3,
   jue: 4,
   vie: 5,
   sab: 6,
-  dom: 0,
 };
 
 export async function POST(request: NextRequest) {
@@ -47,22 +46,50 @@ export async function POST(request: NextRequest) {
     const end = new Date(endDate);
     const generatedClasses = [];
 
+    // Fetch real disciplines and instructors from the DB
+    const disciplines = await prisma.discipline.findMany({
+      where: { isActive: true },
+    });
+    const instructors = await prisma.instructor.findMany({
+      where: { isActive: true },
+    });
+
     // Generate classes for each discipline based on their schedules
-    for (const discipline of initialDisciplines) {
-      if (!discipline.isActive || !discipline.schedule) continue;
+    for (const discipline of disciplines) {
+      if (!discipline.schedule) continue;
 
-      // Find instructor for this discipline
-      const instructor = initialInstructors.find(
-        (inst) => inst.specialties.includes(discipline.id) && inst.isActive
-      );
-
-      if (!instructor) {
-        console.warn(`No instructor found for discipline: ${discipline.name}`);
+      let scheduleArray = [];
+      try {
+        scheduleArray = typeof discipline.schedule === "string" 
+          ? JSON.parse(discipline.schedule) 
+          : discipline.schedule;
+      } catch (e) {
+        console.error("Error parsing schedule for discipline:", discipline.id);
         continue;
       }
 
+      if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
+
+      // Find instructor for this discipline. In DB, specialties is likely a JSON or array of IDs.
+      const instructor = instructors.find((inst: any) => {
+        if (!inst.specialties) return false;
+        try {
+          const specs = typeof inst.specialties === "string" 
+            ? JSON.parse(inst.specialties) 
+            : inst.specialties;
+          return Array.isArray(specs) && specs.includes(discipline.id);
+        } catch {
+          return false;
+        }
+      });
+
+      if (!instructor) {
+        console.warn(`No instructor found for discipline: ${discipline.name}`);
+        continue; // Or we can assign it without instructor? Original code skipes it.
+      }
+
       // Generate classes for each day in the schedule
-      for (const scheduleDay of discipline.schedule) {
+      for (const scheduleDay of scheduleArray) {
         const dayNumber = dayMap[scheduleDay.day];
         if (dayNumber === undefined) continue;
 
@@ -71,6 +98,7 @@ export async function POST(request: NextRequest) {
           const [hours, minutes] = time.split(":").map(Number);
 
           // Generate classes for each day in the range
+          // Resets date to start inside loop to avoid mutation issues
           for (
             let date = new Date(start);
             date <= end;
@@ -78,13 +106,17 @@ export async function POST(request: NextRequest) {
           ) {
             // Check if this day matches the schedule day
             if (date.getDay() === dayNumber) {
-              // Create class for this day with correct local time
-              const classDateTime = createLocalDateTime(date, hours, minutes);
+              const classDateTimeStr = createLocalDateTimeStr(date, hours, minutes);
+              // Parsing back to date object to give Prisma realistic Date instead of string
+              const classDateTimeObj = new Date(classDateTimeStr);
 
-              // Format date for ID (YYYY-MM-DD)
-              const dateStr = date.toISOString().split("T")[0];
+              // Format date for ID construction
+              const dateStr = [
+                date.getFullYear(),
+                String(date.getMonth() + 1).padStart(2, "0"),
+                String(date.getDate()).padStart(2, "0")
+              ].join("-");
               const timeStr = time.replace(":", "");
-
               const classId = `cls_${dateStr}_${timeStr}_${discipline.id}`;
 
               // Check if class already exists
@@ -96,32 +128,17 @@ export async function POST(request: NextRequest) {
                 const newClass = await prisma.classSession.create({
                   data: {
                     id: classId,
-                    organizationId: "org_blacksheep_001",
+                    organizationId: discipline.organizationId || "org_blacksheep_001",
                     disciplineId: discipline.id,
                     name: discipline.name,
-                    dateTime: classDateTime,
+                    dateTime: classDateTimeObj, // Use Date object
                     durationMinutes: 60,
                     instructorId: instructor.id,
-                    capacity: 15,
+                    capacity: 15, // default
                     registeredParticipantsIds: [],
                     waitlistParticipantsIds: [],
                     status: "scheduled",
-                    participants: {
-                      confirmed: [],
-                      waitlist: [],
-                      noShows: [],
-                    },
-                    historicalData: {
-                      averageAttendance: Math.floor(Math.random() * 10) + 5,
-                      noShowRate: Math.random() * 0.3,
-                      waitlistFrequency: Math.random() * 0.2,
-                      popularityTrend: ["up", "down", "stable"][
-                        Math.floor(Math.random() * 3)
-                      ] as "up" | "down" | "stable",
-                    },
-                    cancellationHours:
-                      discipline.cancellationRules?.defaultHours || 2,
-                    occupancyRate: 0.5,
+                    notes: "Autogenerada",
                   },
                 });
 

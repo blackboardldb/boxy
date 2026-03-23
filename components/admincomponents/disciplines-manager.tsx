@@ -150,36 +150,40 @@ export default function DisciplinesManager() {
       schedule: filteredSchedule,
     };
 
+    let result;
     if (editing) {
       // Actualizar disciplina existente
-      const result = await updateDisciplineById(editing, disciplineData);
-      if (result) {
-        toast({
-          title: "Disciplina actualizada",
-          description: "La disciplina se ha actualizado correctamente",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al actualizar la disciplina",
-          variant: "destructive",
-        });
-      }
+      result = await updateDisciplineById(editing, disciplineData);
     } else {
       // Crear nueva disciplina
-      const result = await createDiscipline(disciplineData);
-      if (result) {
-        toast({
-          title: "Disciplina agregada",
-          description: "La disciplina se ha agregado correctamente",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al agregar la disciplina",
-          variant: "destructive",
-        });
-      }
+      result = await createDiscipline(disciplineData);
+    }
+
+    if (result) {
+      toast({
+        title: editing ? "Disciplina actualizada" : "Disciplina agregada",
+        description: "La disciplina se guardó. Generando clases automáticamente...",
+      });
+      
+      // Auto-generar clases para los próximos 2 meses
+      const start = new Date();
+      const end = new Date();
+      end.setMonth(end.getMonth() + 2);
+      fetch("/api/classes/generate-auto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          startDate: start.toISOString(), 
+          endDate: end.toISOString() 
+        })
+      }).catch(console.error);
+
+    } else {
+      toast({
+        title: "Error",
+        description: "Error al guardar la disciplina",
+        variant: "destructive",
+      });
     }
 
     handleCloseModal();
