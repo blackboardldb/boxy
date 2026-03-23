@@ -57,10 +57,18 @@ export class ClassService extends BaseService<ClassSession> {
     if (params?.startDate || params?.endDate) {
       const dateTimeFilter: Record<string, Date> = {};
       if (params.startDate) {
-        dateTimeFilter.gte = new Date(params.startDate);
+        // Si solo viene la fecha "YYYY-MM-DD", aseguramos inicio del día
+        const startStr = params.startDate.includes("T") 
+          ? params.startDate 
+          : `${params.startDate}T00:00:00.000Z`;
+        dateTimeFilter.gte = new Date(startStr);
       }
       if (params.endDate) {
-        dateTimeFilter.lte = new Date(params.endDate);
+        // Si solo viene la fecha "YYYY-MM-DD", aseguramos fin del día
+        const endStr = params.endDate.includes("T") 
+          ? params.endDate 
+          : `${params.endDate}T23:59:59.999Z`;
+        dateTimeFilter.lte = new Date(endStr);
       }
       where.dateTime = dateTimeFilter;
     }
