@@ -47,10 +47,16 @@ export async function POST(
       );
     }
 
+    // Formatear fechas de Prisma a strings
+    const classSessionWithStrDate = { 
+      ...classSession, 
+      dateTime: classSession.dateTime instanceof Date ? classSession.dateTime.toISOString() : classSession.dateTime 
+    };
+
     // Validate if user can cancel using the validation service
     const validation = await ValidationService.canUserCancelClassWithRules(
       user as any,
-      classSession as any,
+      classSessionWithStrDate as any,
       discipline as any
     );
 

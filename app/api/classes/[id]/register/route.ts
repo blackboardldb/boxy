@@ -41,11 +41,22 @@ export async function POST(
        where: { registeredParticipantsIds: { has: userId } }
     });
 
+    // Formatear fechas de Prisma (objetos Date) a strings (como las espera el validation service)
+    const classSessionWithStrDate = { 
+      ...classSession, 
+      dateTime: classSession.dateTime instanceof Date ? classSession.dateTime.toISOString() : classSession.dateTime 
+    };
+    
+    const allClassSessionsWithStrDate = allClassSessions.map((c: any) => ({
+      ...c,
+      dateTime: c.dateTime instanceof Date ? c.dateTime.toISOString() : c.dateTime
+    }));
+
     // Validate if user can register using the validation service
     const validation = await ValidationService.canUserRegisterToClass(
       user as any,
-      classSession as any,
-      allClassSessions as any
+      classSessionWithStrDate as any,
+      allClassSessionsWithStrDate as any
     );
 
     if (!validation.canRegister) {

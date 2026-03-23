@@ -312,6 +312,7 @@ export default function CalendarPage() {
           error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
+      throw error; // Re-lanzar para que el modal no muestre éxito
     }
   };
 
@@ -371,6 +372,7 @@ export default function CalendarPage() {
           error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
+      throw error; // Re-lanzar para que el modal no muestre éxito
     }
   };
 
