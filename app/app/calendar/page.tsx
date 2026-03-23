@@ -1,4 +1,4 @@
-// src/app/calendario/page.tsx
+// app/app/calendar/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -7,6 +7,7 @@ import ClassList from "@/components/class-list";
 import RegistrationModal from "@/components/registration-modal";
 import CancellationModal from "@/components/cancellation-modal";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import {
   startOfDay,
   isSameDay,
@@ -45,11 +46,9 @@ interface FormattedClassItem {
 
 export default function CalendarPage() {
   const {
-    users,
     classSessions,
     instructors,
     disciplines,
-    fetchUsers,
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,
@@ -63,6 +62,7 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const today = startOfDay(new Date());
 
+
   // Inicializar la fecha seleccionada: usar hoy por defecto
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
   const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(
@@ -72,11 +72,8 @@ export default function CalendarPage() {
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Obtener el usuario actual
-  const currentUser = useMemo(
-    () => users.find((user) => user.role === "user" || user.membership?.status === "active") || users[0] || null,
-    [users]
-  );
+  // Obtener el usuario autenticado real
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Verificar el estado del plan del usuario
   const planStatus = useMemo(() => {
@@ -145,8 +142,6 @@ export default function CalendarPage() {
   // Función para cargar clases con filtrado por fecha
   const loadClassesForDate = useCallback(async () => {
     try {
-      // Cargar todos los datos necesarios para la vista
-      if (users.length === 0) await fetchUsers();
       if (!instructors || instructors.length === 0) await fetchInstructors();
       if (!disciplines || disciplines.length === 0) await fetchDisciplines();
       // Incrementar el limite para la vista de calendario
@@ -162,11 +157,9 @@ export default function CalendarPage() {
       setIsLoading(false);
     }
   }, [
-    users?.length,
     instructors?.length,
     disciplines?.length,
     classSessions?.length,
-    fetchUsers,
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,

@@ -5,52 +5,27 @@ import { HomePage } from "@/components/HomePage";
 import Logo from "@/components/Logo";
 import BannerCarousel from "@/components/banner-carousel";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatTimeLocal, formatWeekday } from "@/lib/utils";
 import { SkeletonHomePage } from "@/components/ui/skeleton";
 
 export default function Page() {
-  // --- 1. OBTENCIÓN DE DATOS ---
-  // Se utiliza el store de Zustand para acceder a los datos y funciones de carga.
-  const {
-    users,
-    classSessions,
-    instructors,
-    fetchUsers,
-    fetchClassSessions,
-    fetchInstructors,
-  } = useBlackSheepStore();
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  // Efecto para cargar los datos maestros una sola vez si el store está vacío.
+  const { classSessions, instructors, fetchClassSessions, fetchInstructors } =
+    useBlackSheepStore();
+
+  // Cargar clases e instructores una sola vez
   useEffect(() => {
-    if (!users || users.length === 0) fetchUsers();
     if (!classSessions || classSessions.length === 0) fetchClassSessions();
     if (!instructors || instructors.length === 0) fetchInstructors();
-  }, [
-    users,
-    classSessions,
-    instructors,
-    fetchUsers,
-    fetchClassSessions,
-    fetchInstructors,
-  ]);
+  }, [classSessions, instructors, fetchClassSessions, fetchInstructors]);
 
-  // --- 2. SELECCIÓN DE USUARIO Y TRANSFORMACIÓN DE DATOS ---
-  // Se utiliza el store de Zustand para acceder a los datos y funciones de carga.
-  const currentUser = useMemo(() => {
-    // Si hay un selectedUser en el store lo usamos (más robusto si se implementa login real),
-    // si no, usamos el primer usuario activo devuelto desde la API real para poder visualizar la demo en marcha
-    return users.find((user) => user.role === "user" || user.membership?.status === "active") || users[0] || null;
-  }, [users]);
-
-  // Mover este hook aquí para cumplir con las Reglas de los Hooks.
-  // Se calcula aquí para que todos los hooks se llamen en cada render.
+  // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {
-    // Si el usuario o las clases no se han cargado, devuelve un array vacío.
-    if (!currentUser || !classSessions || classSessions.length === 0) {
-      return [];
-    }
+    if (!currentUser || !classSessions || classSessions.length === 0) return [];
 
     return classSessions
       .filter((session) => {
@@ -92,19 +67,16 @@ export default function Page() {
       });
   }, [classSessions, instructors, currentUser]);
 
-  // Si los datos esenciales no están listos, no renderizar nada.
-  // Esto evita mostrar la UI incompleta o con errores y elimina el Skeleton.
-  if (!currentUser) {
+  // Mostrar skeleton mientras carga el usuario
+  if (userLoading || !currentUser) {
     return <SkeletonHomePage />;
   }
 
-  // --- 3. TRANSFORMACIÓN DE DATOS PARA LA UI ---
-  // Se calculan todos los valores necesarios para pasar al componente HomePage.
+  // Datos del plan
   const membershipType =
-    currentUser.membership?.membershipType || "Plan Básico";
-  const monthlyPrice = currentUser.membership?.monthlyPrice ?? 25000;
+    currentUser.membership?.membershipType || "Sin Plan";
+  const monthlyPrice = currentUser.membership?.monthlyPrice ?? 0;
 
-  // Usar las estadísticas REALES del perfil del usuario en lugar de datos fijos
   const currentMonthStats = currentUser.membership?.centerStats?.currentMonth || {
     classesContracted: 0,
     classesAttended: 0,
@@ -126,7 +98,7 @@ export default function Page() {
         "dd 'de' MMMM",
         { locale: es }
       )
-    : "01 de enero";
+    : "—";
 
   const formattedPeriodEnd = currentUser.membership?.currentPeriodEnd
     ? format(
@@ -134,10 +106,8 @@ export default function Page() {
         "dd 'de' MMMM",
         { locale: es }
       )
-    : "31 de enero";
+    : "—";
 
-  // --- 4. RENDERIZADO DEL COMPONENTE ---
-  // Se renderiza la estructura de la página y se pasa la data procesada a HomePage.
   return (
     <main className="min-h-screen bg-black">
       <div className="p-4 max-w-4xl mx-auto text-white">
