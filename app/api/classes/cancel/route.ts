@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { prisma } from "@/lib/prisma";
 
 /**
  * API unificada para cancelar clases.

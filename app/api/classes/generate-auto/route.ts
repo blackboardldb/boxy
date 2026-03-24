@@ -70,22 +70,23 @@ export async function POST(request: NextRequest) {
 
       if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
-      // Find instructor for this discipline. In DB, specialties is likely a JSON or array of IDs.
+      // Find instructor for this discipline. In DB, specialties is inside profile JSON usually.
       const instructor = instructors.find((inst: any) => {
-        if (!inst.specialties) return false;
+        const specsObj = inst.profile?.specialties || inst.specialties;
+        if (!specsObj) return false;
         try {
-          const specs = typeof inst.specialties === "string" 
-            ? JSON.parse(inst.specialties) 
-            : inst.specialties;
+          const specs = typeof specsObj === "string" 
+            ? JSON.parse(specsObj) 
+            : specsObj;
           return Array.isArray(specs) && specs.includes(discipline.id);
         } catch {
           return false;
         }
-      });
+      }) || instructors[0]; // Fallback al primer instructor disponible! Muy importante para disciplinas nuevas.
 
       if (!instructor) {
-        console.warn(`No instructor found for discipline: ${discipline.name}`);
-        continue; // Or we can assign it without instructor? Original code skipes it.
+        console.warn(`No active instructor found at all for discipline: ${discipline.name}, skipping`);
+        continue;
       }
 
       // Generate classes for each day in the schedule

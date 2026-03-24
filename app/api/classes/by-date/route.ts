@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
 import { createLocalDate } from "@/lib/utils";
