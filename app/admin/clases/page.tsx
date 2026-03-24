@@ -107,9 +107,8 @@ export default function AdminClasesPage() {
       const formattedDate = format(dateToLoad, "yyyy-MM-dd");
       // Pedimos a la API exactamente las clases de ESE día
       await fetchClassSessions(formattedDate, formattedDate, 1, 100);
-      
       await Promise.all([
-        fetchUsers(),
+        fetchUsers(1, 1000), // Traer todos los alumnos (hasta 1000) para uso local en Modals
         disciplines?.length === 0 || !disciplines ? fetchDisciplines() : Promise.resolve(),
         instructors?.length === 0 || !instructors ? fetchInstructors() : Promise.resolve(),
       ]);
