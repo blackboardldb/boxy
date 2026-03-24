@@ -13,10 +13,10 @@ import { Banknote, CreditCard, ArrowLeft } from "lucide-react";
 import { groupPlansByCategory, getCategoryInfo } from "@/lib/utils";
 
 const PAYMENT_METHODS = [
-  { id: "contado", name: "Contado", icon: Banknote },
   { id: "transferencia", name: "Transferencia", icon: Banknote },
-  { id: "debito", name: "Débito", icon: CreditCard },
-  { id: "credito", name: "Crédito", icon: CreditCard },
+  { id: "contado", name: "Contado - Presencial", icon: Banknote },
+  { id: "debito", name: "Débito - Presencial", icon: CreditCard },
+  { id: "credito", name: "Crédito - Presencial", icon: CreditCard },
 ];
 
 export default function RenewPlanPage() {
@@ -236,7 +236,7 @@ export default function RenewPlanPage() {
       </header>
       <main className="flex-1 p-4 md:p-6 max-w-2xl mx-auto w-full">
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold">Renovar Membresía</h1>
+          <h1 className="text-3xl font-bold text-white">Renovar Membresía</h1>
           {/* Selección de Plan */}
           <div className="bg-zinc-900 p-4 rounded-lg">
             <h2 className="text-2xl font-bold text-white mb-2">
@@ -371,12 +371,16 @@ export default function RenewPlanPage() {
             )}
           </div>
           {/* Selección de Método de Pago */}
-          <div className="bg-zinc-900 p-4 rounded-lg">
+          <div className="bg-zinc-900 p-4 rounded-lg ">
             <h2 className="text-2xl font-bold text-white mb-2">
               2. Elige tu Forma de Pago
             </h2>
+                      <p className="text-sm text-gray-400 ">
+              Contado, débito y crédito se deben pagar presencial en el box
+            </p>
 
-            <div>
+
+            <div className="mt-8">
               <RadioGroup
                 value={selectedPayment || ""}
                 onValueChange={(value) =>
@@ -404,6 +408,12 @@ export default function RenewPlanPage() {
             </div>
           </div>
           {/* Botón de Confirmación */}
+          <div className="bg-zinc-900 p-4 rounded-lg ">
+            <p className="text-2xl text-center">🚨</p>
+             <p className="text-sm text-center text-gray-400 mt-2">
+              Esta es una solicitud de renovación, solicita a tu coach aprobar la renovación o escribenos al whatsapp.
+            </p>
+          </div>
           <div className="pt-4">
             <Button
               size="lg"
@@ -425,9 +435,7 @@ export default function RenewPlanPage() {
                 "Solicitar Renovación"
               )}
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Tu solicitud será enviada al administrador para su aprobación.
-            </p>
+           
           </div>
         </div>
       </main>
