@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClassStatusBadge } from "@/components/class-status-badge";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
+import { Clock, User, Users } from "lucide-react";
 
 interface FormattedClassItem {
   id: string;
@@ -99,23 +100,14 @@ export function ClassCard({
 
       {/* Información principal */}
       <div className="space-y-2">
+      
+         <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full uppercase">{formattedTime}</span>
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">{classItem.name}</h3>
-          <span className="text-sm text-gray-500">{classItem.duration}</span>
+          <h3 className="font-bold text-2xl text-gray-900">{classItem.name}</h3>
         </div>
 
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">{classItem.instructor}</span>
-          <span className="text-gray-500">{classItem.alumnRegistred}</span>
-        </div>
-
-        {/* Fecha y hora */}
-        <div className="text-sm text-gray-600">
-          <div className="font-medium">
-            {formatWeekday(classItem.dateTime)}{" "}
-            {formatDayMonth(classItem.dateTime)}
-          </div>
-          <div className="text-gray-500">a las {formattedTime}</div>
+          <span className="text-gray-500"></span>
         </div>
 
         {/* Indicador de clase de hoy */}
@@ -124,6 +116,29 @@ export function ClassCard({
             Hoy
           </Badge>
         )}
+
+<div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+         
+      
+              <div className=" inline-flex items-center gap-1">
+                <User className="w-4 h-4" />
+              <span>{classItem.instructor}</span>
+              </div>
+         
+      <div className=" inline-flex items-center gap-1">
+          <Clock className="w-4 h-4" />
+          <span>{classItem.duration}</span>
+          </div>
+           <div className=" inline-flex items-center gap-1">
+          <Users className="w-4 h-4" />
+          <span>{classItem.alumnRegistred}</span>
+          </div>
+          <div className=" inline-flex items-center gap-1">
+          <Clock className="w-4 h-4" />
+          <span>{formatWeekday(classItem.dateTime)}{" "}
+            {formatDayMonth(classItem.dateTime)}</span>
+            </div>
+        </div>
       </div>
 
       {/* Botones de acción */}
