@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: NextRequest,
@@ -59,7 +59,7 @@ export async function POST(
     }
 
     // Use transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Update class session
       const updatedClassSession = await tx.classSession.update({
         where: { id: classId },
@@ -72,21 +72,22 @@ export async function POST(
       });
 
       // Update user's remaining classes if applicable (and only if > 0)
+      const memberData = user.membership as any;
       if (
-        user.membership.planConfig.classLimit > 0 &&
-        user.membership.centerStats.currentMonth.remainingClasses > 0
+        memberData?.planConfig?.classLimit > 0 &&
+        memberData?.centerStats?.currentMonth?.remainingClasses > 0
       ) {
         await tx.user.update({
           where: { id: userId },
           data: {
             membership: {
-              ...user.membership,
+              ...memberData,
               centerStats: {
-                ...user.membership.centerStats,
+                ...memberData.centerStats,
                 currentMonth: {
-                  ...user.membership.centerStats.currentMonth,
+                  ...memberData.centerStats?.currentMonth,
                   remainingClasses:
-                    user.membership.centerStats.currentMonth.remainingClasses -
+                    memberData.centerStats.currentMonth.remainingClasses -
                     1,
                 },
               },
