@@ -39,9 +39,9 @@ export default function LoginPage() {
       .single();
 
     if (profile?.role === "admin") {
-      router.push("/admin");
+      window.location.href = "/admin";
     } else {
-      router.push("/app");
+      window.location.href = "/app";
     }
   }
 
