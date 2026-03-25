@@ -132,33 +132,32 @@ export class ValidationService {
     }
 
     // 8. Verificar límite de inscripciones por día
-    let todayClasses: ClassSession[] = [];
+    let targetDayClasses: ClassSession[] = [];
+    const targetDate = classSession.dateTime.split("T")[0];
 
     if (allClassSessions) {
       // Use provided sessions if available
-      const today = new Date().toISOString().split("T")[0];
-      todayClasses = allClassSessions.filter((session) => {
+      targetDayClasses = allClassSessions.filter((session) => {
         const sessionDate = session.dateTime.split("T")[0];
         return (
-          sessionDate === today &&
+          sessionDate === targetDate &&
           session.registeredParticipantsIds.includes(user.id)
         );
       });
     } else {
-      // Fetch today's classes from data provider
+      // Fetch target day's classes from data provider
       try {
         const provider = this.getProvider();
-        const today = new Date().toISOString().split("T")[0];
-        const todayClassesResult = await provider.classes.findByDateRange(
-          today,
-          today
+        const targetDayClassesResult = await provider.classes.findByDateRange(
+          targetDate,
+          targetDate
         );
-        todayClasses = todayClassesResult.filter((session) =>
+        targetDayClasses = targetDayClassesResult.filter((session) =>
           session.registeredParticipantsIds.includes(user.id)
         );
       } catch (error) {
         console.warn(
-          "[ValidationService] Could not fetch today's classes for validation:",
+          "[ValidationService] Could not fetch target day's classes for validation:",
           error
         );
         // Continue without this validation if data fetch fails
@@ -168,10 +167,12 @@ export class ValidationService {
     const maxBookingsPerDay =
       user.membership.centerConfig.maxBookingsPerDay || 2;
 
-    if (todayClasses.length >= maxBookingsPerDay) {
+    if (targetDayClasses.length >= maxBookingsPerDay) {
+      const isToday = targetDate === new Date().toISOString().split("T")[0];
+      const daySuffix = isToday ? "hoy" : "este día";
       return {
         canRegister: false,
-        reason: `Ya tienes ${maxBookingsPerDay} clases inscritas para hoy`,
+        reason: `Ya tienes ${maxBookingsPerDay} clases inscritas para ${daySuffix}`,
       };
     }
 

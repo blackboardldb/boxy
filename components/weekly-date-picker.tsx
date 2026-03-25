@@ -248,7 +248,7 @@ export default function WeeklyDatePicker({
                     }
                     active:scale-95
                   `}
-                  aria-label={`Select ${date.toLocaleDateString()}`}
+                  aria-label={`Select ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`}
                 >
                   {date.getDate()}
                 </button>
