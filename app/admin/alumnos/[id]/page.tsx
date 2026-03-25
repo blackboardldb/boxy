@@ -341,7 +341,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <div>
-                    <CardTitle className="text-lg">📦 Membresía Actual</CardTitle>
+                    <p className="text-lg">Membresía Actual</p>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => setEditingSection("membership")}>
                     <Edit className="w-4 h-4 text-muted-foreground mr-1" /> Editar
