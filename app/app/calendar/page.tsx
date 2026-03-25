@@ -410,7 +410,7 @@ export default function CalendarPage() {
         />
       </div>
 
-      <div className="bg-black">
+      <div className="bg-black min-h-[calc(100vh-293px)]">
         {/* Plan Status Banner */}
         {planStatus !== "active" && (
           <div className="max-w-4xl mx-auto px-4 py-3 md:px-6">
