@@ -17,9 +17,9 @@ export default function ConfiguracionesPage() {
     currency: initialOrganization?.settings?.currency || "CLP",
     language: initialOrganization?.settings?.language || "es",
     defaultCancellationHours:
-      initialOrganization?.settings?.defaultCancellationHours || 2,
-    maxBookingsPerDay: initialOrganization?.settings?.maxBookingsPerDay || 2,
-    waitlistEnabled: initialOrganization?.settings?.waitlistEnabled || true,
+      initialOrganization?.settings?.defaultCancellationHours ?? 2,
+    maxBookingsPerDay: initialOrganization?.settings?.maxBookingsPerDay ?? 2,
+    waitlistEnabled: initialOrganization?.settings?.waitlistEnabled ?? true,
   });
 
   const handleSave = () => {

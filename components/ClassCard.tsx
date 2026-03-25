@@ -27,7 +27,7 @@ interface ClassCardProps {
   onRegister: () => void;
   onCancel: () => void;
   canRegister?: boolean;
-  planStatus?: "active" | "expired" | "pending";
+  planStatus?: "active" | "expired" | "pending" | "exhausted";
 }
 
 export function ClassCard({
@@ -164,6 +164,10 @@ export function ClassCard({
           {planStatus === "pending" ? (
             <span className="text-yellow-600">
               Plan pendiente de validación
+            </span>
+          ) : planStatus === "exhausted" ? (
+            <span className="text-blue-600">
+              Has ocupado todas tus clases
             </span>
           ) : planStatus === "expired" ? (
             <span className="text-orange-600">

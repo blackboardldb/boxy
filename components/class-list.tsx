@@ -27,7 +27,7 @@ interface ClassListProps {
   className?: string;
   isLoading?: boolean;
   canRegister?: boolean;
-  planStatus?: "active" | "expired" | "pending";
+  planStatus?: "active" | "expired" | "pending" | "exhausted";
 }
 
 export default function ClassList({

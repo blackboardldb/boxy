@@ -52,6 +52,10 @@ const HomePage: React.FC<HomePageProps> = ({
   // Determinar el estado real del plan
   const planStatus = getPlanStatus(userProfile);
 
+  // Derivar el límite real desde planConfig (respeta el override)
+const classLimit = userProfile.membership?.planConfig?.classLimit ?? currentMonthStats.classesContracted;
+const isUnlimited = classLimit === 0;
+
   return (
     <main className="p-4 max-w-4xl mx-auto pb-6">
       <div className="text-left mb-6">
@@ -66,25 +70,27 @@ const HomePage: React.FC<HomePageProps> = ({
       <div className="w-full bg-zinc-800 p-4 rounded-lg mb-10 space-y-3">
         <div className="mb-6">
           <h2 className="text-white font-bold text-2xl">{membershipType}</h2>
-          <p className="text-white/70">
-            {currentMonthStats.classesContracted} clases • $
-            {monthlyPrice ? monthlyPrice.toLocaleString("es-CL") : "N/A"}
-          </p>
+        <p className="text-white/70">
+  {isUnlimited ? "Ilimitadas" : classLimit} clases • $
+  {monthlyPrice ? monthlyPrice.toLocaleString("es-CL") : "N/A"}
+</p>
         </div>
 
         {planStatus === "active" && (
           <div>
-            <Progress value={progressPercentage} className="h-3 " />
+           <Progress
+  value={isUnlimited ? 100 : (currentMonthStats.classesAttended / classLimit) * 100}
+  className="h-3"/>
             <div className="flex justify-between items-center mt-2">
               <span className="text-base font-medium text-white ">
-                Clases completadas
+                Clases consumidas
               </span>
-              <p className="text-base text-white">
-                <span className="text-lime-500 font-semibold">
-                  {currentMonthStats.classesAttended}
-                </span>{" "}
-                {"/"} {currentMonthStats.classesContracted}
-              </p>
+             <p className="text-base text-white">
+  <span className="text-lime-500 font-semibold">
+    {currentMonthStats.classesAttended}
+  </span>{" "}
+  {isUnlimited ? "realizadas" : `/ ${classLimit}`}
+</p>
             </div>
           </div>
         )}

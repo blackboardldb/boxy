@@ -111,7 +111,7 @@ export default function FinanzasPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Ingresos de {selectedMonthName}
+              Flujo de Caja (Ingresos Reales)
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
@@ -171,7 +171,7 @@ export default function FinanzasPage() {
         {/* Ingresos */}
         <Card className="h-full">
           <CardHeader>
-            <CardTitle>Ingresos de {selectedMonthName}</CardTitle>
+            <CardTitle>Flujo de Caja: Ingresos Reales ({selectedMonthName})</CardTitle>
           </CardHeader>
           <CardContent>
             {ingresosMes.length === 0 ? (

@@ -77,20 +77,27 @@ export default function Page() {
     currentUser.membership?.membershipType || "Sin Plan";
   const monthlyPrice = currentUser.membership?.monthlyPrice ?? 0;
 
-  const currentMonthStats = currentUser.membership?.centerStats?.currentMonth || {
-    classesContracted: 0,
-    classesAttended: 0,
-    noShows: 0,
-    remainingClasses: 0,
-    lastMinuteCancellations: 0,
-  };
+const planClassLimit = currentUser.membership?.planConfig?.classLimit ?? 0;
+const remainingClasses = currentUser.membership?.centerStats?.currentMonth?.remainingClasses ?? 0;
 
-  const progressPercentage =
-    currentMonthStats.classesContracted > 0
-      ? (currentMonthStats.classesAttended /
-          currentMonthStats.classesContracted) *
-        100
-      : 0;
+const classesConsumed = planClassLimit > 0
+  ? Math.max(0, planClassLimit - remainingClasses)
+  : currentUser.membership?.centerStats?.currentMonth?.classesAttended ?? 0;
+
+const currentMonthStats = {
+  ...(currentUser.membership?.centerStats?.currentMonth || {
+    noShows: 0,
+    lastMinuteCancellations: 0,
+  }),
+  classesContracted: planClassLimit, // ← usa el valor real del plan (respeta overrides)
+  classesAttended: classesConsumed,
+  remainingClasses,
+};
+
+const progressPercentage =
+  planClassLimit > 0
+    ? (classesConsumed / planClassLimit) * 100
+    : 0;
 
   const formattedPeriodStart = currentUser.membership?.currentPeriodStart
     ? format(

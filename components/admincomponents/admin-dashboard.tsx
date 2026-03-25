@@ -165,9 +165,9 @@ export function AdminDashboard() {
         />
 
         <MetricCard
-          title="Ingresos Mensuales"
+          title="MRR Teórico (Recurrente)"
           value={`$${monthlyRevenue.toLocaleString()}`}
-          subtitle={`${activeMembers} miembros activos`}
+          subtitle={`De ${activeMembers} miembros activos`}
           icon={DollarSign}
           isLoading={isLoading}
           linkTo="/admin/finanzas"

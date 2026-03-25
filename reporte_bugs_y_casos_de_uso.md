@@ -9,7 +9,7 @@ Este documento centraliza los problemas detectados en la experiencia de usuario 
 
 ---
 
-## 1. Visibilidad de Clases Reservadas al Límite del Plan
+## CASO 1. Visibilidad de Clases Reservadas al Límite del Plan
 **Estado:** 🔴 Por Corregir
 
 **Caso de Usuario:**

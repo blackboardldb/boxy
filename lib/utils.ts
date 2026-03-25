@@ -360,9 +360,9 @@ export function calcularClasesSegunDuracion(
 /**
  * Determina el estado real del plan del usuario
  * @param user - Usuario con membresía
- * @returns Estado del plan: 'active', 'expired', 'pending'
+ * @returns Estado del plan: 'active', 'expired', 'pending', 'exhausted'
  */
-export function getPlanStatus(user: any): "active" | "expired" | "pending" {
+export function getPlanStatus(user: any): "active" | "expired" | "pending" | "exhausted" {
   // Si no hay usuario o membresía, está expirado
   if (!user?.membership) return "expired";
 
@@ -390,12 +390,13 @@ export function getPlanStatus(user: any): "active" | "expired" | "pending" {
   // Verificar condiciones automáticas de expiración (fecha o clases agotadas)
   const isExpiredByDate = now > endDate;
   const isExpiredByClasses = remainingClasses <= 0;
-  const isAutomaticallyExpired = isExpiredByDate || isExpiredByClasses;
 
-  // Si está automáticamente expirado, siempre devolver expired
-  // (esto previene que un admin marque como "active" algo que realmente está expirado)
-  if (isAutomaticallyExpired) {
+  if (isExpiredByDate) {
     return "expired";
+  }
+
+  if (isExpiredByClasses) {
+    return "exhausted";
   }
 
   // Si el estado de la membresía es explícitamente expired (admin override)
@@ -426,7 +427,7 @@ export function getPlanExpirationReason(user: any): string | null {
   if (!user?.membership) return "Sin membresía";
 
   const status = getPlanStatus(user);
-  if (status !== "expired") return null;
+  if (status !== "expired" && status !== "exhausted") return null;
 
   const now = new Date();
   const endDate = new Date(user.membership.currentPeriodEnd);
@@ -453,7 +454,7 @@ export function getPlanExpirationReason(user: any): string | null {
  */
 export function doesPlanNeedRenewal(user: any): boolean {
   const status = getPlanStatus(user);
-  return status === "expired";
+  return status === "expired" || status === "exhausted";
 }
 
 /**

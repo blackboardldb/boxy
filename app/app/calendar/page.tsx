@@ -73,7 +73,7 @@ export default function CalendarPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Obtener el usuario autenticado real
-  const { currentUser, isLoading: userLoading } = useCurrentUser();
+  const { currentUser, isLoading: userLoading, reload: reloadUser } = useCurrentUser();
 
   // Verificar el estado del plan del usuario
   const planStatus = useMemo(() => {
@@ -252,6 +252,15 @@ export default function CalendarPage() {
       return;
     }
 
+    if (planStatus === "exhausted") {
+      toast({
+        title: "Sin clases disponibles",
+        description: "Has ocupado todas tus clases. Puedes cancelar una clase para liberar un cupo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (planStatus === "pending") {
       toast({
         title: "Plan pendiente de validación",
@@ -299,8 +308,9 @@ export default function CalendarPage() {
           description: "Te has registrado exitosamente en la clase",
         });
 
-        // Refrescar las clases para mostrar el cambio
+        // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
+        reloadUser();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al registrarse en la clase");
@@ -359,8 +369,9 @@ export default function CalendarPage() {
           description: "Has cancelado tu registro exitosamente",
         });
 
-        // Refrescar las clases para mostrar el cambio
+        // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
+        reloadUser();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al cancelar la inscripción");
@@ -413,6 +424,15 @@ export default function CalendarPage() {
                   validado por nuestro equipo.
                 </p>
               </div>
+            ) : planStatus === "exhausted" ? (
+              <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 mb-4">
+                <p className="text-blue-200 text-sm font-medium mb-1">
+                  Has ocupado todas tus clases
+                </p>
+                <p className="text-blue-300 text-xs">
+                  Has alcanzado el límite de clases de tu plan actual. Puedes cancelar reservas existentes para liberar cupos.
+                </p>
+              </div>
             ) : (
               <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3 mb-4">
                 <p className="text-orange-200 text-sm font-medium mb-1">
@@ -426,8 +446,8 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* Mostrar clases solo si el plan está activo */}
-        {planStatus === "active" && (
+        {/* Mostrar clases solo si el plan está activo o exhausted */}
+        {(planStatus === "active" || planStatus === "exhausted") && (
           <ClassList
             selectedDate={selectedDate}
             classes={getClassesForDate(selectedDate)}
@@ -441,8 +461,8 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Modales solo si el plan está activo */}
-      {planStatus === "active" && (
+      {/* Modales solo si puede interactuar */}
+      {(planStatus === "active" || planStatus === "exhausted") && (
         <>
           <RegistrationModal
             isOpen={isRegistrationModalOpen}

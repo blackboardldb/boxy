@@ -22,7 +22,7 @@ export function useCurrentUser(): UseCurrentUserResult {
         setIsLoading(true);
         setError(null);
 
-        const res = await fetch("/api/me");
+        const res = await fetch("/api/me", { cache: "no-store", headers: { "Pragma": "no-cache" } });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error || `Error ${res.status}`);

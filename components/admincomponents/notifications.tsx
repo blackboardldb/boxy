@@ -58,6 +58,7 @@ export function Notifications() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<string>("");
 
   // Estados para filtros
   const [notificationFilter, setNotificationFilter] = useState("todos");
@@ -275,10 +276,10 @@ export function Notifications() {
     renewal: any
   ) => {
     try {
-      const startDate = new Date().toISOString().split("T")[0];
+      const startDate = customStartDate || new Date().toISOString().split("T")[0];
 
       // Calculate new end date based on current plan or requested plan
-      const endDate = new Date();
+      const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + 1); // Default to 1 month, adjust based on plan
 
       const updatedUserData = {
@@ -797,6 +798,7 @@ export function Notifications() {
                               renewal,
                               daysUntilExpiration,
                             });
+                            setCustomStartDate(new Date().toISOString().split("T")[0]);
                             setShowRenewalModal(true);
                           }}
                           className="flex-1 bg-orange-600 hover:bg-orange-700"
@@ -1073,6 +1075,22 @@ export function Notifications() {
                   </p>
                 </div>
               )}
+
+              {/* Ajuste de Fecha de Inicio */}
+              <div>
+                <Label className="text-sm font-semibold text-muted-foreground">Fecha de Inicio del Nuevo Plan</Label>
+                <div className="mt-2">
+                  <input
+                    type="date"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Útil si el alumno pagó días atrás. Por defecto inicia hoy o en la fecha indicada.
+                  </p>
+                </div>
+              </div>
 
               {/* Acciones */}
               <div className="flex gap-2 pt-4">

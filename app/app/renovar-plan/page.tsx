@@ -11,6 +11,7 @@ import { useToast } from "../../../components/ui/use-toast";
 import { useErrorHandler } from "../../../lib/hooks/useErrorHandler";
 import { Banknote, CreditCard, ArrowLeft } from "lucide-react";
 import { groupPlansByCategory, getCategoryInfo } from "@/lib/utils";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 const PAYMENT_METHODS = [
   { id: "transferencia", name: "Transferencia", icon: Banknote },
@@ -26,9 +27,7 @@ export default function RenewPlanPage() {
   const { toast } = useToast();
   const { handleAsyncError } = useErrorHandler();
 
-  // Demo: usar el primer usuario (Antonia)
-  const currentUser =
-    users.find((u) => u.id === "usr_antonia_abc123") || users[0];
+  const { currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Debug logs
   console.log("RenewPlanPage - Debug Info:", {
@@ -76,7 +75,7 @@ export default function RenewPlanPage() {
   const selectedPlan = membershipPlans?.find((p) => p.id === selectedPlanId);
 
   // Show skeleton loading state if data is not ready
-  if (!currentUser || !membershipPlans || membershipPlans.length === 0) {
+  if (userLoading || !currentUser || !membershipPlans || membershipPlans.length === 0) {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <header className="p-4 border-b border-zinc-700 bg-black">
