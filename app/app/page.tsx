@@ -19,7 +19,11 @@ export default function Page() {
 
   // Cargar clases e instructores una sola vez
   useEffect(() => {
-    if (!classSessions || classSessions.length === 0) fetchClassSessions();
+    if (!classSessions || classSessions.length === 0) {
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      // Fetch classes from today onwards with a large limit
+      fetchClassSessions(todayStr, undefined, 1, 100);
+    }
     if (!instructors || instructors.length === 0) fetchInstructors();
   }, [classSessions, instructors, fetchClassSessions, fetchInstructors]);
 
@@ -30,9 +34,10 @@ export default function Page() {
     return classSessions
       .filter((session) => {
         const sessionDate = new Date(session.dateTime);
-        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         return (
-          sessionDate >= now &&
+          sessionDate >= today &&
           session.registeredParticipantsIds.includes(currentUser.id)
         );
       })
@@ -40,7 +45,6 @@ export default function Page() {
         (a, b) =>
           new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
       )
-      .slice(0, 3)
       .map((session) => {
         const instructor = instructors?.find(
           (inst) => inst.id === session.instructorId

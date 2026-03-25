@@ -1,6 +1,7 @@
 // src/components/ClassesHomeCard.tsx
 "use client";
 
+import { useMemo } from "react";
 import { Clock3, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,34 +18,41 @@ export function ClassesHomeCard({
   classes,
   onClassClick,
 }: ClassesHomeCardProps) {
-  const today = new Date();
-  const todayClasses = classes.filter((classItem) => {
-    const classDate = parseISO(classItem.dateTime);
-    return (
-      classDate.getDate() === today.getDate() &&
-      classDate.getMonth() === today.getMonth() &&
-      classDate.getFullYear() === today.getFullYear()
-    );
-  });
+  const today = useMemo(() => new Date(), []);
 
-  const upcomingClasses = classes
-    .filter((classItem) => {
+  const todayClasses = useMemo(() => {
+    return classes.filter((classItem) => {
       const classDate = parseISO(classItem.dateTime);
-      return classDate > today;
-    })
-    .slice(0, 3);
+      return (
+        classDate.getDate() === today.getDate() &&
+        classDate.getMonth() === today.getMonth() &&
+        classDate.getFullYear() === today.getFullYear()
+      );
+    });
+  }, [classes, today]);
+
+  const upcomingClasses = useMemo(() => {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    return classes
+      .filter((classItem) => {
+        const classDate = parseISO(classItem.dateTime);
+        return classDate >= tomorrow;
+      })
+      .slice(0, 3);
+  }, [classes, today]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mt-4">
       {/* Clases de Hoy */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+    
+          <div className="flex items-center gap-2 text-lg font-semibold text-white">
             <Clock3 className="h-5 w-5" />
             Clases de Hoy
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+</div>
+        <div>
           {todayClasses.length === 0 ? (
             <p className="text-muted-foreground">
               No hay clases programadas para hoy
@@ -54,40 +62,42 @@ export function ClassesHomeCard({
               {todayClasses.map((classItem) => (
                 <div
                   key={classItem.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => onClassClick?.(classItem)}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-900 border-zinc-800 text-white"
+                 
                 >
-                  <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <div>
+              
+                    <div className="inline-flex gap-2 items-center">
                       <p className="font-medium">{classItem.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground">
                         {format(parseISO(classItem.dateTime), "HH:mm", {
                           locale: es,
                         })}
-                      </p>
+                      </span>
+                    
+                      <span className="text-sm text-muted-foreground">
+                       {classItem.duration}
+                      </span>
+
                     </div>
-                  </div>
+                  
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">
                       <Users className="h-3 w-3 mr-1" />
+                    <span className="text-sm text-white">
                       {classItem.alumnRegistred}
-                    </Badge>
-                    <Badge variant="outline">{classItem.duration}</Badge>
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
 
       {/* Próximas Clases */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Próximas Clases</CardTitle>
-        </CardHeader>
-        <CardContent>
+               <div className="flex items-center gap-2 text-lg font-semibold text-white mt-6">
+            <Clock3 className="h-5 w-5" />
+            Próximas Clases
+</div>
           {upcomingClasses.length === 0 ? (
             <p className="text-muted-foreground">
               No hay clases programadas próximamente
@@ -97,11 +107,11 @@ export function ClassesHomeCard({
               {upcomingClasses.map((classItem) => (
                 <div
                   key={classItem.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-900 border-zinc-800 text-white"
                   onClick={() => onClassClick?.(classItem)}
                 >
                   <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                   
                     <div>
                       <p className="font-medium">{classItem.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -114,18 +124,17 @@ export function ClassesHomeCard({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">
                       <Users className="h-3 w-3 mr-1" />
+                    <span className="text-sm ">
                       {classItem.alumnRegistred}
-                    </Badge>
-                    <Badge variant="outline">{classItem.duration}</Badge>
+                    </span>
+                   
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+
     </div>
   );
 }

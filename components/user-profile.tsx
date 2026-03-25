@@ -198,7 +198,8 @@ export function UserProfile() {
               )}
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Stats
+            
             <div className="grid grid-cols-3 gap-4 w-full mt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
@@ -219,6 +220,9 @@ export function UserProfile() {
                 <div className="text-xs text-zinc-400">Horas</div>
               </div>
             </div>
+            
+            */}
+            
           </div>
         </div>
 
