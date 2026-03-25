@@ -18,7 +18,7 @@ import type {
   Organization,
   Banner,
 } from "./types";
-import { UserService } from "./services/user-service";
+// Removed UserService import (not needed in client)
 // Removed unused import
 
 // Create missing mock data
@@ -289,15 +289,20 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       fetchUserById: async (id: string) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const response = await fetch(`/api/users/${id}`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error fetching user");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.getUserById(id);
-
-          if (response.success && response.data) {
-            set({ selectedUser: response.data });
-            return response.data;
+          if (result.success && result.data) {
+            set({ selectedUser: result.data });
+            return result.data;
           } else {
-            throw new Error(response.error?.message || "Error fetching user");
+            throw new Error(result.error?.message || "Error fetching user");
           }
         } catch (error) {
           console.error("Error fetching user:", error);
@@ -314,17 +319,27 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       createUser: async (userData: Partial<User>) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const response = await fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userData),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error creating user");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.createUser(userData);
-
-          if (response.success) {
+          if (result.success) {
             set((state) => ({
-              users: [...state.users, response.data],
+              users: [...state.users, result.data],
             }));
-            return response.data;
+            return result.data;
           } else {
-            throw new Error(response.error?.message || "Error creating user");
+            throw new Error(result.error?.message || "Error creating user");
           }
         } catch (error) {
           console.error("Error creating user:", error);
@@ -340,23 +355,33 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       updateUserById: async (id: string, userData: Partial<User>) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const response = await fetch(`/api/users/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userData),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error updating user");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.updateUser(id, userData);
-
-          if (response.success) {
+          if (result.success) {
             set((state) => ({
               users: state.users.map((user) =>
-                user.id === id ? { ...user, ...response.data } : user
+                user.id === id ? { ...user, ...result.data } : user
               ),
               selectedUser:
                 state.selectedUser?.id === id
-                  ? { ...state.selectedUser, ...response.data }
+                  ? { ...state.selectedUser, ...result.data }
                   : state.selectedUser,
             }));
-            return response.data;
+            return result.data;
           } else {
-            throw new Error(response.error?.message || "Error updating user");
+            throw new Error(result.error?.message || "Error updating user");
           }
         } catch (error) {
           console.error("Error updating user:", error);
@@ -372,11 +397,19 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       deleteUserById: async (id: string) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const response = await fetch(`/api/users/${id}`, {
+            method: "DELETE",
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error deleting user");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.deleteUser(id);
-
-          if (response.success) {
+          if (result.success) {
             set((state) => ({
               users: state.users.filter((user) => user.id !== id),
               selectedUser:
@@ -384,7 +417,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
             }));
             return true;
           } else {
-            throw new Error(response.error?.message || "Error deleting user");
+            throw new Error(result.error?.message || "Error deleting user");
           }
         } catch (error) {
           console.error("Error deleting user:", error);
@@ -400,15 +433,22 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       searchUsers: async (query: string) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const params = new URLSearchParams({ search: query, limit: "50" });
+          const response = await fetch(`/api/users?${params.toString()}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error searching users");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.searchUsers(query);
-
-          if (response.success) {
-            set({ searchResults: response.data });
-            return response.data;
+          if (result.success) {
+            set({ searchResults: result.data });
+            return result.data;
           } else {
-            throw new Error(response.error?.message || "Error searching users");
+            throw new Error(result.error?.message || "Error searching users");
           }
         } catch (error) {
           console.error("Error searching users:", error);
@@ -425,16 +465,22 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       getUserStats: async () => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const response = await fetch("/api/users/stats");
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error fetching user stats");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.getUserStats();
-
-          if (response.success) {
-            set({ userStats: response.data });
-            return response.data;
+          if (result.success) {
+            set({ userStats: result.data });
+            return result.data;
           } else {
             throw new Error(
-              response.error?.message || "Error fetching user stats"
+              result.error?.message || "Error fetching user stats"
             );
           }
         } catch (error) {
@@ -452,15 +498,22 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       getUsersByMembershipStatus: async (status: string) => {
         try {
           set({ isLoading: true, error: null });
-          const userService = new UserService();
+          
+          const params = new URLSearchParams({ status, limit: "100" });
+          const response = await fetch(`/api/users?${params.toString()}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || errorData.message || "Error fetching users by status");
+          }
+          
+          const result = await response.json();
 
-          const response = await userService.getUsersByMembershipStatus(status);
-
-          if (response.success) {
-            return response.data;
+          if (result.success) {
+            return result.data;
           } else {
             throw new Error(
-              response.error?.message || "Error fetching users by status"
+              result.error?.message || "Error fetching users by status"
             );
           }
         } catch (error) {

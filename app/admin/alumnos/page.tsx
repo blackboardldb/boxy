@@ -28,7 +28,6 @@ import {
   STATE_COLORS,
 } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
-import { initialMembershipPlans } from "@/lib/mock-data";
 import type { FitCenterUserProfile } from "@/lib/types";
 // Removed unused pagination imports
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +50,8 @@ export default function AlumnosPage() {
     // addUser, // Currently unused
     createUser,
     updateUserById,
+    plans = [],
+    fetchPlans,
   } = useBlackSheepStore();
 
   // Filtrar usuarios para excluir staff (admin/coach) - solo mostrar alumnos
@@ -85,7 +86,10 @@ export default function AlumnosPage() {
       }
     };
     loadData();
-  }, [page, searchTerm, statusFilter, fetchUsers]);
+    if (!plans || plans.length === 0) {
+      fetchPlans(1, 100);
+    }
+  }, [page, searchTerm, statusFilter, fetchUsers, fetchPlans, plans.length]);
 
   // Resetear página si cambia el filtro de búsqueda o estado
   useEffect(() => {
@@ -133,7 +137,7 @@ export default function AlumnosPage() {
               });
             }
           }}
-          plans={initialMembershipPlans}
+          plans={plans}
           onSuccess={() => {
             // Refrescar la lista después de agregar/editar
             fetchUsers(
