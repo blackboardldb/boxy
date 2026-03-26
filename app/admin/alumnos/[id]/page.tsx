@@ -159,16 +159,43 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     try {
       const selectedPlan = plans.find(p => p.id === editPlanId);
       
+      const newStartStr = new Date(editStartDate + "T00:00:00").toISOString();
+      const newEndStr = new Date(editEndDate + "T23:59:59").toISOString();
+      const newStart = new Date(newStartStr);
+      const newEnd = new Date(newEndStr);
+      
+      const newEnrolledClasses = (classSessions || []).filter(s => {
+        const sessionDate = new Date(s.dateTime);
+        return (
+          s.registeredParticipantsIds.includes(student.id) &&
+          s.status !== "cancelled" &&
+          sessionDate >= newStart &&
+          sessionDate <= newEnd
+        );
+      });
+      const newClassesConsumed = newEnrolledClasses.length;
+      const newClassLimit = Number(editClassLimit);
+      const newRemainingClasses = Math.max(0, newClassLimit > 0 ? newClassLimit - newClassesConsumed : 0);
+
       const updatedMembership = {
         ...student.membership,
         planId: editPlanId,
         membershipType: selectedPlan ? selectedPlan.name : student.membership?.membershipType,
         monthlyPrice: Number(editPrice),
-        currentPeriodStart: new Date(editStartDate + "T00:00:00").toISOString(),
-        currentPeriodEnd: new Date(editEndDate + "T23:59:59").toISOString(),
+        currentPeriodStart: newStartStr,
+        currentPeriodEnd: newEndStr,
         planConfig: {
           ...(student.membership?.planConfig || {}),
-          classLimit: Number(editClassLimit),
+          classLimit: newClassLimit,
+        },
+        centerStats: {
+          ...(student.membership?.centerStats || {}),
+          currentMonth: {
+            ...(student.membership?.centerStats?.currentMonth || {}),
+            classesAttended: newClassesConsumed,
+            remainingClasses: newRemainingClasses,
+            classesContracted: newClassLimit,
+          }
         }
       } as any;
 

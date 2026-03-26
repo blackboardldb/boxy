@@ -17,7 +17,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { users, fetchUserById, updateUserById, plans, fetchPlans } = useBlackSheepStore();
+  const { users, fetchUserById, updateUserById, plans, fetchPlans, classSessions } = useBlackSheepStore();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +43,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       if (!useBlackSheepStore.getState().plans?.length) {
         await fetchPlans(1, 100);
       }
+
+      useBlackSheepStore.getState().fetchClassSessions(undefined, undefined, 1, 300);
       
       const activePlans = useBlackSheepStore.getState().plans || [];
       
@@ -100,6 +102,25 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     e.preventDefault();
     if (!student || !selectedPlan) return;
 
+    const newStartStr = new Date(formData.startDate + "T00:00:00").toISOString();
+    const newEndStr = new Date(formData.endDate + "T23:59:59").toISOString();
+    const newStart = new Date(newStartStr);
+    const newEnd = new Date(newEndStr);
+
+    const newEnrolledClasses = (classSessions || []).filter(s => {
+      const sessionDate = new Date(s.dateTime);
+      return (
+        s.registeredParticipantsIds.includes(student.id) &&
+        s.status !== "cancelled" &&
+        sessionDate >= newStart &&
+        sessionDate <= newEnd
+      );
+    });
+    
+    const classesAttendedCount = newEnrolledClasses.length;
+    const classesContractedCount = formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths);
+    const initialRemaining = Math.max(0, classesContractedCount - classesAttendedCount);
+
     const newMembership = {
       ...student.membership,
       id: `mem_${Date.now()}`,
@@ -107,8 +128,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       planId: selectedPlan.id,
       membershipType: selectedPlan.name,
       monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
-      currentPeriodStart: formData.startDate,
-      currentPeriodEnd: formData.endDate,
+      currentPeriodStart: newStartStr,
+      currentPeriodEnd: newEndStr,
       planConfig: {
         classLimit: formData.clasesTotales ? Number(formData.clasesTotales) : selectedPlan.classLimit,
         disciplineAccess: selectedPlan.disciplineAccess,
@@ -120,9 +141,9 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       centerStats: {
         ...student.membership?.centerStats,
         currentMonth: {
-          classesAttended: 0,
-          classesContracted: formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
-          remainingClasses: formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
+          classesAttended: classesAttendedCount,
+          classesContracted: classesContractedCount,
+          remainingClasses: initialRemaining,
           noShows: 0,
           lastMinuteCancellations: 0,
         }
