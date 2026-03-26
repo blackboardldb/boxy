@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -11,26 +11,32 @@ import {
   CreditCard,
   Bell,
   ClipboardList,
+  Settings,
+  LogOut,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useNotificationCount } from "@/lib/hooks/useNotificationCount";
 
-const navigation = [
+const navigationItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, roles: ["admin", "coach"] },
   { name: "Alumnos", href: "/admin/alumnos", icon: Users, roles: ["admin", "coach"] },
   { name: "Instructores", href: "/admin/instructores", icon: GraduationCap, roles: ["admin", "coach"] },
   { name: "Clases", href: "/admin/clases", icon: ClipboardList, roles: ["admin", "coach"] },
-  { name: "Notificaciones", href: "/admin/alertas", icon: Bell, roles: ["admin", "coach"] },
+  { name: "Notificaciones", href: "/admin/alertas", icon: Bell, roles: ["admin", "coach"], hasDot: true },
   { name: "Horarios", href: "/admin/horarios", icon: Calendar, roles: ["admin", "coach"] },
   { name: "Planes", href: "/admin/planes", icon: CreditCard, roles: ["admin"] },
   { name: "Finanzas", href: "/admin/finanzas", icon: LayoutDashboard, roles: ["admin"] },
+  { name: "Configuración", href: "/admin/configuraciones", icon: Settings, roles: ["admin"] },
 ];
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
   const supabase = createClient();
+  const notificationCount = useNotificationCount();
 
   useEffect(() => {
     async function getProfile() {
@@ -47,48 +53,52 @@ export function Navigation() {
     getProfile();
   }, [supabase]);
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   const isActive = (href: string) => pathname === href;
 
-  const filteredNavigation = navigation.filter(item => 
+  const filteredNavigation = navigationItems.filter(item => 
     !item.roles || (role && item.roles.includes(role))
   );
 
   return (
-    <>
-      <nav className="space-y-1 p-4 hidden sm:block">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden">
+      <nav className="flex-1 space-y-1 p-4 overflow-y-auto custom-scrollbar">
         {filteredNavigation.map((item) => (
           <Link
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+              "flex items-center px-4 py-3 text-sm font-semibold rounded-2xl transition-all relative group",
               isActive(item.href)
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-md"
+                : "text-slate-500 hover:text-slate-950 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/50"
             )}
           >
-            <item.icon className="mr-3 h-4 w-4" />
+            <item.icon className={cn(
+              "mr-4 h-5 w-5 transition-transform group-hover:scale-110",
+              isActive(item.href) ? "" : "text-slate-400 dark:text-slate-500"
+            )} />
             {item.name}
-          </Link>
-        ))}
-      </nav>
-      <nav className="fixed p-2.5 border border-white/10 bottom-2 inset-x-0 mx-0.5 max-w-[98dvw] rounded-full flex flex-row justify-around bg-white backdrop-blur-xl text-center z-30 sm:hidden overflow-x-auto">
-        {filteredNavigation.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center px-2 py-2 text-[10px] font-medium rounded-md transition-colors min-w-[60px]",
-              isActive(item.href)
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            {item.hasDot && notificationCount > 0 && (
+              <span className="absolute right-4 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900 group-hover:animate-pulse" />
             )}
-          >
-            <item.icon className="mb-1 h-4 w-4" />
-            <span className="truncate w-full">{item.name}</span>
           </Link>
         ))}
       </nav>
-    </>
+
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full px-4 py-3 text-sm font-bold text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all group"
+        >
+          <LogOut className="mr-4 h-5 w-5 transition-transform group-hover:-translate-x-1" />
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
   );
 }
