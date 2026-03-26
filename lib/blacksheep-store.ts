@@ -930,10 +930,10 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
             (plan: Plan) => plan && plan.id && plan.name
           );
 
-          set({ plans: validPlans });
+          set({ plans: validPlans, membershipPlans: validPlans });
         } catch (error) {
           console.error("Error fetching plans:", error);
-          set({ plans: [] });
+          set({ plans: [], membershipPlans: [] });
         }
       },
 
@@ -1081,10 +1081,17 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         try {
           set({ isLoading: true, error: null });
 
-          // Create renewal request
+          const selectedPlan = get().plans.find(p => p.id === planId);
+          if (!selectedPlan) throw new Error("Plan not found");
+
+          // Create renewal request with full metadata
           const renewalRequest = {
             id: `renewal_${Date.now()}`,
             requestedPlanId: planId,
+            requestedPlanName: selectedPlan.name,
+            requestedPlanPrice: selectedPlan.price,
+            requestedPlanClassLimit: selectedPlan.classLimit,
+            requestedPlanDuration: selectedPlan.durationInMonths,
             requestedPaymentMethod: paymentMethod as
               | "contado"
               | "transferencia"
@@ -1104,24 +1111,22 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
                pendingRenewal: renewalRequest,
              };
 
-             // Guardar en backend si aplica
-             try {
-               await fetch(`/api/users/${userId}`, {
-                 method: "PUT",
-                 headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ membership: updatedMembership }),
-               });
-             } catch (err) {
-               console.error("Error saving pending renewal to backend", err);
+             // Guardar en backend
+             const response = await fetch(`/api/users/${userId}`, {
+               method: "PUT",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ membership: updatedMembership }),
+             });
+
+             if (!response.ok) {
+               throw new Error("Failed to save pending renewal to backend");
              }
 
-             const updatedUsers = users.map((user) =>
-               user.id === userId
-                 ? { ...user, membership: updatedMembership }
-                 : user
-             );
+             const result = await response.json();
+             const updatedUser = result.data || { ...targetUser, membership: updatedMembership };
+
              set((state) => ({
-               users: updatedUsers,
+               users: state.users.map((user) => user.id === userId ? updatedUser : user),
                membershipRenewals: [...state.membershipRenewals, renewalRequest],
              }));
           }

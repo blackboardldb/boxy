@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -251,6 +251,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   // Determine plan status
   const planStatus = student ? getPlanStatus(student) : "expired";
   const isPlanActive = planStatus === "active";
+  const isPendingApproval = planStatus === "pending" || (student?.membership?.pendingRenewal?.status === "pending");
   const isPlanExpired = planStatus === "expired" || planStatus === "exhausted";
   
   // Data prep for Plan display
@@ -363,8 +364,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                   <div className="">
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-1">
-                        <span className={`uppercase font-bold tracking-wider text-sm ${isPlanActive ? 'text-lime-900' : 'text-orange-400'}`}>
-                          {isPlanActive ? 'Activo' : isPlanExpired ? 'Expirado' : 'Sin plan'}
+                        <span className={`uppercase font-bold tracking-wider text-sm ${isPlanActive ? 'text-lime-900' : isPendingApproval ? 'text-orange-500' : 'text-orange-400'}`}>
+                          {isPlanActive ? 'Activo' : isPendingApproval ? 'Validar plan' : isPlanExpired ? 'Expirado' : 'Sin plan'}
                         </span>
                         <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-full items-center">
                           <Ticket size={14} className="text-zinc-500" />
@@ -408,7 +409,16 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <div className="text-muted-foreground">Forma de pago</div>
                     <div className="font-medium text-right text-zinc-900 capitalize">{student.formaDePago || "-"}</div>
                   </div>
-                  <div className="mt-6 pt-4 border-t border-zinc-100 flex justify-center">
+                  <div className="mt-6 pt-4 border-t border-zinc-100 flex flex-col gap-3">
+                    {isPendingApproval && (
+                      <Button 
+                        variant="default" 
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                        onClick={() => router.push('/admin/notificaciones')}
+                      >
+                         <Bell className="w-4 h-4 mr-2" /> Validar Solicitud de Plan
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"

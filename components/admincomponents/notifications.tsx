@@ -45,8 +45,8 @@ interface Notification {
 }
 
 export function Notifications() {
-  const { users, classSessions, updateUser, updateUserById } =
-    useBlackSheepStore();
+  const { users, classSessions, plans, fetchPlans, updateUserById } =
+    useBlackSheepStore() as any;
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,12 +60,21 @@ export function Notifications() {
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<string>("");
 
+  // Auto-refresh notifications every 30 seconds to avoid "stale" state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      generateNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [users, classSessions, plans]);
+
   // Estados para filtros
   const [notificationFilter, setNotificationFilter] = useState("todos");
 
   useEffect(() => {
+    if (plans.length === 0) fetchPlans(1, 100);
     generateNotifications();
-  }, [users, classSessions]);
+  }, [users, classSessions, plans]);
 
   const generateNotifications = () => {
     const newNotifications: Notification[] = [];
@@ -73,9 +82,9 @@ export function Notifications() {
 
     // Usuarios pendientes de aprobación (nuevos registros)
     const pendingUsers =
-      users?.filter((user) => user.membership?.status === "pending") || [];
+      users?.filter((user: any) => user.membership?.status === "pending") || [];
 
-    pendingUsers.forEach((user) => {
+    pendingUsers.forEach((user: any) => {
       // Determinar si es alumno nuevo o antiguo
       const totalClasses =
         user.membership?.centerStats?.lifetimeStats?.totalClasses;
@@ -108,12 +117,12 @@ export function Notifications() {
     // Usuarios con renovaciones pendientes
     const renewalUsers =
       users?.filter(
-        (user) =>
+        (user: any) =>
           user.membership?.pendingRenewal &&
           user.membership.pendingRenewal.status === "pending"
       ) || [];
 
-    renewalUsers.forEach((user) => {
+    renewalUsers.forEach((user: any) => {
       const renewal = user.membership!.pendingRenewal!;
       const requestDate = renewal.requestDate
         ? new Date(renewal.requestDate)
@@ -145,7 +154,7 @@ export function Notifications() {
 
     // Últimas 3 clases canceladas (solo visual)
     const cancelledClasses = classSessions
-      .filter((cls) => cls.status === "cancelled")
+      .filter((cls: any) => cls.status === "cancelled")
       .slice(0, 3);
     if (cancelledClasses.length > 0) {
       newNotifications.push({
@@ -153,7 +162,7 @@ export function Notifications() {
         type: "cancelled_class",
         title: "Últimas clases canceladas",
         description: cancelledClasses
-          .map((cls) => {
+          .map((cls: any) => {
             const date = new Date(cls.dateTime);
             const day = date
               .toLocaleDateString("es-ES", {
@@ -278,30 +287,82 @@ export function Notifications() {
     try {
       const startDate = customStartDate || new Date().toISOString().split("T")[0];
 
-      // Calculate new end date based on current plan or requested plan
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1); // Default to 1 month, adjust based on plan
+      // Encontrar los detalles del plan solicitado
+      const planId = renewal.requestedPlanId || user.membership?.planId;
+      const targetPlan = plans.find((p: any) => p.id === planId);
+      
+      if (!targetPlan) {
+        toast({
+          title: "Error",
+          description: "No se encontró la configuración del plan solicitado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Calcular fecha de término usando utilidad
+      const { calcularFechaTerminoMembresia } = await import("@/lib/utils");
+      const endDate = calcularFechaTerminoMembresia(startDate, targetPlan.durationInMonths);
+
+      // Calcular clases totales según duración (para planes trimestrales, etc)
+      const totalPlanClasses = targetPlan.durationInMonths === 0.5 
+        ? Math.ceil(targetPlan.classLimit / 2) 
+        : targetPlan.classLimit * targetPlan.durationInMonths;
+
+      // RECALCULAR CONSUMO: Filtrar clases inscritas que caen en el nuevo periodo
+      const currentPeriodStart = new Date(startDate + "T00:00:00");
+      const currentPeriodEnd = new Date(endDate + "T23:59:59");
+
+      const relevantSessions = (classSessions as any[]).filter(session => {
+        const isEnrolled = session.registeredUsers?.some((u: any) => u.id === user.id);
+        const sessionDate = new Date(session.dateTime);
+        return isEnrolled && 
+               session.status !== "cancelled" && 
+               sessionDate >= currentPeriodStart && 
+               sessionDate <= currentPeriodEnd;
+      });
+
+      const classesAttended = relevantSessions.length;
+      const remainingClasses = targetPlan.classLimit === 0 ? 0 : Math.max(0, totalPlanClasses - classesAttended);
+
+      // Guardar el plan actual en el historial
+      const currentPlanHistory = {
+        planId: user.membership?.planId,
+        name: user.membership?.membershipType,
+        startDate: user.membership?.currentPeriodStart,
+        endDate: user.membership?.currentPeriodEnd,
+        price: user.membership?.monthlyPrice,
+        status: "completed"
+      };
 
       const updatedUserData = {
         membership: {
           ...user.membership!,
+          status: "active" as const,
+          planId: targetPlan.id,
+          membershipType: targetPlan.name,
+          monthlyPrice: targetPlan.price,
           currentPeriodStart: startDate,
-          currentPeriodEnd: endDate.toISOString().split("T")[0],
-          // Update plan if it's a plan change
-          ...(renewal.requestedPlanId && {
-            planId: renewal.requestedPlanId,
-            membershipType: renewal.requestedPlanId, // This should be mapped to plan name
-          }),
-          // Remove pending renewal
-          pendingRenewal: undefined,
+          currentPeriodEnd: endDate,
+          pendingRenewal: undefined, // Limpiar solicitud
+          centerStats: {
+            ...user.membership?.centerStats,
+            currentMonth: {
+              ...user.membership?.centerStats?.currentMonth,
+              classesAttended,
+              remainingClasses,
+              classLimit: targetPlan.classLimit
+            }
+          },
+          // @ts-ignore - history might not be in the type yet but we want to persist it
+          history: [...(user.membership?.history || []), currentPlanHistory]
         },
-        // Update payment method if provided
         ...(renewal.requestedPaymentMethod && {
           formaDePago: renewal.requestedPaymentMethod,
         }),
         notes:
           (user.notes || "") +
-          ` - Renewal approved on ${new Date().toLocaleDateString()}`,
+          `\n- Renovación aprobada: ${targetPlan.name} desde ${startDate} hasta ${endDate}`,
       };
 
       const result = await updateUserById(user.id, updatedUserData);
@@ -309,20 +370,21 @@ export function Notifications() {
         markNotificationAsResolved(`pending-renewal-${user.id}`);
         toast({
           title: "Renovación aprobada",
-          description: `${user.firstName} ${user.lastName} - Plan renovado exitosamente`,
+          description: `${user.firstName} ${user.lastName} - Plan ${targetPlan.name} activado`,
         });
         setShowRenewalModal(false);
       } else {
         toast({
           title: "Error",
-          description: "Error al aprobar la renovación",
+          description: "Error al actualizar el usuario en la base de datos",
           variant: "destructive",
         });
       }
     } catch (error) {
+      console.error("Error in handleApproveRenewal:", error);
       toast({
         title: "Error",
-        description: "Error al procesar la renovación",
+        description: "Error crítico al procesar la renovación",
         variant: "destructive",
       });
     }
@@ -1008,18 +1070,18 @@ export function Notifications() {
                     ).toLocaleDateString()}
                   </p>
                 </div>
-                <div>
-                  <Label>Días hasta Expiración</Label>
-                  <p
-                    className={`text-sm font-medium ${
-                      selectedRenewal.daysUntilExpiration <= 7
-                        ? "text-red-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {selectedRenewal.daysUntilExpiration} días
-                  </p>
-                </div>
+                 <div>
+                   <Label>{selectedRenewal.daysUntilExpiration >= 0 ? "Días hasta Expiración" : "Días expirado"}</Label>
+                   <p
+                     className={`text-sm font-medium ${
+                       selectedRenewal.daysUntilExpiration <= 7
+                         ? "text-red-600"
+                         : "text-green-600"
+                     }`}
+                   >
+                     {Math.abs(selectedRenewal.daysUntilExpiration)} días
+                   </p>
+                 </div>
               </div>
 
               {/* Comparación de planes */}

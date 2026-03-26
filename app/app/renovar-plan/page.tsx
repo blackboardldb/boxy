@@ -22,7 +22,7 @@ const PAYMENT_METHODS = [
 
 export default function RenewPlanPage() {
   const router = useRouter();
-  const { users, membershipPlans, requestPlanRenewal, fetchUsers, fetchPlans } =
+  const { users, plans, requestPlanRenewal, fetchUsers, fetchPlans } =
     useBlackSheepStore();
   const { toast } = useToast();
   const { handleAsyncError } = useErrorHandler();
@@ -32,7 +32,7 @@ export default function RenewPlanPage() {
   // Debug logs
   console.log("RenewPlanPage - Debug Info:", {
     usersCount: users?.length || 0,
-    membershipPlansCount: membershipPlans?.length || 0,
+    plansCount: plans?.length || 0,
     currentUser: currentUser?.id,
     requestPlanRenewalExists: typeof requestPlanRenewal === "function",
   });
@@ -44,7 +44,7 @@ export default function RenewPlanPage() {
         if (!users || users.length === 0) {
           await fetchUsers();
         }
-        if (!membershipPlans || membershipPlans.length === 0) {
+        if (!plans || plans.length === 0) {
           await fetchPlans();
         }
       } catch (error) {
@@ -58,7 +58,7 @@ export default function RenewPlanPage() {
     };
 
     loadData();
-  }, [users, membershipPlans, fetchUsers, fetchPlans, toast]);
+  }, [users, plans, fetchUsers, fetchPlans, toast]);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>(
     currentUser?.membership.planId || ""
@@ -72,10 +72,10 @@ export default function RenewPlanPage() {
     "idle" | "processing" | "completing"
   >("idle");
 
-  const selectedPlan = membershipPlans?.find((p) => p.id === selectedPlanId);
+  const selectedPlan = plans?.find((p) => p.id === selectedPlanId);
 
   // Show skeleton loading state if data is not ready
-  if (userLoading || !currentUser || !membershipPlans || membershipPlans.length === 0) {
+  if (userLoading || !currentUser || !plans || plans.length === 0) {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <header className="p-4 border-b border-zinc-700 bg-black">
@@ -150,7 +150,7 @@ export default function RenewPlanPage() {
     }
 
     // Validar que el plan seleccionado existe y está activo
-    const selectedPlanDetails = membershipPlans?.find(
+    const selectedPlanDetails = plans?.find(
       (p) => p.id === selectedPlanId
     );
     if (!selectedPlanDetails || !selectedPlanDetails.isActive) {
@@ -270,7 +270,7 @@ export default function RenewPlanPage() {
                 >
                   {(() => {
                     // Filter only active plans and group by category
-                    const activePlans = (membershipPlans || []).filter(
+                    const activePlans = (plans || []).filter(
                       (p) => p.isActive
                     );
                     const groupedPlans = groupPlansByCategory(activePlans);
