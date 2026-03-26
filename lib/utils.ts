@@ -366,8 +366,8 @@ export function getPlanStatus(user: any): "active" | "expired" | "pending" | "ex
   // Si no hay usuario o membresía, está expirado
   if (!user?.membership) return "expired";
 
-  // Si tiene renovación pendiente, el estado es pending
-  if (user.membership.pendingRenewal) {
+  // Si tiene renovación pendiente, el estado es pending (solo si no ha sido procesada)
+  if (user.membership.pendingRenewal && user.membership.pendingRenewal.status === "pending") {
     return "pending";
   }
 

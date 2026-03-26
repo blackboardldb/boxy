@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -265,12 +267,19 @@ export function Notifications() {
         return;
       }
 
-      const { calcularFechaTerminoMembresia } = await import("@/lib/utils");
-      const endDate = calcularFechaTerminoMembresia(startDate, targetPlan.durationInMonths);
+      // IMPORTANTE: Priorizar los valores que vienen en la solicitud (renewal) 
+      // ya que pueden haber sido capturados con montos específicos al momento de renovar.
+      const price = renewal.requestedPlanPrice ?? targetPlan.price;
+      const baseClassLimit = renewal.requestedPlanClassLimit ?? targetPlan.classLimit;
+      const duration = renewal.requestedPlanDuration ?? targetPlan.durationInMonths;
+      const planName = renewal.requestedPlanName ?? targetPlan.name;
 
-      const totalPlanClasses = targetPlan.durationInMonths === 0.5 
-        ? Math.ceil(targetPlan.classLimit / 2) 
-        : targetPlan.classLimit * targetPlan.durationInMonths;
+      const { calcularFechaTerminoMembresia } = await import("@/lib/utils");
+      const endDate = calcularFechaTerminoMembresia(startDate, duration);
+
+      const totalPlanClasses = duration === 0.5 
+        ? Math.ceil(baseClassLimit / 2) 
+        : baseClassLimit * duration;
 
       const currentPeriodStart = new Date(startDate + "T00:00:00");
       const currentPeriodEnd = new Date(endDate + "T23:59:59");
@@ -282,7 +291,7 @@ export function Notifications() {
       });
 
       const classesAttended = relevantSessions.length;
-      const remainingClasses = targetPlan.classLimit === 0 ? 0 : Math.max(0, totalPlanClasses - classesAttended);
+      const remainingClasses = baseClassLimit === 0 ? 0 : Math.max(0, totalPlanClasses - classesAttended);
 
       const currentPlanHistory = {
         planId: user.membership?.planId,
@@ -298,24 +307,28 @@ export function Notifications() {
           ...user.membership!,
           status: "active" as const,
           planId: targetPlan.id,
-          membershipType: targetPlan.name,
-          monthlyPrice: targetPlan.price,
+          membershipType: planName,
+          monthlyPrice: price,
           currentPeriodStart: startDate,
           currentPeriodEnd: endDate,
           pendingRenewal: undefined,
+          planConfig: {
+            ...user.membership?.planConfig,
+            classLimit: baseClassLimit,
+          },
           centerStats: {
             ...user.membership?.centerStats,
             currentMonth: {
               ...user.membership?.centerStats?.currentMonth,
               classesAttended,
               remainingClasses,
-              classLimit: targetPlan.classLimit
+              classesContracted: baseClassLimit,
             }
           },
           history: [...(user.membership?.history || []), currentPlanHistory]
         },
         ...(renewal.requestedPaymentMethod && { formaDePago: renewal.requestedPaymentMethod }),
-        notes: (user.notes || "") + `\n- Renovación aprobada: ${targetPlan.name} desde ${startDate} hasta ${endDate}`,
+        notes: (user.notes || "") + `\n- Renovación aprobada: ${planName} ($${price}) desde ${startDate} hasta ${endDate}`,
       };
 
       const result = await updateUserById(user.id, updatedUserData);
@@ -545,8 +558,19 @@ export function Notifications() {
                         </div>
                         <h3 className="font-semibold">{user.firstName} {user.lastName}</h3>
                         <div className="flex justify-between text-sm mt-2">
-                           <span>Expira en:</span>
-                           <span className={daysUntilExpiration <= 7 ? "text-red-600 font-bold" : "text-green-600"}>{daysUntilExpiration} días</span>
+                           <span>Solicitado:</span>
+                           <span className="font-medium">
+                            {(() => {
+                              const reqDate = new Date(renewal.requestDate);
+                              const diffHours = Math.floor((new Date().getTime() - reqDate.getTime()) / (1000 * 60 * 60));
+                              if (diffHours < 24) return `hace ${diffHours} h`;
+                              const diffDays = Math.floor(diffHours / 24);
+                              return `hace ${diffDays} d`;
+                            })()}
+                           </span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          Plan actual: {daysUntilExpiration < 0 ? "Vencido" : `${daysUntilExpiration} días rest.`}
                         </div>
                         <Button size="sm" className="w-full mt-4 bg-orange-600" onClick={() => { 
                           setSelectedRenewal({user, renewal, daysUntilExpiration});
@@ -613,24 +637,58 @@ export function Notifications() {
           <DialogHeader><DialogTitle>Revisar Renovación</DialogTitle></DialogHeader>
           {selectedRenewal && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Usuario</Label><p className="font-medium">{selectedRenewal.user.firstName} {selectedRenewal.user.lastName}</p></div>
-                <div><Label>Días Expiración</Label><p className={selectedRenewal.daysUntilExpiration <= 7 ? "text-red-600" : ""}>{selectedRenewal.daysUntilExpiration} días</p></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border p-4 rounded-lg bg-zinc-50 border-zinc-200">
+                  <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-wider">Alumno</Label>
+                  <p className="font-bold text-lg">{selectedRenewal.user.firstName} {selectedRenewal.user.lastName}</p>
+                  <p className="text-sm text-muted-foreground italic">{selectedRenewal.user.email}</p>
+                </div>
                 <div className="border p-4 rounded-lg bg-orange-50 border-orange-200">
-                  <Label>Plan Solicitado</Label>
-                  <p className="font-bold">{selectedRenewal.renewal.requestedPlanId || selectedRenewal.user.membership.membershipType}</p>
-                  <p className="text-sm">Pago: {selectedRenewal.renewal.requestedPaymentMethod}</p>
+                  <Label className="text-orange-800 uppercase text-[10px] font-bold tracking-wider">Solicitado el</Label>
+                  <p className="font-bold text-orange-900 text-lg">
+                    {format(new Date(selectedRenewal.renewal.requestDate), "dd/MM/yyyy HH:mm")}
+                  </p>
                 </div>
               </div>
-              <div>
-                <Label>Fecha de Inicio</Label>
-                <input type="date" className="w-full border p-2 rounded mt-2" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)} />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border p-4 rounded-lg bg-zinc-50 border-zinc-200">
+                  <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-wider">Último Plan</Label>
+                  <p className="font-semibold">{selectedRenewal.user.membership.membershipType}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Finalizó el: {selectedRenewal.user.membership.currentPeriodEnd ? format(new Date(selectedRenewal.user.membership.currentPeriodEnd), "dd/MM/yyyy") : "—"}
+                  </p>
+                </div>
+                <div className="border p-4 rounded-lg bg-emerald-50 border-emerald-200">
+                  <Label className="text-emerald-800 uppercase text-[10px] font-bold tracking-wider">Plan a Activar</Label>
+                  <p className="font-bold text-emerald-900 text-lg">
+                    {plans.find((p: any) => p.id === selectedRenewal.renewal.requestedPlanId)?.name || 
+                     selectedRenewal.renewal.requestedPlanName || 
+                     selectedRenewal.renewal.requestedPlanId}
+                  </p>
+                  <p className="text-sm font-medium text-emerald-700 capitalize">Pago: {selectedRenewal.renewal.requestedPaymentMethod}</p>
+                </div>
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button className="flex-1 bg-green-600" onClick={() => handleApproveRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Aprobar Renovación</Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">Fecha de Inicio del Nuevo Plan</Label>
+                <input 
+                  type="date" 
+                  className="w-full border p-3 rounded-lg bg-white shadow-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
+                  value={customStartDate} 
+                  onChange={e => setCustomStartDate(e.target.value)} 
+                />
+                <p className="text-[11px] text-muted-foreground">Esta fecha determinará el primer día de vigencia del nuevo plan.</p>
+              </div>
+
+              <div className="pt-2">
+                <p className="text-sm text-center font-medium text-orange-600 mb-4 bg-orange-50 py-2 rounded-md border border-orange-100 italic">
+                  "Valida el pago antes de aprobar."
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-base font-bold" onClick={() => handleApproveRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Aprobar Renovación</Button>
+                  <Button variant="destructive" className="flex-1 h-12 text-base" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
+                </div>
               </div>
             </div>
           )}

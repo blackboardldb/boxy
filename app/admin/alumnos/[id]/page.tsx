@@ -414,7 +414,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       <Button 
                         variant="default" 
                         className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                        onClick={() => router.push('/admin/notificaciones')}
+                        onClick={() => router.push('/admin/alertas')}
                       >
                          <Bell className="w-4 h-4 mr-2" /> Validar Solicitud de Plan
                       </Button>
