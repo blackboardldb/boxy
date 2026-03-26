@@ -1,11 +1,11 @@
 "use client";
 
-import type { ClassItem } from "@/lib/mock-data";
+import type { ClassSession } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { parseISO, addMinutes, isAfter } from "date-fns";
 
 interface ClassStatusBadgeProps {
-  classItem: ClassItem;
+  classItem: ClassSession;
 }
 
 export function ClassStatusBadge({ classItem }: ClassStatusBadgeProps) {
@@ -31,14 +31,7 @@ export function ClassStatusBadge({ classItem }: ClassStatusBadgeProps) {
   // Verificar si la clase ya finalizó (para clases scheduled)
   if (classItem.status === "scheduled") {
     const start = parseISO(classItem.dateTime);
-    // Try to extract a number from duration, fallback to 60 if not present
-    let duration = 60;
-    if (typeof classItem.duration === "string") {
-      const match = classItem.duration.match(/\d+/);
-      if (match) {
-        duration = parseInt(match[0], 10);
-      }
-    }
+    const duration = classItem.durationMinutes || 60;
     const end = addMinutes(start, duration);
 
     if (isAfter(now, end)) {

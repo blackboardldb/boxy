@@ -9,6 +9,7 @@ export class AppError extends Error {
   public readonly details?: Record<string, any>;
   public readonly field?: string;
   public readonly timestamp: string;
+  public readonly cause?: Error | unknown;
 
   constructor(
     code: ApiErrorCode,

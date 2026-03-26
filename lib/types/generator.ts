@@ -247,9 +247,12 @@ export function createUpdateSchema<T extends z.ZodTypeAny>(baseSchema: T) {
         createdAt: true,
         updatedAt: true,
       })
-      .partial();
+      .deepPartial();
   }
-  return baseSchema.partial();
+  if ('partial' in baseSchema && typeof (baseSchema as any).partial === 'function') {
+    return (baseSchema as any).partial();
+  }
+  return baseSchema;
 }
 
 // Query parameter schemas

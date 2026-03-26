@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { initialMembershipPlans } from "@/lib/mock-data";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { groupPlansByCategory, getCategoryInfo } from "@/lib/utils";
 
 interface PlanSelectionStepProps {
@@ -18,6 +18,7 @@ export function PlanSelectionStep({
   onContinue,
   isLoading,
 }: PlanSelectionStepProps) {
+  const { membershipPlans } = useBlackSheepStore();
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-CL", {
       style: "currency",
@@ -27,7 +28,7 @@ export function PlanSelectionStep({
   };
 
   // Filter only active plans and group by category
-  const activePlans = initialMembershipPlans.filter((plan) => plan.isActive);
+  const activePlans = membershipPlans.filter((plan) => plan.isActive);
   const groupedPlans = groupPlansByCategory(activePlans);
 
   return (

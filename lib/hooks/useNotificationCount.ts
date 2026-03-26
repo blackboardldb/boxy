@@ -1,13 +1,12 @@
 import { useMemo } from "react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { initialUsers } from "@/lib/mock-data";
 
 export function useNotificationCount() {
-  const { classSessions } = useBlackSheepStore();
+  const { classSessions, users } = useBlackSheepStore();
 
   const notificationCount = useMemo(() => {
-    // Usar siempre initialUsers para notificaciones (independiente de paginación)
-    const allUsers = initialUsers;
+    // Collect stats from currently loaded users
+    const allUsers = users || [];
 
     if (!allUsers || allUsers.length === 0) {
       return 0;
@@ -38,7 +37,7 @@ export function useNotificationCount() {
     }
 
     return count;
-  }, [classSessions]); // Solo depende de classSessions, no de users
+  }, [classSessions, users]);
 
   return notificationCount;
 }

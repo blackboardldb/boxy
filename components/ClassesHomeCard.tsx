@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import type { ClassItem } from "@/lib/mock-data";
+import type { ClassSession } from "@/lib/types";
 
 interface ClassesHomeCardProps {
-  classes: ClassItem[];
-  onClassClick?: (classItem: ClassItem) => void;
+  classes: ClassSession[];
+  onClassClick?: (classItem: ClassSession) => void;
 }
 
 export function ClassesHomeCard({
@@ -75,7 +75,7 @@ export function ClassesHomeCard({
                       </span>
                     
                       <span className="text-sm text-muted-foreground">
-                       {classItem.duration}
+                       {classItem.durationMinutes} min
                       </span>
 
                     </div>
@@ -83,7 +83,7 @@ export function ClassesHomeCard({
                   <div className="flex items-center gap-2">
                       <Users className="h-3 w-3 mr-1" />
                     <span className="text-sm text-white">
-                      {classItem.alumnRegistred}
+                      {classItem.registeredParticipantsIds?.length || 0}
                     </span>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export function ClassesHomeCard({
                   <div className="flex items-center gap-2">
                       <Users className="h-3 w-3 mr-1" />
                     <span className="text-sm ">
-                      {classItem.alumnRegistred}
+                      {classItem.registeredParticipantsIds?.length || 0}
                     </span>
                    
                   </div>

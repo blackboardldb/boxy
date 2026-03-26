@@ -1,367 +1,6 @@
-// Plan repository implementation
-// Extracted from mock-database.ts and enhanced with proper typing and error handling
-
-import { BaseRepository } from "./base-repository";
-import { PlanRepository as IPlanRepository } from "../types";
+import { PlanRepository as IPlanRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
 import { MembershipPlan } from "../../types";
-import { initialMembershipPlans } from "../../mock-data";
 import { ValidationError } from "../../errors/types";
-
-// Mock implementation of PlanRepository
-export class MockPlanRepository
-  extends BaseRepository<MembershipPlan>
-  implements IPlanRepository
-{
-  protected entityName = "MembershipPlan";
-  protected data: MembershipPlan[];
-
-  constructor() {
-    super();
-    // Initialize with mock data
-    this.data = [...initialMembershipPlans];
-  }
-
-  // Find active plans
-  async findActive(): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter((plan) => plan.isActive);
-    } catch (error) {
-      throw new Error(`Failed to find active plans: ${error}`);
-    }
-  }
-
-  // Find plans by organization
-  async findByOrganization(organizationId: string): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter((plan) => plan.organizationId === organizationId);
-    } catch (error) {
-      throw new Error(`Failed to find plans by organization: ${error}`);
-    }
-  }
-
-  // Enhanced filtering for plan queries
-  protected applyFilters(
-    results: MembershipPlan[],
-    where: Record<string, any>
-  ): MembershipPlan[] {
-    return results.filter((plan) => {
-      // Active status filter
-      if (where.isActive !== undefined && plan.isActive !== where.isActive) {
-        return false;
-      }
-
-      // Organization filter
-      if (
-        where.organizationId &&
-        plan.organizationId !== where.organizationId
-      ) {
-        return false;
-      }
-
-      // Search filter (OR conditions)
-      if (where.OR && Array.isArray(where.OR)) {
-        const matchesSearch = where.OR.some((condition: any) => {
-          const searchTerm =
-            condition.name?.contains?.toLowerCase() ||
-            condition.description?.contains?.toLowerCase() ||
-            "";
-
-          return (
-            plan.name.toLowerCase().includes(searchTerm) ||
-            plan.description.toLowerCase().includes(searchTerm)
-          );
-        });
-
-        if (!matchesSearch) {
-          return false;
-        }
-      }
-
-      // Price range filters
-      if (where.price) {
-        if (where.price.gte && plan.price < where.price.gte) return false;
-        if (where.price.lte && plan.price > where.price.lte) return false;
-        if (where.price.gt && plan.price <= where.price.gt) return false;
-        if (where.price.lt && plan.price >= where.price.lt) return false;
-      }
-
-      // Class limit filters
-      if (where.classLimit) {
-        if (where.classLimit.gte && plan.classLimit < where.classLimit.gte)
-          return false;
-        if (where.classLimit.lte && plan.classLimit > where.classLimit.lte)
-          return false;
-      }
-
-      // Duration filters
-      if (where.durationInMonths) {
-        if (
-          where.durationInMonths.gte &&
-          plan.durationInMonths < where.durationInMonths.gte
-        )
-          return false;
-        if (
-          where.durationInMonths.lte &&
-          plan.durationInMonths > where.durationInMonths.lte
-        )
-          return false;
-      }
-
-      // Apply base filtering for other criteria
-      return this.matchesCriteria(plan, where);
-    });
-  }
-
-  // Validate plan record
-  protected validateRecord(record: MembershipPlan): void {
-    super.validateRecord(record);
-
-    if (!record.name?.trim()) {
-      throw new ValidationError("Plan name is required", "name");
-    }
-
-    if (!record.description?.trim()) {
-      throw new ValidationError("Plan description is required", "description");
-    }
-
-    if (!record.organizationId) {
-      throw new ValidationError(
-        "Organization ID is required",
-        "organizationId"
-      );
-    }
-
-    // Check for duplicate name within organization (excluding current record for updates)
-    const existingPlan = this.data.find(
-      (p) =>
-        p.name.toLowerCase() === record.name.toLowerCase() &&
-        p.organizationId === record.organizationId &&
-        p.id !== record.id
-    );
-    if (existingPlan) {
-      throw new ValidationError(
-        "Plan name already exists in this organization",
-        "name",
-        {
-          existingPlanId: existingPlan.id,
-        }
-      );
-    }
-
-    // Validate price
-    if (typeof record.price !== "number" || record.price < 0) {
-      throw new ValidationError("Price must be a non-negative number", "price");
-    }
-
-    // Validate duration
-    if (
-      typeof record.durationInMonths !== "number" ||
-      record.durationInMonths <= 0
-    ) {
-      throw new ValidationError(
-        "Duration must be a positive number",
-        "durationInMonths"
-      );
-    }
-
-    // Validate class limit
-    if (typeof record.classLimit !== "number" || record.classLimit < 0) {
-      throw new ValidationError(
-        "Class limit must be a non-negative number (0 for unlimited)",
-        "classLimit"
-      );
-    }
-
-    // Validate discipline access
-    if (!["all", "limited"].includes(record.disciplineAccess)) {
-      throw new ValidationError(
-        'Discipline access must be "all" or "limited"',
-        "disciplineAccess"
-      );
-    }
-
-    // Validate allowed disciplines for limited access
-    if (record.disciplineAccess === "limited") {
-      if (
-        !Array.isArray(record.allowedDisciplines) ||
-        record.allowedDisciplines.length === 0
-      ) {
-        throw new ValidationError(
-          "Allowed disciplines must be specified for limited access",
-          "allowedDisciplines"
-        );
-      }
-    }
-
-    // Validate freeze settings
-    if (record.canFreeze) {
-      if (
-        typeof record.freezeDurationDays !== "number" ||
-        record.freezeDurationDays < 0
-      ) {
-        throw new ValidationError(
-          "Freeze duration must be a non-negative number",
-          "freezeDurationDays"
-        );
-      }
-    }
-
-    // Validate boolean fields
-    if (typeof record.canFreeze !== "boolean") {
-      throw new ValidationError("Can freeze must be a boolean", "canFreeze");
-    }
-
-    if (typeof record.autoRenews !== "boolean") {
-      throw new ValidationError("Auto renews must be a boolean", "autoRenews");
-    }
-
-    if (typeof record.isActive !== "boolean") {
-      throw new ValidationError("Is active must be a boolean", "isActive");
-    }
-  }
-
-  // Plan-specific utility methods
-
-  // Find plan by name within organization
-  async findByNameInOrganization(
-    name: string,
-    organizationId: string
-  ): Promise<MembershipPlan | null> {
-    try {
-      const plan = this.data.find(
-        (p) =>
-          p.name.toLowerCase() === name.toLowerCase() &&
-          p.organizationId === organizationId
-      );
-      return plan || null;
-    } catch (error) {
-      throw new Error(`Failed to find plan by name: ${error}`);
-    }
-  }
-
-  // Find unlimited plans
-  async findUnlimitedPlans(): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter((plan) => plan.classLimit === 0 && plan.isActive);
-    } catch (error) {
-      throw new Error(`Failed to find unlimited plans: ${error}`);
-    }
-  }
-
-  // Find plans by price range
-  async findByPriceRange(
-    minPrice: number,
-    maxPrice: number
-  ): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter(
-        (plan) =>
-          plan.price >= minPrice && plan.price <= maxPrice && plan.isActive
-      );
-    } catch (error) {
-      throw new Error(`Failed to find plans by price range: ${error}`);
-    }
-  }
-
-  // Find plans by duration
-  async findByDuration(durationInMonths: number): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter(
-        (plan) => plan.durationInMonths === durationInMonths && plan.isActive
-      );
-    } catch (error) {
-      throw new Error(`Failed to find plans by duration: ${error}`);
-    }
-  }
-
-  // Find plans that allow freezing
-  async findFreezablePlans(): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter((plan) => plan.canFreeze && plan.isActive);
-    } catch (error) {
-      throw new Error(`Failed to find freezable plans: ${error}`);
-    }
-  }
-
-  // Find auto-renewing plans
-  async findAutoRenewingPlans(): Promise<MembershipPlan[]> {
-    try {
-      return this.data.filter((plan) => plan.autoRenews && plan.isActive);
-    } catch (error) {
-      throw new Error(`Failed to find auto-renewing plans: ${error}`);
-    }
-  }
-
-  // Toggle plan active status
-  async toggleActiveStatus(planId: string): Promise<MembershipPlan> {
-    const plan = await this.findById(planId);
-    if (!plan) {
-      throw new Error("Plan not found");
-    }
-
-    const updatedPlan = await this.update(planId, {
-      isActive: !plan.isActive,
-    });
-
-    return updatedPlan;
-  }
-
-  // Get plan statistics
-  async getPlanStats(): Promise<{
-    total: number;
-    active: number;
-    inactive: number;
-    unlimited: number;
-    freezable: number;
-    autoRenewing: number;
-    averagePrice: number;
-  }> {
-    const total = this.data.length;
-    const active = this.data.filter((p) => p.isActive).length;
-    const inactive = this.data.filter((p) => !p.isActive).length;
-    const unlimited = this.data.filter((p) => p.classLimit === 0).length;
-    const freezable = this.data.filter((p) => p.canFreeze).length;
-    const autoRenewing = this.data.filter((p) => p.autoRenews).length;
-    const averagePrice = this.data.reduce((sum, p) => sum + p.price, 0) / total;
-
-    return {
-      total,
-      active,
-      inactive,
-      unlimited,
-      freezable,
-      autoRenewing,
-      averagePrice: Math.round(averagePrice),
-    };
-  }
-
-  // Get plans grouped by price range
-  async getPlansByPriceRange(): Promise<{
-    budget: MembershipPlan[]; // < 30000
-    standard: MembershipPlan[]; // 30000-50000
-    premium: MembershipPlan[]; // > 50000
-  }> {
-    const activePlans = this.data.filter((p) => p.isActive);
-
-    return {
-      budget: activePlans.filter((p) => p.price < 30000),
-      standard: activePlans.filter((p) => p.price >= 30000 && p.price <= 50000),
-      premium: activePlans.filter((p) => p.price > 50000),
-    };
-  }
-
-  // Get most popular plan (this would be based on usage in real implementation)
-  async getMostPopularPlan(): Promise<MembershipPlan | null> {
-    // For mock, return the first active plan with moderate pricing
-    const popularPlan = this.data.find(
-      (p) =>
-        p.isActive && p.price >= 30000 && p.price <= 50000 && p.classLimit > 0
-    );
-
-    return popularPlan || null;
-  }
-}
-
 import { prisma } from "../../prisma";
 
 export class PrismaPlanRepository implements IPlanRepository {
@@ -369,7 +8,7 @@ export class PrismaPlanRepository implements IPlanRepository {
     return prisma;
   }
 
-  async findMany(params?: any): Promise<any> {
+  async findMany(params: FindManyParams = {}): Promise<PaginatedResult<MembershipPlan>> {
     const page = params?.page || 1;
     const limit = params?.limit || params?.take || 10;
     const skip = params?.skip !== undefined ? params.skip : (page - 1) * limit;
@@ -399,24 +38,24 @@ export class PrismaPlanRepository implements IPlanRepository {
     };
   }
 
-  async findUnique(params: any): Promise<MembershipPlan | null> {
+  async findUnique(params: FindUniqueParams): Promise<MembershipPlan | null> {
     const plan = await this.prisma.membershipPlan.findUnique({
-      where: params.where,
+      where: params.where as any,
     });
     return plan ? this.mapToEntity(plan) : null;
   }
 
-  async create(data: any): Promise<MembershipPlan> {
+  async create(data: CreateData<MembershipPlan>): Promise<MembershipPlan> {
     const created = await this.prisma.membershipPlan.create({
       data: {
         id: data.id,
         name: data.name,
         description: data.description,
         price: data.price,
-        duration: data.durationInMonths || 1,
+        duration: data.durationInMonths,
         isActive: data.isActive ?? true,
         config: {
-          organizationId: data.organizationId || "org_blacksheep_001",
+          organizationId: data.organizationId,
           classLimit: data.classLimit,
           disciplineAccess: data.disciplineAccess,
           allowedDisciplines: data.allowedDisciplines,
@@ -429,21 +68,9 @@ export class PrismaPlanRepository implements IPlanRepository {
     return this.mapToEntity(created);
   }
 
-  async update(id: string, data: any): Promise<MembershipPlan> {
-    const configData: any = {};
-    if (data.organizationId !== undefined) configData.organizationId = data.organizationId;
-    if (data.classLimit !== undefined) configData.classLimit = data.classLimit;
-    if (data.disciplineAccess !== undefined) configData.disciplineAccess = data.disciplineAccess;
-    if (data.allowedDisciplines !== undefined) configData.allowedDisciplines = data.allowedDisciplines;
-    if (data.canFreeze !== undefined) configData.canFreeze = data.canFreeze;
-    if (data.freezeDurationDays !== undefined) configData.freezeDurationDays = data.freezeDurationDays;
-    if (data.autoRenews !== undefined) configData.autoRenews = data.autoRenews;
-
-    // Obtener config existente para hacer merge si es necesario
+  async update(id: string, data: UpdateData<MembershipPlan>): Promise<MembershipPlan> {
     const existing = await this.prisma.membershipPlan.findUnique({ where: { id } });
-    const mergedConfig = existing?.config 
-      ? { ...(existing.config as any), ...configData } 
-      : configData;
+    const currentConfig = (existing?.config as any) || {};
 
     const updated = await this.prisma.membershipPlan.update({
       where: { id },
@@ -453,7 +80,16 @@ export class PrismaPlanRepository implements IPlanRepository {
         price: data.price,
         duration: data.durationInMonths,
         isActive: data.isActive,
-        ...(Object.keys(configData).length > 0 && { config: mergedConfig }),
+        config: {
+          ...currentConfig,
+          organizationId: data.organizationId !== undefined ? data.organizationId : currentConfig.organizationId,
+          classLimit: data.classLimit !== undefined ? data.classLimit : currentConfig.classLimit,
+          disciplineAccess: data.disciplineAccess !== undefined ? data.disciplineAccess : currentConfig.disciplineAccess,
+          allowedDisciplines: data.allowedDisciplines !== undefined ? data.allowedDisciplines : currentConfig.allowedDisciplines,
+          canFreeze: data.canFreeze !== undefined ? data.canFreeze : currentConfig.canFreeze,
+          freezeDurationDays: data.freezeDurationDays !== undefined ? data.freezeDurationDays : currentConfig.freezeDurationDays,
+          autoRenews: data.autoRenews !== undefined ? data.autoRenews : currentConfig.autoRenews,
+        },
       },
     });
     return this.mapToEntity(updated);
@@ -466,48 +102,75 @@ export class PrismaPlanRepository implements IPlanRepository {
     return this.mapToEntity(deleted);
   }
 
-  async count(params?: any): Promise<number> {
+  async count(params: CountParams = {}): Promise<number> {
     return this.prisma.membershipPlan.count({
       where: params?.where,
     });
   }
 
   async findActive(): Promise<MembershipPlan[]> {
-    const active = await this.prisma.membershipPlan.findMany({
-      where: { isActive: true },
+    return this.findByStatus("active");
+  }
+
+  async findByStatus(status: string): Promise<MembershipPlan[]> {
+    const plans = await this.prisma.membershipPlan.findMany({
+      where: {
+        isActive: status === "active"
+      }
     });
-    return active.map(this.mapToEntity);
+    return plans.map(p => this.mapToEntity(p));
   }
 
   async findByOrganization(organizationId: string): Promise<MembershipPlan[]> {
-    // Almacenamos el organizationId dentro del config temporalmente.
-    // Filtrar in-memory por el config temporal, hasta que normalicemos.
-    const all = await this.findMany();
-    return all.filter((p: any) => p.organizationId === organizationId);
+    const plans = await this.prisma.membershipPlan.findMany();
+    return plans
+      .map(p => this.mapToEntity(p))
+      .filter(p => p.organizationId === organizationId);
   }
 
-  // Mapper
-  private mapToEntity(prismaPlan: any): MembershipPlan {
-    const config = typeof prismaPlan.config === 'object' && prismaPlan.config !== null 
-      ? prismaPlan.config 
-      : {};
+  async getPlanStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    averagePrice: number;
+    mostPopular: string | null;
+  }> {
+    const [total, active, allPlans] = await Promise.all([
+      this.prisma.membershipPlan.count(),
+      this.prisma.membershipPlan.count({ where: { isActive: true } }),
+      this.prisma.membershipPlan.findMany(),
+    ]);
+
+    const mappedPlans = allPlans.map(p => this.mapToEntity(p));
+    const averagePrice = total > 0 
+      ? mappedPlans.reduce((sum, p) => sum + p.price, 0) / total 
+      : 0;
 
     return {
-      id: prismaPlan.id,
-      name: prismaPlan.name,
-      description: prismaPlan.description || "",
-      price: prismaPlan.price,
-      durationInMonths: prismaPlan.duration,
-      isActive: prismaPlan.isActive,
-      
-      // Mapeado desde el JSON config
+      total,
+      active,
+      inactive: total - active,
+      averagePrice: Math.round(averagePrice),
+      mostPopular: mappedPlans[0]?.name || null, // Simplified for now
+    };
+  }
+
+  private mapToEntity(p: any): MembershipPlan {
+    const config = (p.config as any) || {};
+    return {
+      id: p.id,
       organizationId: config.organizationId || "org_blacksheep_001",
-      classLimit: config.classLimit ?? 0,
+      name: p.name,
+      description: p.description || "",
+      price: p.price,
+      durationInMonths: p.duration,
+      classLimit: config.classLimit || 0,
       disciplineAccess: config.disciplineAccess || "all",
       allowedDisciplines: config.allowedDisciplines || [],
-      canFreeze: config.canFreeze ?? false,
-      freezeDurationDays: config.freezeDurationDays ?? 0,
-      autoRenews: config.autoRenews ?? false,
-    } as MembershipPlan;
+      canFreeze: config.canFreeze || false,
+      freezeDurationDays: config.freezeDurationDays || 0,
+      autoRenews: config.autoRenews || false,
+      isActive: p.isActive,
+    };
   }
 }

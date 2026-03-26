@@ -45,7 +45,7 @@ export interface PaginatedResult<T> {
 }
 
 // Create and Update data types
-export type CreateData<T> = Omit<T, "id" | "createdAt" | "updatedAt">;
+export type CreateData<T> = Omit<T, "id" | "createdAt" | "updatedAt"> & { id?: string };
 export type UpdateData<T> = Partial<Omit<T, "id" | "createdAt" | "updatedAt">>;
 
 // Base Repository interface
@@ -68,6 +68,14 @@ export interface UserRepository
   findByMembershipStatus(
     status: string
   ): Promise<import("../types").FitCenterUserProfile[]>;
+  getUserStats(): Promise<{
+    total: number;
+    active: number;
+    pending: number;
+    expired: number;
+    inactive: number;
+  }>;
+  updateMembershipStatus(userId: string, status: string): Promise<import("../types").FitCenterUserProfile>;
 }
 
 export interface ClassRepository
@@ -83,6 +91,13 @@ export interface ClassRepository
     instructorId: string
   ): Promise<import("../types").ClassSession[]>;
   findByStatus(status: string): Promise<import("../types").ClassSession[]>;
+  getClassStats(): Promise<{
+    total: number;
+    scheduled: number;
+    completed: number;
+    cancelled: number;
+    inProgress: number;
+  }>;
 }
 
 export interface DisciplineRepository
@@ -94,9 +109,16 @@ export interface DisciplineRepository
 export interface InstructorRepository
   extends Repository<import("../types").Instructor> {
   findActive(): Promise<import("../types").Instructor[]>;
-  findBySpecialty(
+  findByDiscipline(
     disciplineId: string
   ): Promise<import("../types").Instructor[]>;
+  findByStatus(status: string): Promise<import("../types").Instructor[]>;
+  getInstructorStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    byRole: Record<string, number>;
+  }>;
 }
 
 export interface PlanRepository
@@ -105,6 +127,14 @@ export interface PlanRepository
   findByOrganization(
     organizationId: string
   ): Promise<import("../types").MembershipPlan[]>;
+  findByStatus(status: string): Promise<import("../types").MembershipPlan[]>;
+  getPlanStats(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    averagePrice: number;
+    mostPopular: string | null;
+  }>;
 }
 
 export interface OrganizationRepository
@@ -129,7 +159,7 @@ export interface TransactionProvider {
 
 // Provider configuration
 export interface ProviderConfig {
-  type: "mock" | "prisma";
+  type: "prisma";
   connectionString?: string;
   options?: Record<string, any>;
 }

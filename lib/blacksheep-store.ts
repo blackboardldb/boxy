@@ -3,12 +3,7 @@
 import React from "react";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { initialUsers } from "./mock-data";
-import { initialClasses as initialClassSessions } from "./mock-data";
-// Removed unused imports
-import { initialMembershipPlans as initialPlans } from "./mock-data";
-import { initialOrganization } from "./mock-data";
-import { initialBanners } from "./mock-data";
+// Removed mock-data imports
 import type {
   FitCenterUserProfile as User,
   ClassSession,
@@ -189,15 +184,15 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
   devtools(
     (set, get) => ({
       // Initial state
-      users: initialUsers,
+      users: [],
       pagination: null,
-      classSessions: initialClassSessions,
+      classSessions: [],
       disciplines: [],
       instructors: [],
       instructorsPagination: null,
       plans: [],
-      membershipPlans: initialPlans,
-      initialOrganization: initialOrganization,
+      membershipPlans: [],
+      initialOrganization: null,
       classRegistrations: initialClassRegistrations,
       membershipRenewals: initialMembershipRenewals,
       selectedUser: null,
@@ -205,8 +200,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       userStats: null,
       isLoading: false,
       error: null,
-      currentProviderType: "mock",
-      banners: initialBanners, // Inicializar con banners migrados desde staticCarouselSlides
+      currentProviderType: "prisma",
+      banners: [],
       egresos: [
         // Datos de prueba para diferentes meses
         {
@@ -1027,7 +1022,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         set({ initialOrganization: organization }),
       fetchOrganization: () => {
         // In a real app, this would fetch from API
-        set({ initialOrganization: initialOrganization });
+        set({ initialOrganization: null });
       },
 
       // Registration actions

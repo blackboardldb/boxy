@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/mock-database";
+import { userService } from "@/lib/services/user-service";
 
 export async function POST(
   request: NextRequest,
@@ -8,8 +8,9 @@ export async function POST(
   try {
     const userId = params.id;
 
-    // Obtener usuario
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    // Obtener usuario usando el servicio real
+    const userResponse = await userService.getUserById(userId);
+    const user = userResponse.data;
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -32,13 +33,16 @@ export async function POST(
       },
     };
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { membership: updatedMembership },
-    });
+    const updateResponse = await userService.updateUser(userId, { 
+      membership: updatedMembership 
+    } as any);
+
+    if (!updateResponse.success) {
+      throw new Error(updateResponse.error?.message || "Failed to update user");
+    }
 
     return NextResponse.json({
-      user: updatedUser,
+      user: updateResponse.data,
       message: "Plan renewal rejected successfully",
     });
   } catch (error) {

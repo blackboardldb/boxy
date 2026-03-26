@@ -30,12 +30,13 @@ export interface ResponseMeta {
   requestId?: string;
   version?: string;
   processingTime?: number;
+  [key: string]: any;
 }
 
 // Success response helper
 export function createSuccessResponse<T>(
   data: T,
-  meta?: ResponseMeta
+  meta?: Partial<ResponseMeta>
 ): ApiResponse<T> {
   return {
     data,
@@ -51,7 +52,7 @@ export function createSuccessResponse<T>(
 export function createPaginatedResponse<T>(
   items: T[],
   pagination: PaginationMeta,
-  meta?: ResponseMeta
+  meta?: Partial<ResponseMeta>
 ): PaginatedApiResponse<T> {
   return {
     data: items,
@@ -67,7 +68,7 @@ export function createPaginatedResponse<T>(
 // Error response helper
 export function createErrorResponse<T = null>(
   error: ApiError,
-  meta?: ResponseMeta
+  meta?: Partial<ResponseMeta>
 ): ApiResponse<T> {
   return {
     data: null as T,

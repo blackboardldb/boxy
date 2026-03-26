@@ -2,12 +2,12 @@
 // This enables seamless switching between Mock and Prisma providers
 
 import { DataProvider, ProviderConfig, TransactionProvider } from "./types";
-import { MockDataProvider } from "./providers/mock-provider";
+// Removed MockDataProvider import
 import { PrismaDataProvider } from "./providers/prisma-provider";
 import { InternalError } from "../errors/types";
 
 // Provider types
-export type ProviderType = "mock" | "prisma";
+export type ProviderType = "prisma";
 
 // Configuration interface
 export interface DataProviderFactoryConfig {
@@ -43,9 +43,6 @@ export class DataProviderFactory {
     config: DataProviderFactoryConfig
   ): DataProvider {
     switch (config.type) {
-      case "mock":
-        return new MockDataProvider(config);
-
       case "prisma":
         return new PrismaDataProvider(config);
 
@@ -56,7 +53,7 @@ export class DataProviderFactory {
 
   // Get default configuration from environment
   private static getDefaultConfig(): DataProviderFactoryConfig {
-    const providerType = (process.env.DATA_PROVIDER as ProviderType) || "mock";
+    const providerType = (process.env.DATA_PROVIDER as ProviderType) || "prisma";
 
     return {
       type: providerType,
@@ -64,8 +61,7 @@ export class DataProviderFactory {
       enableLogging: process.env.NODE_ENV === "development",
       enableTransactions: true,
       options: {
-        // Mock-specific options
-        generateClasses: process.env.GENERATE_MOCK_CLASSES !== "false",
+        // Prisma-specific options
 
         // Prisma-specific options
         connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || "10"),
@@ -113,7 +109,7 @@ export class DataProviderFactory {
       throw new InternalError("Provider type is required");
     }
 
-    if (!["mock", "prisma"].includes(config.type)) {
+    if (!["prisma"].includes(config.type)) {
       throw new InternalError(`Invalid provider type: ${config.type}`);
     }
 
@@ -163,13 +159,6 @@ export class DataProviderFactory {
         }
         break;
 
-      case "mock":
-        if (
-          options.generateClasses &&
-          typeof options.generateClasses !== "boolean"
-        ) {
-          throw new InternalError("Generate classes option must be a boolean");
-        }
         break;
     }
   }
@@ -188,7 +177,7 @@ export class DataProviderFactory {
   }> {
     if (!this.instance || !this.config) {
       return {
-        type: "mock",
+        type: "prisma",
         status: "unknown",
         details: { error: "No provider instance available" },
       };
@@ -289,21 +278,21 @@ export function getTransactionProvider(): TransactionProvider & DataProvider {
 export const EnvironmentConfig = {
   // Development configuration
   development: (): DataProviderFactoryConfig => ({
-    type: "mock",
+    type: "prisma",
     enableLogging: true,
-    enableTransactions: false,
+    enableTransactions: true,
     options: {
-      generateClasses: true,
+      connectionLimit: 10,
     },
   }),
 
   // Testing configuration
   testing: (): DataProviderFactoryConfig => ({
-    type: "mock",
+    type: "prisma",
     enableLogging: false,
-    enableTransactions: false,
+    enableTransactions: true,
     options: {
-      generateClasses: false,
+      connectionLimit: 5,
     },
   }),
 
@@ -337,8 +326,8 @@ export const EnvironmentConfig = {
 // Type guards
 export function isMockProvider(
   provider: DataProvider
-): provider is MockDataProvider {
-  return provider.constructor.name === "MockDataProvider";
+): provider is any {
+  return false;
 }
 
 export function isPrismaProvider(

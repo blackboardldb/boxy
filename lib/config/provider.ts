@@ -14,9 +14,6 @@ export interface EnvironmentConfig {
     queryTimeout?: number;
     retryAttempts?: number;
   };
-  mock?: {
-    generateClasses?: boolean;
-  };
   logging?: {
     enabled: boolean;
     level: string;
@@ -26,7 +23,7 @@ export interface EnvironmentConfig {
 export class ProviderConfigManager {
   // Get configuration for current environment
   static getCurrentConfig(): DataProviderFactoryConfig {
-    const env = process.env.NODE_ENV || "development";
+    const env = (process.env.NODE_ENV as string) || "development";
 
     switch (env) {
       case "development":
@@ -44,7 +41,7 @@ export class ProviderConfigManager {
 
   // Development configuration
   private static getDevelopmentConfig(): DataProviderFactoryConfig {
-    const providerType = (process.env.DATA_PROVIDER as ProviderType) || "mock";
+    const providerType = (process.env.DATA_PROVIDER as ProviderType) || "prisma";
 
     const baseConfig: DataProviderFactoryConfig = {
       type: providerType,
@@ -59,10 +56,6 @@ export class ProviderConfigManager {
         queryTimeout: parseInt(process.env.DB_QUERY_TIMEOUT || "5000"),
         retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || "2"),
       };
-    } else {
-      baseConfig.options = {
-        generateClasses: process.env.GENERATE_MOCK_CLASSES !== "false",
-      };
     }
 
     return baseConfig;
@@ -71,11 +64,11 @@ export class ProviderConfigManager {
   // Test configuration
   private static getTestConfig(): DataProviderFactoryConfig {
     return {
-      type: "mock",
+      type: "prisma",
       enableLogging: false,
-      enableTransactions: false,
+      enableTransactions: true,
       options: {
-        generateClasses: false,
+        connectionLimit: 5,
       },
     };
   }
@@ -123,18 +116,15 @@ export class ProviderConfigManager {
     const providerType = process.env.DATA_PROVIDER as ProviderType;
 
     // Validate provider type
-    if (providerType && !["mock", "prisma"].includes(providerType)) {
+    if (providerType && !["prisma"].includes(providerType)) {
       errors.push(
-        `Invalid DATA_PROVIDER: ${providerType}. Must be 'mock' or 'prisma'`
+        `Invalid DATA_PROVIDER: ${providerType}. Must be 'prisma'`
       );
     }
 
     // Environment-specific validation
     switch (env) {
       case "production":
-        if (!providerType || providerType === "mock") {
-          warnings.push("Using mock provider in production is not recommended");
-        }
         if (providerType === "prisma" && !process.env.DATABASE_URL) {
           errors.push("DATABASE_URL is required in production");
         }
@@ -148,7 +138,7 @@ export class ProviderConfigManager {
 
       case "development":
         if (!providerType) {
-          warnings.push("DATA_PROVIDER not set, defaulting to mock");
+          warnings.push("DATA_PROVIDER not set, defaulting to prisma");
         }
         break;
     }
@@ -165,10 +155,7 @@ export class ProviderConfigManager {
     switch (environment) {
       case "development":
         return {
-          provider: "mock",
-          mock: {
-            generateClasses: true,
-          },
+          provider: "prisma",
           logging: {
             enabled: true,
             level: "debug",
@@ -177,10 +164,7 @@ export class ProviderConfigManager {
 
       case "test":
         return {
-          provider: "mock",
-          mock: {
-            generateClasses: false,
-          },
+          provider: "prisma",
           logging: {
             enabled: false,
             level: "error",
@@ -249,13 +233,7 @@ export class ProviderConfigManager {
       lines.push("");
     }
 
-    if (config.provider === "mock" && config.mock) {
-      lines.push(
-        "# Mock Provider Configuration",
-        `GENERATE_MOCK_CLASSES=${config.mock.generateClasses}`,
-        ""
-      );
-    }
+    // Removed mock provider configuration generation
 
     if (config.logging) {
       lines.push(
@@ -284,16 +262,16 @@ export function isTestEnvironment(): boolean {
 }
 
 export function getCurrentProviderType(): ProviderType {
-  return (process.env.DATA_PROVIDER as ProviderType) || "mock";
+  return (process.env.DATA_PROVIDER as ProviderType) || "prisma";
 }
 
 export function shouldUsePrismaProvider(): boolean {
-  const env = process.env.NODE_ENV;
+  const env = (process.env.NODE_ENV as string);
   const provider = process.env.DATA_PROVIDER as ProviderType;
 
   // Use Prisma in production/staging by default
   if (env === "production" || env === "staging") {
-    return provider !== "mock";
+    return true;
   }
 
   // Use explicit provider setting in other environments

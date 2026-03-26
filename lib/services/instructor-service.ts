@@ -67,7 +67,7 @@ export class InstructorService extends BaseService<Instructor> {
     return this.withCache(
       "active_instructors",
       async () => {
-        const instructors = await this.instructorRepository.findByStatus(true);
+        const instructors = await this.instructorRepository.findByStatus("active");
         return this.createSuccessResponse(instructors);
       },
       10 * 60 * 1000 // Cache for 10 minutes

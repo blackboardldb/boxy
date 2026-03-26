@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
-import { initialMembershipPlans } from "@/lib/mock-data";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
 interface ConfirmationStepProps {
   formData: {
@@ -22,7 +22,9 @@ export function ConfirmationStep({
   onContinue,
   isLoading,
 }: ConfirmationStepProps) {
-  const selectedPlan = initialMembershipPlans.find(
+  const { membershipPlans } = useBlackSheepStore();
+  
+  const selectedPlan = membershipPlans.find(
     (plan) => plan.id === formData.selectedPlan
   );
 

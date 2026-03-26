@@ -61,7 +61,7 @@ export class PlanService extends BaseService<MembershipPlan> {
     return this.withCache(
       "active_plans",
       async () => {
-        const plans = await this.planRepository.findByStatus(true);
+        const plans = await this.planRepository.findByStatus("active");
         return this.createSuccessResponse(plans);
       },
       10 * 60 * 1000 // Cache for 10 minutes
@@ -109,12 +109,8 @@ export class PlanService extends BaseService<MembershipPlan> {
   // Validation hooks
 
   protected async validateCreateData(data: any): Promise<void> {
-    // Validate using create schema (without id, createdAt, updatedAt)
-    const createSchema = generatedSchemas.membershipPlan.omit({
-      id: true,
-      createdAt: true,
-      updatedAt: true,
-    });
+    // Validate using generated schema (as is)
+    const createSchema = generatedSchemas.membershipPlan;
     validateWithSchema(createSchema, data);
 
     // Additional business validation

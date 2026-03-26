@@ -8,7 +8,7 @@ import {
   initialInstructors,
   initialMembershipPlans,
   initialOrganization,
-} from "../lib/mock-data";
+} from "./seed-data";
 
 const prisma = new PrismaClient();
 

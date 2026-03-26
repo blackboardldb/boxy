@@ -3,7 +3,7 @@
 import React from "react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { AddStudentModal } from "./add-student-modal";
-import { initialMembershipPlans } from "@/lib/mock-data";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
 interface StudentEditModalProps {
   student: FitCenterUserProfile | null;
@@ -18,6 +18,8 @@ export function StudentEditModal({
   onClose,
   onSuccess,
 }: StudentEditModalProps) {
+  const { membershipPlans } = useBlackSheepStore();
+
   if (!student) return null;
 
   return (
@@ -26,7 +28,7 @@ export function StudentEditModal({
         onEdit({ ...student, ...updates, id });
         onClose();
       }}
-      plans={initialMembershipPlans}
+      plans={membershipPlans}
       onClose={onClose}
       initialStudent={student}
       onAddStudent={() => {}}

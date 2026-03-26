@@ -19,7 +19,7 @@ import { ErrorHandler, withErrorHandling } from "../errors/handler";
 import { AppError, ValidationError, NotFoundError } from "../errors/types";
 
 // Base service class that all services should extend
-export abstract class BaseService<T> {
+export abstract class BaseService<T extends import("../data-layer/types").BaseEntity> {
   protected dataProvider: DataProvider;
   protected abstract repositoryName: keyof DataProvider;
 
@@ -29,7 +29,7 @@ export abstract class BaseService<T> {
 
   // Get the repository for this service
   protected get repository(): Repository<T> {
-    return this.dataProvider[this.repositoryName] as Repository<T>;
+    return this.dataProvider[this.repositoryName] as unknown as Repository<T>;
   }
 
   // Find many records with standardized response

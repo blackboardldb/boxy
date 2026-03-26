@@ -5,7 +5,7 @@ import { BaseService } from "./base-service";
 import { FitCenterUserProfile } from "../types";
 import { UserRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
-import { generatedSchemas, validateWithSchema } from "../types/generator";
+import { generatedSchemas, updateSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError, NotFoundError } from "../errors/types";
 
 export class UserService extends BaseService<FitCenterUserProfile> {
@@ -341,8 +341,8 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     data: any,
     existingRecord: FitCenterUserProfile
   ): Promise<void> {
-    // Validate using generated schema (partial)
-    const updateSchema = generatedSchemas.user.partial();
+    // Validate using generated schema (deep partial for updates)
+    const updateSchema = updateSchemas.user;
     validateWithSchema(updateSchema, data);
 
     // Check email uniqueness if email is being updated
