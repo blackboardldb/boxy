@@ -28,13 +28,10 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  UserCheck,
-  UserX,
   Bell,
   RefreshCw,
   Filter,
 } from "lucide-react";
-import type { FitCenterUserProfile } from "@/lib/types";
 
 export function Notifications() {
   const { 
@@ -50,12 +47,10 @@ export function Notifications() {
   
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<FitCenterUserProfile | null>(null);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [notificationFilter, setNotificationFilter] = useState("todos");
 
@@ -112,72 +107,8 @@ export function Notifications() {
     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
     .slice(0, 5);
 
-  // 3. Nuevos Alumnos
-  const pendingUsers = (users || [])
-    .filter((u: any) => u.membership?.status === "pending")
-    .map((user: any) => ({
-      id: `user-${user.id}`,
-      type: "pending_user",
-      user,
-      isNew: (user.membership?.centerStats?.lifetimeStats?.totalClasses || 0) === 0,
-      timestamp: now 
-    }));
+   const totalNotificationsCount = pendingRenewals.length + cancelledClasses.length;
 
-  // Filtro de UI
-  const filteredRenewals = (notificationFilter === "todos" || notificationFilter === "renovaciones") ? pendingRenewals : [];
-  const filteredUsers = (notificationFilter === "todos" || notificationFilter === "usuarios") ? pendingUsers : [];
-  const filteredCancellations = (notificationFilter === "todos" || notificationFilter === "cancelaciones") ? cancelledClasses : [];
-
-  const totalNotificationsCount = pendingRenewals.length + filteredCancellations.length + pendingUsers.length;
-  // Handlers para acciones
-  const handleApproveUser = async (user: FitCenterUserProfile) => {
-    const startDate = new Date().toISOString().split("T")[0];
-    const planDuration = 1;
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + planDuration);
-
-    const updatedUserData = {
-      membership: {
-        ...user.membership!,
-        status: "active" as const,
-        currentPeriodStart: startDate,
-        currentPeriodEnd: endDate.toISOString().split("T")[0],
-      },
-      notes: (user.notes || "") + " - Approved on " + new Date().toLocaleDateString(),
-    };
-
-    const result = await updateUserById(user.id, updatedUserData);
-    if (result) {
-      toast({ title: "Alumno aprobado", description: `${user.firstName} ya tiene acceso al centro.` });
-      setShowUserModal(false);
-    }
-  };
-
-  const handleRejectUser = async (user: FitCenterUserProfile) => {
-    try {
-      const updatedUserData = {
-        membership: {
-          ...user.membership!,
-          status: "inactive" as const,
-        },
-        rejectionInfo: {
-          rejectedAt: new Date().toISOString(),
-          reason: rejectReason,
-          rejectedBy: "admin",
-        },
-      };
-
-      const result = await updateUserById(user.id, updatedUserData);
-      if (result) {
-        toast({ title: "Alumno rechazado", description: "La solicitud ha sido denegada correctamente.", variant: "destructive" });
-        setShowRejectModal(false);
-        setRejectReason("");
-        setShowUserModal(false);
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Ocurrió un error al procesar el rechazo.", variant: "destructive" });
-    }
-  };
 
   const handleApproveRenewal = async (user: any, renewal: any) => {
     try {
@@ -254,7 +185,7 @@ export function Notifications() {
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingRenewals.length + cancelledClasses.length + pendingUsers.length}</div>
+            <div className="text-2xl font-bold">{pendingRenewals.length + cancelledClasses.length}</div>
           </CardContent>
         </Card>
 
@@ -265,7 +196,7 @@ export function Notifications() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">{pendingRenewals.length}</div>
-            <p className="text-xs text-muted-foreground">{pendingRenewals.filter(r => r.daysUntilExpiration <= 7).length} expiran pronto</p>
+             <p className="text-xs text-muted-foreground">{pendingRenewals.filter((r: any) => r.daysUntilExpiration <= 7).length} expiran pronto</p>
           </CardContent>
         </Card>
 
@@ -280,15 +211,7 @@ export function Notifications() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Nuevos Alumnos</CardTitle>
-            <UserCheck className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{pendingUsers.length}</div>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Filtros */}
@@ -302,7 +225,6 @@ export function Notifications() {
             <SelectItem value="todos">Mostrar Todo</SelectItem>
             <SelectItem value="renovaciones">Solo Renovaciones</SelectItem>
             <SelectItem value="cancelaciones">Solo Cancelaciones</SelectItem>
-            <SelectItem value="usuarios">Solo Alumnos</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -323,7 +245,7 @@ export function Notifications() {
               </div>
             ) : pendingRenewals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pendingRenewals.map(r => (
+                 {pendingRenewals.map((r: any) => (
                   <Card key={r.id} className="border-l-4 border-orange-500 hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
@@ -362,7 +284,7 @@ export function Notifications() {
               </div>
             ) : cancelledClasses.length > 0 ? (
               <div className="space-y-4">
-                {cancelledClasses.map(cls => (
+                 {cancelledClasses.map((cls: any) => (
                   <Card key={cls.id} className="border-l-4 border-red-500 bg-red-50/30">
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="bg-red-100 p-2 rounded-full text-red-600"><Clock className="h-5 w-5" /></div>
@@ -381,63 +303,9 @@ export function Notifications() {
             )}
           </div>
         )}
-
-        {/* 3. ALUMNOS PENDIENTES */}
-        {(notificationFilter === "todos" || notificationFilter === "usuarios") && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-blue-500" /> Nuevos Alumnos
-            </h2>
-            
-            {(storeLoading && pendingUsers.length === 0) ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2].map(i => <Card key={i} className="h-32 animate-pulse bg-zinc-50" />)}
-              </div>
-            ) : pendingUsers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pendingUsers.map(p => (
-                  <Card key={p.id} className="border-l-4 border-blue-500">
-                    <CardContent className="p-4">
-                      <Badge className="mb-2 bg-blue-50 text-blue-700 border-blue-200">{p.isNew ? "NUEVO" : "RE-INGRESO"}</Badge>
-                      <h3 className="font-bold">{p.user.firstName} {p.user.lastName}</h3>
-                      <p className="text-xs text-muted-foreground truncate mb-3">{p.user.email}</p>
-                      <Button size="sm" variant="outline" className="w-full text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => { 
-                        setSelectedUser(p.user); 
-                        setShowUserModal(true); 
-                      }}>Validar Alumno</Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-zinc-50 rounded-lg border border-dashed text-muted-foreground">No hay alumnos pendientes de aprobación.</div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* MODALES */}
-      <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Validar Nuevo Alumno</DialogTitle></DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase font-bold">Información de contacto</Label>
-                <p className="font-bold text-lg">{selectedUser.firstName} {selectedUser.lastName}</p>
-                <p className="text-sm">{selectedUser.email}</p>
-              </div>
-              <div className="p-3 bg-zinc-50 rounded-md border text-sm">
-                <p>Plan solicitado: <span className="font-bold">{selectedUser.membership?.membershipType}</span></p>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => handleApproveUser(selectedUser)}>Aprobar</Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
 
       <Dialog open={showRenewalModal} onOpenChange={setShowRenewalModal}>
         <DialogContent className="max-w-2xl">
@@ -483,7 +351,7 @@ export function Notifications() {
             <Label>Motivo del rechazo</Label>
             <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Ej: No se confirma transferencia..." />
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1" onClick={() => selectedUser ? handleRejectUser(selectedUser) : handleRejectRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Rechazo</Button>
+              <Button variant="destructive" className="flex-1" onClick={() => handleRejectRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Rechazo</Button>
               <Button variant="outline" className="flex-1" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
             </div>
           </div>
