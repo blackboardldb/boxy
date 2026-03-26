@@ -72,9 +72,6 @@ export class UserService extends BaseService<FitCenterUserProfile> {
             },
           ],
         });
-        // Also ensure not explicitly inactive/pending
-        conditions.push({ membership: { path: ["status"], not: "inactive" } });
-        conditions.push({ membership: { path: ["status"], not: "pending" } });
       } else if (params.status === "pending") {
         conditions.push({
           OR: [

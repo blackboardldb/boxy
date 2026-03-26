@@ -278,29 +278,30 @@ export function Notifications() {
               <XCircle className="h-5 w-5 text-red-500" /> Clases Canceladas
             </h2>
             
-            {(storeLoading && cancelledClasses.length === 0) ? (
-              <div className="space-y-3">
+           <div className="bg-red-50 p-4 rounded-lg">
+             {(storeLoading && cancelledClasses.length === 0) ? (
+              <div className="space-y-3 ">
                 {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full" />)}
               </div>
             ) : cancelledClasses.length > 0 ? (
               <div className="space-y-4">
                  {cancelledClasses.map((cls: any) => (
-                  <Card key={cls.id} className="border-l-4 border-red-500 bg-red-50/30">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className="bg-red-100 p-2 rounded-full text-red-600"><Clock className="h-5 w-5" /></div>
-                      <div>
-                        <h3 className="font-bold text-red-900">{cls.name} - CANCELADA</h3>
+                  <div key={cls.id} className="">
+                    <div className=" flex items-center gap-2">
+                     
+                        <p className="font-bold text-red-900">{cls.name}</p>
                         <p className="text-sm text-red-700">
-                          {format(new Date(cls.dateTime), "EEEE dd 'de' MMMM, HH:mm", { locale: es })}
+                          {format(new Date(cls.dateTime), "EEE dd MMMM, HH:mm", { locale: es })}
                         </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                     
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 bg-zinc-50 rounded-lg border border-dashed text-muted-foreground">No hay clases canceladas recientemente.</div>
             )}
+           </div>
           </div>
         )}
       </div>

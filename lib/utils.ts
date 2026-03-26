@@ -378,8 +378,6 @@ export function getPlanStatus(
     return "inactive";
   }
 
-  const now = new Date();
-
   // Obtener fechas de inicio y fin del periodo actual
   const startDateStr =
     user.membership.currentPeriodStart || user.membership.startDate;
@@ -387,18 +385,36 @@ export function getPlanStatus(
 
   if (!startDateStr || !endDateStr) return "inactive";
 
-  // Extraer solo la parte de la fecha para evitar problemas de zona horaria
-  const startDateOnly =
-    typeof startDateStr === "string"
-      ? startDateStr.substring(0, 10)
-      : new Date(startDateStr).toISOString().substring(0, 10);
-  const startDate = new Date(startDateOnly + "T00:00:00");
+  // Función interna para parsear fechas de forma robusta
+  const parseDate = (dateStr: string | Date): Date | null => {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return dateStr;
 
-  const endDateOnly =
-    typeof endDateStr === "string"
-      ? endDateStr.substring(0, 10)
-      : new Date(endDateStr).toISOString().substring(0, 10);
-  const endDate = new Date(endDateOnly + "T23:59:59");
+    // Si es ISO (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      return new Date(dateStr.substring(0, 10) + "T12:00:00");
+    }
+
+    // Si es formato latino (DD/MM/YYYY)
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
+      const [day, month, year] = dateStr.substring(0, 10).split("/");
+      return new Date(`${year}-${month}-${day}T12:00:00`);
+    }
+
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const startDate = parseDate(startDateStr);
+  const endDate = parseDate(endDateStr);
+
+  if (!startDate || !endDate) return "inactive";
+
+  // Ajustar horas para comparaciones justas
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
 
   const remainingClasses =
     user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
@@ -410,12 +426,12 @@ export function getPlanStatus(
   }
 
   // 1. Verificar si el plan es futuro (aún no empieza)
-  if (now < startDate) {
+  if (today < startDate) {
     return "scheduled";
   }
 
   // 2. Verificar si expiró por fecha (es inactivo ahora)
-  if (now > endDate) {
+  if (today > endDate) {
     return "inactive";
   }
 

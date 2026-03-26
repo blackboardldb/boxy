@@ -16,6 +16,7 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
+import { getPlanStatus } from "@/lib/utils";
 
 export function AdminDashboard() {
   const { users = [], fetchUsers, egresos = [] } = useBlackSheepStore();
@@ -39,43 +40,50 @@ export function AdminDashboard() {
 
   // Memoizar estadísticas principales
   const stats = useMemo(() => {
-    const totalMembers = users?.length || 0;
-    const activeMembers =
-      users?.filter(
-        (s: FitCenterUserProfile) => s.membership?.status === "active"
-      ).length || 0;
-    const inactiveMembers =
-      users?.filter(
-        (s: FitCenterUserProfile) => s.membership?.status === "inactive"
-      ).length || 0;
-    const frozenMembers =
-      users?.filter(
-        (s: FitCenterUserProfile) => s.membership?.status === "frozen"
-      ).length || 0;
-    const expiredMembers =
-      users?.filter(
-        (s: FitCenterUserProfile) => s.membership?.status === "expired"
-      ).length || 0;
+    // Al filtrar para el dashboard, solo consideramos alumnos (sin rol o rol user)
+    const students = users.filter((u) => !u.role || u.role === "user");
+    const totalMembers = students.length;
+
+    // Calcular estados reales usando getPlanStatus
+    const statusCounts = students.reduce(
+      (acc, s) => {
+        const status = getPlanStatus(s);
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      { active: 0, scheduled: 0, pending: 0, inactive: 0 } as Record<
+        string,
+        number
+      >
+    );
+
+    // Para el usuario: activos + programados suelen considerarse "vigentes" en el counter principal
+    const activeMembers = statusCounts.active;
+    const scheduledMembers = statusCounts.scheduled;
+    const inactiveMembers = statusCounts.inactive;
+    const pendingMembers = statusCounts.pending;
+
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     const newMembersThisMonth =
-      users?.filter((s: FitCenterUserProfile) => {
+      students.filter((s: FitCenterUserProfile) => {
         if (!s.membership?.startDate) return false;
-        const startDate = new Date(s.membership.startDate);
+        // Parsear fecha de forma segura
+        const [year, month] = s.membership.startDate.split("-");
         return (
-          startDate.getMonth() === currentMonth &&
-          startDate.getFullYear() === currentYear
+          Number.parseInt(month) - 1 === currentMonth &&
+          Number.parseInt(year) === currentYear
         );
       }).length || 0;
 
     return {
       totalMembers,
       activeMembers,
+      scheduledMembers,
       inactiveMembers,
-      frozenMembers,
-      expiredMembers,
+      pendingMembers,
       newMembersThisMonth,
     };
   }, [users]);
@@ -83,9 +91,9 @@ export function AdminDashboard() {
   const {
     totalMembers,
     activeMembers,
+    scheduledMembers,
     inactiveMembers,
-    frozenMembers,
-    expiredMembers,
+    pendingMembers,
     newMembersThisMonth,
   } = stats;
 
@@ -138,31 +146,28 @@ export function AdminDashboard() {
 
     return users
       .filter((u) => {
-        if (u.membership?.status !== "active" || !u.membership?.currentPeriodEnd) return false;
-        const endDate = new Date(u.membership.currentPeriodEnd);
-        return endDate >= today;
+        return getPlanStatus(u) === "active" && u.membership?.currentPeriodEnd;
       })
       .sort((a, b) => {
-        return new Date(a.membership!.currentPeriodEnd).getTime() - new Date(b.membership!.currentPeriodEnd).getTime();
+        return (
+          new Date(a.membership!.currentPeriodEnd).getTime() -
+          new Date(b.membership!.currentPeriodEnd).getTime()
+        );
       })
       .slice(0, 10);
   }, [users]);
 
   // Alumnos recientemente inactivos (Top 10 vencidos/inactivos, de más reciente a más antiguo)
   const recentlyInactive = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     return users
       .filter((u) => {
-        if (!u.membership?.currentPeriodEnd) return false;
-        const endDate = new Date(u.membership.currentPeriodEnd);
-        // Excluir si está activo y aún no vence
-        if (endDate >= today && u.membership.status === "active") return false;
-        return true;
+        return getPlanStatus(u) === "inactive" && u.membership?.currentPeriodEnd;
       })
       .sort((a, b) => {
-        return new Date(b.membership!.currentPeriodEnd).getTime() - new Date(a.membership!.currentPeriodEnd).getTime();
+        return (
+          new Date(b.membership!.currentPeriodEnd).getTime() -
+          new Date(a.membership!.currentPeriodEnd).getTime()
+        );
       })
       .slice(0, 10);
   }, [users]);
@@ -226,7 +231,11 @@ export function AdminDashboard() {
           value={totalMembers}
           subtitle={
             <>
-              {activeMembers} activos ({retentionRate}% retención)
+              {activeMembers + scheduledMembers} vigentes (
+              {totalMembers > 0
+                ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1)
+                : 0}
+              % retención)
               <br />
               {newMembersThisMonth} nuevos miembros este mes.
             </>
@@ -251,15 +260,14 @@ export function AdminDashboard() {
         />
 
         <MetricCard
-          title="Membresías"
-          value={expiredMembers}
-          subtitle="Requieren atención"
+          title="Acción Requerida"
+          value={pendingMembers}
+          subtitle="Pendientes de validación"
           icon={AlertTriangle}
           isLoading={isLoading}
+          linkTo="/admin/alumnos?status=pending"
         />
       </div>
-
-
 
       {/* Breakdown por Estados */}
       <div className="grid gap-6 md:grid-cols-1">
@@ -284,11 +292,41 @@ export function AdminDashboard() {
               </div>
             </div>
             <Progress
-              value={
-                totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0
-              }
+              value={totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0}
               className="h-2"
             />
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Programados</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">{scheduledMembers}</span>
+                <Badge variant="outline">
+                  {totalMembers > 0
+                    ? Math.round((scheduledMembers / totalMembers) * 100)
+                    : 0}
+                  %
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span>Pendientes</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="font-semibold">{pendingMembers}</span>
+                <Badge variant="outline">
+                  {totalMembers > 0
+                    ? Math.round((pendingMembers / totalMembers) * 100)
+                    : 0}
+                  %
+                </Badge>
+              </div>
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -300,38 +338,6 @@ export function AdminDashboard() {
                 <Badge variant="outline">
                   {totalMembers > 0
                     ? Math.round((inactiveMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span>Congelados</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{frozenMembers}</span>
-                <Badge variant="outline">
-                  {totalMembers > 0
-                    ? Math.round((frozenMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Expirados</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{expiredMembers}</span>
-                <Badge variant="outline">
-                  {totalMembers > 0
-                    ? Math.round((expiredMembers / totalMembers) * 100)
                     : 0}
                   %
                 </Badge>

@@ -99,9 +99,17 @@ export default function AlumnosPage() {
   const getStatusBadge = (status: string) => {
     const color =
       STATE_COLORS[status as keyof typeof STATE_COLORS] || "#6b7280";
+    
+    const labels: Record<string, string> = {
+      active: "Activo",
+      inactive: "Inactivo",
+      pending: "Pendiente",
+      scheduled: "Programado",
+    };
+
     return (
       <Badge className="text-white border-0" style={{ backgroundColor: color }}>
-        {status}
+        {labels[status] || status}
       </Badge>
     );
   };
