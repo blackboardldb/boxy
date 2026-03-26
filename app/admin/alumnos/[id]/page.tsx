@@ -348,28 +348,28 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 relative overflow-hidden shadow-inner">
+                  <div className="">
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-1">
-                        <span className={`uppercase font-bold tracking-wider text-xs ${isPlanActive ? 'text-lime-400' : 'text-orange-400'}`}>
-                          {isPlanActive ? 'Tu plan (ACTIVO)' : isPlanExpired ? 'Tu plan (EXPIRADO)' : 'Tu plan'}
+                        <span className={`uppercase font-bold tracking-wider text-sm ${isPlanActive ? 'text-lime-900' : 'text-orange-400'}`}>
+                          {isPlanActive ? 'Activo' : isPlanExpired ? 'Expirado' : 'Sin plan'}
                         </span>
                         <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-full items-center">
                           <Ticket size={14} className="text-zinc-500" />
                           <span>{student.membership?.currentPeriodStart ? format(new Date(student.membership?.currentPeriodStart), "dd MMM", { locale: es }) : "—"} - {student.membership?.currentPeriodEnd ? format(new Date(student.membership?.currentPeriodEnd), "dd MMM", { locale: es }) : "—"}</span>
                         </div>
                       </div>
-                      <h2 className="text-white font-bold text-2xl">{student.membership?.membershipType || "Sin plan activo"}</h2>
-                      <p className="text-white/70 font-medium mt-1">
+                      <h2 className="  font-bold text-2xl">{student.membership?.membershipType || "Sin plan activo"}</h2>
+                      <p className=" /70 font-medium mt-1">
                         {isUnlimited ? "Ilimitadas" : `${planClassLimit} clases`} • $
                         {student.membership?.monthlyPrice ? student.membership.monthlyPrice.toLocaleString("es-CL") : "N/A"}
                       </p>
                     </div>
 
-                    <div className="bg-black/30 rounded-lg p-4">
+                    <div>
                       <div className="flex justify-between items-center mb-2">
-                         <span className="text-sm font-medium text-white">Clases consumidas</span>
-                         <p className="text-sm text-white">
+                         <span className="text-sm font-medium  ">Clases consumidas</span>
+                         <p className="text-sm  ">
                            <span className="text-lime-500 font-bold text-base">{classesConsumed}</span>
                            {" "}
                            {isUnlimited ? "realizadas" : `/ ${planClassLimit}`}
@@ -377,7 +377,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       </div>
                       
                       {!isUnlimited && (
-                        <div className="w-full bg-zinc-700/50 rounded-full h-2 mt-3 overflow-hidden">
+                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-3 overflow-hidden">
                           <div 
                             className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
                             style={{ width: `${Math.min(100, (classesConsumed / planClassLimit) * 100)}%` }}

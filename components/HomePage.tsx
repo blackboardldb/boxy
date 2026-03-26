@@ -4,7 +4,7 @@
 import type React from "react";
 import { ClassesHomeCard } from "@/components/ClassesHomeCard";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+
 import { Calendar, Ticket, AlertCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import type { FitCenterUserProfile } from "@/lib/types";
@@ -78,9 +78,14 @@ const isUnlimited = classLimit === 0;
 
         {planStatus === "active" && (
           <div>
-           <Progress
-  value={isUnlimited ? 100 : (currentMonthStats.classesAttended / classLimit) * 100}
-  className="h-3"/>
+           {!isUnlimited && (
+             <div className="w-full bg-zinc-700/50 rounded-full h-2 mt-3 overflow-hidden">
+               <div 
+                 className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
+                 style={{ width: `${Math.min(100, (currentMonthStats.classesAttended / classLimit) * 100)}%` }}
+               />
+             </div>
+           )}
             <div className="flex justify-between items-center mt-2">
               <span className="text-base font-medium text-white ">
                 Clases consumidas
