@@ -488,11 +488,17 @@ export default function DisciplinesManager() {
                     </Button>
 
                     <div className="flex items-center gap-2">
-                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => handleEdit(d)}>
-                        <Edit className="w-4.5 h-4.5" />
+                      <Button 
+                        onClick={() => handleEdit(d)}
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
+                      >
+                        <Edit />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => handleDelete(d.id, d.name)}>
-                        <Trash2 className="w-4.5 h-4.5" />
+                      <Button 
+                        onClick={() => handleDelete(d.id, d.name)}
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl"
+                      >
+                        <Trash2 />
                       </Button>
                     </div>
                   </div>

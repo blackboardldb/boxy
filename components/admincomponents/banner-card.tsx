@@ -150,22 +150,18 @@ export function BannerCard({
             )}
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
             onClick={() => onEdit(banner)}
-            className="h-8 w-8 p-0 rounded-xl"
             title="Editar banner"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
           >
-            <Edit className="w-4 h-4" />
+            <Edit />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
             onClick={() => onDelete(banner.id)}
-            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 rounded-xl"
             title="Eliminar banner"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 />
           </Button>
         </div>
       </div>

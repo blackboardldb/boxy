@@ -305,12 +305,10 @@ export default function AlumnosPage() {
                     </TableCell>
                     <TableCell>
                       <Button
-                        size="sm"
-                        variant="outline"
                         onClick={() => handleEditStudent(student)}
-                        className="rounded-xl"
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit />
                       </Button>
                     </TableCell>
                   </TableRow>
