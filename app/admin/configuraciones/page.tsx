@@ -2,29 +2,43 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Logo from "@/components/Logo";
 
 export default function ConfiguracionesPage() {
-  const { initialOrganization } = useBlackSheepStore();
-  const [settings, setSettings] = useState({
-    organizationName: initialOrganization?.name || "BlackSheep CrossFit",
-    timezone: initialOrganization?.settings?.timezone || "America/Santiago",
-    currency: initialOrganization?.settings?.currency || "CLP",
-    language: initialOrganization?.settings?.language || "es",
-    defaultCancellationHours:
-      initialOrganization?.settings?.defaultCancellationHours ?? 2,
-    maxBookingsPerDay: initialOrganization?.settings?.maxBookingsPerDay ?? 2,
-    waitlistEnabled: initialOrganization?.settings?.waitlistEnabled ?? true,
-  });
+  const { initialOrganization, updateOrganization } = useBlackSheepStore();
+  
+  // States for both variants
+  const [logoHorizontalSvg, setLogoHorizontalSvg] = useState("");
+  const [logoSquareSvg, setLogoSquareSvg] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Sync state with store on load
+  useEffect(() => {
+    if (initialOrganization?.branding) {
+      const branding = initialOrganization.branding as any;
+      setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
+      setLogoSquareSvg(branding.logoSquareSvg || "");
+    }
+  }, [initialOrganization]);
 
   const handleSave = () => {
-    // Aquí implementarías la lógica para guardar en el store o API
-    console.log("Configuración guardada:", settings);
+    if (initialOrganization) {
+      const updatedOrg = {
+        ...initialOrganization,
+        branding: {
+          ...initialOrganization.branding,
+          logoHorizontalSvg,
+          logoSquareSvg,
+        },
+      };
+      updateOrganization(updatedOrg);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+      console.log("Logos guardados localmente");
+    }
   };
 
   return (
@@ -32,183 +46,112 @@ export default function ConfiguracionesPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Configuraciones</h1>
         <p className="text-muted-foreground">
-          Configura los parámetros generales del sistema
+          Gestión de identidad visual y comunicación
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Configuración General */}
-        <Card>
+      <div className="space-y-6 max-w-6xl">
+        {/* Identidad de Marca - Logo SVG Variants */}
+        <Card className="border-none shadow-premium bg-white dark:bg-slate-950">
           <CardHeader>
-            <CardTitle>Configuración General</CardTitle>
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <span className="p-2 rounded-lg bg-primary/10 text-primary">🎨</span>
+              Identidad de Marca (Multi-Logo)
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="orgName">Nombre de la Organización</Label>
-                <Input
-                  id="orgName"
-                  value={settings.organizationName}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      organizationName: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="timezone">Zona Horaria</Label>
-                <Input
-                  id="timezone"
-                  value={settings.timezone}
-                  onChange={(e) =>
-                    setSettings({ ...settings, timezone: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="currency">Moneda</Label>
-                <Input
-                  id="currency"
-                  value={settings.currency}
-                  onChange={(e) =>
-                    setSettings({ ...settings, currency: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="language">Idioma</Label>
-                <Input
-                  id="language"
-                  value={settings.language}
-                  onChange={(e) =>
-                    setSettings({ ...settings, language: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Configuración de Clases */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuración de Clases</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cancellationHours">
-                  Horas de Cancelación por Defecto
-                </Label>
-                <Input
-                  id="cancellationHours"
-                  type="number"
-                  value={settings.defaultCancellationHours}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      defaultCancellationHours: parseInt(e.target.value),
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxBookings">Máximo de Reservas por Día</Label>
-                <Input
-                  id="maxBookings"
-                  type="number"
-                  value={settings.maxBookingsPerDay}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      maxBookingsPerDay: parseInt(e.target.value),
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="waitlist"
-                checked={settings.waitlistEnabled}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, waitlistEnabled: checked })
-                }
-              />
-              <Label htmlFor="waitlist">Habilitar Lista de Espera</Label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Horarios de Operación */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Horarios de Operación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {initialOrganization?.settings?.operatingHours?.map(
-                (hour, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 border rounded"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <Badge variant="outline">{hour.day}</Badge>
-                      {hour.closed ? (
-                        <span className="text-muted-foreground">Cerrado</span>
-                      ) : (
-                        <span>
-                          {hour.open} - {hour.close}
-                        </span>
-                      )}
-                    </div>
-                    <Switch
-                      checked={!hour.closed}
-                      onCheckedChange={(checked) => {
-                        // Aquí implementarías la lógica para actualizar los horarios
-                        console.log(`Actualizando ${hour.day}:`, checked);
-                      }}
-                    />
-                  </div>
-                )
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gestión de Banners */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Banners y Anuncios</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Personaliza los banners que aparecen en la aplicación principal
-              para promociones, anuncios y contenido destacado.
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Gestión de Banners</p>
-                <p className="text-xs text-muted-foreground">
-                  Crear, editar y organizar banners promocionales
+          <CardContent className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              
+              {/* Logo Horizontal */}
+              <div className="space-y-4 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-transparent">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-base font-bold">Logo Horizontal</Label>
+                  <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-bold">Navbar & App</span>
+                </div>
+                <p className="text-xs text-muted-foreground italic mb-4">
+                  Usado en cabeceras, menús laterales y en la aplicación principal.
                 </p>
+                
+                <textarea
+                  rows={8}
+                  className="w-full p-4 font-mono text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm"
+                  placeholder="<svg ...> Logo Horizontal </svg>"
+                  value={logoHorizontalSvg}
+                  onChange={(e) => setLogoHorizontalSvg(e.target.value)}
+                />
+
+                <div className="mt-4">
+                  <Label className="text-xs font-semibold mb-2 block">Vista Previa Horizontal</Label>
+                  <div className="flex items-center justify-center p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/50 min-h-[120px] overflow-hidden">
+                    {logoHorizontalSvg ? (
+                      <div className="text-foreground" dangerouslySetInnerHTML={{ __html: logoHorizontalSvg }} />
+                    ) : (
+                      <div className="opacity-20 grayscale scale-75"><Logo /></div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <Button asChild>
-                <a href="/admin/configuraciones/banners">Gestionar Banners</a>
+
+              {/* Logo Cuadrado/Circular */}
+              <div className="space-y-4 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-transparent">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-base font-bold">Logo Cuadrado / Icono</Label>
+                  <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 font-bold">Login & Landing</span>
+                </div>
+                <p className="text-xs text-muted-foreground italic mb-4">
+                  Ideal para la página de Login, Landing Page y elementos circulares.
+                </p>
+                
+                <textarea
+                  rows={8}
+                  className="w-full p-4 font-mono text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all shadow-sm"
+                  placeholder="<svg ...> Logo Cuadrado </svg>"
+                  value={logoSquareSvg}
+                  onChange={(e) => setLogoSquareSvg(e.target.value)}
+                />
+
+                <div className="mt-4">
+                  <Label className="text-xs font-semibold mb-2 block">Vista Previa Cuadrada</Label>
+                  <div className="flex items-center justify-center p-6 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/50 min-h-[120px] overflow-hidden">
+                    {logoSquareSvg ? (
+                      <div className="w-20 h-20 text-foreground" dangerouslySetInnerHTML={{ __html: logoSquareSvg }} />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-xs italic">Sin Icono</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="flex justify-center pt-4 border-t border-slate-100 dark:border-slate-900">
+              <Button onClick={handleSave} className="px-12 rounded-full h-12 text-base font-bold shadow-lg transition-all hover:scale-105 active:scale-95">
+                {isSaved ? "✓ Cambios Guardados" : "Guardar Configuración Visual"}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Botón de Guardar */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} className="px-8">
-            Guardar Configuración
-          </Button>
-        </div>
+        {/* Gestión de Banners */}
+        <Card className="border-none shadow-premium overflow-hidden bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900">
+          <CardHeader>
+            <CardTitle className="text-lg">Canales de Comunicación</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl border border-slate-100 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-xl shadow-inner">✨</div>
+                <div>
+                  <p className="font-bold">Gestión de Banners Activos</p>
+                  <p className="text-xs text-muted-foreground">Controla el carrusel de anuncios para alumnos</p>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="rounded-xl px-8 border-2 font-bold">
+                <a href="/admin/configuraciones/banners">Gestionar Banners</a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
