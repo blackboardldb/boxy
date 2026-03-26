@@ -50,8 +50,6 @@ const createStudentData = (
     email: string;
     phone: string;
     status: string;
-    emergencyContact?: string;
-    notes?: string;
     formaDePago?: "contado" | "transferencia" | "debito" | "credito";
     joinDate: string;
     nextPayment: string;
@@ -65,10 +63,6 @@ const createStudentData = (
     email: formData.email,
     phone: formData.phone,
     // Remover campos undefined para evitar problemas de validación
-    ...(formData.emergencyContact && {
-      emergencyContact: formData.emergencyContact,
-    }),
-    ...(formData.notes && { notes: formData.notes }),
     ...(formData.formaDePago && { formaDePago: formData.formaDePago }),
     avatarId: "avatar_default",
     role: "user",
@@ -149,8 +143,6 @@ export function AddStudentModal({
       student?.membership?.currentPeriodStart ||
       new Date().toISOString().split("T")[0],
     nextPayment: student?.membership?.currentPeriodEnd || "",
-    emergencyContact: student?.emergencyContact || "",
-    notes: student?.notes || "",
     planId: student?.membership?.planId || "",
     formaDePago: student?.formaDePago || "contado",
     role: student?.role || "user",
@@ -446,34 +438,6 @@ export function AddStudentModal({
                 💡 Se actualiza automáticamente con la fecha de inicio, pero
                 puedes editarlo manualmente
               </p>
-            </div>
-
-            <div>
-              <Label htmlFor="emergencyContact">Contacto de Emergencia</Label>
-              <Input
-                id="emergencyContact"
-                value={formData.emergencyContact}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    emergencyContact: e.target.value,
-                  }))
-                }
-                placeholder="Nombre - Teléfono"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Notas</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                placeholder="Notas adicionales sobre el alumno..."
-                rows={3}
-              />
             </div>
 
             <div>

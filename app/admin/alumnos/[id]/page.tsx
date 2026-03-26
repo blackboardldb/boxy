@@ -33,9 +33,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
-  const [editEmergencyContact, setEditEmergencyContact] = useState("");
   const [editGender, setEditGender] = useState("");
-  const [editDateOfBirth, setEditDateOfBirth] = useState("");
 
   // States for Membresía
   const [editPlanId, setEditPlanId] = useState("");
@@ -44,7 +42,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState("");
-  const [editNotes, setEditNotes] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -81,9 +78,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       setEditLastName(student.lastName || "");
       setEditEmail(student.email || "");
       setEditPhone(student.phone || "");
-      setEditEmergencyContact(student.emergencyContact || "");
       setEditGender(student.gender || "");
-      setEditDateOfBirth(student.dateOfBirth ? student.dateOfBirth.substring(0, 10) : "");
 
       const m = student.membership;
       if (m) {
@@ -93,7 +88,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         setEditStartDate(m.currentPeriodStart ? format(new Date(m.currentPeriodStart), 'yyyy-MM-dd') : "");
         setEditEndDate(m.currentPeriodEnd ? format(new Date(m.currentPeriodEnd), 'yyyy-MM-dd') : "");
         setEditPaymentMethod(student.formaDePago || "transferencia");
-        setEditNotes(student.notes || "");
+        setEditPaymentMethod(student.formaDePago || "transferencia");
       }
     }
   }, [editingSection, student]);
@@ -134,10 +129,9 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       const changes = {
         firstName: editFirstName,
         lastName: editLastName,
+        email: editEmail,
         phone: editPhone,
-        emergencyContact: editEmergencyContact,
         gender: editGender,
-        dateOfBirth: editDateOfBirth || undefined,
       };
       
       await fetch(`/api/users/${student.id}`, {
@@ -179,7 +173,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       } as any;
 
       const changes = {
-        notes: editNotes,
         formaDePago: editPaymentMethod as any,
         membership: updatedMembership,
       };
@@ -285,20 +278,12 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <p className="font-medium text-zinc-900">{student.firstName} {student.lastName}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Fecha de nacimiento</p>
-                    <p className="font-medium text-zinc-900">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : "-"}</p>
-                  </div>
-                  <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email</p>
                     <p className="font-medium text-zinc-900 break-all">{student.email}</p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Teléfono</p>
                     <p className="font-medium text-zinc-900">{student.phone || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Contacto de Emergencia</p>
-                    <p className="font-medium text-zinc-900">{student.emergencyContact || "-"}</p>
                   </div>
                 </CardContent>
               </>
@@ -319,16 +304,12 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Fecha de nacimiento</Label>
-                    <Input type="date" value={editDateOfBirth} onChange={e => setEditDateOfBirth(e.target.value)} />
+                    <Label>Email</Label>
+                    <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>Teléfono</Label>
                     <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Contacto de Emergencia</Label>
-                    <Input value={editEmergencyContact} onChange={e => setEditEmergencyContact(e.target.value)} placeholder="Nombre y celular" />
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
                     <Button variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button>
@@ -400,12 +381,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <div className="text-muted-foreground">Forma de pago</div>
                     <div className="font-medium text-right text-zinc-900 capitalize">{student.formaDePago || "-"}</div>
                   </div>
-                  {student.notes && (
-                    <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-100">
-                      <p className="text-xs font-semibold text-amber-900 mb-1">OBSERVACIONES</p>
-                      <p className="text-sm text-amber-800 whitespace-pre-line">{student.notes}</p>
-                    </div>
-                  )}
                   <div className="mt-6 pt-4 border-t border-zinc-100 flex justify-center">
                     <Button 
                       variant="outline" 
@@ -466,10 +441,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                           <SelectItem value="credito">Crédito</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Observaciones (Internas)</Label>
-                      <Textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} rows={3} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
