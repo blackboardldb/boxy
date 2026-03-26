@@ -56,12 +56,27 @@ export function AdminDashboard() {
       users?.filter(
         (s: FitCenterUserProfile) => s.membership?.status === "expired"
       ).length || 0;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const newMembersThisMonth =
+      users?.filter((s: FitCenterUserProfile) => {
+        if (!s.membership?.startDate) return false;
+        const startDate = new Date(s.membership.startDate);
+        return (
+          startDate.getMonth() === currentMonth &&
+          startDate.getFullYear() === currentYear
+        );
+      }).length || 0;
+
     return {
       totalMembers,
       activeMembers,
       inactiveMembers,
       frozenMembers,
       expiredMembers,
+      newMembersThisMonth,
     };
   }, [users]);
 
@@ -71,12 +86,26 @@ export function AdminDashboard() {
     inactiveMembers,
     frozenMembers,
     expiredMembers,
+    newMembersThisMonth,
   } = stats;
 
-  // Memoizar cálculos de ingresos
+  // Calcular ingresos del mes en curso real
   const revenueMetrics = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     const monthlyRevenue = users
-      .filter((s: FitCenterUserProfile) => s.membership?.status === "active")
+      .filter((s: FitCenterUserProfile) => {
+        if (s.membership?.status !== "active") return false;
+        
+        // Verificar si la fecha de pago (currentPeriodStart o startDate) es del mes actual
+        const paymentDateStr = s.membership.currentPeriodStart || s.membership.startDate;
+        if (!paymentDateStr) return false;
+        
+        const paymentDate = new Date(paymentDateStr);
+        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+      })
       .reduce((sum: number, student: FitCenterUserProfile) => {
         return sum + (student.membership?.monthlyPrice || 0);
       }, 0);
@@ -102,6 +131,42 @@ export function AdminDashboard() {
   const retentionRate =
     totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
 
+  // Alumnos próximos a vencer (Top 10 activos con fecha más cercana)
+  const upcomingExpirations = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return users
+      .filter((u) => {
+        if (u.membership?.status !== "active" || !u.membership?.currentPeriodEnd) return false;
+        const endDate = new Date(u.membership.currentPeriodEnd);
+        return endDate >= today;
+      })
+      .sort((a, b) => {
+        return new Date(a.membership!.currentPeriodEnd).getTime() - new Date(b.membership!.currentPeriodEnd).getTime();
+      })
+      .slice(0, 10);
+  }, [users]);
+
+  // Alumnos recientemente inactivos (Top 10 vencidos/inactivos, de más reciente a más antiguo)
+  const recentlyInactive = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return users
+      .filter((u) => {
+        if (!u.membership?.currentPeriodEnd) return false;
+        const endDate = new Date(u.membership.currentPeriodEnd);
+        // Excluir si está activo y aún no vence
+        if (endDate >= today && u.membership.status === "active") return false;
+        return true;
+      })
+      .sort((a, b) => {
+        return new Date(b.membership!.currentPeriodEnd).getTime() - new Date(a.membership!.currentPeriodEnd).getTime();
+      })
+      .slice(0, 10);
+  }, [users]);
+
   // Componente de métrica con loader
   const MetricCard = ({
     title,
@@ -113,7 +178,7 @@ export function AdminDashboard() {
   }: {
     title: string;
     value: string | number;
-    subtitle: string;
+    subtitle: React.ReactNode;
     icon: any;
     isLoading?: boolean;
     linkTo?: string;
@@ -159,15 +224,21 @@ export function AdminDashboard() {
         <MetricCard
           title="Total Miembros"
           value={totalMembers}
-          subtitle={`${activeMembers} activos (${retentionRate}% retención)`}
+          subtitle={
+            <>
+              {activeMembers} activos ({retentionRate}% retención)
+              <br />
+              {newMembersThisMonth} nuevos miembros este mes.
+            </>
+          }
           icon={Users}
           isLoading={isLoading}
         />
 
         <MetricCard
-          title="MRR Teórico (Recurrente)"
+          title="Balance"
           value={`$${monthlyRevenue.toLocaleString()}`}
-          subtitle={`De ${activeMembers} miembros activos`}
+          subtitle="Ganancia del mes"
           icon={DollarSign}
           isLoading={isLoading}
           linkTo="/admin/finanzas"
@@ -191,24 +262,7 @@ export function AdminDashboard() {
         />
       </div>
 
-      {/* Métricas de Engagement */}
-      <div className="grid gap-2 grid-cols-2">
-        <MetricCard
-          title="Nuevos Miembros"
-          value="0"
-          subtitle="Este mes"
-          icon={Zap}
-          isLoading={isLoading}
-        />
 
-        <MetricCard
-          title="Tasa de Retención"
-          value={`${retentionRate}%`}
-          subtitle="Miembros activos"
-          icon={Heart}
-          isLoading={isLoading}
-        />
-      </div>
 
       {/* Breakdown por Estados */}
       <div className="grid gap-6 md:grid-cols-1">
@@ -286,6 +340,73 @@ export function AdminDashboard() {
                 </Badge>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Listas Rápidas: Próximos a Vencer y Recientemente Inactivos */}
+      <div className="grid gap-6 md:grid-cols-2 mt-6">
+        <Card>
+          <CardHeader className="pb-3 border-b mb-3">
+            <CardTitle className="text-base">Próximos a vencer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : upcomingExpirations.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos próximos a vencer.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingExpirations.map((u: FitCenterUserProfile) => (
+                  <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{u.firstName} {u.lastName}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-xs font-semibold">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Ver Perfil</Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3 border-b mb-3">
+            <CardTitle className="text-base text-red-600">Recientemente inactivos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : recentlyInactive.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos inactivos recientemente.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentlyInactive.map((u: FitCenterUserProfile) => (
+                  <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{u.firstName} {u.lastName}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-xs text-red-600 font-medium">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Ver Perfil</Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
