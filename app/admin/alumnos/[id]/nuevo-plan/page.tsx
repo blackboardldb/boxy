@@ -27,6 +27,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     formaDePago: "contado",
     startDate: "",
     endDate: "",
+    clasesTotales: "",
+    precioTotal: "",
   });
 
   useEffect(() => {
@@ -62,12 +64,15 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         
         // Pre-seleccionar el mismo plan si existe, o el primero
         const currentPlanId = found.membership?.planId || activePlans[0]?.id || "";
+        const initPlan = activePlans.find(p => p.id === currentPlanId);
         
         setFormData(prev => ({
           ...prev,
           planId: currentPlanId,
           startDate: dateStr,
           formaDePago: found.formaDePago || "contado",
+          clasesTotales: initPlan ? String(initPlan.classLimit) : "",
+          precioTotal: initPlan ? String(initPlan.price) : "",
         }));
       }
       setIsLoading(false);
@@ -101,11 +106,11 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       status: "active" as any,
       planId: selectedPlan.id,
       membershipType: selectedPlan.name,
-      monthlyPrice: selectedPlan.price,
+      monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
       currentPeriodStart: formData.startDate,
       currentPeriodEnd: formData.endDate,
       planConfig: {
-        classLimit: selectedPlan.classLimit,
+        classLimit: formData.clasesTotales ? Number(formData.clasesTotales) : selectedPlan.classLimit,
         disciplineAccess: selectedPlan.disciplineAccess,
         allowedDisciplines: selectedPlan.allowedDisciplines,
         canFreeze: selectedPlan.canFreeze,
@@ -116,13 +121,26 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         ...student.membership?.centerStats,
         currentMonth: {
           classesAttended: 0,
-          classesContracted: calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
-          remainingClasses: calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
+          classesContracted: formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
+          remainingClasses: formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
           noShows: 0,
           lastMinuteCancellations: 0,
         }
       }
     };
+
+    const history = student.membership?.history ? [...student.membership.history] : [];
+    if (student.membership) {
+        // Marcamos la antigua como inactiva si está activa
+        const pastMembership = { ...student.membership };
+        if (pastMembership.status === 'active') {
+            pastMembership.status = 'inactive';
+        }
+        delete pastMembership.history;
+        history.unshift(pastMembership);
+    }
+    
+    newMembership.history = history;
 
     const updateData: Partial<FitCenterUserProfile> = {
       formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],
@@ -169,13 +187,30 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
+          {student.membership && (
+             <div className="mb-6 bg-zinc-50 rounded-lg p-4 border border-zinc-200">
+               <h3 className="text-sm font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
+               <div className="space-y-1 text-sm">
+                 <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
+                 <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? new Date(student.membership.currentPeriodEnd).toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</span></p>
+               </div>
+             </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-zinc-800">Plan a Contratar <span className="text-red-500">*</span></Label>
                 <Select
                   value={formData.planId}
-                  onValueChange={(value) => setFormData({ ...formData, planId: value })}
+                  onValueChange={(value) => {
+                    const planSeleccionado = plans.find(p => p.id === value);
+                    setFormData({ 
+                      ...formData, 
+                      planId: value,
+                      clasesTotales: planSeleccionado ? String(planSeleccionado.classLimit) : "",
+                      precioTotal: planSeleccionado ? String(planSeleccionado.price) : ""
+                    });
+                  }}
                   required
                 >
                   <SelectTrigger className="h-11 bg-zinc-50 border-zinc-300 focus:ring-emerald-500"><SelectValue placeholder="Selecciona un plan" /></SelectTrigger>
@@ -195,6 +230,26 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                 )}
               </div>
               
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-zinc-800">Clases totales</Label>
+                <Input
+                  type="number"
+                  value={formData.clasesTotales}
+                  onChange={(e) => setFormData({ ...formData, clasesTotales: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-zinc-800">Total ($)</Label>
+                <Input
+                  type="number"
+                  value={formData.precioTotal}
+                  onChange={(e) => setFormData({ ...formData, precioTotal: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-zinc-800">Forma de Pago <span className="text-red-500">*</span></Label>
                 <Select

@@ -406,6 +406,15 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       <p className="text-sm text-amber-800 whitespace-pre-line">{student.notes}</p>
                     </div>
                   )}
+                  <div className="mt-6 pt-4 border-t border-zinc-100 flex justify-center">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                      onClick={() => router.push(`/admin/alumnos/${student.id}/nuevo-plan`)}
+                    >
+                      <Ticket className="w-4 h-4 mr-2" /> Activar Nuevo Plan
+                    </Button>
+                  </div>
                 </CardContent>
               </>
             ) : (
@@ -527,12 +536,29 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       </p>
                     </div>
                   )}
-                  {/* Placeholder for real history array if available in future */}
-                  <div className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
-                      <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-full -left-[5.5px] top-5" />
-                      <p className="text-sm font-medium text-zinc-400">Historial previo</p>
-                      <p className="text-xs text-zinc-400">Los cambios de plan y membresías vencidas aparecerán aquí cuando estén disponibles en el historial.</p>
-                  </div>
+                  {(!student?.membership?.history || student.membership.history.length === 0) && !student?.membership?.membershipType && (
+                    <div className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
+                        <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-full -left-[5.5px] top-5" />
+                        <p className="text-sm font-medium text-zinc-400">Sin historial previo</p>
+                        <p className="text-xs text-zinc-400">Aún no hay membresías asignadas para este alumno.</p>
+                    </div>
+                  )}
+                  {student?.membership?.history?.map((pastMem, idx) => {
+                      const isPastUnlimited = pastMem.planConfig?.classLimit === 0;
+                      const classesContracted = pastMem.planConfig?.classLimit ?? 0;
+                      const remainingClasses = pastMem.centerStats?.currentMonth?.remainingClasses ?? 0;
+                      const consumed = !isPastUnlimited ? Math.max(0, classesContracted - remainingClasses) : (pastMem.centerStats?.currentMonth?.classesAttended ?? 0);
+                      
+                      return (
+                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
+                              <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-full -left-[5.5px] top-5" />
+                              <p className="text-sm font-medium text-zinc-700">{pastMem.membershipType}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Finalizado | {pastMem.currentPeriodStart ? new Date(pastMem.currentPeriodStart).toLocaleDateString() : "-"} hasta {pastMem.currentPeriodEnd ? new Date(pastMem.currentPeriodEnd).toLocaleDateString() : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted} clases
+                              </p>
+                          </div>
+                      );
+                  })}
                 </div>
               </AccordionContent>
             </AccordionItem>

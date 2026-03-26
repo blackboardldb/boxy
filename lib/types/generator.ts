@@ -111,6 +111,7 @@ export function createMembershipSchema() {
         requestDate: z.string(),
       })
       .optional(),
+    history: z.array(z.record(z.unknown())).optional(),
   });
 }
 

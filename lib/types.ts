@@ -101,6 +101,9 @@ export interface FitCenterMembership {
   };
   // NUEVO: Solicitud de renovación pendiente
   pendingRenewal?: PendingRenewalRequest;
+  
+  // Historial de membresías previas guardadas dentro del JSON de la membresía para persistencia
+  history?: FitCenterMembership[];
 }
 
 // === NUEVAS INTERFACES PARA MÉTRICAS HISTÓRICAS ===
