@@ -7,6 +7,8 @@ import { DisciplineRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
 import { generatedSchemas, createSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError } from "../errors/types";
+import { generateClassesFromSchedules } from "../utils/class-generator";
+import { prisma } from "../prisma";
 
 export class DisciplineService extends BaseService<Discipline> {
   protected repositoryName = "disciplines" as const;
@@ -212,34 +214,35 @@ export class DisciplineService extends BaseService<Discipline> {
     const scheduleChanged = JSON.stringify(previousRecord.schedule) !== JSON.stringify(updatedRecord.schedule);
     
     if (scheduleChanged) {
-      // AQUÍ VA LA LÓGICA CON PRISMA REAL PARA GENERAR CLASES
       console.log(
-        `[DisciplineService] HORARIO MODIFICADO para Disciplina: ${updatedRecord.name}. 
-        TODO (PRISMA REAL): 
-        1. Buscar clases futuras de esta disciplina sin usuarios inscritos.
-        2. Eliminarlas (prisma.classSession.deleteMany)
-        3. Crear nuevas clases con el nuevo patrón de updatedRecord.schedule`
+        `[DisciplineService] HORARIO MODIFICADO para Disciplina: ${updatedRecord.name}. Iniciando sincronización de clases futuras...`
       );
       
-      // HACK MOCK: Auto-generando silenciosamente para que la prueba de UI funcione sin el botón
       try {
+        // 1. Limpieza masiva de clases futuras sin alumnos inscritos
+        const now = new Date();
+        const deleteResult = await prisma.classSession.deleteMany({
+          where: {
+            disciplineId: updatedRecord.id,
+            dateTime: { gte: now },
+            registeredParticipantsIds: { equals: [] }
+          }
+        });
+
+        console.log(`[DisciplineService] Se eliminaron ${deleteResult.count} clases huerfanas sin alumnos de forma masiva.`);
+
+        // 2. Re-generar clases con el nuevo patrón (llamada interna directa ultra rápida)
         const start = new Date();
-        start.setDate(1); 
+        start.setDate(1); // Desde inicio de mes actual
         const end = new Date();
         end.setMonth(end.getMonth() + 2);
-        end.setDate(0); 
+        end.setDate(0); // Hasta fin del mes siguiente
 
-        await fetch("/api/classes/generate-auto", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            startDate: start.toISOString(),
-            endDate: end.toISOString()
-          })
-        });
-        console.log("[DisciplineService] Clases mock auto-resincronizadas.");
+        await generateClassesFromSchedules(start, end, updatedRecord.id);
+        
+        console.log("[DisciplineService] Sincronización masiva completada.");
       } catch (e) {
-        console.log("No se pudo auto-generar (esperado si fetch falla en backend-to-backend)");
+        console.error("[DisciplineService] Error en la sincronización de horarios:", e);
       }
     }
   }
