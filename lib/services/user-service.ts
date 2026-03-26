@@ -32,23 +32,56 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     };
 
     // Build where clause
-    const where: any = {};
+    const conditions: any[] = [];
 
     if (params?.role) {
-      where.role = params.role;
+      conditions.push({ role: params.role });
     }
 
     if (params?.status) {
-      where.membership = { status: params.status };
+      if (params.status === "active") {
+        const today = new Date().toISOString().substring(0, 10);
+        conditions.push({
+          membership: { path: ["status"], equals: "active" },
+        });
+        conditions.push({
+          membership: { path: ["currentPeriodEnd"], gte: today },
+        });
+      } else if (params.status === "expired") {
+        const today = new Date().toISOString().substring(0, 10);
+        conditions.push({
+          OR: [
+            { membership: { path: ["status"], equals: "expired" } },
+            { membership: { path: ["currentPeriodEnd"], lt: today } },
+          ],
+        });
+      } else if (params.status === "pending") {
+        conditions.push({
+          OR: [
+            { membership: { path: ["status"], equals: "pending" } },
+            {
+              membership: { path: ["pendingRenewal", "status"], equals: "pending" },
+            },
+          ],
+        });
+      } else {
+        conditions.push({
+          membership: { path: ["status"], equals: params.status },
+        });
+      }
     }
 
     if (params?.search) {
-      where.OR = [
-        { firstName: { contains: params.search, mode: "insensitive" } },
-        { lastName: { contains: params.search, mode: "insensitive" } },
-        { email: { contains: params.search, mode: "insensitive" } },
-      ];
+      conditions.push({
+        OR: [
+          { firstName: { contains: params.search, mode: "insensitive" } },
+          { lastName: { contains: params.search, mode: "insensitive" } },
+          { email: { contains: params.search, mode: "insensitive" } },
+        ],
+      });
     }
+
+    const where: any = conditions.length > 0 ? { AND: conditions } : {};
 
     if (Object.keys(where).length > 0) {
       findParams.where = where;

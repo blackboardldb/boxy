@@ -515,6 +515,7 @@ export function InstructorsManager() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead>Especialidades</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Acciones</TableHead>
@@ -527,6 +528,9 @@ export function InstructorsManager() {
                   <TableRow key={i}>
                     <TableCell>
                       <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-16 rounded-full" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-40" />
@@ -542,7 +546,7 @@ export function InstructorsManager() {
               ) : instructors.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="text-center py-8 text-muted-foreground"
                   >
                     {instructorsPagination?.total === 0
@@ -555,6 +559,16 @@ export function InstructorsManager() {
                   <TableRow key={instructor.id}>
                     <TableCell className="font-medium">
                       {instructor.firstName} {instructor.lastName}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          instructor.role === "admin" ? "default" : "secondary"
+                        }
+                        className="capitalize"
+                      >
+                        {instructor.role || "coach"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

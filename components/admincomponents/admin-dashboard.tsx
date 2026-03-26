@@ -220,7 +220,7 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6 mb-16">
       {/* Estadísticas Principales */}
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
         <MetricCard
           title="Total Miembros"
           value={totalMembers}
@@ -238,17 +238,14 @@ export function AdminDashboard() {
         <MetricCard
           title="Balance"
           value={`$${monthlyRevenue.toLocaleString()}`}
-          subtitle="Ganancia del mes"
+          subtitle={
+            <>
+              Ganancia del mes
+              <br />
+              Egresos Mensuales ${totalEgresosMes.toLocaleString()}
+            </>
+          }
           icon={DollarSign}
-          isLoading={isLoading}
-          linkTo="/admin/finanzas"
-        />
-
-        <MetricCard
-          title="Egresos Mensuales"
-          value={`$${totalEgresosMes.toLocaleString()}`}
-          subtitle={`${egresosMes.length} gastos este mes`}
-          icon={MinusCircle}
           isLoading={isLoading}
           linkTo="/admin/finanzas"
         />

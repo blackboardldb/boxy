@@ -50,6 +50,36 @@ export const initialDisciplines = [
     organizationId: "org_blacksheep_001",
     schedule: [],
     cancellationRules: { hoursBefore: 2, maxPerMonth: 3 }
+  },
+  {
+    id: "disc_planificacion_001",
+    name: "Planificacion",
+    description: "Planificación de entrenamientos personalizados.",
+    color: "#3b82f6",
+    isActive: true,
+    organizationId: "org_blacksheep_001",
+    schedule: [],
+    cancellationRules: { hoursBefore: 2, maxPerMonth: 3 }
+  },
+  {
+    id: "disc_crossbalance_001",
+    name: "Cross Balance",
+    description: "Entrenamiento de equilibrio y core.",
+    color: "#10b981",
+    isActive: true,
+    organizationId: "org_blacksheep_001",
+    schedule: [],
+    cancellationRules: { hoursBefore: 2, maxPerMonth: 3 }
+  },
+  {
+    id: "disc_pilates_001",
+    name: "Pilates",
+    description: "Fortalecimiento del cuerpo y mejora de la flexibilidad.",
+    color: "#8b5cf6",
+    isActive: true,
+    organizationId: "org_blacksheep_001",
+    schedule: [],
+    cancellationRules: { hoursBefore: 2, maxPerMonth: 3 }
   }
 ];
 

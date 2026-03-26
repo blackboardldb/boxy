@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // ─── Con sesión en /admin → verificar que sea admin
+  // ─── Con sesión en /admin → verificar que sea admin o coach
   if (user && pathname.startsWith("/admin")) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "admin" && profile?.role !== "coach") {
       return NextResponse.redirect(new URL("/app", request.url));
     }
   }

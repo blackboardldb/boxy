@@ -268,11 +268,6 @@ export default function AlumnosPage() {
                   >
                     <TableCell className="font-medium">
                       {student.firstName} {student.lastName}
-                      {(currentPlanStatus === "expired" || currentPlanStatus === "exhausted") && (
-                        <Badge className="ml-2 bg-red-500 text-white">
-                          Renovar
-                        </Badge>
-                      )}
                     </TableCell>
                     <TableCell>
                       <span className="font-medium">
