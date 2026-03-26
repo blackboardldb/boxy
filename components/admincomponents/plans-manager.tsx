@@ -56,7 +56,6 @@ const emptyPlan: Omit<MembershipPlan, "id" | "organizationId"> = {
 
 // Opciones de duración predefinidas
 const durationOptions = [
-  { value: 0.5, label: "Quincenal (15 días)" },
   { value: 1, label: "Mensual (1 mes)" },
   { value: 3, label: "Trimestral (3 meses)" },
   { value: 6, label: "Semestral (6 meses)" },
@@ -73,6 +72,7 @@ export default function PlansManager() {
     disciplines,
     createPlan,
     updatePlanById,
+    deletePlanById,
     fetchDisciplines,
   } = useBlackSheepStore();
   const { toast } = useToast();
@@ -143,24 +143,40 @@ export default function PlansManager() {
     setShowDeleteModal(true);
   };
 
-  const confirmDeletePlan = () => {
+  const confirmDeletePlan = async () => {
     if (planToDelete) {
-      deletePlan(planToDelete);
+      try {
+        // En Next.js 15/Prisma, la eliminación puede fallar si hay dependencias
+        const success = await deletePlanById(planToDelete);
 
-      // Refrescar la lista después de eliminar
-      fetchPlans(
-        1,
-        50,
-        searchTerm,
-        activeFilter !== "todos" ? activeFilter : ""
-      );
+        if (success) {
+          // Refrescar la lista después de eliminar
+          await fetchPlans(
+            1,
+            50,
+            searchTerm,
+            activeFilter !== "todos" ? activeFilter : ""
+          );
 
-      setShowDeleteModal(false);
-      setPlanToDelete(null);
-      toast({
-        title: "Plan eliminado",
-        description: "El plan se ha eliminado correctamente",
-      });
+          toast({
+            title: "Plan eliminado",
+            description: "El plan se ha eliminado correctamente",
+          });
+        }
+      } catch (error) {
+        console.error("Error deleting plan:", error);
+        toast({
+          title: "Error al eliminar plan",
+          description:
+            error instanceof Error
+              ? error.message
+              : "No se pudo eliminar el plan. Es posible que esté en uso por algún alumno.",
+          variant: "destructive",
+        });
+      } finally {
+        setShowDeleteModal(false);
+        setPlanToDelete(null);
+      }
     }
   };
 
@@ -475,9 +491,7 @@ export default function PlansManager() {
                       <Calendar className="w-4 h-4 text-muted-foreground" />
 
                       <p className="text-sm text-muted-foreground">
-                        {plan.durationInMonths === 0.5
-                          ? "Quincenal"
-                          : plan.durationInMonths === 1
+                        {plan.durationInMonths === 1
                           ? "1 mes"
                           : `${plan.durationInMonths} meses`}
                       </p>
@@ -643,12 +657,9 @@ export default function PlansManager() {
                   {planForm.classLimit > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Total para{" "}
-                      {planForm.durationInMonths === 0.5
-                        ? "quincena"
-                        : `${planForm.durationInMonths} mes${
+                      {`${planForm.durationInMonths} mes${
                             planForm.durationInMonths !== 1 ? "es" : ""
-                          }`}
-                      : {clasesTotales} clases
+                          }`}: {clasesTotales} clases
                     </p>
                   )}
                 </div>

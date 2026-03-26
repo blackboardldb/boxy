@@ -7,10 +7,10 @@ const instructorService = new InstructorService();
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Use InstructorService to toggle instructor status
     const response = await instructorService.toggleInstructorStatus(id);
@@ -38,7 +38,7 @@ export async function PATCH(
     return ErrorHandler.createResponse(error, {
       operation: "toggleInstructorStatus",
       resource: "instructors",
-      resourceId: params.id,
+      metadata: { id: (await params).id },
     });
   }
 }

@@ -7,10 +7,10 @@ const planService = new PlanService();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -35,17 +35,17 @@ export async function GET(
     return ErrorHandler.createResponse(error, {
       operation: "getPlanById",
       resource: "plans",
-      metadata: { id: params.id },
+      metadata: { id: (await params).id },
     });
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     if (!id) {
@@ -71,17 +71,17 @@ export async function PUT(
     return ErrorHandler.createResponse(error, {
       operation: "updatePlan",
       resource: "plans",
-      metadata: { id: params.id },
+      metadata: { id: (await params).id },
     });
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -106,7 +106,7 @@ export async function DELETE(
     return ErrorHandler.createResponse(error, {
       operation: "deletePlan",
       resource: "plans",
-      metadata: { id: params.id },
+      metadata: { id: (await params).id },
     });
   }
 }

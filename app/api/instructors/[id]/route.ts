@@ -7,10 +7,10 @@ const instructorService = new InstructorService();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Use InstructorService to get instructor by ID
     const response = await instructorService.getInstructorById(id);
@@ -29,17 +29,17 @@ export async function GET(
     return ErrorHandler.createResponse(error, {
       operation: "getInstructorById",
       resource: "instructors",
-      resourceId: params.id,
+      metadata: { id: (await params).id },
     });
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Use InstructorService to update instructor with validation
@@ -58,17 +58,17 @@ export async function PUT(
     return ErrorHandler.createResponse(error, {
       operation: "updateInstructor",
       resource: "instructors",
-      resourceId: params.id,
+      metadata: { id: (await params).id },
     });
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Use InstructorService to delete instructor with validation
     const response = await instructorService.deleteInstructor(id);
@@ -89,7 +89,7 @@ export async function DELETE(
     return ErrorHandler.createResponse(error, {
       operation: "deleteInstructor",
       resource: "instructors",
-      resourceId: params.id,
+      metadata: { id: (await params).id },
     });
   }
 }

@@ -135,6 +135,7 @@ interface BlackSheepStore {
   deletePlan: (planId: string) => void;
   createPlan: (planData: Partial<Plan>) => Promise<Plan | null>;
   updatePlanById: (id: string, planData: Partial<Plan>) => Promise<Plan | null>;
+  deletePlanById: (id: string) => Promise<boolean>;
   fetchPlans: (
     page?: number,
     limit?: number,
@@ -1019,6 +1020,38 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
             error: error instanceof Error ? error.message : String(error),
           });
           return null;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deletePlanById: async (id: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`/api/plans/${id}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.error?.message ||
+                errorData.message ||
+                "Error deleting plan. Possibly in use."
+            );
+          }
+
+          set((state) => ({
+            plans: state.plans.filter((plan) => plan.id !== id),
+            membershipPlans: state.membershipPlans.filter((plan) => plan.id !== id),
+          }));
+          return true;
+        } catch (error) {
+          console.error("Error deleting plan:", error);
+          set({
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw error; // Throw so component can handle it
         } finally {
           set({ isLoading: false });
         }

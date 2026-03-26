@@ -320,21 +320,15 @@ export function calcularFechaTerminoMembresia(
   const start = new Date(startDate);
   const end = new Date(start);
 
-  // Manejar duraciones decimales (como 0.5 para quincenal)
-  if (durationInMonths === 0.5) {
-    // Para quincenal: agregar 15 días
-    end.setDate(end.getDate() + 15);
-  } else {
-    // Para duraciones enteras: usar meses
-    end.setMonth(end.getMonth() + durationInMonths);
+  // Para duraciones en meses: usar meses
+  end.setMonth(end.getMonth() + durationInMonths);
 
-    // Ajustar al último día del mes si es necesario
-    if (
-      start.getDate() ===
-      new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
-    ) {
-      end.setDate(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate());
-    }
+  // Ajustar al último día del mes si es necesario
+  if (
+    start.getDate() ===
+    new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+  ) {
+    end.setDate(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate());
   }
 
   return end.toISOString().split("T")[0];
@@ -347,14 +341,8 @@ export function calcularClasesSegunDuracion(
   // Si classLimit es 0, es ilimitado
   if (classLimit === 0) return 0;
 
-  // Calcular clases totales según duración
-  if (durationInMonths === 0.5) {
-    // Quincenal: la mitad de las clases mensuales
-    return Math.ceil(classLimit / 2);
-  } else {
-    // Para duraciones enteras: multiplicar por meses
-    return classLimit * durationInMonths;
-  }
+  // Para duraciones en meses: multiplicar por meses
+  return classLimit * durationInMonths;
 }
 
 /**
@@ -780,7 +768,7 @@ export const PLAN_CATEGORIES: PlanCategoryInfo[] = [
     key: "monthly",
     label: "Planes Mensuales",
     description: "Planes de corto plazo y flexibles",
-    durations: [0.5, 1], // quincenal, mensual
+    durations: [1], // mensual
   },
   {
     key: "extended",
