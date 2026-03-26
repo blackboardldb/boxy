@@ -544,7 +544,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         startDate?: string,
         endDate?: string,
         page: number = 1,
-        limit: number = 10
+        limit: number = 10,
+        filters?: { status?: string; orderBy?: "asc" | "desc" }
       ) => {
         try {
           const params = new URLSearchParams({
@@ -553,6 +554,10 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           });
           if (startDate) params.append("startDate", startDate);
           if (endDate) params.append("endDate", endDate);
+          if (filters?.status) params.append("status", filters.status);
+          // Note: the current API might not support 'orderBy' directly as a query param 
+          // but we can pass it through anyway or handle it in the service if we update it.
+          // For now, let's just ensure we can at least filter by status.
 
           const response = await fetch(`/api/classes?${params.toString()}`);
           if (!response.ok) {
@@ -561,6 +566,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
 
           const result = await response.json();
           if (result.success) {
+            // Merge or set? Usually set for small datasets like current week/active alerts
             set({ classSessions: result.data || [] });
             return {
               classes: result.data || [],
