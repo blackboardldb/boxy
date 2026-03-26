@@ -463,19 +463,15 @@ export function AddStudentModal({
             </div>
 
             <div>
-              <Label htmlFor="membershipStatus">Estado de Membresía</Label>
+              <Label htmlFor="membershipStatus">
+                Estado Manual (Control de Acceso)
+              </Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    status: value as
-                      | "active"
-                      | "suspended"
-                      | "inactive"
-                      | "expired"
-                      | "frozen"
-                      | "pending",
+                    status: value as any,
                   }))
                 }
               >
@@ -484,25 +480,18 @@ export function AddStudentModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">
-                    Activo - Puede usar todos los servicios
-                  </SelectItem>
-                  <SelectItem value="suspended">
-                    Suspendido - No puede reservar clases nuevas
-                  </SelectItem>
-                  <SelectItem value="frozen">
-                    Congelado - Membresía pausada temporalmente
+                    Normal (Seguir fechas del plan)
                   </SelectItem>
                   <SelectItem value="inactive">
-                    Inactivo - Membresía cancelada
-                  </SelectItem>
-                  <SelectItem value="expired">
-                    Expirado - Necesita renovar
-                  </SelectItem>
-                  <SelectItem value="pending">
-                    Pendiente - Esperando aprobación
+                    Suspendido / Bloqueado manualmente
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground mt-1 italic">
+                💡 El sistema calcula automáticamente si el alumno está Activo,
+                Programado o Inactivo según sus fechas. Usa "Suspendido" solo
+                para bloquear el acceso manualmente (ej: deuda).
+              </p>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t mt-4 flex-shrink-0">

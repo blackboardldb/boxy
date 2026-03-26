@@ -7,6 +7,7 @@ import { ClassRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
 // Removed unused imports
 import { ValidationError } from "../errors/types";
+import { getChileOffset } from "../utils";
 
 export class ClassService extends BaseService<ClassSession> {
   protected repositoryName = "classes" as const;
@@ -57,17 +58,19 @@ export class ClassService extends BaseService<ClassSession> {
     if (params?.startDate || params?.endDate) {
       const dateTimeFilter: Record<string, Date> = {};
       if (params.startDate) {
-        // Si solo viene la fecha "YYYY-MM-DD", aseguramos inicio del día
+        // Obtenemos el offset dinámico de Chile para esa fecha
+        const offset = getChileOffset(new Date(`${params.startDate}T12:00:00`));
         const startStr = params.startDate.includes("T") 
           ? params.startDate 
-          : `${params.startDate}T00:00:00.000Z`;
+          : `${params.startDate}T00:00:00.000${offset}`;
         dateTimeFilter.gte = new Date(startStr);
       }
       if (params.endDate) {
-        // Si solo viene la fecha "YYYY-MM-DD", aseguramos fin del día
+        // Obtenemos el offset dinámico de Chile para esa fecha (podría ser distinto si el rango es largo)
+        const offset = getChileOffset(new Date(`${params.endDate}T12:00:00`));
         const endStr = params.endDate.includes("T") 
           ? params.endDate 
-          : `${params.endDate}T23:59:59.999Z`;
+          : `${params.endDate}T23:59:59.999${offset}`;
         dateTimeFilter.lte = new Date(endStr);
       }
       where.dateTime = dateTimeFilter;

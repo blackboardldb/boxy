@@ -30,6 +30,8 @@ import {
   getPlanStatus,
   canUserRegisterForClasses,
   isClassWithinPlanValidity,
+  formatDateChile,
+  formatTimeChile,
 } from "@/lib/utils";
 
 interface FormattedClassItem {
@@ -134,7 +136,7 @@ export default function CalendarPage() {
         }`,
         isRegistered,
         formattedDayLabel: formatWeekday(session.dateTime),
-        formattedTime: formatTimeLocal(session.dateTime),
+        formattedTime: formatTimeChile(session.dateTime),
         status: finalStatus,
         isWithinPlanDates: isClassWithinPlanValidity(currentUser, session.dateTime),
       };
@@ -200,8 +202,8 @@ export default function CalendarPage() {
 
       return classSessions
         .filter((session) => {
-          const sessionDate = new Date(session.dateTime);
-          if (!isSameDay(sessionDate, date)) return false;
+        const isSameDate = formatDateChile(session.dateTime) === formatDateChile(date);
+        if (!isSameDate) return false;
 
           // Filtrar por disciplinas permitidas
           if (allowedDisciplines !== "all" && allowedDisciplines !== null) {

@@ -1,4 +1,5 @@
 import { prisma } from "../prisma";
+import { localToUTC } from "../utils";
 
 // Map day abbreviations to day numbers
 const dayMap: { [key: string]: number } = {
@@ -11,19 +12,6 @@ const dayMap: { [key: string]: number } = {
   sab: 6,
 };
 
-// Helper function to create local date string representing the correct local time (Santiago de Chile)
-function createLocalDateTimeStr(
-  date: Date,
-  hours: number,
-  minutes: number
-): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(hours).padStart(2, "0");
-  const minute = String(minutes).padStart(2, "0");
-  return `${year}-${month}-${day}T${hour}:${minute}:00.000-03:00`;
-}
 
 /**
  * Genera clases automáticamente masivamente usando createMany (ultra rápido).
@@ -92,7 +80,7 @@ export async function generateClassesFromSchedules(
               organizationId: (discipline as any).organizationId || "org_blacksheep_001",
               disciplineId: discipline.id,
               name: discipline.name,
-              dateTime: new Date(createLocalDateTimeStr(date, hours, minutes)),
+              dateTime: new Date(localToUTC(date, time)),
               durationMinutes: 60,
               instructorId: instructor.id,
               capacity: 15,

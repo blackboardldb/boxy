@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Helper para asegurar la zona horaria sin offset raro (como Chile está UTC-3 o UTC-4)
-function createLocalDateTimeStr(
-  date: Date,
-  hours: number,
-  minutes: number
-): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(hours).padStart(2, "0");
-  const minute = String(minutes).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hour}:${minute}:00.000-03:00`;
-}
+import { localToUTC } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +46,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const classDateTimeStr = createLocalDateTimeStr(date, hours, minutes);
+      const classDateTimeStr = localToUTC(date, time);
       const classDateTimeObj = new Date(classDateTimeStr);
 
       const dateStr = [

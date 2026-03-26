@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ClassSession, ClassListItem, Discipline } from "@/lib/types";
-import { toDateString, toTimeString, createLocalDate } from "@/lib/utils";
+import { toDateString, toTimeString, createLocalDate, formatDateChile, formatTimeChile } from "@/lib/utils";
 import {
   startOfMonth,
   endOfMonth,
@@ -86,8 +86,8 @@ export default function AdminClasesPage() {
         status: session.status,
         discipline: discipline?.name || session.name,
         disciplineId: session.disciplineId,
-        date: toDateString(session.dateTime),
-        time: toTimeString(session.dateTime),
+        date: formatDateChile(session.dateTime),
+        time: formatTimeChile(session.dateTime),
         color: discipline?.color || "#666",
         capacity: session.capacity,
         enrolled: enrolled,
@@ -148,10 +148,9 @@ export default function AdminClasesPage() {
     return classSessions
       .filter((session: ClassSession) => {
         // Filtrar por fecha seleccionada
-        const sessionDate = new Date(session.dateTime);
         const isSameDate =
-          format(sessionDate, "yyyy-MM-dd") ===
-          format(selectedDate, "yyyy-MM-dd");
+          formatDateChile(session.dateTime) ===
+          formatDateChile(selectedDate);
 
         if (!isSameDate) return false;
 

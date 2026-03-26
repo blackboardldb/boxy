@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
-import { createLocalDate } from "@/lib/utils";
+import { getChileOffset, localToUTC } from "@/lib/utils";
 
 /**
  * Genera clases para un día específico basado en los horarios de las disciplinas.
@@ -13,7 +13,7 @@ function generateClassesForDay(
   disciplines: Array<{
     id: string;
     name: string;
-    schedule?: Array<{ day: number; times: string[] }>;
+    schedule?: any; // Usamos any para manejar el JSON de Prisma localmente
   }>
 ): ClassSession[] {
   const dayMapping: DayOfWeek[] = [
@@ -29,30 +29,28 @@ function generateClassesForDay(
   const generatedClasses: ClassSession[] = [];
 
   disciplines.forEach((discipline) => {
-    discipline.schedule?.forEach((s: { day: number; times: string[] }) => {
+    let scheduleArray: Array<{ day: DayOfWeek; times: string[] }> = [];
+    if (discipline.schedule) {
+       scheduleArray = typeof discipline.schedule === "string" 
+         ? JSON.parse(discipline.schedule) 
+         : discipline.schedule;
+    }
+
+    if (!Array.isArray(scheduleArray)) return;
+
+    scheduleArray.forEach((s) => {
       if (s.day === dayOfWeek) {
         s.times.forEach((time: string) => {
-          const [hour, minute] = time.split(":");
-          // Crear fecha local usando createLocalDate para evitar problemas de zona horaria
-          const classDate = createLocalDate(
-            day.getFullYear(),
-            day.getMonth() + 1, // createLocalDate espera mes 1-12
-            day.getDate(),
-            parseInt(hour, 10),
-            parseInt(minute, 10)
-          );
-
-          // Formatear fecha para el ID y para comparación local
-          const dateString = format(day, "yyyy-MM-dd"); // Usar el día original, no classDate
-          const timeString = format(classDate, "HH-mm");
+          // Usar la utilidad localToUTC que maneja el offset dinámico de Chile
+          const dateTimeStr = localToUTC(day, time);
+          const dateString = format(day, "yyyy-MM-dd");
 
           generatedClasses.push({
-            id: `gen_${discipline.id}_${dateString}_${timeString}`,
+            id: `gen_${discipline.id}_${dateString}_${time.replace(":", "-")}`,
             organizationId: "org_blacksheep_001",
             disciplineId: discipline.id,
             name: discipline.name,
-            dateTime: classDate.toISOString(), // ISO para compatibilidad
-            dateLocal: dateString, // NUEVO: fecha local YYYY-MM-DD
+            dateTime: dateTimeStr,
             durationMinutes: 60,
             instructorId: "inst_default",
             capacity: 15,
@@ -75,11 +73,7 @@ function generateClassesForDay(
 function generateClassesForDateRange(
   startDate: Date,
   endDate: Date,
-  disciplines: Array<{
-    id: string;
-    name: string;
-    schedule?: Array<{ day: number; times: string[] }>;
-  }>
+  disciplines: any[]
 ): ClassSession[] {
   const allClasses: ClassSession[] = [];
   const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
@@ -110,13 +104,17 @@ export async function GET(request: NextRequest) {
     let targetEndDate: Date;
 
     if (date) {
-      // Modo de compatibilidad: un solo día
-      targetStartDate = new Date(`${date}T00:00:00Z`);
-      targetEndDate = new Date(`${date}T23:59:59Z`);
+      // Modo de compatibilidad: un solo día respetando el offset de Chile
+      const offset = getChileOffset(new Date(`${date}T12:00:00`));
+      targetStartDate = new Date(`${date}T00:00:00.000${offset}`);
+      targetEndDate = new Date(`${date}T23:59:59.999${offset}`);
     } else {
-      // Modo de rango: mes completo
-      targetStartDate = new Date(`${startDate}T00:00:00Z`);
-      targetEndDate = new Date(`${endDate}T23:59:59Z`);
+      // Modo de rango: mes completo respetando el offset de Chile
+      const offsetStart = getChileOffset(new Date(`${startDate}T12:00:00`));
+      const offsetEnd = getChileOffset(new Date(`${endDate}T12:00:00`));
+      
+      targetStartDate = new Date(`${startDate}T00:00:00.000${offsetStart}`);
+      targetEndDate = new Date(`${endDate}T23:59:59.999${offsetEnd}`);
     }
 
     // 1. Buscar clases REALES que ya existan para ese rango de fechas en la BD
@@ -127,10 +125,13 @@ export async function GET(request: NextRequest) {
           lte: targetEndDate.toISOString(),
         },
       },
-      orderBy: {
-        dateTime: "asc",
-      },
-    });
+    }) as any[];
+
+    // Convertir fechas de Prisma (Date) a string (ISO) para cumplir con el tipo ClassSession
+    const normalizedRealClasses = realClasses.map(cls => ({
+      ...cls,
+      dateTime: cls.dateTime instanceof Date ? cls.dateTime.toISOString() : cls.dateTime
+    })) as ClassSession[];
 
     // 2. Obtener disciplinas activas
     const disciplines = await prisma.discipline.findMany({
@@ -150,22 +151,14 @@ export async function GET(request: NextRequest) {
 
     // Primero, agregar todas las clases generadas al mapa.
     allGeneratedClasses.forEach((cls) => {
-      const classDate = new Date(cls.dateTime);
-      const key = `${cls.disciplineId}:${format(
-        classDate,
-        "yyyy-MM-dd:HH-mm"
-      )}`;
+      const key = `${cls.disciplineId}:${format(new Date(cls.dateTime), "yyyy-MM-dd:HH-mm")}`;
       classMap.set(key, cls);
     });
 
     // Luego, sobrescribir con las clases reales. Si una clase real ocupa el mismo
     // slot que una generada, la real tendrá precedencia.
-    realClasses.forEach((cls) => {
-      const classDate = new Date(cls.dateTime);
-      const key = `${cls.disciplineId}:${format(
-        classDate,
-        "yyyy-MM-dd:HH-mm"
-      )}`;
+    normalizedRealClasses.forEach((cls) => {
+      const key = `${cls.disciplineId}:${format(new Date(cls.dateTime), "yyyy-MM-dd:HH-mm")}`;
       classMap.set(key, cls);
     });
 
@@ -178,7 +171,7 @@ export async function GET(request: NextRequest) {
       classes: allClasses,
       source: realClasses.length > 0 ? "mixed" : "generated",
       count: allClasses.length,
-      realClassesCount: realClasses.length, // Esto sigue siendo el recuento de la BD
+      realClassesCount: realClasses.length,
       generatedClassesCount: allClasses.length - realClasses.length,
     });
   } catch (error) {

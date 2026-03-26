@@ -42,12 +42,10 @@ export class UserService extends BaseService<FitCenterUserProfile> {
       const today = new Date().toISOString().substring(0, 10);
 
       if (params.status === "active") {
-        // Active today: status is active AND today is between start and end
-        conditions.push({ membership: { path: ["status"], equals: "active" } });
+        // Active today: today is between start and end AND classes remain
         conditions.push({
           membership: { path: ["currentPeriodEnd"], gte: today },
         });
-        // Check for start date
         conditions.push({
           OR: [
             { membership: { path: ["currentPeriodStart"], lte: today } },
@@ -59,8 +57,33 @@ export class UserService extends BaseService<FitCenterUserProfile> {
             },
           ],
         });
+        // Check for classes remaining (if limited)
+        conditions.push({
+          OR: [
+            {
+              membership: {
+                path: ["planConfig", "classLimit"],
+                equals: 0,
+              },
+            },
+            {
+              membership: {
+                path: ["centerStats", "currentMonth", "remainingClasses"],
+                gt: 0,
+              },
+            },
+          ],
+        });
+        // Respect manual overrides (if exists)
+        conditions.push({
+          OR: [
+            { membership: { path: ["status"], not: "inactive" } },
+            { membership: { path: ["status"], equals: null } },
+          ],
+        });
       } else if (params.status === "scheduled") {
         // Scheduled: has a plan but starts in the future
+        // We already handled this above (no status restriction)
         conditions.push({
           OR: [
             { membership: { path: ["currentPeriodStart"], gt: today } },
@@ -85,18 +108,27 @@ export class UserService extends BaseService<FitCenterUserProfile> {
           ],
         });
       } else if (params.status === "inactive") {
-        // Inactive: status is inactive OR explicitly expired OR suspended OR past date OR no classes
+        // Inactive: manual block OR expired OR exhausted
         conditions.push({
           OR: [
             { membership: { path: ["status"], equals: "inactive" } },
-            { membership: { path: ["status"], equals: "expired" } },
             { membership: { path: ["status"], equals: "suspended" } },
             { membership: { path: ["currentPeriodEnd"], lt: today } },
             {
-              membership: {
-                path: ["centerStats", "currentMonth", "remainingClasses"],
-                lte: 0,
-              },
+              AND: [
+                {
+                  membership: {
+                    path: ["planConfig", "classLimit"],
+                    gt: 0,
+                  },
+                },
+                {
+                  membership: {
+                    path: ["centerStats", "currentMonth", "remainingClasses"],
+                    lte: 0,
+                  },
+                },
+              ],
             },
           ],
         });

@@ -356,7 +356,7 @@ export function getPlanStatus(
   // Si no hay usuario o membresía, es inactivo
   if (!user?.membership) return "inactive";
 
-  // Si tiene renovación pendiente, el estado es pending (solo si no ha sido procesada)
+  // 0. Verificar si es una renovación pendiente de validación (prioridad alta)
   if (
     user.membership.pendingRenewal &&
     user.membership.pendingRenewal.status === "pending"
@@ -369,16 +369,7 @@ export function getPlanStatus(
     return "pending";
   }
 
-  // Si el estado es explícitamente inactivo (dado de baja) o expirado manual
-  if (
-    user.membership.status === "inactive" ||
-    user.membership.status === "expired" ||
-    user.membership.status === "suspended"
-  ) {
-    return "inactive";
-  }
-
-  // Obtener fechas de inicio y fin del periodo actual
+  // --- LÓGICA DE CÁLCULO DE FECHAS Y CLASES ---
   const startDateStr =
     user.membership.currentPeriodStart || user.membership.startDate;
   const endDateStr = user.membership.currentPeriodEnd;
@@ -419,13 +410,12 @@ export function getPlanStatus(
   const remainingClasses =
     user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
   const isLimitedPlan = (user.membership.planConfig?.classLimit || 0) > 0;
-
-  // Validar si las fechas son válidas
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    return "inactive";
-  }
+  // --------------------------------------------
 
   // 1. Verificar si el plan es futuro (aún no empieza)
+  // IMPORTANTE: Ponemos esto antes que el chequeo de "inactive" manual 
+  // para que alumnos como Camila que tienen un plan futuro pero 
+  // su estado dice "inactivo" por error, se vean como Programados.
   if (today < startDate) {
     return "scheduled";
   }
@@ -437,6 +427,17 @@ export function getPlanStatus(
 
   // 3. Verificar si expiró por clases agotadas (es inactivo ahora)
   if (isLimitedPlan && remainingClasses <= 0) {
+    return "inactive";
+  }
+
+  // 4. El "Freno de Mano": Chequeo manual del administrador (Override)
+  // Si el plan está vigente por fecha y clases, pero el admin 
+  // puso "inactivo" o "suspendido" manualmente, lo respetamos.
+  if (
+    user.membership.status === "inactive" ||
+    user.membership.status === "expired" ||
+    user.membership.status === "suspended"
+  ) {
     return "inactive";
   }
 
@@ -594,20 +595,51 @@ export function convertClassSessionToClassItem(
 const ORGANIZATION_TIMEZONE = "America/Santiago";
 
 /**
- * Convierte una fecha local a UTC para almacenamiento
- * @param localDate - Fecha en zona horaria local
+ * Obtiene el offset de Chile (Santiago) para una fecha específica.
+ * @param date - Fecha para la cual obtener el offset
+ * @returns Offset en formato "-03:00" o "-04:00"
+ */
+export function getChileOffset(date: Date): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: ORGANIZATION_TIMEZONE,
+      timeZoneName: "shortOffset",
+    }).formatToParts(date);
+
+    const offsetPart = parts.find((p) => p.type === "timeZoneName");
+    if (!offsetPart) return "-03:00"; // Fallback seguro (verano)
+
+    const offset = offsetPart.value.replace("GMT", "");
+
+    if (offset === "") return "+00:00";
+    if (offset.includes(":")) return offset;
+
+    const sign = offset.startsWith("-") ? "-" : "+";
+    const absOffset = offset.replace(/[+-]/, "").padStart(2, "0");
+    return `${sign}${absOffset}:00`;
+  } catch (e) {
+    return "-03:00"; // Fallback en caso de error en Intl
+  }
+}
+
+/**
+ * Convierte una fecha local (Chile) a UTC para almacenamiento
+ * @param localDate - Fecha en la que ocurre el evento
  * @param timeString - Hora en formato "HH:mm"
- * @returns ISO string en UTC
+ * @returns ISO string en UTC que representa exactamente ese momento en Chile
  */
 export function localToUTC(localDate: Date, timeString: string): string {
   const [hours, minutes] = timeString.split(":").map(Number);
+  const offset = getChileOffset(localDate);
 
-  // Crear fecha en zona horaria local
-  const localDateTime = new Date(localDate);
-  localDateTime.setHours(hours, minutes, 0, 0);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, "0");
+  const day = String(localDate.getDate()).padStart(2, "0");
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
 
-  // Convertir a UTC
-  return localDateTime.toISOString();
+  const isoStr = `${year}-${month}-${day}T${hh}:${mm}:00.000${offset}`;
+  return new Date(isoStr).toISOString();
 }
 
 /**
@@ -813,6 +845,33 @@ export function toTimeString(date: Date | string): string {
   return `${String(dateObj.getHours()).padStart(2, "0")}:${String(
     dateObj.getMinutes()
   ).padStart(2, "0")}`;
+}
+
+/**
+ * Obtiene la fecha comprimida YYYY-MM-DD forzando la zona horaria de Chile
+ * Útil para comparaciones y filtros que deben ser consistentes con Santiago.
+ */
+export function formatDateChile(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ORGANIZATION_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(dateObj);
+}
+
+/**
+ * Obtiene la hora HH:mm forzando la zona horaria de Chile
+ */
+export function formatTimeChile(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: ORGANIZATION_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(dateObj);
 }
 
 // ===== FUNCIONES DE CATEGORIZACIÓN DE PLANES =====
