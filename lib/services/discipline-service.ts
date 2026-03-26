@@ -194,14 +194,18 @@ export class DisciplineService extends BaseService<Discipline> {
     );
   }
 
-  protected async afterUpdate(
+   protected async afterUpdate(
     updatedRecord: Discipline,
     previousRecord: Discipline
   ): Promise<void> {
     // Clear cache
     this.clearCache();
 
-    // Log significant changes
+    // Significant flags
+    const deactivated = previousRecord.isActive && !updatedRecord.isActive;
+    const scheduleChanged = JSON.stringify(previousRecord.schedule) !== JSON.stringify(updatedRecord.schedule);
+
+    // 1. Log status Change
     if (previousRecord.isActive !== updatedRecord.isActive) {
       console.log(
         `[DisciplineService] Discipline status changed: ${updatedRecord.id} (${
@@ -210,17 +214,16 @@ export class DisciplineService extends BaseService<Discipline> {
       );
     }
 
-    // ARQUITECTURA PARA DATA REAL: Sincronización Automática
-    const scheduleChanged = JSON.stringify(previousRecord.schedule) !== JSON.stringify(updatedRecord.schedule);
-    
-    if (scheduleChanged) {
+    // 2. Automatic Synchronization & Cleanup
+    if (scheduleChanged || deactivated) {
+      const triggerReason = deactivated ? "DESACTIVACIÓN" : "CAMBIO DE HORARIO";
       console.log(
-        `[DisciplineService] HORARIO MODIFICADO para Disciplina: ${updatedRecord.name}. Iniciando sincronización de clases futuras...`
+        `[DisciplineService] Iniciando limpieza por ${triggerReason} para: ${updatedRecord.name}.`
       );
       
       try {
-        // 1. Limpieza masiva de clases futuras sin alumnos inscritos
         const now = new Date();
+        // Limpieza masiva de clases futuras SIN alumnos inscritos
         const deleteResult = await prisma.classSession.deleteMany({
           where: {
             disciplineId: updatedRecord.id,
@@ -229,20 +232,24 @@ export class DisciplineService extends BaseService<Discipline> {
           }
         });
 
-        console.log(`[DisciplineService] Se eliminaron ${deleteResult.count} clases huerfanas sin alumnos de forma masiva.`);
+        console.log(`[DisciplineService] Limpieza completada: se eliminaron ${deleteResult.count} clases futuras sin alumnos.`);
 
-        // 2. Re-generar clases con el nuevo patrón (llamada interna directa ultra rápida)
-        const start = new Date();
-        start.setDate(1); // Desde inicio de mes actual
-        const end = new Date();
-        end.setMonth(end.getMonth() + 2);
-        end.setDate(0); // Hasta fin del mes siguiente
+        // 3. Re-generar clases solo SI está activa y cambió el horario
+        if (scheduleChanged && updatedRecord.isActive) {
+          console.log("[DisciplineService] Re-generando clases con el nuevo patrón...");
+          const start = new Date();
+          start.setDate(1); // Desde inicio de mes actual
+          const end = new Date();
+          end.setMonth(end.getMonth() + 2);
+          end.setDate(0); // Hasta fin del mes siguiente
 
-        await generateClassesFromSchedules(start, end, updatedRecord.id);
-        
-        console.log("[DisciplineService] Sincronización masiva completada.");
+          await generateClassesFromSchedules(start, end, updatedRecord.id);
+          console.log("[DisciplineService] Re-generación completada.");
+        } else if (deactivated) {
+          console.log("[DisciplineService] Disciplina inactiva: las clases futuras CON alumnos permanecen para gestión manual.");
+        }
       } catch (e) {
-        console.error("[DisciplineService] Error en la sincronización de horarios:", e);
+        console.error("[DisciplineService] Error en sincronización/limpieza de disciplina:", e);
       }
     }
   }

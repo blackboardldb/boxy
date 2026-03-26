@@ -94,7 +94,7 @@ interface BlackSheepStore {
   // Discipline actions
   addDiscipline: (discipline: Discipline) => void;
   updateDiscipline: (discipline: Discipline) => void;
-  deleteDiscipline: (disciplineId: string) => void;
+  deleteDiscipline: (disciplineId: string) => Promise<boolean>;
   createDiscipline: (
     disciplineData: Partial<Discipline>
   ) => Promise<Discipline | null>;

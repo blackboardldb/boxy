@@ -9,13 +9,15 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { Discipline, DayOfWeek, CancellationRule } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import {
   Plus,
   Trash2,
@@ -25,6 +27,8 @@ import {
   Clock,
   AlertTriangle,
   Calendar,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 const dayLabels: Record<DayOfWeek, string> = {
@@ -50,8 +54,6 @@ const emptyDiscipline: Discipline = {
 export default function DisciplinesManager() {
   const {
     disciplines,
-    addDiscipline,
-    updateDiscipline,
     deleteDiscipline,
     createDiscipline,
     updateDisciplineById,
@@ -62,19 +64,38 @@ export default function DisciplinesManager() {
   const [form, setForm] = useState<Discipline>(emptyDiscipline);
   const [showModal, setShowModal] = useState(false);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(
+    new Set()
+  );
+
+  const toggleDisciplineExpansion = (id: string) => {
+    setExpandedDisciplines((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   // --- Handlers generales ---
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type } = e.target;
-    let val: any = value;
-    if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      val = e.target.checked;
-    }
+    const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: val,
+      [name]: value,
+    }));
+  };
+
+  const handleToggleActive = (checked: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      isActive: checked,
     }));
   };
 
@@ -139,8 +160,8 @@ export default function DisciplinesManager() {
   // --- Guardar/Editar/Eliminar ---
   const handleSave = async () => {
     if (!form.name) return;
+    setIsLoading(true);
 
-    // Filtrar horarios solo para días seleccionados
     const filteredSchedule = form.schedule.filter((s) =>
       selectedDays.includes(s.day)
     );
@@ -152,41 +173,25 @@ export default function DisciplinesManager() {
 
     let result;
     if (editing) {
-      // Actualizar disciplina existente
       result = await updateDisciplineById(editing, disciplineData);
     } else {
-      // Crear nueva disciplina
       result = await createDiscipline(disciplineData);
     }
 
+    setIsLoading(false);
     if (result) {
       toast({
-        title: editing ? "Disciplina actualizada" : "Disciplina agregada",
-        description: "La disciplina se guardó. Generando clases automáticamente...",
+        title: editing ? "Disciplina actualizada" : "Disciplina creada",
+        description: "Los cambios se guardaron. Si desactivaste la disciplina, las clases futuras sin alumnos se eliminaron automáticamente.",
       });
-      
-      // Auto-generar clases para los próximos 2 meses
-      const start = new Date();
-      const end = new Date();
-      end.setMonth(end.getMonth() + 2);
-      fetch("/api/classes/generate-auto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          startDate: start.toISOString(), 
-          endDate: end.toISOString() 
-        })
-      }).catch(console.error);
-
+      handleCloseModal();
     } else {
       toast({
         title: "Error",
-        description: "Error al guardar la disciplina",
+        description: "Hubo un error al procesar la solicitud.",
         variant: "destructive",
       });
     }
-
-    handleCloseModal();
   };
 
   const handleEdit = (d: Discipline) => {
@@ -203,8 +208,20 @@ export default function DisciplinesManager() {
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("¿Eliminar disciplina?")) deleteDiscipline(id);
+  const handleDelete = async (id: string, name: string) => {
+    const confirmation = window.confirm(
+      `¿Estás seguro de que deseas eliminar "${name}"?\n\nSolo podrá eliminarse si no tiene historial de clases (pasadas o canceladas). Si tiene historial, la mejor opción es marcarla como "Inactiva" para limpiar el calendario.`
+    );
+    
+    if (confirmation) {
+      const result = await deleteDiscipline(id);
+      if (result) {
+        toast({
+          title: "Disciplina eliminada",
+          description: "Se ha eliminado del sistema permanentemente.",
+        });
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -214,338 +231,297 @@ export default function DisciplinesManager() {
     setShowModal(false);
   };
 
-  // --- Render ---
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Gestión de Disciplinas</h2>
-        <Button onClick={handleNew}>
-          <Plus className="w-4 h-4 mr-2" /> Nueva Disciplina
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-premium">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Gestión de Disciplinas</h2>
+          <p className="text-sm text-muted-foreground mt-1">Configura horarios, reglas de cancelación y disponibilidad.</p>
+        </div>
+        <Button onClick={handleNew} size="lg" className="rounded-2xl shadow-lg transition-all hover:scale-105">
+          <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
         </Button>
       </div>
 
-      {/* Modal de edición */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar Disciplina" : "Nueva Disciplina"}
-            </DialogTitle>
+        <DialogContent className="max-w-2xl h-[90vh] flex flex-col rounded-3xl p-0 border-none shadow-2xl overflow-hidden">
+          <DialogHeader className="p-6 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="flex items-center justify-between w-full pr-6">
+              <DialogTitle className="text-lg font-bold">
+                {editing ? "Editar Disciplina" : "Crear Nueva Disciplina"}
+              </DialogTitle>
+              <Switch 
+                checked={form.isActive} 
+                onCheckedChange={handleToggleActive}
+              />
+            </div>
           </DialogHeader>
 
-          <div className="space-y-6">
-            {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Nombre</Label>
-                <Input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Ej: CrossFit, Yoga, Spinning"
-                />
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white dark:bg-slate-950">
+            {/* Basic Info Section */}
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-slate-700 dark:text-slate-300">Nombre</Label>
+                  <Input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Ej: CrossFit, Yoga"
+                    className="rounded-xl h-11 border-slate-200"
+                  />
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-slate-700 dark:text-slate-300">Color</Label>
+                  <div className="flex gap-2 h-11">
+                    <Input
+                      name="color"
+                      type="color"
+                      value={form.color}
+                      onChange={handleChange}
+                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-slate-200 overflow-hidden"
+                    />
+                    <Input 
+                      value={form.color}
+                      onChange={handleChange}
+                      name="color"
+                      className="flex-1 h-full rounded-xl border-slate-200 font-mono text-sm"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Color</Label>
-                <Input
-                  name="color"
-                  type="color"
-                  value={form.color}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Descripción</Label>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
                 <Input
                   name="description"
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Descripción de la disciplina"
+                  placeholder="Descripción breve..."
+                  className="rounded-xl h-11 border-slate-200"
                 />
               </div>
+
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full mt-6" />
             </div>
 
-            {/* Selección de días */}
-            <div className="space-y-3">
-              <Label>Días de la semana</Label>
+            {/* Days Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-lg font-bold">Días y Horarios</Label>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(dayLabels).map(([day, label]) => (
-                  <Badge
+                  <button
                     key={day}
-                    variant={
-                      selectedDays.includes(day as DayOfWeek)
-                        ? "default"
-                        : "outline"
-                    }
-                    className={`cursor-pointer ${
-                      selectedDays.includes(day as DayOfWeek)
-                        ? "bg-blue-500 text-white"
-                        : "hover:bg-blue-50"
-                    }`}
+                    type="button"
                     onClick={() => toggleDay(day as DayOfWeek)}
+                    className={cn(
+                      "px-4 py-2 text-sm font-bold rounded-full transition-all border",
+                      selectedDays.includes(day as DayOfWeek)
+                        ? "bg-primary text-white border-primary shadow-md"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800"
+                    )}
                   >
                     {label}
-                  </Badge>
+                  </button>
                 ))}
               </div>
-            </div>
 
-            {/* Horarios por día seleccionado */}
-            {selectedDays.length > 0 && (
-              <div className="space-y-3">
-                <Label>Horarios por día</Label>
-                <div className="space-y-3">
+              {selectedDays.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 mt-4">
                   {selectedDays.map((day) => (
-                    <div key={day} className="border rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Calendar className="w-4 h-4" />
-                        <span className="font-medium">{dayLabels[day]}</span>
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800 group transition-all hover:bg-white dark:hover:bg-slate-800/40">
+                      <div className="flex items-center gap-2 min-w-[120px]">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <span className="font-bold">{dayLabels[day]}</span>
                       </div>
 
-                      {/* Horarios existentes */}
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {(
-                          form.schedule.find((d) => d.day === day) || {
-                            times: [],
-                          }
-                        ).times.map((time) => (
-                          <Badge
-                            key={time}
-                            className="bg-blue-100 text-blue-800"
-                          >
-                            <Clock className="w-3 h-3 mr-1" />
+                      <div className="flex-1 flex flex-wrap gap-2">
+                        {(form.schedule.find((d) => d.day === day) || { times: [] }).times.map((time) => (
+                          <Badge key={time} variant="secondary" className="pl-3 pr-1 py-1.5 h-8 gap-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-none">
+                            <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
                             {time}
                             <button
-                              className="ml-1 text-xs text-red-500 hover:text-red-700"
                               onClick={() => handleRemoveTime(day, time)}
-                              title="Eliminar hora"
+                              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-red-500 transition-colors"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           </Badge>
                         ))}
-                      </div>
-
-                      {/* Agregar nuevo horario */}
-                      <div className="flex gap-2">
-                        <Input
-                          className="w-24"
-                          placeholder="hh:mm"
-                          maxLength={5}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleAddTime(
-                                day,
-                                (e.target as HTMLInputElement).value
-                              );
-                              (e.target as HTMLInputElement).value = "";
-                            }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            const input = e.currentTarget
-                              .previousElementSibling as HTMLInputElement;
-                            if (input.value) {
-                              handleAddTime(day, input.value);
-                              input.value = "";
-                            }
-                          }}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
+                        <div className="flex gap-1 h-8">
+                          <Input
+                            className="w-20 text-xs rounded-full h-8"
+                            placeholder="hh:mm"
+                            maxLength={5}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleAddTime(day, (e.target as HTMLInputElement).value);
+                                (e.target as HTMLInputElement).value = "";
+                              }
+                            }}
+                          />
+                          <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={(e) => {
+                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                            if (input.value) { handleAddTime(day, input.value); input.value = ""; }
+                          }}>
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Reglas de cancelación */}
-            <div className="space-y-3">
-              <Label>Reglas de Cancelación</Label>
-              <div className="space-y-2">
+            {/* Cancellation Rules Section */}
+            <div className="space-y-4">
+              <Label className="text-lg font-bold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                Reglas de Cancelación Especiales
+              </Label>
+              <div className="space-y-3">
                 {form.cancellationRules.map((rule) => (
-                  <div
-                    key={rule.id}
-                    className="flex items-center gap-2 p-2 bg-yellow-50 rounded"
-                  >
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      {rule.time} - {rule.hoursBefore}h antes
-                    </Badge>
-                    <span className="text-sm text-gray-600">
-                      {rule.description}
-                    </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemoveRule(rule.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
+                  <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 group">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-bold">
+                        {rule.time}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">{rule.hoursBefore} horas de anticipación</p>
+                        <p className="text-xs text-yellow-700/70 dark:text-yellow-400/70">{rule.description || "Sin descripción"}</p>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 text-red-400 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveRule(rule.id)}>
+                      <Trash2 className="w-4.5 h-4.5" />
                     </Button>
                   </div>
                 ))}
-              </div>
 
-              <div className="flex gap-2">
-                <Input className="w-20" placeholder="hh:mm" id="rule-time" />
-                <Input
-                  className="w-20"
-                  placeholder="Horas"
-                  type="number"
-                  id="rule-hours"
-                />
-                <Input
-                  className="flex-1"
-                  placeholder="Descripción"
-                  id="rule-desc"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const time = (
-                      document.getElementById("rule-time") as HTMLInputElement
-                    )?.value;
-                    const hours = Number(
-                      (
-                        document.getElementById(
-                          "rule-hours"
-                        ) as HTMLInputElement
-                      )?.value
-                    );
-                    const desc = (
-                      document.getElementById("rule-desc") as HTMLInputElement
-                    )?.value;
+                <div className="flex flex-col sm:flex-row gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dotted border-slate-300 dark:border-slate-800">
+                  <Input className="sm:w-24 rounded-xl h-10" placeholder="Hora" id="rule-time" />
+                  <Input className="sm:w-24 rounded-xl h-10" placeholder="Horas" type="number" id="rule-hours" />
+                  <Input className="flex-1 rounded-xl h-10" placeholder="Motivo/Descripción" id="rule-desc" />
+                  <Button size="sm" className="rounded-xl h-10 px-6" onClick={() => {
+                    const time = (document.getElementById("rule-time") as HTMLInputElement)?.value;
+                    const hours = Number((document.getElementById("rule-hours") as HTMLInputElement)?.value);
+                    const desc = (document.getElementById("rule-desc") as HTMLInputElement)?.value;
                     if (time && hours >= 0) {
-                      handleAddRule({
-                        time,
-                        hoursBefore: hours,
-                        priority: 1,
-                        description: desc,
-                      });
-                      (
-                        document.getElementById("rule-time") as HTMLInputElement
-                      ).value = "";
-                      (
-                        document.getElementById(
-                          "rule-hours"
-                        ) as HTMLInputElement
-                      ).value = "";
-                      (
-                        document.getElementById("rule-desc") as HTMLInputElement
-                      ).value = "";
+                      handleAddRule({ time, hoursBefore: hours, priority: 1, description: desc });
+                      (document.getElementById("rule-time") as HTMLInputElement).value = "";
+                      (document.getElementById("rule-hours") as HTMLInputElement).value = "";
+                      (document.getElementById("rule-desc") as HTMLInputElement).value = "";
                     }
-                  }}
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Agregar
-                </Button>
+                  }}>
+                    <Plus className="w-4 h-4 mr-1" /> Agregar Regla
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            {/* Botones de acción */}
-            <div className="flex gap-2 pt-4 border-t">
-              <Button
-                onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Save className="w-4 h-4 mr-2" /> Guardar
-              </Button>
-              <Button variant="outline" onClick={handleCloseModal}>
-                Cancelar
-              </Button>
             </div>
           </div>
+
+          <DialogFooter className="p-8 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 shrink-0 flex flex-row items-center justify-end gap-3">
+            <Button variant="ghost" onClick={handleCloseModal} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
+            <Button onClick={handleSave} disabled={isLoading} className="rounded-xl h-12 px-10 bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold shadow-xl hover:scale-105 transition-transform disabled:opacity-70">
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+              {editing ? "Actualizar Disciplina" : "Guardar Disciplina"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Listado de disciplinas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-4">
         {!disciplines || disciplines.length === 0 ? (
-          <Card className="md:col-span-2 lg:col-span-3">
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  No hay disciplinas registradas.
-                </p>
-                <Button onClick={handleNew} className="mt-4">
-                  <Plus className="w-4 h-4 mr-2" /> Crear primera disciplina
-                </Button>
-              </div>
-            </CardContent>
+          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-3xl">
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+              <Calendar className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-500">No hay disciplinas registradas</h3>
+            <p className="text-sm text-slate-400 mt-2 mb-8 max-w-xs mx-auto">Comienza creando tu primera disciplina para configurar los horarios de clases.</p>
+            <Button onClick={handleNew} variant="outline" className="rounded-2xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
+              <Plus className="w-5 h-5 mr-1" /> Crear Disciplina
+            </Button>
           </Card>
         ) : (
-          disciplines?.map((d) => (
-            <Card key={d.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-4 h-4 rounded-full"
-                      style={{ background: d.color || "#ccc" }}
+          disciplines.map((d) => (
+            <Card key={d.id} className={cn(
+               "overflow-hidden border-none shadow-premium rounded-[2rem] transition-all hover:translate-y-[-4px]",
+               !d.isActive && "grayscale opacity-80"
+            )}>
+
+              <CardHeader className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <Switch 
+                      id={`active-${d.id}`}
+                      checked={!!d.isActive} 
+                      onCheckedChange={async (checked) => {
+                        const result = await updateDisciplineById(d.id, { isActive: checked });
+                        if (result) {
+                          toast({
+                            title: checked ? "Disciplina activada" : "Disciplina desactivada",
+                            description: checked ? "Los alumnos podrán inscribirse nuevamente." : "Se han eliminado las clases futuras sin alumnos.",
+                          });
+                        }
+                      }}
                     />
-                    <CardTitle className="text-lg">{d.name}</CardTitle>
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color || "#ccc" }} />
+                      {!d.isActive && <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Inactiva</span>}
+                    </div>
                   </div>
-                  <div className="flex gap-1">
+
+                  <div className="flex items-center gap-4">
                     <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => handleEdit(d)}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleDisciplineExpansion(d.id)}
+                      className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800"
                     >
-                      <Edit className="w-4 h-4" />
+                      {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      onClick={() => handleDelete(d.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => handleEdit(d)}>
+                        <Edit className="w-4.5 h-4.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => handleDelete(d.id, d.name)}>
+                        <Trash2 className="w-4.5 h-4.5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                {!d.isActive && (
-                  <Badge variant="secondary" className="w-fit">
-                    Inactiva
-                  </Badge>
-                )}
               </CardHeader>
 
-              <CardContent className="pt-0">
-                {d.description && (
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {d.description}
-                  </p>
-                )}
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Horarios:</span>
+              <CardContent className="px-6 pb-6 empty:hidden">
+                {expandedDisciplines.has(d.id) && (
+                  <div className="space-y-6 pt-2 border-t border-slate-50 dark:border-slate-900 animate-in slide-in-from-top-2 duration-300">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Días y Horarios</span>
+                    <Badge variant="outline" className="rounded-full text-[9px] uppercase font-bold px-2 py-0 border-slate-200">Cronograma</Badge>
                   </div>
 
                   {d.schedule.length === 0 ? (
-                    <span className="text-xs text-muted-foreground ml-6">
-                      Sin horarios configurados
-                    </span>
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-dotted border-slate-200 dark:border-slate-800 text-center text-xs text-muted-foreground">
+                      Sin horarios definidos
+                    </div>
                   ) : (
-                    <div className="ml-6 space-y-1">
+                    <div className="grid grid-cols-1 gap-1.5 px-1">
                       {d.schedule.map((s) => (
-                        <div key={s.day} className="flex items-center gap-2">
-                          <span className="text-xs font-medium w-12">
-                            {dayLabels[s.day]}
-                          </span>
-                          <div className="flex flex-wrap gap-1">
+                        <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 transition-colors hover:bg-slate-100/50">
+                          <span className="text-xs font-bold w-16">{dayLabels[s.day]}</span>
+                          <div className="flex flex-wrap gap-1 justify-end max-w-[140px]">
                             {s.times.map((t) => (
-                              <Badge
-                                key={t}
-                                variant="outline"
-                                className="text-xs"
-                              >
+                              <span key={t} className="text-[9px] font-black px-2 py-0.5 rounded-md bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-sm">
                                 {t}
-                              </Badge>
+                              </span>
                             ))}
                           </div>
                         </div>
@@ -555,20 +531,18 @@ export default function DisciplinesManager() {
                 </div>
 
                 {d.cancellationRules.length > 0 && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">
-                        Reglas de cancelación:
-                      </span>
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3 pl-1">Política de Cancelación</span>
+                    <div className="flex flex-wrap gap-2 pr-2">
+                       {d.cancellationRules.map((r) => (
+                         <div key={r.id} className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-100 dark:border-yellow-900/10 flex items-center gap-1.5 shadow-sm">
+                           <Clock className="w-3 h-3 text-yellow-500/50" />
+                           {r.time} → {r.hoursBefore}h
+                         </div>
+                       ))}
                     </div>
-                    <div className="flex flex-wrap gap-1 ml-6">
-                      {d.cancellationRules.map((r) => (
-                        <Badge key={r.id} variant="outline" className="text-xs">
-                          {r.time} - {r.hoursBefore}h
-                        </Badge>
-                      ))}
-                    </div>
+                  </div>
+                )}
                   </div>
                 )}
               </CardContent>

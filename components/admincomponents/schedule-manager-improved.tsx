@@ -18,11 +18,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { DayOfWeek, Discipline, CancellationRule } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import {
   Plus,
   X,
@@ -33,6 +36,8 @@ import {
   Trash2,
   AlertTriangle,
   Settings,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 const dayLabels: Record<DayOfWeek, string> = {
@@ -58,8 +63,6 @@ const emptyDiscipline: Discipline = {
 export default function ScheduleManagerImproved() {
   const {
     disciplines,
-    addDiscipline,
-    updateDiscipline,
     deleteDiscipline,
     fetchDisciplines,
     createDiscipline,
@@ -68,6 +71,7 @@ export default function ScheduleManagerImproved() {
 
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Estados para gestión de disciplinas
   const [showDisciplineModal, setShowDisciplineModal] = useState(false);
@@ -89,6 +93,7 @@ export default function ScheduleManagerImproved() {
   const [disciplineToDelete, setDisciplineToDelete] = useState<string | null>(
     null
   );
+  const [disciplineToDeleteName, setDisciplineToDeleteName] = useState<string>("");
 
   // Cargar disciplinas al montar el componente
   useEffect(() => {
@@ -122,18 +127,22 @@ export default function ScheduleManagerImproved() {
     setShowDisciplineModal(true);
   };
 
-  const handleDeleteDiscipline = (id: string) => {
+  const handleDeleteDiscipline = (id: string, name: string) => {
     setDisciplineToDelete(id);
+    setDisciplineToDeleteName(name);
     setShowDeleteModal(true);
   };
 
-  const confirmDeleteDiscipline = () => {
+  const confirmDeleteDiscipline = async () => {
     if (disciplineToDelete) {
-      deleteDiscipline(disciplineToDelete);
-
-      // Refrescar la lista después de eliminar
-      fetchDisciplines();
-
+      const result = await deleteDiscipline(disciplineToDelete);
+      if (result) {
+        toast({
+          title: "Disciplina eliminada",
+          description: "La disciplina se eliminó permanentemente.",
+        });
+      }
+      // El store ya limpia el estado local o alertará si falla
       setShowDeleteModal(false);
       setDisciplineToDelete(null);
     }
@@ -154,14 +163,17 @@ export default function ScheduleManagerImproved() {
   const handleDisciplineChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type } = e.target;
-    let val: any = value;
-    if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      val = e.target.checked;
-    }
+    const { name, value } = e.target;
     setDisciplineForm((prev) => ({
       ...prev,
-      [name]: val,
+      [name]: value,
+    }));
+  };
+
+  const handleToggleActive = (checked: boolean) => {
+    setDisciplineForm((prev) => ({
+      ...prev,
+      isActive: checked,
     }));
   };
 
@@ -222,8 +234,8 @@ export default function ScheduleManagerImproved() {
 
   const handleSaveDiscipline = async () => {
     if (!disciplineForm.name) return;
+    setIsSaving(true);
 
-    // Filtrar horarios solo para días seleccionados
     const filteredSchedule = disciplineForm.schedule.filter((s) =>
       selectedDays.includes(s.day)
     );
@@ -233,50 +245,21 @@ export default function ScheduleManagerImproved() {
       schedule: filteredSchedule,
     };
 
+    let result;
     if (editingDiscipline) {
-      // Actualizar disciplina existente
-      const result = await updateDisciplineById(
-        editingDiscipline,
-        disciplineData
-      );
-      if (result) {
-        toast({
-          title: "Disciplina actualizada",
-          description: "La disciplina se ha actualizado correctamente",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al actualizar la disciplina",
-          variant: "destructive",
-        });
-      }
+      result = await updateDisciplineById(editingDiscipline, disciplineData);
     } else {
-      // Crear nueva disciplina
-      const result = await createDiscipline(disciplineData);
-      if (result) {
-        toast({
-          title: "Disciplina agregada",
-          description: "La disciplina se ha agregado correctamente",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al agregar la disciplina",
-          variant: "destructive",
-        });
-      }
+      result = await createDiscipline(disciplineData);
     }
 
-    // Refrescar la lista después de agregar/editar
-    fetchDisciplines();
-
-    setShowDisciplineModal(false);
-    setDisciplineForm(emptyDiscipline);
-    setEditingDiscipline(null);
-    setSelectedDays([]);
-    setSelectedDayForSchedule("");
-    setSelectedCancellationTime("");
+    setIsSaving(false);
+    if (result) {
+      toast({
+        title: editingDiscipline ? "Disciplina actualizada" : "Disciplina creada",
+        description: "Se guardaron los horarios y el estado de la disciplina.",
+      });
+      setShowDisciplineModal(false);
+    }
   };
 
   // Calcular horarios disponibles para reglas de cancelación
@@ -286,204 +269,131 @@ export default function ScheduleManagerImproved() {
     .sort();
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto p-4 md:p-8">
       {/* Header con gestión de disciplinas */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-premium">
         <div>
-          <h2 className="text-2xl font-bold">Disciplinas y Horarios</h2>
-          <p className="text-muted-foreground">
-            Crea y edita las disciplinas y sus horarios para la generación de
-            clases
-          </p>
+          <h2 className="text-2xl font-bold tracking-tight">Configuración de Horarios</h2>
+          <p className="text-sm text-muted-foreground mt-1">Gestiona tus disciplinas, horarios semanales y reglas de cupos.</p>
         </div>
-        <Button onClick={handleNewDiscipline}>
-          <Plus className="w-4 h-4 mr-2" /> Nueva Disciplina
+        <Button onClick={handleNewDiscipline} size="lg" className="rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">
+          <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
         </Button>
       </div>
 
       {/* Lista de disciplinas */}
-      <div className="grid grid-cols-1 gap-4">
+      <div className="flex flex-col gap-4">
         {isLoading ? (
-          // Skeleton simplificado para cards de disciplinas
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="w-4 h-4 rounded-full" />
-                    <Skeleton className="h-6 w-32" />
-                  </div>
-                  <div className="flex gap-1">
-                    <Skeleton className="w-8 h-8 rounded" />
-                    <Skeleton className="w-8 h-8 rounded" />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <Skeleton className="h-4 w-2/3 mb-3" />
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="w-4 h-4 rounded" />
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-5 w-12 rounded-full" />
-                    </div>
-                    <Skeleton className="h-6 w-20 rounded" />
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Skeleton className="h-3 w-12" />
-                      <div className="flex gap-1">
-                        <Skeleton className="h-5 w-12 rounded-full" />
-                        <Skeleton className="h-5 w-12 rounded-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <Card key={i} className="rounded-3xl border-none shadow-md overflow-hidden">
+              <Skeleton className="h-2 flex-1 mb-6" />
+              <CardContent className="space-y-4">
+                <Skeleton className="h-8 w-2/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-10 w-full rounded-xl" />
               </CardContent>
             </Card>
           ))
         ) : !disciplines || disciplines.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  No hay disciplinas configuradas
-                </p>
-                <Button onClick={handleNewDiscipline}>
-                  <Plus className="w-4 h-4 mr-2" /> Crear primera disciplina
-                </Button>
-              </div>
-            </CardContent>
+          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-3xl">
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+              <Settings className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-500">No hay disciplinas configuradas</h3>
+            <p className="text-sm text-slate-400 mt-2 mb-8 max-w-xs mx-auto">Crea una disciplina para empezar a programar tus horarios semanales.</p>
+            <Button onClick={handleNewDiscipline} variant="outline" className="rounded-2xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
+              Crear Disciplina
+            </Button>
           </Card>
         ) : (
           disciplines
             ?.filter((d) => d && d.id)
             .map((d) => (
-              <Card key={d.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-4 h-4 rounded-full"
-                        style={{ background: d.color || "#ccc" }}
+              <Card key={d.id} className={cn(
+                "overflow-hidden border-none shadow-premium rounded-[2rem] transition-all hover:translate-y-[-4px]",
+                !d.isActive && "grayscale opacity-80"
+              )}>
+
+                <CardHeader className="p-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <Switch 
+                        checked={d.isActive} 
+                        onCheckedChange={async (checked) => {
+                          const result = await updateDisciplineById(d.id, { isActive: checked });
+                          if (result) {
+                            toast({
+                              title: checked ? "Disciplina activada" : "Disciplina desactivada",
+                              description: checked ? "Los horarios vuelven a estar vigentes." : "Se han eliminado las clases futuras sin alumnos.",
+                            });
+                          }
+                        }}
                       />
-                      <CardTitle className="text-lg">{d.name}</CardTitle>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => handleEditDiscipline(d)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() => handleDeleteDiscipline(d.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  {!d.isActive && (
-                    <Badge variant="secondary" className="w-fit">
-                      Inactiva
-                    </Badge>
-                  )}
-                </CardHeader>
-
-                <CardContent className="pt-0">
-                  {d.description && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {d.description}
-                    </p>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <p className="text-sm font-medium">
-                          Dias a la semana: {""}
-                          {d.schedule.length > 0 && (
-                            <span className="">
-                              {d.schedule.length} día
-                              {d.schedule.length !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color || "#ccc" }} />
+                        {!d.isActive && <span className="text-[10px] font-black uppercase text-slate-400">Inactiva</span>}
                       </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleDisciplineExpansion(d.id)}
-                        className="text-xs underline"
+                        className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800"
                       >
-                        {expandedDisciplines.has(d.id)
-                          ? "Ocultar"
-                          : "Ver horarios"}
+                        {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                       </Button>
-                    </div>
 
-                    {expandedDisciplines.has(d.id) && (
-                      <>
-                        {d.schedule.length === 0 ? (
-                          <span className="text-xs text-muted-foreground ml-6">
-                            Sin horarios configurados
-                          </span>
-                        ) : (
-                          <div className="ml-6 space-y-1">
-                            {d.schedule.map((s) => (
-                              <div
-                                key={s.day}
-                                className="flex items-center gap-2"
-                              >
-                                <span className="text-xs font-medium w-12">
-                                  {dayLabels[s.day]}
-                                </span>
-                                <div className="flex flex-wrap gap-1">
-                                  {s.times.map((t) => (
-                                    <Badge
-                                      key={t}
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {t}
-                                    </Badge>
-                                  ))}
-                                </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => handleEditDiscipline(d)}>
+                          <Edit className="w-4.5 h-4.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => handleDeleteDiscipline(d.id, d.name)}>
+                          <Trash2 className="w-4.5 h-4.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="px-6 pb-6 empty:hidden">
+                  {expandedDisciplines.has(d.id) && (
+                    <div className="space-y-4 pt-2 border-t border-slate-50 dark:border-slate-900 animate-in slide-in-from-top-2 duration-300">
+                      {d.schedule.length === 0 ? (
+                        <div className="p-4 rounded-xl border-2 border-dotted text-center text-xs text-muted-foreground italic">Sin horarios configurados</div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {d.schedule.map((s) => (
+                            <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                              <span className="text-xs font-bold w-12">{dayLabels[s.day]}</span>
+                              <div className="flex flex-wrap gap-1 justify-end">
+                                {s.times.map((t) => (
+                                  <Badge key={t} variant="outline" className="text-[10px] bg-white dark:bg-slate-900 border-slate-200">
+                                    {t}
+                                  </Badge>
+                                ))}
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {d.cancellationRules.length > 0 && (
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Reglas de Cancelación</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {d.cancellationRules.map((r) => (
+                              <Badge key={r.id} variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-100 font-bold">
+                                {r.time} → {r.hoursBefore}h
+                              </Badge>
                             ))}
                           </div>
-                        )}
-
-                        {d.cancellationRules.length > 0 && (
-                          <div className="mt-3 pt-3 border-t">
-                            <div className="flex items-center gap-2 mb-2">
-                              <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">
-                                Reglas de cancelación:
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap gap-1 ml-6">
-                              {d.cancellationRules.map((r) => (
-                                <Badge
-                                  key={r.id}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {r.time} - {r.hoursBefore}h
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -492,167 +402,167 @@ export default function ScheduleManagerImproved() {
 
       {/* Modal para crear/editar disciplina */}
       <Dialog open={showDisciplineModal} onOpenChange={setShowDisciplineModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingDiscipline ? "Editar Disciplina" : "Nueva Disciplina"}
-            </DialogTitle>
+        <DialogContent className="max-w-2xl h-[90vh] flex flex-col rounded-3xl p-0 border-none shadow-2xl overflow-hidden">
+          <DialogHeader className="p-6 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="flex items-center justify-between w-full pr-6">
+              <DialogTitle className="text-lg font-bold">
+                {editingDiscipline ? "Editar Disciplina" : "Nueva Disciplina"}
+              </DialogTitle>
+              <Switch 
+                checked={disciplineForm.isActive} 
+                onCheckedChange={handleToggleActive}
+              />
+            </div>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white dark:bg-slate-950">
             {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Nombre</Label>
-                <Input
-                  name="name"
-                  value={disciplineForm.name}
-                  onChange={handleDisciplineChange}
-                  placeholder="Ej: CrossFit, Yoga, Spinning"
-                />
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-slate-700 dark:text-slate-300">Nombre</Label>
+                  <Input
+                    name="name"
+                    value={disciplineForm.name}
+                    onChange={handleDisciplineChange}
+                    placeholder="Ej: CrossFit, Yoga"
+                    className="rounded-xl h-11 border-slate-200"
+                  />
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-slate-700 dark:text-slate-300">Color</Label>
+                  <div className="flex gap-2 h-11">
+                    <Input
+                      name="color"
+                      type="color"
+                      value={disciplineForm.color}
+                      onChange={handleDisciplineChange}
+                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-slate-200 overflow-hidden"
+                    />
+                    <Input 
+                      value={disciplineForm.color}
+                      onChange={handleDisciplineChange}
+                      name="color"
+                      className="flex-1 h-full rounded-xl border-slate-200 font-mono text-sm"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Color</Label>
-                <Input
-                  name="color"
-                  type="color"
-                  value={disciplineForm.color}
-                  onChange={handleDisciplineChange}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label>Descripción</Label>
+
+              <div className="space-y-2">
+                <Label className="font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
                 <Input
                   name="description"
                   value={disciplineForm.description}
                   onChange={handleDisciplineChange}
                   placeholder="Descripción de la disciplina"
+                  className="rounded-xl h-11 border-slate-200"
                 />
               </div>
+
+              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full mt-6" />
             </div>
 
             {/* Selección de días */}
-            <div className="space-y-3">
-              <Label>Días de la semana</Label>
+            <div className="space-y-4">
+              <Label className="text-lg font-bold">Días de la semana</Label>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(dayLabels).map(([day, label]) => (
-                  <Badge
+                  <button
                     key={day}
-                    variant={
-                      selectedDays.includes(day as DayOfWeek)
-                        ? "default"
-                        : "outline"
-                    }
-                    className={`cursor-pointer ${
-                      selectedDays.includes(day as DayOfWeek)
-                        ? "bg-blue-500 text-white"
-                        : "hover:bg-blue-50"
-                    }`}
+                    type="button"
                     onClick={() => toggleDay(day as DayOfWeek)}
+                    className={cn(
+                      "px-4 py-2 text-sm font-bold rounded-full transition-all border",
+                      selectedDays.includes(day as DayOfWeek)
+                        ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    )}
                   >
                     {label}
-                  </Badge>
+                  </button>
                 ))}
               </div>
             </div>
 
             {/* Horarios por día seleccionado */}
             {selectedDays.length > 0 && (
-              <div className="space-y-3">
-                <Label>Horarios por día</Label>
+              <div className="space-y-4">
+                <Label className="text-lg font-bold">Horarios por día</Label>
 
                 {/* Inputs para agregar horarios */}
-                <div className="bg-zinc-50 rounded-lg p-4 space-y-3">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border-2 border-dotted border-slate-200 dark:border-slate-800 space-y-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-zinc-600" />
-                    <span className="font-medium text-zinc-700">
-                      Agregar nuevo horario
-                    </span>
+                    <span className="font-bold text-base">Programar nueva hora clase</span>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Select
-                      value={selectedDayForSchedule}
-                      onValueChange={(value) =>
-                        setSelectedDayForSchedule(value as DayOfWeek)
-                      }
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue placeholder="Seleccionar día" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedDays.map((day) => (
-                          <SelectItem key={day} value={day}>
-                            {dayLabels[day]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex flex-wrap gap-4 items-end">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400">Día</Label>
+                      <Select
+                        value={selectedDayForSchedule}
+                        onValueChange={(value) =>
+                          setSelectedDayForSchedule(value as DayOfWeek)
+                        }
+                      >
+                        <SelectTrigger className="w-40 rounded-xl h-10 border-slate-200">
+                          <SelectValue placeholder="Elegir día" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {selectedDays.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {dayLabels[day]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                    <div className="flex gap-1">
-                      <Input
-                        className="w-16"
-                        placeholder="HH"
-                        maxLength={2}
-                        type="number"
-                        min="0"
-                        max="23"
-                        id="new-hour"
-                      />
-                      <span className="flex items-center text-lg font-medium text-zinc-600">
-                        :
-                      </span>
-                      <Input
-                        className="w-16"
-                        placeholder="MM"
-                        maxLength={2}
-                        type="number"
-                        min="0"
-                        max="59"
-                        id="new-minute"
-                      />
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-slate-400">Hora (HH:MM)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          className="w-16 rounded-xl h-10"
+                          placeholder="HH"
+                          maxLength={2}
+                          type="number"
+                          id="new-hour"
+                        />
+                        <span className="flex items-center text-lg font-bold">:</span>
+                        <Input
+                          className="w-16 rounded-xl h-10"
+                          placeholder="MM"
+                          maxLength={2}
+                          type="number"
+                          id="new-minute"
+                        />
+                      </div>
                     </div>
 
                     <Button
-                      size="sm"
-                      variant="outline"
                       disabled={!selectedDayForSchedule}
                       onClick={() => {
-                        const hourInput = document.getElementById(
-                          "new-hour"
-                        ) as HTMLInputElement;
-                        const minuteInput = document.getElementById(
-                          "new-minute"
-                        ) as HTMLInputElement;
+                        const hourInput = document.getElementById("new-hour") as HTMLInputElement;
+                        const minuteInput = document.getElementById("new-minute") as HTMLInputElement;
                         const hour = hourInput.value.padStart(2, "0");
                         const minute = minuteInput.value.padStart(2, "0");
 
-                        if (
-                          selectedDayForSchedule &&
-                          hour &&
-                          minute &&
-                          parseInt(hour) >= 0 &&
-                          parseInt(hour) <= 23 &&
-                          parseInt(minute) >= 0 &&
-                          parseInt(minute) <= 59
-                        ) {
-                          const time = `${hour}:${minute}`;
-                          handleAddTimeToDiscipline(
-                            selectedDayForSchedule,
-                            time
-                          );
+                        if (selectedDayForSchedule && hour && minute) {
+                          handleAddTimeToDiscipline(selectedDayForSchedule, `${hour}:${minute}`);
                           hourInput.value = "";
                           minuteInput.value = "";
                         }
                       }}
+                      className="rounded-xl h-10 px-6 font-bold"
                     >
-                      Agregar
+                      Añadir Hora
                     </Button>
                   </div>
                 </div>
 
                 {/* Horarios existentes */}
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3">
                   {selectedDays.map((day) => {
                     const daySchedule = disciplineForm.schedule.find(
                       (d) => d.day === day
@@ -660,31 +570,25 @@ export default function ScheduleManagerImproved() {
                     if (daySchedule.times.length === 0) return null;
 
                     return (
-                      <div key={day} className="border rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="w-4 h-4" />
-                          <span className="font-medium">{dayLabels[day]}</span>
-                          <Badge variant="outline" className="ml-2">
-                            {daySchedule.times.length} horario
-                            {daySchedule.times.length !== 1 ? "s" : ""}
+                      <div key={day} className="flex items-center justify-between p-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="h-8 rounded-lg px-3 bg-slate-50 dark:bg-slate-900 font-bold border-slate-200">
+                            {dayLabels[day]}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 justify-end">
                           {daySchedule.times.map((time) => (
                             <Badge
                               key={time}
-                              className="bg-blue-100 text-blue-800"
+                              className="bg-primary/5 text-primary border-primary/10 pl-3 pr-1 py-1 h-8 rounded-full font-bold transition-all hover:bg-primary/10"
                             >
-                              <Clock className="w-3 h-3 mr-1" />
+                              <Clock className="w-3.5 h-3.5 mr-1.5 opacity-50" />
                               {time}
                               <button
-                                className="ml-1 text-xs text-red-500 hover:text-red-700"
-                                onClick={() =>
-                                  handleRemoveTimeFromDiscipline(day, time)
-                                }
-                                title="Eliminar hora"
+                                className="ml-1.5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-red-400"
+                                onClick={() => handleRemoveTimeFromDiscipline(day, time)}
                               >
-                                <X className="w-3 h-3" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
                             </Badge>
                           ))}
@@ -697,231 +601,120 @@ export default function ScheduleManagerImproved() {
             )}
 
             {/* Reglas de cancelación */}
-            <div className="space-y-3">
-              <Label>Reglas de Cancelación</Label>
+            <div className="space-y-4">
+              <Label className="text-lg font-bold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                Reglas de Cancelación
+              </Label>
 
-              {availableTimes.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm text-yellow-800">
-                      Primero agrega horarios a la disciplina para poder crear
-                      reglas de cancelación
-                    </span>
-                  </div>
-                </div>
-              )}
+              <div className="space-y-4">
+                {availableTimes.length > 0 && (
+                  <div className="flex flex-wrap gap-4 items-end p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-yellow-700">Para la clase de:</Label>
+                      <Select value={selectedCancellationTime} onValueChange={setSelectedCancellationTime}>
+                        <SelectTrigger className="w-40 rounded-xl h-10 bg-white border-yellow-200">
+                          <SelectValue placeholder="Elegir hora" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {availableTimes.map((time) => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Inputs para agregar reglas */}
-              {availableTimes.length > 0 && (
-                <div className="bg-zinc-50 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-zinc-600" />
-                    <span className="font-medium text-zinc-700">
-                      Agregar nueva regla
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1 flex gap-2">
-                      <div>
-                        <Label className="text-sm font-medium text-zinc-600">
-                          Hora de la clase
-                        </Label>
-                        <Select
-                          value={selectedCancellationTime}
-                          onValueChange={(value) =>
-                            setSelectedCancellationTime(value)
-                          }
-                        >
-                          <SelectTrigger className="w-32 mt-1">
-                            <SelectValue placeholder="Seleccionar hora" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableTimes.length > 0 ? (
-                              availableTimes.map((time) => (
-                                <SelectItem key={time} value={time}>
-                                  {time}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="" disabled>
-                                No hay horarios disponibles
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium text-zinc-600">
-                          Mínimo de horas para cancelar
-                        </Label>
-                        <div className="flex gap-1 mt-1">
-                          <Input
-                            className="w-16"
-                            placeholder="HH"
-                            maxLength={2}
-                            type="number"
-                            min="0"
-                            max="23"
-                            id="rule-cancel-hour"
-                          />
-                          <span className="flex items-center text-lg font-medium text-zinc-600">
-                            :
-                          </span>
-                          <Input
-                            className="w-16"
-                            placeholder="MM"
-                            maxLength={2}
-                            type="number"
-                            min="0"
-                            max="59"
-                            id="rule-cancel-minute"
-                          />
-                        </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase text-yellow-700">Horas de anticipación</Label>
+                      <div className="flex gap-2">
+                        <Input className="w-16 rounded-xl h-10 bg-white border-yellow-200" placeholder="HH" type="number" id="rule-cancel-hour" />
+                        <span className="flex items-center font-bold">:</span>
+                        <Input className="w-16 rounded-xl h-10 bg-white border-yellow-200" placeholder="MM" type="number" id="rule-cancel-minute" />
                       </div>
                     </div>
 
                     <Button
                       size="sm"
                       disabled={!selectedCancellationTime}
+                      variant="secondary"
+                      className="rounded-xl h-10 px-6 font-bold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 border-none hover:bg-yellow-200"
                       onClick={() => {
-                        const cancelHourInput = document.getElementById(
-                          "rule-cancel-hour"
-                        ) as HTMLInputElement;
-                        const cancelMinuteInput = document.getElementById(
-                          "rule-cancel-minute"
-                        ) as HTMLInputElement;
+                        const cancelHourInput = document.getElementById("rule-cancel-hour") as HTMLInputElement;
+                        const cancelMinuteInput = document.getElementById("rule-cancel-minute") as HTMLInputElement;
+                        const hour = cancelHourInput.value || "0";
+                        const min = cancelMinuteInput.value || "0";
+                        const totalHours = parseInt(hour) + parseInt(min) / 60;
 
-                        const cancelHour = cancelHourInput.value.padStart(
-                          2,
-                          "0"
-                        );
-                        const cancelMinute = cancelMinuteInput.value.padStart(
-                          2,
-                          "0"
-                        );
-
-                        // Validación adicional: verificar que la hora seleccionada existe en los horarios
-                        if (
-                          !availableTimes.includes(selectedCancellationTime)
-                        ) {
-                          alert(
-                            "Error: La hora seleccionada no existe en los horarios de la disciplina."
-                          );
-                          return;
-                        }
-
-                        if (
-                          selectedCancellationTime &&
-                          cancelHour &&
-                          cancelMinute &&
-                          parseInt(cancelHour) >= 0 &&
-                          parseInt(cancelHour) <= 23 &&
-                          parseInt(cancelMinute) >= 0 &&
-                          parseInt(cancelMinute) <= 59
-                        ) {
-                          const cancelHours =
-                            parseInt(cancelHour) + parseInt(cancelMinute) / 60;
-
-                          handleAddCancellationRule({
-                            time: selectedCancellationTime,
-                            hoursBefore: cancelHours,
-                            priority: 1,
-                          });
-
+                        if (selectedCancellationTime && totalHours >= 0) {
+                          handleAddCancellationRule({ time: selectedCancellationTime, hoursBefore: totalHours, priority: 1 });
                           setSelectedCancellationTime("");
                           cancelHourInput.value = "";
                           cancelMinuteInput.value = "";
                         }
                       }}
                     >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Agregar Regla
+                      <Plus className="w-4 h-4 mr-1" /> Agregar Regla
                     </Button>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Reglas existentes */}
-              <div className="space-y-2">
-                {disciplineForm.cancellationRules.map((rule) => (
-                  <div
-                    key={rule.id}
-                    className="flex items-center gap-2 p-3 border rounded-lg"
-                  >
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      Clase {rule.time} - Mínimo {rule.hoursBefore}h antes
-                    </Badge>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemoveCancellationRule(rule.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
+                <div className="grid grid-cols-1 gap-2">
+                  {disciplineForm.cancellationRules.map((rule) => (
+                    <div key={rule.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        <span className="text-sm font-bold">Clase: <span className="text-primary">{rule.time}</span></span>
+                        <span className="text-sm text-slate-500">Mínimo <span className="font-bold text-slate-700 dark:text-slate-300">{rule.hoursBefore}h</span> antes</span>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleRemoveCancellationRule(rule.id)}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-
-            {/* Botones de acción */}
-            <div className="flex gap-2 pt-4 border-t">
-              <Button
-                onClick={handleSaveDiscipline}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Save className="w-4 h-4 mr-2" /> Guardar
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowDisciplineModal(false)}
-              >
-                Cancelar
-              </Button>
-            </div>
           </div>
+
+          <DialogFooter className="p-8 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 shrink-0 flex flex-row items-center justify-end gap-3">
+            <Button variant="ghost" onClick={() => setShowDisciplineModal(false)} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
+            <Button onClick={handleSaveDiscipline} disabled={isSaving} className="rounded-xl h-12 px-10 bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-70">
+              {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+              {editingDiscipline ? "Actualizar Horario" : "Guardar Disciplina"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Modal de confirmación para eliminar disciplina */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-3xl p-8 border-none shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-red-500" />
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-red-600">
+              <Trash2 className="w-8 h-8" />
               Confirmar eliminación
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              ¿Estás seguro de que quieres eliminar esta disciplina? Esta acción
-              también eliminará todos sus horarios y reglas de cancelación
-              asociadas.
+          <div className="space-y-4 py-4">
+            <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+              ¿Estás seguro de que quieres eliminar la disciplina <span className="font-black text-slate-800 dark:text-slate-200">"{disciplineToDeleteName}"</span>?
             </p>
-            <p className="text-sm text-red-600 font-medium">
-              Esta acción no se puede deshacer.
+            <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20">
+              <p className="text-sm text-red-700 dark:text-red-400 font-bold flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                Esta acción SOLO funcionará si la disciplina NO tiene historial de clases (pasadas o inscritas).
+              </p>
+            </div>
+            <p className="text-sm text-slate-500 italic">
+              * Si tiene historial, te recomendamos usar el interruptor de <span className="font-bold underline">Desactivar</span> en la tarjeta para limpiar el calendario de forma segura.
             </p>
           </div>
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="destructive"
-              onClick={confirmDeleteDiscipline}
-              className="flex-1"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar
+          <div className="flex gap-3 pt-4">
+            <Button variant="destructive" onClick={confirmDeleteDiscipline} className="flex-1 h-12 rounded-xl font-bold shadow-lg shadow-red-200 dark:shadow-none">
+              Eliminar Permanentemente
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDeleteModal(false);
-                setDisciplineToDelete(null);
-              }}
-              className="flex-1"
-            >
-              Cancelar
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)} className="flex-1 h-12 rounded-xl border-2 font-bold">
+              Volver Atrás
             </Button>
           </div>
         </DialogContent>
