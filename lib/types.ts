@@ -332,6 +332,10 @@ export interface DashboardStats {
 export interface PendingRenewalRequest {
   id?: string; // Unique identifier for the renewal request
   requestedPlanId: string;
+  requestedPlanName?: string;
+  requestedPlanPrice?: number;
+  requestedPlanClassLimit?: number;
+  requestedPlanDuration?: number;
   requestedPaymentMethod: "contado" | "transferencia" | "debito" | "credito";
   requestDate: string; // ISO 8601
   status: "pending" | "approved" | "rejected";

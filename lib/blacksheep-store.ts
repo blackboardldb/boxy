@@ -12,6 +12,7 @@ import type {
   MembershipPlan as Plan,
   Organization,
   Banner,
+  PendingRenewalRequest,
 } from "./types";
 // Removed UserService import (not needed in client)
 // Removed unused import
@@ -1081,55 +1082,68 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         try {
           set({ isLoading: true, error: null });
 
+          // Buscar el plan seleccionado
           const selectedPlan = get().plans.find(p => p.id === planId);
-          if (!selectedPlan) throw new Error("Plan not found");
+          if (!selectedPlan) {
+            // Si no está en el store, intentar cargarlos
+            await get().fetchPlans();
+            const reloadedPlan = get().plans.find(p => p.id === planId);
+            if (!reloadedPlan) throw new Error(`Plan con ID ${planId} no encontrado`);
+          }
+          
+          const plan = get().plans.find(p => p.id === planId)!;
 
-          // Create renewal request with full metadata
-          const renewalRequest = {
+          // Buscar el usuario en el store
+          let targetUser = get().users.find((u) => u.id === userId);
+          
+          // Si no está en el store (por paginación), obtenerlo de la API
+          if (!targetUser) {
+            targetUser = await get().fetchUserById(userId) || undefined;
+          }
+
+          if (!targetUser) {
+            throw new Error(`Usuario con ID ${userId} no encontrado`);
+          }
+
+          // Crear objeto de solicitud de renovación
+          const renewalRequest: PendingRenewalRequest = {
             id: `renewal_${Date.now()}`,
             requestedPlanId: planId,
-            requestedPlanName: selectedPlan.name,
-            requestedPlanPrice: selectedPlan.price,
-            requestedPlanClassLimit: selectedPlan.classLimit,
-            requestedPlanDuration: selectedPlan.durationInMonths,
-            requestedPaymentMethod: paymentMethod as
-              | "contado"
-              | "transferencia"
-              | "debito"
-              | "credito",
+            requestedPaymentMethod: paymentMethod as any,
             requestDate: new Date().toISOString(),
-            status: "pending" as const,
+            status: "pending",
             requestedBy: userId,
+            notes: "",
+            // Campos adicionales para facilitar visualización en admin
+            ...({
+              requestedPlanName: plan.name,
+              requestedPlanPrice: plan.price,
+              requestedPlanClassLimit: plan.classLimit,
+              requestedPlanDuration: plan.durationInMonths,
+            } as any)
           };
 
-          // Update user with pending renewal
-          const { users } = get();
-          const targetUser = users.find((u) => u.id === userId);
-          if (targetUser) {
-             const updatedMembership = {
-               ...targetUser.membership,
-               pendingRenewal: renewalRequest,
-             };
+          // Preparar la actualización de la membresía
+          const updatedMembership = {
+            ...targetUser.membership,
+            pendingRenewal: renewalRequest,
+          };
 
-             // Guardar en backend
-             const response = await fetch(`/api/users/${userId}`, {
-               method: "PUT",
-               headers: { "Content-Type": "application/json" },
-               body: JSON.stringify({ membership: updatedMembership }),
-             });
+          // Usar updateUserById que ya maneja la llamada a la API y actualización del store
+          const result = await get().updateUserById(userId, { 
+            membership: updatedMembership 
+          });
 
-             if (!response.ok) {
-               throw new Error("Failed to save pending renewal to backend");
-             }
-
-             const result = await response.json();
-             const updatedUser = result.data || { ...targetUser, membership: updatedMembership };
-
-             set((state) => ({
-               users: state.users.map((user) => user.id === userId ? updatedUser : user),
-               membershipRenewals: [...state.membershipRenewals, renewalRequest],
-             }));
+          if (!result) {
+            throw new Error("No se pudo guardar la solicitud de renovación en el servidor");
           }
+
+          // Actualizar registros de renovaciones locales si es necesario
+          set((state) => ({
+            membershipRenewals: [...state.membershipRenewals, renewalRequest],
+          }));
+
+          console.log("Renovación solicitada exitosamente:", renewalRequest);
         } catch (error) {
           console.error("Error requesting plan renewal:", error);
           set({

@@ -101,7 +101,12 @@ export function createMembershipSchema() {
     }),
     pendingRenewal: z
       .object({
+        id: z.string().optional(),
         requestedPlanId: z.string(),
+        requestedPlanName: z.string().optional(),
+        requestedPlanPrice: z.number().optional(),
+        requestedPlanClassLimit: z.number().optional(),
+        requestedPlanDuration: z.number().optional(),
         requestedPaymentMethod: z.enum([
           "contado",
           "transferencia",
@@ -109,6 +114,9 @@ export function createMembershipSchema() {
           "credito",
         ]),
         requestDate: z.string(),
+        requestedBy: z.string(),
+        notes: z.string().optional(),
+        status: z.enum(["pending", "approved", "rejected"]).optional(),
       })
       .optional(),
     history: z.array(z.record(z.unknown())).optional(),

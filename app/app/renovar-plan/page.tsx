@@ -22,7 +22,7 @@ const PAYMENT_METHODS = [
 
 export default function RenewPlanPage() {
   const router = useRouter();
-  const { users, plans, requestPlanRenewal, fetchUsers, fetchPlans } =
+  const { plans, requestPlanRenewal, fetchPlans } =
     useBlackSheepStore();
   const { toast } = useToast();
   const { handleAsyncError } = useErrorHandler();
@@ -31,7 +31,6 @@ export default function RenewPlanPage() {
 
   // Debug logs
   console.log("RenewPlanPage - Debug Info:", {
-    usersCount: users?.length || 0,
     plansCount: plans?.length || 0,
     currentUser: currentUser?.id,
     requestPlanRenewalExists: typeof requestPlanRenewal === "function",
@@ -41,24 +40,21 @@ export default function RenewPlanPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (!users || users.length === 0) {
-          await fetchUsers();
-        }
         if (!plans || plans.length === 0) {
           await fetchPlans();
         }
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error loading plans:", error);
         toast({
           title: "Error",
-          description: "Error al cargar los datos necesarios",
+          description: "Error al cargar los planes disponibles",
           variant: "destructive",
         });
       }
     };
 
     loadData();
-  }, [users, plans, fetchUsers, fetchPlans, toast]);
+  }, [plans, fetchPlans, toast]);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>(
     currentUser?.membership.planId || ""
