@@ -249,10 +249,13 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   }, [classSessions, resolvedParams.id, student]);
 
   // Determine plan status
-  const planStatus = student ? getPlanStatus(student) : "expired";
+  const planStatus = student ? getPlanStatus(student) : "inactive";
   const isPlanActive = planStatus === "active";
-  const isPendingApproval = planStatus === "pending" || (student?.membership?.pendingRenewal?.status === "pending");
-  const isPlanExpired = planStatus === "expired" || planStatus === "exhausted";
+  const isPendingApproval =
+    planStatus === "pending" ||
+    student?.membership?.pendingRenewal?.status === "pending";
+  const isScheduled = planStatus === "scheduled";
+  const isPlanInactive = planStatus === "inactive";
   
   // Data prep for Plan display
   const planClassLimit = student?.membership?.planConfig?.classLimit ?? 0;
@@ -364,12 +367,44 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                   <div className="">
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-1">
-                        <span className={`uppercase font-bold tracking-wider text-sm ${isPlanActive ? 'text-lime-900' : isPendingApproval ? 'text-orange-500' : 'text-orange-400'}`}>
-                          {isPlanActive ? 'Activo' : isPendingApproval ? 'Validar plan' : isPlanExpired ? 'Expirado' : 'Sin plan'}
+                        <span
+                          className={`uppercase font-bold tracking-wider text-sm ${
+                            isPlanActive
+                              ? "text-lime-900"
+                              : isScheduled
+                              ? "text-blue-500"
+                              : isPendingApproval
+                              ? "text-orange-500"
+                              : "text-zinc-500"
+                          }`}
+                        >
+                          {isPlanActive
+                            ? "Activo"
+                            : isScheduled
+                            ? "Programado"
+                            : isPendingApproval
+                            ? "Validar plan"
+                            : "Inactivo"}
                         </span>
                         <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-full items-center">
                           <Ticket size={14} className="text-zinc-500" />
-                          <span>{student.membership?.currentPeriodStart ? format(new Date(student.membership?.currentPeriodStart), "dd MMM", { locale: es }) : "—"} - {student.membership?.currentPeriodEnd ? format(new Date(student.membership?.currentPeriodEnd), "dd MMM", { locale: es }) : "—"}</span>
+                          <span>
+                            {student.membership?.currentPeriodStart
+                              ? format(
+                                  new Date(student.membership?.currentPeriodStart),
+                                  "dd MMM",
+                                  { locale: es }
+                                )
+                              : "—"}{" "}
+                            -{" "}
+                            {student.membership?.currentPeriodEnd
+                              ? format(
+                                  new Date(student.membership?.currentPeriodEnd),
+                                  "dd MMM",
+                                  { locale: es }
+                                )
+                              : "—"}
+                          </span>
                         </div>
                       </div>
                       <h2 className="  font-bold text-2xl">{student.membership?.membershipType || "Sin plan activo"}</h2>
@@ -530,16 +565,66 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
               <AccordionContent className="px-4 pb-4 pt-0 border-t border-zinc-100">
                 <div className="pt-4">
                   {student?.membership && (
-                    <div className={`relative pl-6 border-l-2 ${isPlanActive ? 'border-emerald-500' : 'border-zinc-300'} space-y-1.5 py-2`}>
-                      <div className={`absolute w-2.5 h-2.5 ${isPlanActive ? 'bg-emerald-500' : 'bg-zinc-300'} rounded-full -left-[5.5px] top-3`} />
-                      <p className={`text-sm font-semibold ${isPlanActive ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                    <div
+                      className={`relative pl-6 border-l-2 ${
+                        isPlanActive
+                          ? "border-emerald-500"
+                          : isScheduled
+                          ? "border-blue-500"
+                          : "border-zinc-300"
+                      } space-y-1.5 py-2`}
+                    >
+                      <div
+                        className={`absolute w-2.5 h-2.5 ${
+                          isPlanActive
+                            ? "bg-emerald-500"
+                            : isScheduled
+                            ? "bg-blue-500"
+                            : "bg-zinc-300"
+                        } rounded-full -left-[5.5px] top-3`}
+                      />
+                      <p
+                        className={`text-sm font-semibold ${
+                          isPlanActive || isScheduled
+                            ? "text-zinc-900"
+                            : "text-zinc-500"
+                        }`}
+                      >
                         {student.membership.membershipType}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {isPlanActive ? (
-                          `Activo desde: ${student.membership.currentPeriodStart ? new Date(student.membership.currentPeriodStart).toLocaleDateString() : "-"} hasta ${student.membership.currentPeriodEnd ? new Date(student.membership.currentPeriodEnd).toLocaleDateString() : "-"}`
+                        {isPlanActive || isScheduled ? (
+                          `${
+                            isPlanActive ? "Activo" : "Programado"
+                          } desde: ${
+                            student.membership.currentPeriodStart
+                              ? new Date(
+                                  student.membership.currentPeriodStart
+                                ).toLocaleDateString()
+                              : "-"
+                          } hasta ${
+                            student.membership.currentPeriodEnd
+                              ? new Date(
+                                  student.membership.currentPeriodEnd
+                                ).toLocaleDateString()
+                              : "-"
+                          }`
                         ) : (
-                          `Finalizado | ${student.membership.currentPeriodStart ? new Date(student.membership.currentPeriodStart).toLocaleDateString() : "-"} hasta ${student.membership.currentPeriodEnd ? new Date(student.membership.currentPeriodEnd).toLocaleDateString() : "-"} | ${classesConsumed}/${isUnlimited ? '∞' : planClassLimit} clases`
+                          `Finalizado | ${
+                            student.membership.currentPeriodStart
+                              ? new Date(
+                                  student.membership.currentPeriodStart
+                                ).toLocaleDateString()
+                              : "-"
+                          } hasta ${
+                            student.membership.currentPeriodEnd
+                              ? new Date(
+                                  student.membership.currentPeriodEnd
+                                ).toLocaleDateString()
+                              : "-"
+                          } | ${classesConsumed}/${
+                            isUnlimited ? "∞" : planClassLimit
+                          } clases`
                         )}
                       </p>
                     </div>

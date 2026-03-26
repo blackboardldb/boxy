@@ -39,32 +39,72 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     }
 
     if (params?.status) {
+      const today = new Date().toISOString().substring(0, 10);
+
       if (params.status === "active") {
-        const today = new Date().toISOString().substring(0, 10);
-        conditions.push({
-          membership: { path: ["status"], equals: "active" },
-        });
+        // Active today: status is active AND today is between start and end
+        conditions.push({ membership: { path: ["status"], equals: "active" } });
         conditions.push({
           membership: { path: ["currentPeriodEnd"], gte: today },
         });
-      } else if (params.status === "expired") {
-        const today = new Date().toISOString().substring(0, 10);
+        // Check for start date
         conditions.push({
           OR: [
-            { membership: { path: ["status"], equals: "expired" } },
-            { membership: { path: ["currentPeriodEnd"], lt: today } },
+            { membership: { path: ["currentPeriodStart"], lte: today } },
+            {
+              AND: [
+                { membership: { path: ["currentPeriodStart"], equals: null } },
+                { membership: { path: ["startDate"], lte: today } },
+              ],
+            },
           ],
         });
+      } else if (params.status === "scheduled") {
+        // Scheduled: has a plan but starts in the future
+        conditions.push({
+          OR: [
+            { membership: { path: ["currentPeriodStart"], gt: today } },
+            {
+              AND: [
+                { membership: { path: ["currentPeriodStart"], equals: null } },
+                { membership: { path: ["startDate"], gt: today } },
+              ],
+            },
+          ],
+        });
+        // Also ensure not explicitly inactive/pending
+        conditions.push({ membership: { path: ["status"], not: "inactive" } });
+        conditions.push({ membership: { path: ["status"], not: "pending" } });
       } else if (params.status === "pending") {
         conditions.push({
           OR: [
             { membership: { path: ["status"], equals: "pending" } },
             {
-              membership: { path: ["pendingRenewal", "status"], equals: "pending" },
+              membership: {
+                path: ["pendingRenewal", "status"],
+                equals: "pending",
+              },
+            },
+          ],
+        });
+      } else if (params.status === "inactive") {
+        // Inactive: status is inactive OR explicitly expired OR suspended OR past date OR no classes
+        conditions.push({
+          OR: [
+            { membership: { path: ["status"], equals: "inactive" } },
+            { membership: { path: ["status"], equals: "expired" } },
+            { membership: { path: ["status"], equals: "suspended" } },
+            { membership: { path: ["currentPeriodEnd"], lt: today } },
+            {
+              membership: {
+                path: ["centerStats", "currentMonth", "remainingClasses"],
+                lte: 0,
+              },
             },
           ],
         });
       } else {
+        // General fallback for any other status field
         conditions.push({
           membership: { path: ["status"], equals: params.status },
         });

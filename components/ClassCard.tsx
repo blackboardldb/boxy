@@ -28,7 +28,13 @@ interface ClassCardProps {
   onRegister: () => void;
   onCancel: () => void;
   canRegister?: boolean;
-  planStatus?: "active" | "expired" | "pending" | "exhausted";
+  planStatus?:
+    | "active"
+    | "expired"
+    | "pending"
+    | "exhausted"
+    | "scheduled"
+    | "inactive";
 }
 
 export function ClassCard({
@@ -56,7 +62,8 @@ export function ClassCard({
   const canPerformAction = !isCancelled && !isCompleted && !isInProgress;
 
   // Determinar si se puede registrar basado en el estado del plan
-  const canRegisterForClass = canRegister && planStatus === "active";
+  const canRegisterForClass =
+    canRegister && (planStatus === "active" || planStatus === "scheduled");
 
   // Para usuarios registrados, siempre pueden cancelar (si la clase lo permite)
   const canCancelRegistration = isRegistered && canPerformAction;
@@ -165,13 +172,9 @@ export function ClassCard({
             <span className="text-yellow-600">
               Plan pendiente de validación
             </span>
-          ) : planStatus === "exhausted" ? (
-            <span className="text-blue-600">
-              Has ocupado todas tus clases
-            </span>
-          ) : planStatus === "expired" ? (
+          ) : planStatus === "inactive" ? (
             <span className="text-orange-600">
-              Renueva tu plan para inscribirte
+              Renueva tu plan o verifica tus clases
             </span>
           ) : !classItem.isWithinPlanDates ? (
             <span className="text-orange-600">

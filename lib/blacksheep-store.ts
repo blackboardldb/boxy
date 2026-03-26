@@ -1429,14 +1429,14 @@ export const STUDENT_STATES = {
   ACTIVE: "active",
   INACTIVE: "inactive",
   PENDING: "pending",
-  EXPIRED: "expired",
+  SCHEDULED: "scheduled",
 } as const;
 
 export const STATE_COLORS = {
-  active: "#10b981",
-  inactive: "#6b7280",
-  pending: "#f59e0b",
-  expired: "#ef4444",
+  active: "#10b981", // Green
+  inactive: "#6b7280", // Gray
+  pending: "#f59e0b", // Orange
+  scheduled: "#0ea5e9", // Blue
 } as const;
 
 export const MEMBERSHIP_TYPES = [

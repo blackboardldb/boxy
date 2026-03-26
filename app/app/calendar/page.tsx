@@ -246,19 +246,11 @@ export default function CalendarPage() {
     // Verificar el estado del plan antes de permitir el registro
     const planStatus = getPlanStatus(currentUser);
 
-    if (planStatus === "expired") {
+    if (planStatus === "inactive") {
       toast({
-        title: "Plan expirado",
-        description: "Debes renovar tu plan para poder inscribirte en clases",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (planStatus === "exhausted") {
-      toast({
-        title: "Sin clases disponibles",
-        description: "Has ocupado todas tus clases. Puedes cancelar una clase para liberar un cupo.",
+        title: "Plan no vigente",
+        description:
+          "Debes renovar tu plan o verificar tus clases disponibles para poder inscribirte",
         variant: "destructive",
       });
       return;
@@ -427,19 +419,20 @@ export default function CalendarPage() {
                   validado por nuestro equipo.
                 </p>
               </div>
-            ) : planStatus === "exhausted" ? (
+            ) : planStatus === "scheduled" ? (
               <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 mb-4">
                 <p className="text-blue-200 text-sm font-medium mb-1">
-                  Has ocupado todas tus clases
+                  Plan Programado
                 </p>
                 <p className="text-blue-300 text-xs">
-                  Has alcanzado el límite de clases de tu plan actual. Puedes cancelar reservas existentes para liberar cupos.
+                  Tu plan aún no comienza. Puedes reservar clases que ocurran
+                  dentro del periodo de tu plan.
                 </p>
               </div>
             ) : (
               <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3 mb-4">
                 <p className="text-orange-200 text-sm font-medium mb-1">
-                  Plan expirado
+                  Plan ya no está vigente
                 </p>
                 <p className="text-orange-300 text-xs">
                   Renueva tu plan para poder inscribirte en clases.
@@ -449,8 +442,8 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* Mostrar clases solo si el plan está activo o exhausted */}
-        {(planStatus === "active" || planStatus === "exhausted") && (
+        {/* Mostrar clases solo si el plan está activo o scheduled */}
+        {(planStatus === "active" || planStatus === "scheduled") && (
           <ClassList
             selectedDate={selectedDate}
             classes={getClassesForDate(selectedDate)}
@@ -465,7 +458,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Modales solo si puede interactuar */}
-      {(planStatus === "active" || planStatus === "exhausted") && (
+      {(planStatus === "active" || planStatus === "scheduled") && (
         <>
           <RegistrationModal
             isOpen={isRegistrationModalOpen}

@@ -169,7 +169,9 @@ export default function AlumnosPage() {
             <SelectItem value="todos">Todos los estados</SelectItem>
             <SelectItem value={STUDENT_STATES.ACTIVE}>Activo</SelectItem>
             <SelectItem value={STUDENT_STATES.INACTIVE}>Inactivo</SelectItem>
-            <SelectItem value={STUDENT_STATES.EXPIRED}>Expirado</SelectItem>
+            <SelectItem value={STUDENT_STATES.SCHEDULED}>
+              Programado
+            </SelectItem>
             <SelectItem value={STUDENT_STATES.PENDING}>
               Nuevo - Pendiente
             </SelectItem>
@@ -256,16 +258,18 @@ export default function AlumnosPage() {
                 studentsOnly.map((student: FitCenterUserProfile) => {
                   const currentPlanStatus = getPlanStatus(student);
                   return (
-                  <TableRow
-                    key={student.id}
-                    className={
-                      currentPlanStatus === "pending"
-                        ? "bg-yellow-50 border-l-4 border-yellow-400"
-                        : currentPlanStatus === "expired" || currentPlanStatus === "exhausted"
-                        ? "bg-red-50 border-l-4 border-red-400"
-                        : ""
-                    }
-                  >
+                    <TableRow
+                      key={student.id}
+                      className={
+                        currentPlanStatus === "pending"
+                          ? "bg-yellow-50 border-l-4 border-yellow-400"
+                          : currentPlanStatus === "inactive"
+                          ? "bg-zinc-50 border-l-4 border-zinc-300"
+                          : currentPlanStatus === "scheduled"
+                          ? "bg-blue-50 border-l-4 border-blue-400"
+                          : ""
+                      }
+                    >
                     <TableCell className="font-medium">
                       {student.firstName} {student.lastName}
                     </TableCell>

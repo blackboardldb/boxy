@@ -100,13 +100,15 @@ const isUnlimited = classLimit === 0;
           </div>
         )}
 
-        {planStatus === "active" ? (
-          <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
-            <div className="text-zinc-200 inline-flex gap-2 text-sm items-center">
-              <Ticket size={16} />
-              <p className="sm:text-sm">
-                Tu plan inició el {formattedPeriodStart} hasta el{" "}
-                {formattedPeriodEnd}
+        {planStatus === "scheduled" ? (
+          <div className="border-t border-zinc-700 pt-3 space-y-3">
+            <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-blue-100 text-xl">
+                <Calendar size={16} />
+                <p className="font-medium">Plan Programado</p>
+              </div>
+              <p className="text-blue-100 mb-2">
+                Tu plan iniciará el {formattedPeriodStart}. Pronto podrás empezar a entrenar 💪.
               </p>
             </div>
           </div>
@@ -136,14 +138,12 @@ const isUnlimited = classLimit === 0;
               </Link>
             </div>
           </div>
-        ) : (
+        ) : planStatus !== "active" ? (
           <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
             <div className="text-orange-300 inline-flex gap-2 text-sm items-center">
               <AlertCircle size={16} />
               <p className="text-sm sm:text-base">
-                {(currentMonthStats.remainingClasses || 0) <= 0
-                  ? "Sin clases disponibles"
-                  : `Expiró el ${formattedPeriodEnd}`}
+                Tu plan ya no está vigente
               </p>
             </div>
             <Link href="/app/renovar-plan">
@@ -154,6 +154,16 @@ const isUnlimited = classLimit === 0;
                 Renovar
               </Button>
             </Link>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
+            <div className="text-zinc-200 inline-flex gap-2 text-sm items-center">
+              <Ticket size={16} />
+              <p className="sm:text-sm">
+                Tu plan inició el {formattedPeriodStart} hasta el{" "}
+                {formattedPeriodEnd}
+              </p>
+            </div>
           </div>
         )}
       </div>

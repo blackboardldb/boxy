@@ -104,9 +104,13 @@ export class ValidationService {
       return { canRegister: false, reason: "No hay cupos disponibles" };
     }
 
-    // 5. Verificar si el usuario tiene un plan activo
-    if (!user.membership || getPlanStatus(user) !== "active") {
-      return { canRegister: false, reason: "Tu plan no está activo" };
+    // 5. Verificar si el usuario tiene un plan válido (activo o programado/futuro)
+    const planStatus = getPlanStatus(user);
+    if (
+      !user.membership ||
+      (planStatus !== "active" && planStatus !== "scheduled")
+    ) {
+      return { canRegister: false, reason: "No tienes un plan activo o programado para esta fecha" };
     }
 
     // 5.5 Verificar si la clase ocurre dentro de las fechas límite del plan
