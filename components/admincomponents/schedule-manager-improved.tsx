@@ -271,12 +271,12 @@ export default function ScheduleManagerImproved() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto p-4 md:p-8">
       {/* Header con gestión de disciplinas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-premium">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 shadow-premium">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Configuración de Horarios</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestiona tus disciplinas, horarios semanales y reglas de cupos.</p>
         </div>
-        <Button onClick={handleNewDiscipline} size="lg" className="rounded-2xl shadow-lg transition-transform hover:scale-105 active:scale-95">
+        <Button onClick={handleNewDiscipline} size="lg" className="rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95">
           <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
         </Button>
       </div>
@@ -285,23 +285,23 @@ export default function ScheduleManagerImproved() {
       <div className="flex flex-col gap-4">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-3xl border-none shadow-md overflow-hidden">
-              <Skeleton className="h-2 flex-1 mb-6" />
+            <Card key={i} className="rounded-xl border-none shadow-md overflow-hidden">
+              <Skeleton className="h-2 flex-1 mb-6 rounded-xl" />
               <CardContent className="space-y-4">
-                <Skeleton className="h-8 w-2/3" />
-                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-8 w-2/3 rounded-xl" />
+                <Skeleton className="h-4 w-full rounded-xl" />
                 <Skeleton className="h-10 w-full rounded-xl" />
               </CardContent>
             </Card>
           ))
         ) : !disciplines || disciplines.length === 0 ? (
-          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-3xl">
-            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
+            <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center mb-6">
               <Settings className="w-10 h-10 text-slate-300" />
             </div>
             <h3 className="text-xl font-bold text-slate-500">No hay disciplinas configuradas</h3>
             <p className="text-sm text-slate-400 mt-2 mb-8 max-w-xs mx-auto">Crea una disciplina para empezar a programar tus horarios semanales.</p>
-            <Button onClick={handleNewDiscipline} variant="outline" className="rounded-2xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
+            <Button onClick={handleNewDiscipline} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
               Crear Disciplina
             </Button>
           </Card>
@@ -310,7 +310,7 @@ export default function ScheduleManagerImproved() {
             ?.filter((d) => d && d.id)
             .map((d) => (
               <Card key={d.id} className={cn(
-                "overflow-hidden border-none shadow-premium rounded-[2rem] transition-all hover:translate-y-[-4px]",
+                "overflow-hidden border-none shadow-premium rounded-xl transition-all hover:translate-y-[-4px]",
                 !d.isActive && "grayscale opacity-80"
               )}>
 
@@ -331,7 +331,7 @@ export default function ScheduleManagerImproved() {
                       />
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color || "#ccc" }} />
+                        <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
                         {!d.isActive && <span className="text-[10px] font-black uppercase text-slate-400">Inactiva</span>}
                       </div>
                     </div>
@@ -347,10 +347,10 @@ export default function ScheduleManagerImproved() {
                       </Button>
 
                       <div className="flex items-center gap-2">
-                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => handleEditDiscipline(d)}>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => handleEditDiscipline(d)}>
                           <Edit className="w-4.5 h-4.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => handleDeleteDiscipline(d.id, d.name)}>
+                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => handleDeleteDiscipline(d.id, d.name)}>
                           <Trash2 className="w-4.5 h-4.5" />
                         </Button>
                       </div>
@@ -370,7 +370,7 @@ export default function ScheduleManagerImproved() {
                               <span className="text-xs font-bold w-12">{dayLabels[s.day]}</span>
                               <div className="flex flex-wrap gap-1 justify-end">
                                 {s.times.map((t) => (
-                                  <Badge key={t} variant="outline" className="text-[10px] bg-white dark:bg-slate-900 border-slate-200">
+                                  <Badge key={t} variant="outline" className="text-[10px] bg-white dark:bg-slate-900 border-slate-200 rounded-xl">
                                     {t}
                                   </Badge>
                                 ))}
@@ -385,7 +385,7 @@ export default function ScheduleManagerImproved() {
                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Reglas de Cancelación</p>
                           <div className="flex flex-wrap gap-1.5">
                             {d.cancellationRules.map((r) => (
-                              <Badge key={r.id} variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-100 font-bold">
+                              <Badge key={r.id} variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-100 font-bold rounded-xl">
                                 {r.time} → {r.hoursBefore}h
                               </Badge>
                             ))}
@@ -402,7 +402,7 @@ export default function ScheduleManagerImproved() {
 
       {/* Modal para crear/editar disciplina */}
       <Dialog open={showDisciplineModal} onOpenChange={setShowDisciplineModal}>
-        <DialogContent className="max-w-2xl h-[90vh] flex flex-col rounded-3xl p-0 border-none shadow-2xl overflow-hidden">
+        <DialogContent className="max-w-2xl h-[90vh] flex flex-col rounded-xl p-0 border-none shadow-2xl overflow-hidden">
           <DialogHeader className="p-6 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
             <div className="flex items-center justify-between w-full pr-6">
               <DialogTitle className="text-lg font-bold">
@@ -474,7 +474,7 @@ export default function ScheduleManagerImproved() {
                     type="button"
                     onClick={() => toggleDay(day as DayOfWeek)}
                     className={cn(
-                      "px-4 py-2 text-sm font-bold rounded-full transition-all border",
+                      "px-4 py-2 text-sm font-bold rounded-xl transition-all border",
                       selectedDays.includes(day as DayOfWeek)
                         ? "bg-slate-900 text-white border-slate-900 shadow-md"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
@@ -492,7 +492,7 @@ export default function ScheduleManagerImproved() {
                 <Label className="text-lg font-bold">Horarios por día</Label>
 
                 {/* Inputs para agregar horarios */}
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border-2 border-dotted border-slate-200 dark:border-slate-800 space-y-4">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border-2 border-dotted border-slate-200 dark:border-slate-800 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-base">Programar nueva hora clase</span>
                   </div>
@@ -570,9 +570,9 @@ export default function ScheduleManagerImproved() {
                     if (daySchedule.times.length === 0) return null;
 
                     return (
-                      <div key={day} className="flex items-center justify-between p-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <div key={day} className="flex items-center justify-between p-4 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="h-8 rounded-lg px-3 bg-slate-50 dark:bg-slate-900 font-bold border-slate-200">
+                          <Badge variant="outline" className="h-8 rounded-xl px-3 bg-slate-50 dark:bg-slate-900 font-bold border-slate-200">
                             {dayLabels[day]}
                           </Badge>
                         </div>
@@ -580,12 +580,12 @@ export default function ScheduleManagerImproved() {
                           {daySchedule.times.map((time) => (
                             <Badge
                               key={time}
-                              className="bg-primary/5 text-primary border-primary/10 pl-3 pr-1 py-1 h-8 rounded-full font-bold transition-all hover:bg-primary/10"
+                              className="bg-primary/5 text-primary border-primary/10 pl-3 pr-1 py-1 h-8 rounded-xl font-bold transition-all hover:bg-primary/10"
                             >
                               <Clock className="w-3.5 h-3.5 mr-1.5 opacity-50" />
                               {time}
                               <button
-                                className="ml-1.5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-red-400"
+                                className="ml-1.5 w-6 h-6 flex items-center justify-center rounded-xl hover:bg-red-50 text-red-400"
                                 onClick={() => handleRemoveTimeFromDiscipline(day, time)}
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -609,7 +609,7 @@ export default function ScheduleManagerImproved() {
 
               <div className="space-y-4">
                 {availableTimes.length > 0 && (
-                  <div className="flex flex-wrap gap-4 items-end p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <div className="flex flex-wrap gap-4 items-end p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-yellow-700">Para la clase de:</Label>
                       <Select value={selectedCancellationTime} onValueChange={setSelectedCancellationTime}>
@@ -662,11 +662,11 @@ export default function ScheduleManagerImproved() {
                   {disciplineForm.cancellationRules.map((rule) => (
                     <div key={rule.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                        <div className="w-1.5 h-1.5 rounded-sm bg-yellow-400" />
                         <span className="text-sm font-bold">Clase: <span className="text-primary">{rule.time}</span></span>
                         <span className="text-sm text-slate-500">Mínimo <span className="font-bold text-slate-700 dark:text-slate-300">{rule.hoursBefore}h</span> antes</span>
                       </div>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => handleRemoveCancellationRule(rule.id)}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-xl" onClick={() => handleRemoveCancellationRule(rule.id)}>
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       </Button>
                     </div>
@@ -688,7 +688,7 @@ export default function ScheduleManagerImproved() {
 
       {/* Modal de confirmación para eliminar disciplina */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-md rounded-3xl p-8 border-none shadow-2xl">
+        <DialogContent className="max-w-md rounded-xl p-8 border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-red-600">
               <Trash2 className="w-8 h-8" />
@@ -699,7 +699,7 @@ export default function ScheduleManagerImproved() {
             <p className="text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
               ¿Estás seguro de que quieres eliminar la disciplina <span className="font-black text-slate-800 dark:text-slate-200">"{disciplineToDeleteName}"</span>?
             </p>
-            <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20">
+            <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20">
               <p className="text-sm text-red-700 dark:text-red-400 font-bold flex items-start gap-2">
                 <AlertTriangle className="w-5 h-5 shrink-0" />
                 Esta acción SOLO funcionará si la disciplina NO tiene historial de clases (pasadas o inscritas).

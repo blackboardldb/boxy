@@ -277,7 +277,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 sm:hidden">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 sm:hidden rounded-xl">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold truncate">
@@ -291,7 +291,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-1 xl:col-span-1 space-y-6">
           
           {/* Tarjeta de Datos Personales */}
-          <Card className="shadow-sm border-zinc-200">
+          <Card className="shadow-sm border-zinc-200 rounded-xl">
             {editingSection !== "personal" ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -299,7 +299,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <CardTitle className="text-lg">Datos Personales</CardTitle>
                     <CardDescription>Información de contacto</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingSection("personal")}>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingSection("personal")} className="rounded-xl">
                     <Edit className="w-4 h-4 text-muted-foreground mr-1" /> Editar
                   </Button>
                 </CardHeader>
@@ -326,25 +326,25 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                 <CardContent className="space-y-4 pt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>Nombre</Label>
-                      <Input value={editFirstName} onChange={e => setEditFirstName(e.target.value)} />
+                      <Label className="text-zinc-700 font-medium">Nombre</Label>
+                      <Input value={editFirstName} onChange={e => setEditFirstName(e.target.value)} className="rounded-xl" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Apellido</Label>
-                      <Input value={editLastName} onChange={e => setEditLastName(e.target.value)} />
+                      <Label className="text-zinc-700 font-medium">Apellido</Label>
+                      <Input value={editLastName} onChange={e => setEditLastName(e.target.value)} className="rounded-xl" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+                    <Label className="text-zinc-700 font-medium">Email</Label>
+                    <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} className="rounded-xl" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Teléfono</Label>
-                    <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+                    <Label className="text-zinc-700 font-medium">Teléfono</Label>
+                    <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="rounded-xl" />
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button>
-                    <Button onClick={savePersonalInfo} disabled={isSaving}>{isSaving ? "Guardando..." : "Guardar cambios"}</Button>
+                    <Button variant="outline" onClick={() => setEditingSection(null)} className="rounded-xl">Cancelar</Button>
+                    <Button onClick={savePersonalInfo} disabled={isSaving} className="rounded-xl">{isSaving ? "Guardando..." : "Guardar cambios"}</Button>
                   </div>
                 </CardContent>
               </>
@@ -352,7 +352,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
           </Card>
 
           {/* Tarjeta de Membresía Actual */}
-          <Card className="shadow-sm border-zinc-200">
+          <Card className="shadow-sm border-zinc-200 rounded-xl">
             {editingSection !== "membership" ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -386,7 +386,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                             ? "Validar plan"
                             : "Inactivo"}
                         </span>
-                        <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-full items-center">
+                        <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-xl items-center">
                           <Ticket size={14} className="text-zinc-500" />
                           <span>
                             {student.membership?.currentPeriodStart
@@ -425,9 +425,9 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       </div>
                       
                       {!isUnlimited && (
-                        <div className="w-full bg-zinc-700 rounded-full h-2 mt-3 overflow-hidden">
+                        <div className="w-full bg-zinc-700 rounded-xl h-2 mt-3 overflow-hidden">
                           <div 
-                            className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
+                            className="bg-lime-500 h-full rounded-xl transition-all duration-500 ease-out"
                             style={{ width: `${Math.min(100, (classesConsumed / planClassLimit) * 100)}%` }}
                           />
                         </div>
@@ -448,7 +448,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     {isPendingApproval && (
                       <Button 
                         variant="default" 
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
                         onClick={() => router.push('/admin/alertas')}
                       >
                          <Bell className="w-4 h-4 mr-2" /> Validar Solicitud de Plan
@@ -456,7 +456,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     )}
                     <Button 
                       variant="outline" 
-                      className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                      className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl"
                       onClick={() => router.push(`/admin/alumnos/${student.id}/nuevo-plan`)}
                     >
                       <Ticket className="w-4 h-4 mr-2" /> Activar Nuevo Plan
@@ -467,14 +467,14 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
             ) : (
               <>
                  <CardHeader className="pb-4 border-b border-zinc-100">
-                  <CardTitle className="text-lg">Editar Membresía</CardTitle>
+                  <CardTitle className="text-lg text-zinc-900 font-bold">Editar Membresía</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-4">
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label>Plan</Label>
+                      <Label className="text-zinc-700 font-medium">Plan</Label>
                       <Select value={editPlanId} onValueChange={handlePlanChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="rounded-xl">
                            <SelectValue placeholder="Seleccionar plan" />
                         </SelectTrigger>
                         <SelectContent>
@@ -484,28 +484,28 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label>Clases totales</Label>
-                        <Input type="number" value={editClassLimit} onChange={e => setEditClassLimit(e.target.value)} />
+                        <Label className="text-zinc-700 font-medium">Clases totales</Label>
+                        <Input type="number" value={editClassLimit} onChange={e => setEditClassLimit(e.target.value)} className="rounded-xl" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Total ($)</Label>
-                        <Input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} />
+                        <Label className="text-zinc-700 font-medium">Total ($)</Label>
+                        <Input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="rounded-xl" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label>Fecha inicio</Label>
-                        <Input type="date" value={editStartDate} onChange={e => handleStartDateChange(e.target.value)} />
+                        <Label className="text-zinc-700 font-medium">Fecha inicio</Label>
+                        <Input type="date" value={editStartDate} onChange={e => handleStartDateChange(e.target.value)} className="rounded-xl" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Fecha término</Label>
-                        <Input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} />
+                        <Label className="text-zinc-700 font-medium">Fecha término</Label>
+                        <Input type="date" value={editEndDate} onChange={e => setEditEndDate(e.target.value)} className="rounded-xl" />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Forma de pago</Label>
+                      <Label className="text-zinc-700 font-medium">Forma de pago</Label>
                       <Select value={editPaymentMethod} onValueChange={setEditPaymentMethod}>
-                        <SelectTrigger><SelectValue placeholder="Forma" /></SelectTrigger>
+                        <SelectTrigger className="rounded-xl"><SelectValue placeholder="Forma" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="transferencia">Transferencia</SelectItem>
                           <SelectItem value="contado">Contado</SelectItem>
@@ -516,8 +516,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" onClick={() => setEditingSection(null)}>Cancelar</Button>
-                    <Button onClick={saveMembershipInfo} disabled={isSaving}>{isSaving ? "Guardando..." : "Guardar cambios"}</Button>
+                    <Button variant="outline" onClick={() => setEditingSection(null)} className="rounded-xl">Cancelar</Button>
+                    <Button onClick={saveMembershipInfo} disabled={isSaving} className="rounded-xl">{isSaving ? "Guardando..." : "Guardar cambios"}</Button>
                   </div>
                 </CardContent>
               </>
@@ -581,7 +581,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                             : isScheduled
                             ? "bg-blue-500"
                             : "bg-zinc-300"
-                        } rounded-full -left-[5.5px] top-3`}
+                        } rounded-sm -left-[5.5px] top-3`}
                       />
                       <p
                         className={`text-sm font-semibold ${
@@ -631,7 +631,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                   )}
                   {(!student?.membership?.history || student.membership.history.length === 0) && !student?.membership?.membershipType && (
                     <div className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
-                        <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-full -left-[5.5px] top-5" />
+                        <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-sm -left-[5.5px] top-5" />
                         <p className="text-sm font-medium text-zinc-400">Sin historial previo</p>
                         <p className="text-xs text-zinc-400">Aún no hay membresías asignadas para este alumno.</p>
                     </div>
@@ -644,7 +644,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       
                       return (
                           <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
-                              <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-full -left-[5.5px] top-5" />
+                              <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
                               <p className="text-sm font-medium text-zinc-700">{pastMem.membershipType}</p>
                               <p className="text-xs text-muted-foreground">
                                 Finalizado | {pastMem.currentPeriodStart ? new Date(pastMem.currentPeriodStart).toLocaleDateString() : "-"} hasta {pastMem.currentPeriodEnd ? new Date(pastMem.currentPeriodEnd).toLocaleDateString() : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted} clases

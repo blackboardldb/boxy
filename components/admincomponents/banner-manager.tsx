@@ -116,13 +116,13 @@ export function BannerManager({ className }: BannerManagerProps) {
     <div className={className}>
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="p-4">
             <div className="text-2xl font-bold">{banners.length}</div>
             <p className="text-sm text-muted-foreground">Total de Banners</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600">
               {activeBanners.length}
@@ -130,7 +130,7 @@ export function BannerManager({ className }: BannerManagerProps) {
             <p className="text-sm text-muted-foreground">Banners Activos</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-gray-500">
               {7 - banners.length}
@@ -144,11 +144,11 @@ export function BannerManager({ className }: BannerManagerProps) {
 
       {/* Banner Limit Warning */}
       {banners.length >= 7 && (
-        <Card className="mb-6 border-amber-200 bg-amber-50">
+        <Card className="mb-6 border-amber-200 bg-amber-50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-amber-800">
               <AlertTriangle className="w-5 h-5" />
-              <Badge variant="outline" className="bg-amber-100 text-amber-800">
+              <Badge variant="outline" className="bg-amber-100 text-amber-800 rounded-xl">
                 Límite Alcanzado
               </Badge>
               <span className="text-sm">
@@ -171,7 +171,7 @@ export function BannerManager({ className }: BannerManagerProps) {
         <Button
           onClick={handleCreateBanner}
           disabled={banners.length >= 7}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 rounded-xl"
         >
           <Plus className="w-4 h-4" />
           Crear Banner
@@ -180,7 +180,7 @@ export function BannerManager({ className }: BannerManagerProps) {
 
       {/* Active Banners */}
       {activeBanners.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mb-6 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-green-600" />
@@ -217,7 +217,7 @@ export function BannerManager({ className }: BannerManagerProps) {
 
       {/* Inactive Banners */}
       {inactiveBanners.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mb-6 rounded-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <EyeOff className="w-5 h-5 text-gray-500" />
@@ -244,7 +244,7 @@ export function BannerManager({ className }: BannerManagerProps) {
 
       {/* Empty State */}
       {banners.length === 0 && (
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="p-8 text-center">
             <div className="text-muted-foreground mb-4">
               <Plus className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -256,7 +256,7 @@ export function BannerManager({ className }: BannerManagerProps) {
                 promocional.
               </p>
             </div>
-            <Button onClick={handleCreateBanner}>
+            <Button onClick={handleCreateBanner} className="rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
               Crear Primer Banner
             </Button>
@@ -274,7 +274,7 @@ export function BannerManager({ className }: BannerManagerProps) {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar banner?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -283,10 +283,10 @@ export function BannerManager({ className }: BannerManagerProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
               Eliminar
             </AlertDialogAction>

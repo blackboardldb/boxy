@@ -34,7 +34,7 @@ export function BannerCard({
     >
       {/* Banner Preview */}
       <div
-        className={`p-4 rounded-lg mb-3 min-h-[120px] flex flex-col justify-center relative overflow-hidden ${
+        className={`p-4 rounded-xl mb-3 min-h-[120px] flex flex-col justify-center relative overflow-hidden ${
           banner.backgroundColor ===
           "bg-gradient-to-r from-blue-500 to-blue-700"
             ? "bg-gradient-to-r from-blue-500 to-blue-700"
@@ -75,7 +75,7 @@ export function BannerCard({
               {banner.title}
             </h3>
             {banner.badge && banner.badgeText && (
-              <Badge className="bg-yellow-500 text-yellow-900 text-xs">
+              <Badge className="bg-yellow-500 text-yellow-900 text-xs rounded-xl">
                 {banner.badgeText}
               </Badge>
             )}
@@ -92,7 +92,7 @@ export function BannerCard({
           {banner.buttonTitle && (
             <Button
               size="sm"
-              className={`${banner.buttonColor} ${banner.textButtonColor} text-xs pointer-events-none`}
+              className={`${banner.buttonColor} ${banner.textButtonColor} text-xs pointer-events-none rounded-xl`}
             >
               {banner.buttonTitle}
             </Button>
@@ -103,7 +103,7 @@ export function BannerCard({
         <div className="absolute top-2 right-2">
           <Badge
             variant={banner.isActive ? "default" : "secondary"}
-            className={banner.isActive ? "bg-green-500" : "bg-gray-500"}
+            className={`${banner.isActive ? "bg-green-500" : "bg-gray-500"} rounded-xl`}
           >
             {banner.isActive ? "Activo" : "Inactivo"}
           </Badge>
@@ -113,7 +113,7 @@ export function BannerCard({
         {dragHandleProps && (
           <div
             {...dragHandleProps}
-            className="absolute top-2 left-2 cursor-grab active:cursor-grabbing p-1 rounded bg-black/20 hover:bg-black/30 transition-colors"
+            className="absolute top-2 left-2 cursor-grab active:cursor-grabbing p-1 rounded-xl bg-black/20 hover:bg-black/30 transition-colors"
           >
             <GripVertical className="w-4 h-4 text-white" />
           </div>
@@ -123,13 +123,13 @@ export function BannerCard({
       {/* Banner Info and Actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs rounded-xl">
             Orden: {banner.order + 1}
           </Badge>
           {banner.buttonUrl && (
             <Badge
               variant="outline"
-              className="text-xs bg-blue-50 text-blue-700"
+              className="text-xs bg-blue-50 text-blue-700 rounded-xl"
             >
               Con enlace
             </Badge>
@@ -140,7 +140,7 @@ export function BannerCard({
             variant="ghost"
             size="sm"
             onClick={() => onToggle(banner.id)}
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 rounded-xl"
             title={banner.isActive ? "Desactivar banner" : "Activar banner"}
           >
             {banner.isActive ? (
@@ -153,7 +153,7 @@ export function BannerCard({
             variant="ghost"
             size="sm"
             onClick={() => onEdit(banner)}
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 rounded-xl"
             title="Editar banner"
           >
             <Edit className="w-4 h-4" />
@@ -162,7 +162,7 @@ export function BannerCard({
             variant="ghost"
             size="sm"
             onClick={() => onDelete(banner.id)}
-            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 rounded-xl"
             title="Eliminar banner"
           >
             <Trash2 className="w-4 h-4" />

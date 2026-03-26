@@ -277,7 +277,7 @@ export function BannerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-xl">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {mode === "edit" ? "Editar Banner" : "Crear Banner"}
@@ -309,7 +309,7 @@ export function BannerModal({
                       }))
                     }
                     placeholder="Título del banner"
-                    className={errors.title ? "border-red-500" : ""}
+                    className={`${errors.title ? "border-red-500" : ""} rounded-xl`}
                   />
                   {errors.title && (
                     <p className="text-sm text-red-500 mt-1">{errors.title}</p>
@@ -329,7 +329,7 @@ export function BannerModal({
                     }
                     placeholder="Descripción o subtítulo (opcional)"
                     rows={2}
-                    className={errors.subtitle ? "border-red-500" : ""}
+                    className={`${errors.subtitle ? "border-red-500" : ""} rounded-xl`}
                   />
                   {errors.subtitle && (
                     <p className="text-sm text-red-500 mt-1">
@@ -346,10 +346,10 @@ export function BannerModal({
                       setFormData((prev) => ({ ...prev, icon: value }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Selecciona un icono (opcional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       <SelectItem value="none">Sin icono</SelectItem>
                       {POPULAR_ICONS.map((iconName) => {
                         const Icon = (LucideIcons as any)[iconName];
@@ -384,7 +384,7 @@ export function BannerModal({
                         }))
                       }
                       placeholder="Ej: Ver Más"
-                      className={errors.buttonTitle ? "border-red-500" : ""}
+                      className={`${errors.buttonTitle ? "border-red-500" : ""} rounded-xl`}
                     />
                     {errors.buttonTitle && (
                       <p className="text-sm text-red-500 mt-1">
@@ -405,7 +405,7 @@ export function BannerModal({
                         }))
                       }
                       placeholder="/app/calendar o https://ejemplo.com"
-                      className={errors.buttonUrl ? "border-red-500" : ""}
+                      className={`${errors.buttonUrl ? "border-red-500" : ""} rounded-xl`}
                     />
                     {errors.buttonUrl && (
                       <p className="text-sm text-red-500 mt-1">
@@ -444,7 +444,7 @@ export function BannerModal({
                         }))
                       }
                       placeholder="NUEVO, OFERTA, etc."
-                      className={errors.badgeText ? "border-red-500" : ""}
+                      className={`${errors.badgeText ? "border-red-500" : ""} rounded-xl`}
                     />
                     {errors.badgeText && (
                       <p className="text-sm text-red-500 mt-1">
@@ -471,14 +471,14 @@ export function BannerModal({
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {Object.entries(BACKGROUND_STYLES).map(([key, value]) => (
                         <SelectItem key={key} value={key}>
                           <div className="flex items-center gap-2">
-                            <div className={`w-4 h-4 rounded ${value}`} />
+                            <div className={`w-4 h-4 rounded-xl ${value}`} />
                             {key
                               .replace(/_/g, " ")
                               .replace(/\b\w/g, (l) => l.toUpperCase())}
@@ -501,10 +501,10 @@ export function BannerModal({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {Object.entries(TEXT_COLORS).map(([key, value]) => (
                           <SelectItem key={key} value={key}>
                             <span className={value}>
@@ -529,10 +529,10 @@ export function BannerModal({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {Object.entries(TEXT_COLORS).map(([key, value]) => (
                           <SelectItem key={key} value={key}>
                             <span className={value}>
@@ -559,10 +559,10 @@ export function BannerModal({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {Object.entries(BUTTON_COLORS).map(([key, value]) => (
                           <SelectItem key={key} value={key}>
                             {key
@@ -588,10 +588,10 @@ export function BannerModal({
                         }))
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="rounded-xl">
                         {Object.entries(BUTTON_TEXT_COLORS).map(
                           ([key, value]) => (
                             <SelectItem key={key} value={key}>
@@ -615,10 +615,11 @@ export function BannerModal({
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
+                  className="rounded-xl"
                 >
                   Cancelar
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="rounded-xl">
                   {mode === "edit" ? "Guardar Cambios" : "Crear Banner"}
                 </Button>
               </div>
@@ -630,7 +631,7 @@ export function BannerModal({
             <div className="sticky top-0">
               <h3 className="text-lg font-medium mb-4">Vista Previa</h3>
               <div
-                className={`p-6 rounded-lg min-h-[160px] flex flex-col justify-center relative overflow-hidden ${
+                className={`p-6 rounded-xl min-h-[160px] flex flex-col justify-center relative overflow-hidden ${
                   formData.backgroundStyle === "gradient_blue"
                     ? "bg-gradient-to-r from-blue-500 to-blue-700"
                     : formData.backgroundStyle === "gradient_green"
@@ -665,7 +666,7 @@ export function BannerModal({
                       {formData.title || "Título del Banner"}
                     </h3>
                     {formData.badge && formData.badgeText && (
-                      <Badge className="bg-yellow-500 text-yellow-900 text-xs">
+                      <Badge className="bg-yellow-500 text-yellow-900 text-xs rounded-xl">
                         {formData.badgeText}
                       </Badge>
                     )}
@@ -684,7 +685,7 @@ export function BannerModal({
                       size="sm"
                       className={`${BUTTON_COLORS[formData.buttonColor]} ${
                         BUTTON_TEXT_COLORS[formData.textButtonColor]
-                      } text-sm`}
+                      } text-sm rounded-xl`}
                     >
                       {formData.buttonTitle}
                     </Button>

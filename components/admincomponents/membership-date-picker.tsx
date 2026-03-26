@@ -71,7 +71,7 @@ export function MembershipDatePicker({
               type="date"
               value={value}
               onChange={handleInputChange}
-              className="flex-1"
+              className="flex-1 rounded-xl"
               required
             />
             <Popover>
@@ -80,12 +80,12 @@ export function MembershipDatePicker({
                   variant="outline"
                   size="icon"
                   type="button"
-                  className="shrink-0"
+                  className="shrink-0 rounded-xl"
                 >
                   <CalendarIcon className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                 <Calendar
                   mode="single"
                   selected={startDate}
@@ -119,14 +119,14 @@ export function MembershipDatePicker({
                 : "Selecciona un plan"
             }
             readOnly
-            className="bg-gray-50"
+            className="bg-gray-50 rounded-xl"
           />
         </div>
       </div>
 
       {/* Vista previa detallada */}
       {selectedPlan && endDateStr && (
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
           <div className="space-y-2">
             <p className="text-sm font-medium text-blue-800">
               Detalles de la membresía:

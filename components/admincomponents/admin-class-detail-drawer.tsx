@@ -306,12 +306,12 @@ export default function AdminClassDetailDrawer({
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="inscritos">
+                <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1">
+                  <TabsTrigger value="inscritos" className="rounded-xl">
                     Inscritos ({enrolledStudents.length})
                   </TabsTrigger>
-                  <TabsTrigger value="agregar">Agregar Alumnos</TabsTrigger>
-                  <TabsTrigger value="notes">Notas</TabsTrigger>
+                  <TabsTrigger value="agregar" className="rounded-xl">Agregar Alumnos</TabsTrigger>
+                  <TabsTrigger value="notes" className="rounded-xl">Notas</TabsTrigger>
                 </TabsList>
 
                 {/* Tab: Inscritos */}
@@ -321,7 +321,7 @@ export default function AdminClassDetailDrawer({
                       {enrolledStudents.map((student) => (
                         <div
                           key={student.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
+                          className="flex items-center justify-between p-3 border rounded-xl"
                         >
                           <div className="flex-1">
                             <p className="font-medium">
@@ -332,15 +332,15 @@ export default function AdminClassDetailDrawer({
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {student.membership?.status || "Sin estado"}
-                            </Badge>
+                             <Badge variant="outline" className="rounded-xl">
+                               {student.membership?.status || "Sin estado"}
+                             </Badge>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleRemoveStudent(student.id)}
                               disabled={isAddingStudent}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
                             >
                               {isAddingStudent ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -367,7 +367,7 @@ export default function AdminClassDetailDrawer({
                       placeholder="Buscar alumnos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 rounded-xl"
                     />
                   </div>
 
@@ -381,7 +381,7 @@ export default function AdminClassDetailDrawer({
                       return (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                          className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50"
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -389,14 +389,14 @@ export default function AdminClassDetailDrawer({
                                 {user.firstName} {user.lastName}
                               </p>
                               {isPending && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs rounded-xl">
                                   Pendiente
                                 </Badge>
                               )}
                               {isExpired && (
                                 <Badge
                                   variant="outline"
-                                  className="text-xs text-orange-600"
+                                  className="text-xs text-orange-600 rounded-xl"
                                 >
                                   Expirado
                                 </Badge>
@@ -414,7 +414,7 @@ export default function AdminClassDetailDrawer({
                           <Button
                             size="sm"
                             onClick={() => handleAddStudent(user.id)}
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 rounded-xl"
                             disabled={isPending || isAddingStudent}
                           >
                             {isAddingStudent ? (
@@ -447,7 +447,7 @@ export default function AdminClassDetailDrawer({
                     placeholder="Agregar notas para esta clase..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="min-h-[200px]"
+                    className="min-h-[200px] rounded-xl"
                   />
 
                   <div className="flex justify-between items-center">
@@ -470,7 +470,7 @@ export default function AdminClassDetailDrawer({
                     <Button
                       onClick={handleSaveNotes}
                       disabled={isSavingNotes}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-xl"
                     >
                       <Save className="h-4 w-4" />
                       Guardar Notas
@@ -481,7 +481,7 @@ export default function AdminClassDetailDrawer({
 
               {/* Información de la disciplina */}
               {discipline && (
-                <div className="border border-zinc-300 rounded-lg p-4">
+                <div className="border border-zinc-300 rounded-xl p-4">
                   <h3 className="font-medium mb-2">
                     Información de la Disciplina
                   </h3>
@@ -499,7 +499,7 @@ export default function AdminClassDetailDrawer({
 
               {/* Acciones */}
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={onClose} className="w-full">
+                <Button variant="outline" onClick={onClose} className="w-full rounded-xl">
                   Cerrar
                 </Button>
               </div>

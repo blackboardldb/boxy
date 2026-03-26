@@ -33,7 +33,7 @@ export function ExpensesManager({
   });
 
   return (
-    <Card className="h-full">
+    <Card className="h-full rounded-xl">
       <CardHeader>
         <CardTitle>Egresos de {selectedMonthName}</CardTitle>
         <AddExpenseModal onSuccess={fetchEgresos} />
@@ -57,11 +57,12 @@ export function ExpensesManager({
                   <span className="font-semibold">
                     ${e.monto.toLocaleString()}
                   </span>
-                  <Button
+                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => deleteEgreso(e.id)}
                     title="Eliminar egreso"
+                    className="rounded-xl"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>

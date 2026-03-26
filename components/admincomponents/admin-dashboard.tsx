@@ -12,6 +12,7 @@ import {
   Heart,
   MinusCircle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { useMemo, useEffect, useState } from "react";
@@ -190,9 +191,10 @@ export function AdminDashboard() {
   }) => {
     const CardComponent = (
       <Card
-        className={
+        className={cn(
+          "rounded-xl",
           linkTo ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-        }
+        )}
       >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -201,8 +203,8 @@ export function AdminDashboard() {
         <CardContent>
           {isLoading ? (
             <>
-              <Skeleton className="h-8 w-16 mb-1" />
-              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-16 mb-1 rounded-xl" />
+              <Skeleton className="h-3 w-24 rounded-xl" />
             </>
           ) : (
             <>
@@ -271,19 +273,19 @@ export function AdminDashboard() {
 
       {/* Breakdown por Estados */}
       <div className="grid gap-6 md:grid-cols-1">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader>
             <CardTitle>Estados de Membresía</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
                 <span>Activos</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">{activeMembers}</span>
-                <Badge variant="outline">
+                <Badge variant="outline" className="rounded-xl">
                   {totalMembers > 0
                     ? Math.round((activeMembers / totalMembers) * 100)
                     : 0}
@@ -293,17 +295,17 @@ export function AdminDashboard() {
             </div>
             <Progress
               value={totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0}
-              className="h-2"
+              className="h-2 rounded-xl"
             />
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
                 <span>Programados</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">{scheduledMembers}</span>
-                <Badge variant="outline">
+                <Badge variant="outline" className="rounded-xl">
                   {totalMembers > 0
                     ? Math.round((scheduledMembers / totalMembers) * 100)
                     : 0}
@@ -314,12 +316,12 @@ export function AdminDashboard() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
                 <span>Pendientes</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">{pendingMembers}</span>
-                <Badge variant="outline">
+                <Badge variant="outline" className="rounded-xl">
                   {totalMembers > 0
                     ? Math.round((pendingMembers / totalMembers) * 100)
                     : 0}
@@ -330,12 +332,12 @@ export function AdminDashboard() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-gray-500 rounded-sm"></div>
                 <span>Inactivos</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="font-semibold">{inactiveMembers}</span>
-                <Badge variant="outline">
+                <Badge variant="outline" className="rounded-xl">
                   {totalMembers > 0
                     ? Math.round((inactiveMembers / totalMembers) * 100)
                     : 0}
@@ -349,16 +351,16 @@ export function AdminDashboard() {
 
       {/* Listas Rápidas: Próximos a Vencer y Recientemente Inactivos */}
       <div className="grid gap-6 md:grid-cols-2 mt-6">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="pb-3 border-b mb-3">
             <CardTitle className="text-base">Próximos a vencer</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
               </div>
             ) : upcomingExpirations.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos próximos a vencer.</p>
@@ -381,16 +383,16 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="pb-3 border-b mb-3">
             <CardTitle className="text-base text-red-600">Recientemente inactivos</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
               </div>
             ) : recentlyInactive.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos inactivos recientemente.</p>

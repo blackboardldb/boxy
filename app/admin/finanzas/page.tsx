@@ -93,10 +93,10 @@ export default function FinanzasPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Finanzas</h1>
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 rounded-xl">
             <SelectValue placeholder="Seleccionar mes" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             {monthOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -108,7 +108,7 @@ export default function FinanzasPage() {
 
       {/* Cards de resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Flujo de Caja (Ingresos Reales)
@@ -125,7 +125,7 @@ export default function FinanzasPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Egresos de {selectedMonthName}
@@ -142,7 +142,7 @@ export default function FinanzasPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Balance</CardTitle>
             <DollarSign
@@ -169,7 +169,7 @@ export default function FinanzasPage() {
       {/* Detalle de ingresos y egresos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Ingresos */}
-        <Card className="h-full">
+        <Card className="h-full rounded-xl">
           <CardHeader>
             <CardTitle>Flujo de Caja: Ingresos Reales ({selectedMonthName})</CardTitle>
           </CardHeader>

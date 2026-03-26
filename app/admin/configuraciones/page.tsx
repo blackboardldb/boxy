@@ -105,7 +105,7 @@ export default function ConfiguracionesPage() {
 
       <div className="grid grid-cols-1 gap-8 max-w-5xl">
         {/* Información del Centro - Airbnb Style */}
-        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -121,7 +121,7 @@ export default function ConfiguracionesPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setEditingSection("identity")}
-                className="rounded-full px-4 border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900 transition-all font-semibold text-xs"
+                className="rounded-xl px-4 border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900 transition-all font-semibold text-xs"
               >
                 <Edit className="w-3.5 h-3.5 mr-2" /> Editar
               </Button>
@@ -139,13 +139,13 @@ export default function ConfiguracionesPage() {
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Horizontal</p>
-                    <div className="h-12 flex items-center bg-slate-50/50 dark:bg-slate-900/50 rounded-lg px-4 border border-slate-100 dark:border-slate-800 overflow-hidden">
+                    <div className="h-12 flex items-center bg-slate-50/50 dark:bg-slate-900/50 rounded-xl px-4 border border-slate-100 dark:border-slate-800 overflow-hidden">
                       {logoHorizontalSvg ? <Logo size={120} /> : <span className="text-xs text-slate-400 italic">Sin configurar</span>}
                     </div>
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Cuadrado</p>
-                    <div className="h-12 w-12 flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800 overflow-hidden">
+                    <div className="h-12 w-12 flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
                       {logoSquareSvg ? <SquareLogo size={32} /> : <span className="text-[10px] text-slate-400 italic">N/A</span>}
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default function ConfiguracionesPage() {
                     <Label className="text-sm font-bold flex items-center gap-2">
                        <Globe className="w-4 h-4 text-primary" /> Nombre Público del Centro
                     </Label>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 tracking-tighter uppercase">Visible en Login y Dashboard</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 tracking-tighter uppercase">Visible en Login y Dashboard</span>
                   </div>
                   <input 
                     type="text" 
@@ -214,14 +214,14 @@ export default function ConfiguracionesPage() {
                   <Button 
                     variant="ghost" 
                     onClick={handleCancel}
-                    className="rounded-full px-6 transition-all hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold"
+                    className="rounded-xl px-6 transition-all hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold"
                   >
                     <X className="w-4 h-4 mr-2" /> Cancelar
                   </Button>
                   <Button 
                     onClick={handleSave} 
                     disabled={isSaving}
-                    className="rounded-full px-8 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 font-bold"
+                    className="rounded-xl px-8 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 font-bold"
                   >
                     {isSaving ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>}
                   </Button>
@@ -232,14 +232,14 @@ export default function ConfiguracionesPage() {
         </Card>
 
         {/* Canales de Comunicación Card */}
-        <Card className="border shadow-md border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 overflow-hidden">
+        <Card className="rounded-xl border shadow-md border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 overflow-hidden">
           <CardHeader className="px-6 py-4 bg-slate-50/30 dark:bg-slate-900/10">
             <CardTitle className="text-base font-bold">Canales de Comunicación</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-transparent transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50 gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-transparent transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50 gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-xl shadow-inner">✨</div>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shadow-inner">✨</div>
                 <div>
                   <p className="font-bold text-sm">Gestión de Banners Activos</p>
                   <p className="text-[11px] text-muted-foreground">Carrusel de anuncios internos para alumnos</p>

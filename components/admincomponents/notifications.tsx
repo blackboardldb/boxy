@@ -179,7 +179,7 @@ export function Notifications() {
     <div className="space-y-6">
       {/* Header con estadísticas resumidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Alertas</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
@@ -189,7 +189,7 @@ export function Notifications() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Renovaciones</CardTitle>
             <RefreshCw className="h-4 w-4 text-orange-500" />
@@ -200,7 +200,7 @@ export function Notifications() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Cancelaciones</CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
@@ -215,10 +215,10 @@ export function Notifications() {
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center justify-end gap-4 p-4 bg-muted/50 rounded-lg">
+      <div className="flex items-center justify-end gap-4 p-4 bg-muted/50 rounded-xl">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={notificationFilter} onValueChange={setNotificationFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-48 rounded-xl">
             <SelectValue placeholder="Filtrar por" />
           </SelectTrigger>
           <SelectContent>
@@ -241,22 +241,22 @@ export function Notifications() {
             
             {(storeLoading && pendingRenewals.length === 0) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => <Card key={i} className="h-40 animate-pulse bg-zinc-50" />)}
+                {[1, 2, 3].map(i => <Card key={i} className="h-40 animate-pulse bg-zinc-50 rounded-xl" />)}
               </div>
             ) : pendingRenewals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                  {pendingRenewals.map((r: any) => (
-                  <Card key={r.id} className="border-l-4 border-orange-500 hover:shadow-md transition-shadow">
+                  <Card key={r.id} className="border-l-4 border-orange-500 hover:shadow-md transition-shadow rounded-xl">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-700">RENOVACIÓN</Badge>
-                        {r.daysUntilExpiration <= 7 && <Badge variant="destructive">URGENTE</Badge>}
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 rounded-xl">RENOVACIÓN</Badge>
+                        {r.daysUntilExpiration <= 7 && <Badge variant="destructive" className="rounded-xl">URGENTE</Badge>}
                       </div>
                       <h3 className="font-bold text-lg">{r.user.firstName} {r.user.lastName}</h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         {r.daysUntilExpiration < 0 ? "Vencido" : `Vence en ${r.daysUntilExpiration} días`}
                       </p>
-                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700" onClick={() => {
+                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 rounded-xl" onClick={() => {
                         setSelectedRenewal(r);
                         setCustomStartDate(new Date().toISOString().split("T")[0]);
                         setShowRenewalModal(true);
@@ -266,7 +266,7 @@ export function Notifications() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-zinc-50 rounded-lg border border-dashed text-muted-foreground">No hay renovaciones pendientes.</div>
+              <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">No hay renovaciones pendientes.</div>
             )}
           </div>
         )}
@@ -278,10 +278,10 @@ export function Notifications() {
               <XCircle className="h-5 w-5 text-red-500" /> Clases Canceladas
             </h2>
             
-           <div className="bg-red-50 p-4 rounded-lg">
+           <div className="bg-red-50 p-4 rounded-xl">
              {(storeLoading && cancelledClasses.length === 0) ? (
               <div className="space-y-3 ">
-                {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+                {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
               </div>
             ) : cancelledClasses.length > 0 ? (
               <div className="space-y-4">
@@ -299,7 +299,7 @@ export function Notifications() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-zinc-50 rounded-lg border border-dashed text-muted-foreground">No hay clases canceladas recientemente.</div>
+              <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">No hay clases canceladas recientemente.</div>
             )}
            </div>
           </div>
@@ -309,16 +309,16 @@ export function Notifications() {
 
 
       <Dialog open={showRenewalModal} onOpenChange={setShowRenewalModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl rounded-xl">
           <DialogHeader><DialogTitle>Gestionar Renovación</DialogTitle></DialogHeader>
           {selectedRenewal && (
             <div className="space-y-6 pt-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-zinc-50 rounded-lg border">
+                <div className="p-4 bg-zinc-50 rounded-xl border">
                   <Label className="text-[10px] uppercase font-bold text-muted-foreground">Alumno</Label>
                   <p className="font-bold">{selectedRenewal.user.firstName} {selectedRenewal.user.lastName}</p>
                 </div>
-                <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
                   <Label className="text-[10px] uppercase font-bold text-orange-600">Plan Solicitado</Label>
                   <p className="font-bold text-orange-700">
                     {plans.find((p: any) => p.id === selectedRenewal.renewal.requestedPlanId)?.name || selectedRenewal.renewal.requestedPlanName}
@@ -330,15 +330,15 @@ export function Notifications() {
                 <Label className="font-bold">Fecha de Inicio</Label>
                 <input 
                   type="date" 
-                  className="w-full p-2 border rounded-md" 
+                  className="w-full p-2 border rounded-xl" 
                   value={customStartDate} 
                   onChange={e => setCustomStartDate(e.target.value)} 
                 />
               </div>
 
               <div className="flex gap-3">
-                <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => handleApproveRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Pago y Activar</Button>
-                <Button variant="destructive" className="flex-1" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
+                <Button className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl" onClick={() => handleApproveRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Pago y Activar</Button>
+                <Button variant="destructive" className="flex-1 rounded-xl" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
               </div>
             </div>
           )}
@@ -346,14 +346,14 @@ export function Notifications() {
       </Dialog>
 
       <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
-        <DialogContent>
+        <DialogContent className="rounded-xl">
           <DialogHeader><DialogTitle>Confirmar Rechazo</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-4">
             <Label>Motivo del rechazo</Label>
-            <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Ej: No se confirma transferencia..." />
+            <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Ej: No se confirma transferencia..." className="rounded-xl" />
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1" onClick={() => handleRejectRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Rechazo</Button>
-              <Button variant="outline" className="flex-1" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
+              <Button variant="destructive" className="flex-1 rounded-xl" onClick={() => handleRejectRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Rechazo</Button>
+              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
             </div>
           </div>
         </DialogContent>

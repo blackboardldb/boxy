@@ -212,7 +212,7 @@ export function Alerts() {
     <div className="space-y-6">
       {/* Header con estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Alertas</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -222,7 +222,7 @@ export function Alerts() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Críticas</CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
@@ -234,7 +234,7 @@ export function Alerts() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Advertencias</CardTitle>
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
@@ -246,7 +246,7 @@ export function Alerts() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Informativas</CardTitle>
             <AlertCircle className="h-4 w-4 text-blue-500" />
@@ -264,7 +264,7 @@ export function Alerts() {
         <h2 className="text-xl font-semibold">Alertas del Sistema</h2>
 
         {alerts.length === 0 ? (
-          <Card>
+          <Card className="rounded-xl text-center">
             <CardContent className="flex items-center justify-center py-8">
               <div className="text-center">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -280,7 +280,7 @@ export function Alerts() {
         ) : (
           <div className="space-y-4">
             {alerts.map((alert) => (
-              <Card key={alert.id} className="border-l-4 border-l-red-500">
+              <Card key={alert.id} className="border-l-4 border-l-red-500 rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
@@ -290,7 +290,7 @@ export function Alerts() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
                           <h3 className="font-semibold">{alert.title}</h3>
-                          <Badge variant={getAlertBadgeColor(alert.type)}>
+                          <Badge variant={getAlertBadgeColor(alert.type)} className="rounded-xl">
                             {alert.type.toUpperCase()}
                           </Badge>
                         </div>
@@ -307,6 +307,7 @@ export function Alerts() {
                         size="sm"
                         variant="outline"
                         onClick={alert.action.onClick}
+                        className="rounded-xl"
                       >
                         {alert.action.label}
                       </Button>

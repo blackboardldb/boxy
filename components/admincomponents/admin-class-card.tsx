@@ -62,7 +62,7 @@ export default function AdminClassCard({
     <>
       <div
         className={`
-          border rounded-lg p-3 transition-all duration-200 relative
+          border rounded-xl p-3 transition-all duration-200 relative
           ${
             isCancelled
               ? "opacity-20 bg-white"
@@ -95,7 +95,7 @@ export default function AdminClassCard({
           <div className="flex-1">
             {/* Hora como badge CSS - con estado finalizado integrado */}
             <div
-              className={`inline-block text-xs px-2 py-1 rounded-full mb-2 ${
+              className={`inline-block text-xs px-2 py-1 rounded-xl mb-2 ${
                 isFinished
                   ? "bg-green-100 text-green-700"
                   : "bg-gray-100 text-gray-700"
@@ -135,7 +135,7 @@ export default function AdminClassCard({
 
             {/* Indicador de clase de hoy */}
             {isClassToday && (
-              <Badge variant="secondary" className="text-xs mt-2">
+              <Badge variant="secondary" className="text-xs mt-2 rounded-xl">
                 Hoy
               </Badge>
             )}
@@ -147,7 +147,7 @@ export default function AdminClassCard({
               variant="outline"
               size="sm"
               onClick={() => onViewClass(classItem)}
-              className="opacity-100" // Mantener opacidad 100% siempre
+              className="opacity-100 rounded-xl" // Mantener opacidad 100% siempre
             >
               Ver Clase
             </Button>
@@ -156,6 +156,7 @@ export default function AdminClassCard({
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowCancelDialog(true)}
+                className="rounded-xl"
               >
                 Cancelar
               </Button>
@@ -166,7 +167,7 @@ export default function AdminClassCard({
 
       {/* Dialog de confirmación de cancelación */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cancelar clase?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -177,8 +178,8 @@ export default function AdminClassCard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancelClass}>
+            <AlertDialogCancel className="rounded-xl">No cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelClass} className="rounded-xl">
               Sí, cancelar
             </AlertDialogAction>
           </AlertDialogFooter>

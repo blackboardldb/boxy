@@ -184,11 +184,11 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto flex flex-col min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 hidden sm:flex">
+        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 hidden sm:flex rounded-xl">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 sm:hidden">
+          <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 sm:hidden rounded-xl">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -198,7 +198,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      <Card className="shadow-sm border-zinc-200">
+      <Card className="shadow-sm border-zinc-200 rounded-xl">
         <CardHeader className="border-b border-zinc-100 pb-5">
           <CardTitle>Configuración de Membresía</CardTitle>
           <CardDescription className="pt-2">
@@ -209,7 +209,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         </CardHeader>
         <CardContent className="pt-6">
           {student.membership && (
-             <div className="mb-6 bg-zinc-50 rounded-lg p-4 border border-zinc-200">
+             <div className="mb-6 bg-zinc-50 rounded-xl p-4 border border-zinc-200">
                <h3 className="text-sm font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
                <div className="space-y-1 text-sm">
                  <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
@@ -234,7 +234,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   }}
                   required
                 >
-                  <SelectTrigger className="h-11 bg-zinc-50 border-zinc-300 focus:ring-emerald-500"><SelectValue placeholder="Selecciona un plan" /></SelectTrigger>
+                  <SelectTrigger className="h-11 bg-zinc-50 border-zinc-300 focus:ring-emerald-500 rounded-xl"><SelectValue placeholder="Selecciona un plan" /></SelectTrigger>
                   <SelectContent>
                     {plans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
@@ -244,7 +244,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   </SelectContent>
                 </Select>
                 {selectedPlan && (
-                   <div className="bg-emerald-50 rounded-lg p-3 mt-2 border border-emerald-100 flex items-center gap-2 text-emerald-800">
+                   <div className="bg-emerald-50 rounded-xl p-3 mt-2 border border-emerald-100 flex items-center gap-2 text-emerald-800">
                       <div className="bg-emerald-200 p-1 rounded-md shrink-0"><span className="text-xs font-bold leading-none block">{selectedPlan.classLimit}</span></div>
                       <p className="text-xs font-medium">Clases mensuales incluidas en el {selectedPlan.name}.</p>
                    </div>
@@ -257,7 +257,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   type="number"
                   value={formData.clasesTotales}
                   onChange={(e) => setFormData({ ...formData, clasesTotales: e.target.value })}
-                  className="h-11"
+                  className="h-11 rounded-xl"
                 />
               </div>
 
@@ -267,7 +267,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   type="number"
                   value={formData.precioTotal}
                   onChange={(e) => setFormData({ ...formData, precioTotal: e.target.value })}
-                  className="h-11"
+                  className="h-11 rounded-xl"
                 />
               </div>
 
@@ -278,7 +278,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   onValueChange={(value) => setFormData({ ...formData, formaDePago: value })}
                   required
                 >
-                  <SelectTrigger className="h-11 bg-zinc-50 border-zinc-300 focus:ring-emerald-500"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 bg-zinc-50 border-zinc-300 focus:ring-emerald-500 rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="contado">Efectivo / Contado</SelectItem>
                     <SelectItem value="transferencia">Transferencia Bancaria</SelectItem>
@@ -301,7 +301,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                       required
-                      className="h-11"
+                      className="h-11 rounded-xl"
                     />
                   </div>
                   <div className="space-y-2 relative">
@@ -311,7 +311,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                       value={formData.endDate}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                       required
-                      className="h-11 bg-zinc-50 cursor-pointer"
+                      className="h-11 bg-zinc-50 cursor-pointer rounded-xl"
                     />
                     <p className="text-[11px] font-medium text-muted-foreground mt-1.5 flex items-center justify-between">
                        <span>Calculada automáticamente</span>
@@ -322,10 +322,10 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row justify-end pt-2 gap-3">
-              <Button type="button" variant="outline" className="w-full sm:w-auto h-11" onClick={() => router.push(`/admin/alumnos/${student.id}`)}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto h-11 rounded-xl" onClick={() => router.push(`/admin/alumnos/${student.id}`)}>
                 Cancelar Operación
               </Button>
-              <Button type="submit" className="w-full sm:w-auto h-11 flex items-center justify-center gap-2 group">
+              <Button type="submit" className="w-full sm:w-auto h-11 flex items-center justify-center gap-2 group rounded-xl">
                 <Save className="w-4 h-4 group-hover:scale-110 transition-transform" /> Confirmar y Guardar
               </Button>
             </div>

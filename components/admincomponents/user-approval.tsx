@@ -312,7 +312,7 @@ export function UserApproval() {
     <div className="space-y-6">
       {/* Header con métricas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Pendientes
@@ -324,7 +324,7 @@ export function UserApproval() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aprobados</CardTitle>
             <Check className="h-4 w-4 text-green-600" />
@@ -336,7 +336,7 @@ export function UserApproval() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Rechazados</CardTitle>
             <X className="h-4 w-4 text-red-600" />
@@ -348,7 +348,7 @@ export function UserApproval() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total</CardTitle>
             <User className="h-4 w-4 text-blue-600" />
@@ -368,16 +368,16 @@ export function UserApproval() {
             placeholder="Buscar por nombre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm rounded-xl"
           />
         </div>
 
         <div className="flex gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] rounded-xl">
               <SelectValue placeholder="Filtrar por estado" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               <SelectItem value="pending">Pendientes</SelectItem>
               <SelectItem value="rejected">Rechazados</SelectItem>
             </SelectContent>
@@ -386,7 +386,7 @@ export function UserApproval() {
           <Button
             variant="outline"
             onClick={() => setShowRejectedUsers(!showRejectedUsers)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-xl"
           >
             {showRejectedUsers ? (
               <EyeOff className="h-4 w-4" />
@@ -406,7 +406,7 @@ export function UserApproval() {
           </h3>
 
           {currentPageUsers.length === 0 ? (
-            <Card>
+            <Card className="rounded-xl">
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -429,7 +429,7 @@ export function UserApproval() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                             <User className="h-6 w-6 text-blue-600" />
                           </div>
                         </div>
@@ -448,14 +448,14 @@ export function UserApproval() {
                           <div className="flex items-center gap-2 mt-2">
                             <Badge
                               variant="outline"
-                              className="text-orange-600 border-orange-200"
+                              className="text-orange-600 border-orange-200 rounded-xl"
                             >
                               <Clock className="h-3 w-3 mr-1" />
                               {user.daysPending || 0} días pendiente
                             </Badge>
 
                             {user.membership?.membershipType && (
-                              <Badge variant="secondary">
+                              <Badge variant="secondary" className="rounded-xl">
                                 {user.membership.membershipType}
                               </Badge>
                             )}
@@ -470,6 +470,7 @@ export function UserApproval() {
                             setSelectedUser(user);
                             setShowDetails(true);
                           }}
+                          className="rounded-xl"
                         >
                           Ver Detalles
                         </Button>
@@ -481,6 +482,7 @@ export function UserApproval() {
                             setSelectedUser(user);
                             setShowRejectDialog(true);
                           }}
+                          className="rounded-xl"
                         >
                           Rechazar
                         </Button>
@@ -488,7 +490,7 @@ export function UserApproval() {
                         <Button
                           size="sm"
                           onClick={() => handleApproveUser(user)}
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-green-600 hover:bg-green-700 rounded-xl"
                         >
                           Aprobar
                         </Button>
@@ -513,6 +515,7 @@ export function UserApproval() {
                       size="sm"
                       onClick={() => setPage(page - 1)}
                       disabled={page <= 1}
+                      className="rounded-xl"
                     >
                       Anterior
                     </Button>
@@ -526,6 +529,7 @@ export function UserApproval() {
                       size="sm"
                       onClick={() => setPage(page + 1)}
                       disabled={page >= totalPages}
+                      className="rounded-xl"
                     >
                       Siguiente
                     </Button>
@@ -543,7 +547,7 @@ export function UserApproval() {
           <h3 className="text-lg font-semibold">Usuarios Rechazados</h3>
 
           {rejectedUsers.length === 0 ? (
-            <Card>
+            <Card className="rounded-xl">
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -560,13 +564,13 @@ export function UserApproval() {
                   isPendingUser(user) && (
                     <Card
                       key={user.id}
-                      className="hover:shadow-md transition-shadow border-red-200"
+                      className="hover:shadow-md transition-shadow border-red-200 rounded-xl"
                     >
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <div className="flex-shrink-0">
-                              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
                                 <X className="h-6 w-6 text-red-600" />
                               </div>
                             </div>
@@ -596,11 +600,11 @@ export function UserApproval() {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Button
+                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleReactivateUser(user)}
-                              className="flex items-center gap-2"
+                              className="flex items-center gap-2 rounded-xl"
                             >
                               <RotateCcw className="h-4 w-4" />
                               Reactivar
@@ -612,7 +616,7 @@ export function UserApproval() {
                                 setUserToDelete(user);
                                 setShowDeleteDialog(true);
                               }}
-                              className="flex items-center gap-2"
+                              className="flex items-center gap-2 rounded-xl"
                             >
                               <Trash2 className="h-4 w-4" />
                               Eliminar
@@ -630,7 +634,7 @@ export function UserApproval() {
 
       {/* Modal de detalles del usuario */}
       <Dialog open={showDetails} onOpenChange={(open) => setShowDetails(open)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl rounded-xl">
           <DialogHeader>
             <DialogTitle>Detalles del Usuario</DialogTitle>
           </DialogHeader>
@@ -663,12 +667,12 @@ export function UserApproval() {
               {selectedUser.notes ?? ""}
 
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowDetails(false)}>
+                <Button variant="outline" onClick={() => setShowDetails(false)} className="rounded-xl">
                   Cerrar
                 </Button>
                 <Button
                   onClick={() => handleApproveUser(selectedUser)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 rounded-xl"
                 >
                   Aprobar Usuario
                 </Button>
@@ -683,7 +687,7 @@ export function UserApproval() {
         open={showRejectDialog}
         onOpenChange={(open) => setShowRejectDialog(open)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-xl">
           <DialogHeader>
             <DialogTitle>Rechazar Usuario</DialogTitle>
             <DialogDescription>
@@ -695,12 +699,13 @@ export function UserApproval() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="reject-reason">Motivo del rechazo</Label>
-              <Textarea
+               <Textarea
                 id="reject-reason"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Ej: Documentación incompleta, información incorrecta..."
                 rows={3}
+                className="rounded-xl"
               />
             </div>
 
@@ -711,6 +716,7 @@ export function UserApproval() {
                   setShowRejectDialog(false);
                   setRejectReason("");
                 }}
+                className="rounded-xl"
               >
                 Cancelar
               </Button>
@@ -718,6 +724,7 @@ export function UserApproval() {
                 variant="destructive"
                 onClick={() => selectedUser && handleRejectUser(selectedUser)}
                 disabled={!rejectReason.trim()}
+                className="rounded-xl"
               >
                 Rechazar Usuario
               </Button>
@@ -731,7 +738,7 @@ export function UserApproval() {
         open={showDeleteDialog}
         onOpenChange={(open) => setShowDeleteDialog(open)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Eliminar usuario permanentemente?
@@ -742,10 +749,10 @@ export function UserApproval() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => userToDelete && handleDeleteUser(userToDelete)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
               Eliminar Permanentemente
             </AlertDialogAction>

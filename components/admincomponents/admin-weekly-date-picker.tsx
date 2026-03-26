@@ -170,7 +170,7 @@ export default function AdminWeeklyDatePicker({
             <button
               onClick={goToPreviousWeek}
               disabled={isTransitioning || !canGoPrevious}
-              className={`p-2 rounded-full transition-colors ${!canGoPrevious ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
+              className={`p-2 rounded-xl transition-colors ${!canGoPrevious ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
               aria-label="Previous week"
             >
               <svg
@@ -190,7 +190,7 @@ export default function AdminWeeklyDatePicker({
             <button
               onClick={goToNextWeek}
               disabled={isTransitioning || !canGoNext}
-              className={`p-2 rounded-full transition-colors ${!canGoNext ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
+              className={`p-2 rounded-xl transition-colors ${!canGoNext ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
               aria-label="Next week"
             >
               <svg
@@ -242,7 +242,7 @@ export default function AdminWeeklyDatePicker({
                 <button
                   onClick={() => onDateSelect(date)}
                   className={`
-                    w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center 
+                    w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center 
                     text-sm md:text-base font-medium
                     transition-all duration-200 ease-in-out
                     ${

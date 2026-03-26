@@ -337,7 +337,7 @@ export default function PlansManager() {
             Administra los planes de membresía disponibles para los usuarios
           </p>
         </div>
-        <Button onClick={handleNewPlan}>
+        <Button onClick={handleNewPlan} className="rounded-xl">
           <Plus className="w-4 h-4 mr-2" /> Nuevo Plan
         </Button>
       </div>
@@ -350,24 +350,24 @@ export default function PlansManager() {
             placeholder="Buscar por nombre o descripción..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 rounded-xl"
           />
         </div>
         <Select value={activeFilter} onValueChange={setActiveFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 rounded-xl">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="todos">Todos los estados</SelectItem>
             <SelectItem value="true">Activo</SelectItem>
             <SelectItem value="false">Inactivo</SelectItem>
           </SelectContent>
         </Select>
         <Select value={durationFilter} onValueChange={setDurationFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 rounded-xl">
             <SelectValue placeholder="Filtrar por duración" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="todos">Todas las duraciones</SelectItem>
             <SelectItem value="monthly">Planes Mensuales</SelectItem>
             <SelectItem value="extended">Planes Extendidos</SelectItem>
@@ -380,16 +380,16 @@ export default function PlansManager() {
         {isLoading ? (
           // Skeleton simplificado para cards de planes
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="hover:shadow-md transition-shadow">
+            <Card key={i} className="hover:shadow-md transition-shadow rounded-xl">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Skeleton className="w-5 h-5 rounded" />
-                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="w-5 h-5 rounded-xl" />
+                    <Skeleton className="h-6 w-32 rounded-xl" />
                   </div>
                   <div className="flex gap-1">
-                    <Skeleton className="w-8 h-8 rounded" />
-                    <Skeleton className="w-8 h-8 rounded" />
+                    <Skeleton className="w-8 h-8 rounded-xl" />
+                    <Skeleton className="w-8 h-8 rounded-xl" />
                   </div>
                 </div>
               </CardHeader>
@@ -397,34 +397,34 @@ export default function PlansManager() {
                 <Skeleton className="h-4 w-3/4 mb-4" />
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-16 rounded-xl" />
+                    <Skeleton className="h-4 w-20 rounded-xl" />
                   </div>
                   <div className="space-y-1">
-                    <Skeleton className="h-4 w-12" />
-                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-12 rounded-xl" />
+                    <Skeleton className="h-4 w-24 rounded-xl" />
                   </div>
                   <div className="space-y-1">
-                    <Skeleton className="h-4 w-12" />
-                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-12 rounded-xl" />
+                    <Skeleton className="h-4 w-16 rounded-xl" />
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t">
-                  <Skeleton className="h-4 w-32 mb-2" />
-                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-32 mb-2 rounded-xl" />
+                  <Skeleton className="h-4 w-40 rounded-xl" />
                 </div>
               </CardContent>
             </Card>
           ))
         ) : !plans || plans.length === 0 ? (
-          <Card>
+          <Card className="rounded-xl">
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
                 <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">
                   No hay planes configurados
                 </p>
-                <Button onClick={handleNewPlan}>
+                <Button onClick={handleNewPlan} className="rounded-xl">
                   <Plus className="w-4 h-4 mr-2" /> Crear primer plan
                 </Button>
               </div>
@@ -448,14 +448,14 @@ export default function PlansManager() {
               return true;
             })
             .map((plan) => (
-              <Card key={plan.id} className="hover:shadow-md transition-shadow">
+              <Card key={plan.id} className="hover:shadow-md transition-shadow rounded-xl">
                 <CardHeader className="pb-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-blue-500" />
                       <CardTitle className="text-lg">{plan.name}</CardTitle>
                       {!plan.isActive && (
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-2 rounded-xl">
                           Oculto
                         </Badge>
                       )}
@@ -465,6 +465,7 @@ export default function PlansManager() {
                         size="icon"
                         variant="outline"
                         onClick={() => handleEditPlan(plan)}
+                        className="rounded-xl"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -472,6 +473,7 @@ export default function PlansManager() {
                         size="icon"
                         variant="destructive"
                         onClick={() => handleDeletePlan(plan.id)}
+                        className="rounded-xl"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -522,7 +524,7 @@ export default function PlansManager() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="space-y-2">
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs rounded-xl">
                           {plan.disciplineAccess === "all"
                             ? "Todas las disciplinas"
                             : "Disciplinas limitadas"}
@@ -547,7 +549,7 @@ export default function PlansManager() {
                                   <Badge
                                     key={disciplineId}
                                     variant="outline"
-                                    className="text-xs"
+                                    className="text-xs rounded-xl"
                                   >
                                     <span
                                       className="w-2 h-2 rounded-full mr-1"
@@ -572,7 +574,7 @@ export default function PlansManager() {
 
       {/* Modal para crear/editar plan */}
       <Dialog open={showPlanModal} onOpenChange={setShowPlanModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl">
           <DialogHeader>
             <DialogTitle>
               {editingPlan ? "Editar Plan" : "Nuevo Plan"}
@@ -589,6 +591,7 @@ export default function PlansManager() {
                   value={planForm.name}
                   onChange={handlePlanChange}
                   placeholder="Ej: Básico, Premium, VIP"
+                  className="rounded-xl"
                 />
               </div>
               <div>
@@ -598,6 +601,7 @@ export default function PlansManager() {
                   value={planForm.description}
                   onChange={handlePlanChange}
                   placeholder="Descripción del plan"
+                  className="rounded-xl"
                 />
               </div>
               <div>
@@ -610,6 +614,7 @@ export default function PlansManager() {
                   placeholder="Ingresa el precio"
                   min="0"
                   step="1"
+                  className="rounded-xl"
                 />
               </div>
             </div>
@@ -629,10 +634,10 @@ export default function PlansManager() {
                       }));
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Selecciona la duración" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {durationOptions.map((option) => (
                         <SelectItem
                           key={option.value}
@@ -653,6 +658,7 @@ export default function PlansManager() {
                     onChange={handlePlanChange}
                     placeholder="0 = ilimitado"
                     min="0"
+                    className="rounded-xl"
                   />
                   {planForm.classLimit > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
@@ -709,7 +715,7 @@ export default function PlansManager() {
                                 ? "default"
                                 : "outline"
                             }
-                            className={`cursor-pointer transition-colors ${
+                            className={`cursor-pointer transition-colors rounded-xl ${
                               planForm.allowedDisciplines.includes(
                                 discipline.id
                               )
@@ -761,11 +767,11 @@ export default function PlansManager() {
             <div className="flex gap-2 pt-4 border-t">
               <Button
                 onClick={handleSavePlan}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 rounded-xl"
               >
                 Guardar
               </Button>
-              <Button variant="outline" onClick={() => setShowPlanModal(false)}>
+              <Button variant="outline" onClick={() => setShowPlanModal(false)} className="rounded-xl">
                 Cancelar
               </Button>
             </div>
@@ -773,9 +779,8 @@ export default function PlansManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de confirmación para eliminar plan */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-500" />
@@ -796,7 +801,7 @@ export default function PlansManager() {
             <Button
               variant="destructive"
               onClick={confirmDeletePlan}
-              className="flex-1"
+              className="flex-1 rounded-xl"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Eliminar
@@ -807,7 +812,7 @@ export default function PlansManager() {
                 setShowDeleteModal(false);
                 setPlanToDelete(null);
               }}
-              className="flex-1"
+              className="flex-1 rounded-xl"
             >
               Cancelar
             </Button>

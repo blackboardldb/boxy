@@ -261,13 +261,13 @@ export function AddStudentModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {!initialStudent && (
         <DialogTrigger asChild>
-          <Button variant="default" className="flex items-center gap-2">
+          <Button variant="default" className="flex items-center gap-2 rounded-xl">
             <Plus className="w-4 h-4" />
             Agregar Alumno
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col rounded-xl">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {initialStudent ? "Editar Alumno" : "Agregar Alumno"}
@@ -292,7 +292,7 @@ export function AddStudentModal({
                       firstName: e.target.value,
                     }))
                   }
-                  placeholder="Nombre"
+                  className="rounded-xl"
                   required
                 />
               </div>
@@ -308,7 +308,7 @@ export function AddStudentModal({
                       lastName: e.target.value,
                     }))
                   }
-                  placeholder="Apellido"
+                  className="rounded-xl"
                   required
                 />
               </div>
@@ -324,7 +324,7 @@ export function AddStudentModal({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, email: e.target.value }))
                   }
-                  placeholder="email@ejemplo.com"
+                  className="rounded-xl"
                   required
                 />
               </div>
@@ -337,7 +337,7 @@ export function AddStudentModal({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, phone: e.target.value }))
                   }
-                  placeholder="+1234567890"
+                  className="rounded-xl"
                   required
                 />
               </div>
@@ -366,10 +366,10 @@ export function AddStudentModal({
                     }}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Selecciona un plan" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {plans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
                           {plan.name} - ${plan.price} /{" "}
@@ -400,10 +400,10 @@ export function AddStudentModal({
                     }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl">
                     <SelectItem value="contado">Contado</SelectItem>
                     <SelectItem value="transferencia">Transferencia</SelectItem>
                     <SelectItem value="debito">Débito</SelectItem>
@@ -433,6 +433,7 @@ export function AddStudentModal({
                   }));
                   setLastPaymentTouched(true);
                 }}
+                className="rounded-xl"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 💡 Se actualiza automáticamente con la fecha de inicio, pero
@@ -451,10 +452,10 @@ export function AddStudentModal({
                   }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="user">Alumno</SelectItem>
                   <SelectItem value="coach">Coach</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
@@ -475,10 +476,10 @@ export function AddStudentModal({
                   }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="active">
                     Normal (Seguir fechas del plan)
                   </SelectItem>
@@ -499,10 +500,11 @@ export function AddStudentModal({
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
+              className="rounded-xl"
             >
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" className="rounded-xl">
               {initialStudent ? "Guardar Cambios" : "Agregar Alumno"}
             </Button>
           </div>

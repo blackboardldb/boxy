@@ -108,7 +108,7 @@ export default function AlumnosPage() {
     };
 
     return (
-      <Badge className="text-white border-0" style={{ backgroundColor: color }}>
+      <Badge className="text-white border-0 rounded-xl" style={{ backgroundColor: color }}>
         {labels[status] || status}
       </Badge>
     );
@@ -166,14 +166,14 @@ export default function AlumnosPage() {
             placeholder="Buscar por nombre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 rounded-xl"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 rounded-xl">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="todos">Todos los estados</SelectItem>
             <SelectItem value={STUDENT_STATES.ACTIVE}>Activo</SelectItem>
             <SelectItem value={STUDENT_STATES.INACTIVE}>Inactivo</SelectItem>
@@ -199,6 +199,7 @@ export default function AlumnosPage() {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              className="rounded-xl"
             >
               Anterior
             </Button>
@@ -210,6 +211,7 @@ export default function AlumnosPage() {
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              className="rounded-xl"
             >
               Siguiente
             </Button>
@@ -217,7 +219,7 @@ export default function AlumnosPage() {
         )}
       </div>
 
-      <Card>
+      <Card className="rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -235,19 +237,19 @@ export default function AlumnosPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-32 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-6 w-16 rounded-full" />
+                      <Skeleton className="h-6 w-16 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-20 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-8 w-8 rounded-xl" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -306,6 +308,7 @@ export default function AlumnosPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleEditStudent(student)}
+                        className="rounded-xl"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>

@@ -27,7 +27,7 @@ export default function AdminClassList({
         {/* Skeleton loaders */}
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function AdminClassList({
             />
           ))
         ) : (
-          <div className="text-center py-16 border border-zinc-800 rounded-lg bg-black">
+          <div className="text-center py-16 border border-zinc-200 rounded-xl bg-slate-50 dark:bg-slate-900/50">
             <Calendar className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
             <p className="text-gray-400 text-base">
               No hay clases disponibles para este día

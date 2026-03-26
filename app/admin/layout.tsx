@@ -50,7 +50,7 @@ export default function AdminLayout({
             variant="ghost" 
             size="icon" 
             onClick={() => setIsSidebarOpen(false)}
-            className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="h-6 w-6" />
           </Button>

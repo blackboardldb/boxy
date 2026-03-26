@@ -238,6 +238,7 @@ export default function AdminClasesPage() {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              className="rounded-xl"
             >
               Anterior
             </Button>
@@ -249,6 +250,7 @@ export default function AdminClasesPage() {
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
+              className="rounded-xl"
             >
               Siguiente
             </Button>
@@ -260,7 +262,7 @@ export default function AdminClasesPage() {
       {isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
       ) : (

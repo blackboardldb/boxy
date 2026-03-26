@@ -295,6 +295,7 @@ export function InstructorsManager() {
                 }
                 placeholder="Nombre del instructor"
                 required
+                className="rounded-xl"
               />
             </div>
             <div>
@@ -306,6 +307,7 @@ export function InstructorsManager() {
                 }
                 placeholder="Apellido del instructor"
                 required
+                className="rounded-xl"
               />
             </div>
           </div>
@@ -320,6 +322,7 @@ export function InstructorsManager() {
               }
               placeholder="instructor@blacksheep.com"
               required
+              className="rounded-xl"
             />
           </div>
 
@@ -331,6 +334,7 @@ export function InstructorsManager() {
                 setFormData((prev) => ({ ...prev, phone: e.target.value }))
               }
               placeholder="+56 9 1234 5678"
+              className="rounded-xl"
             />
           </div>
 
@@ -359,10 +363,10 @@ export function InstructorsManager() {
                 }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
@@ -404,10 +408,10 @@ export function InstructorsManager() {
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button onClick={handleSubmit} className="flex-1">
+          <Button onClick={handleSubmit} className="flex-1 rounded-xl">
             {instructor ? "Actualizar" : "Crear"} Instructor
           </Button>
-          <Button variant="outline" onClick={handleCancel}>
+          <Button variant="outline" onClick={handleCancel} className="rounded-xl">
             Cancelar
           </Button>
         </div>
@@ -421,12 +425,12 @@ export function InstructorsManager() {
         <h2 className="text-2xl font-bold">Gestión de Instructores</h2>
         <Dialog open={isAddingInstructor} onOpenChange={setIsAddingInstructor}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
               Agregar Instructor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl rounded-xl">
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Instructor</DialogTitle>
               <DialogDescription>
@@ -449,24 +453,24 @@ export function InstructorsManager() {
             placeholder="Buscar por nombre o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 rounded-xl"
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 rounded-xl">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="todos">Todos los roles</SelectItem>
             <SelectItem value="coach">Coach</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
         <Select value={activeFilter} onValueChange={setActiveFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-48 rounded-xl">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="rounded-xl">
             <SelectItem value="todos">Todos los estados</SelectItem>
             <SelectItem value="true">Activo</SelectItem>
             <SelectItem value="false">Inactivo</SelectItem>
@@ -487,6 +491,7 @@ export function InstructorsManager() {
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              className="rounded-xl"
             >
               Anterior
             </Button>
@@ -502,6 +507,7 @@ export function InstructorsManager() {
                 )
               }
               disabled={page === instructorsPagination.totalPages}
+              className="rounded-xl"
             >
               Siguiente
             </Button>
@@ -509,7 +515,7 @@ export function InstructorsManager() {
         )}
       </div>
 
-      <Card>
+      <Card className="rounded-xl">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -527,19 +533,19 @@ export function InstructorsManager() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-32 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-6 w-16 rounded-full" />
+                      <Skeleton className="h-6 w-16 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-40 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-6 w-16 rounded-full" />
+                      <Skeleton className="h-6 w-16 rounded-xl" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-8 w-16 rounded" />
+                      <Skeleton className="h-8 w-16 rounded-xl" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -565,7 +571,7 @@ export function InstructorsManager() {
                         variant={
                           instructor.role === "admin" ? "default" : "secondary"
                         }
-                        className="capitalize"
+                        className="capitalize rounded-xl"
                       >
                         {instructor.role || "coach"}
                       </Badge>
@@ -594,7 +600,7 @@ export function InstructorsManager() {
                               <Badge
                                 key={specialtyId}
                                 variant="secondary"
-                                className="text-xs"
+                                className="text-xs rounded-xl"
                               >
                                 {specialtyId}
                               </Badge>
@@ -610,7 +616,7 @@ export function InstructorsManager() {
                     <TableCell>
                       <Badge
                         variant={instructor.isActive ? "default" : "secondary"}
-                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        className="cursor-pointer hover:opacity-80 transition-opacity rounded-xl"
                         onClick={() => handleToggleStatus(instructor.id)}
                       >
                         {instructor.isActive ? "Activo" : "Inactivo"}
@@ -631,11 +637,12 @@ export function InstructorsManager() {
                               size="sm"
                               variant="outline"
                               onClick={() => setEditingInstructor(instructor)}
+                              className="rounded-xl"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
+                          <DialogContent className="max-w-2xl rounded-xl">
                             <DialogHeader>
                               <DialogTitle>Editar Instructor</DialogTitle>
                               <DialogDescription>
@@ -652,6 +659,7 @@ export function InstructorsManager() {
                           size="sm"
                           variant="outline"
                           onClick={() => setDeletingInstructor(instructor)}
+                          className="rounded-xl"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -670,7 +678,7 @@ export function InstructorsManager() {
         open={deletingInstructor !== null}
         onOpenChange={(open) => !open && setDeletingInstructor(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar instructor?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -683,7 +691,7 @@ export function InstructorsManager() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (deletingInstructor) {
@@ -691,7 +699,7 @@ export function InstructorsManager() {
                   setDeletingInstructor(null);
                 }
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
             >
               Eliminar
             </AlertDialogAction>
