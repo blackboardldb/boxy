@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff, Dumbbell, Loader2 } from "lucide-react";
+import SquareLogo from "@/components/SquareLogo";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { initialOrganization, fetchOrganization, isLoading } = useBlackSheepStore();
+
+  useEffect(() => {
+    if (!initialOrganization) {
+      fetchOrganization();
+    }
+  }, [initialOrganization, fetchOrganization]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -61,11 +70,15 @@ export default function LoginPage() {
         <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-2xl p-8 shadow-2xl">
           {/* Logo & Brand */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-yellow-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-yellow-500/30">
-              <Dumbbell className="w-8 h-8 text-gray-950" strokeWidth={2.5} />
+            <div className="mb-4">
+              <SquareLogo size={64} />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              BlackSheep
+            <h1 className="text-2xl font-bold text-white tracking-tight min-h-[32px] flex items-center">
+              {initialOrganization ? (
+                initialOrganization.name
+              ) : (
+                <div className="h-6 w-32 bg-gray-800 rounded-md" />
+              )}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
               Ingresa a tu cuenta para continuar

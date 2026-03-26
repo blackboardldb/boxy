@@ -1,7 +1,29 @@
-// src/components/Logo.tsx
-// Este es un Server Component (no tiene "use client")
+"use client";
+
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useEffect } from "react";
 
 export default function Logo({ size }: { size?: number }) {
+  const { initialOrganization, fetchOrganization } = useBlackSheepStore();
+
+  useEffect(() => {
+    if (!initialOrganization) {
+      fetchOrganization();
+    }
+  }, [initialOrganization, fetchOrganization]);
+
+  // Use dynamic horizontal logo if available
+  if (initialOrganization?.branding?.logoHorizontalSvg) {
+    return (
+      <div 
+        className="flex items-center"
+        style={{ width: size ?? 150 }} 
+        dangerouslySetInnerHTML={{ __html: initialOrganization.branding.logoHorizontalSvg }} 
+      />
+    );
+  }
+
+  // Fallback to hardcoded SVG
   return (
     <svg width={size ?? "150"} viewBox="0 0 281.681 30.373">
       <g id="Grupo_2" data-name="Grupo 2" transform="translate(-820 -525.543)">

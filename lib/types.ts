@@ -161,6 +161,8 @@ export interface Organization {
     primaryColor: string; // "#3b82f6"
     secondaryColor: string; // "#10b981"
     logoSvg?: string;
+    logoHorizontalSvg?: string;
+    logoSquareSvg?: string;
   };
 
   // Configuración operacional del centro (similar a center_config JSONB en la tabla organizations)

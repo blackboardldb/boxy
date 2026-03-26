@@ -144,8 +144,8 @@ interface BlackSheepStore {
   ) => Promise<void>;
 
   // Organization actions
-  updateOrganization: (organization: Organization) => void;
-  fetchOrganization: () => void;
+  updateOrganization: (organization: Organization) => Promise<boolean>;
+  fetchOrganization: () => Promise<void>;
 
   // Registration actions
   addClassRegistration: (registration: unknown) => void;
@@ -1058,11 +1058,48 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       },
 
       // Organization actions
-      updateOrganization: (organization) =>
-        set({ initialOrganization: organization }),
-      fetchOrganization: () => {
-        // In a real app, this would fetch from API
-        set({ initialOrganization: null });
+      updateOrganization: async (organization) => {
+        try {
+          set({ isLoading: true });
+          const response = await fetch("/api/organization", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(organization),
+          });
+
+          if (!response.ok)
+            throw new Error("Error al actualizar organización");
+
+          const result = await response.json();
+          if (result.success) {
+            set({ initialOrganization: result.data });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Error updating organization:", error);
+          set({ error: String(error) });
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+      fetchOrganization: async () => {
+        try {
+          set({ isLoading: true });
+          const response = await fetch("/api/organization");
+          if (!response.ok) throw new Error("Error al obtener organización");
+
+          const result = await response.json();
+          if (result.success && result.data) {
+            set({ initialOrganization: result.data });
+          }
+        } catch (error) {
+          console.error("Error fetching organization:", error);
+          set({ initialOrganization: null });
+        } finally {
+          set({ isLoading: false });
+        }
       },
 
       // Registration actions
