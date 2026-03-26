@@ -377,7 +377,12 @@ export function getPlanStatus(user: any): "active" | "expired" | "pending" | "ex
   }
 
   const now = new Date();
-  const endDate = new Date(user.membership.currentPeriodEnd);
+  
+  // Extract YYYY-MM-DD to avoid timezone shifts and force local end of day
+  const endDateStr = user.membership.currentPeriodEnd;
+  const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
+  const endDate = new Date(endDateOnly + "T23:59:59");
+  
   const remainingClasses =
     user.membership.centerStats.currentMonth.remainingClasses || 0;
 
@@ -430,7 +435,10 @@ export function getPlanExpirationReason(user: any): string | null {
   if (status !== "expired" && status !== "exhausted") return null;
 
   const now = new Date();
-  const endDate = new Date(user.membership.currentPeriodEnd);
+  const endDateStr = user.membership.currentPeriodEnd;
+  const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
+  const endDate = new Date(endDateOnly + "T23:59:59");
+  
   const remainingClasses =
     user.membership.centerStats.currentMonth.remainingClasses || 0;
 
@@ -465,10 +473,31 @@ export function doesPlanNeedRenewal(user: any): boolean {
 export function getDaysUntilPlanExpiration(user: any): number {
   if (!user?.membership) return -1;
 
-  const endDate = new Date(user.membership.currentPeriodEnd);
+  const endDateStr = user.membership.currentPeriodEnd;
+  const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
+  const endDate = new Date(endDateOnly + "T23:59:59");
+
   if (isNaN(endDate.getTime())) return -1;
 
   return daysUntil(endDate);
+}
+
+/**
+ * Verifica si la fecha de una clase está dentro del periodo válido del plan
+ * @param user - Usuario con membresía
+ * @param classDateTime - Fecha y hora de la clase
+ * @returns true si la clase ocurre antes o durante el último día del plan
+ */
+export function isClassWithinPlanValidity(user: any, classDateTime: string | Date): boolean {
+  if (!user?.membership?.currentPeriodEnd) return false;
+
+  const endDateStr = user.membership.currentPeriodEnd;
+  const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
+  const planEndDate = new Date(endDateOnly + "T23:59:59");
+
+  const classDate = typeof classDateTime === "string" ? new Date(classDateTime) : classDateTime;
+  
+  return classDate <= planEndDate;
 }
 
 export function convertClassSessionToClassItem(

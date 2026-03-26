@@ -5,7 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { parseISO, addMinutes, isAfter } from "date-fns";
 
 interface ClassStatusBadgeProps {
-  classItem: ClassSession;
+  classItem: {
+    status?: string | null;
+    dateTime: string;
+    durationMinutes?: number;
+  };
 }
 
 export function ClassStatusBadge({ classItem }: ClassStatusBadgeProps) {

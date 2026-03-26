@@ -17,6 +17,7 @@ interface FormattedClassItem {
   isRegistered: boolean;
   formattedDayLabel: string;
   formattedTime: string;
+  isWithinPlanDates: boolean;
 }
 
 interface ClassListProps {

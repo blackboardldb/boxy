@@ -29,6 +29,7 @@ import {
   formatWeekday,
   getPlanStatus,
   canUserRegisterForClasses,
+  isClassWithinPlanValidity,
 } from "@/lib/utils";
 
 interface FormattedClassItem {
@@ -42,6 +43,7 @@ interface FormattedClassItem {
   formattedDayLabel: string;
   formattedTime: string;
   status?: string;
+  isWithinPlanDates: boolean;
 }
 
 export default function CalendarPage() {
@@ -134,6 +136,7 @@ export default function CalendarPage() {
         formattedDayLabel: formatWeekday(session.dateTime),
         formattedTime: formatTimeLocal(session.dateTime),
         status: finalStatus,
+        isWithinPlanDates: isClassWithinPlanValidity(currentUser, session.dateTime),
       };
     },
     [instructors, disciplines, currentUser]

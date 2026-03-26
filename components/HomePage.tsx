@@ -10,7 +10,7 @@ import Link from "next/link";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { getPlanStatus } from "@/lib/utils";
 
-interface FormattedClassItem {
+export interface FormattedClassItem {
   id: string;
   dateTime: string;
   name: string;

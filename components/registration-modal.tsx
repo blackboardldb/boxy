@@ -10,6 +10,7 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
 } from "@/components/ui/drawer";
 import { Clock, User, Clock3, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -80,8 +81,11 @@ export default function RegistrationModal({
       <DrawerContent className="sm:max-w-xl w-full mx-auto text-center">
         <DrawerHeader>
           <DrawerTitle className="text-lg text-center">
-            {isConfirmed ? "" : "Vas a reservar la siguiente clase"}
+            {isConfirmed ? "Clase reservada" : "Vas a reservar la siguiente clase"}
           </DrawerTitle>
+          <DrawerDescription className="sr-only">
+             Detalles de confirmación de reserva
+          </DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-4">

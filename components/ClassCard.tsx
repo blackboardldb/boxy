@@ -20,6 +20,7 @@ interface FormattedClassItem {
   formattedDayLabel: string;
   formattedTime: string;
   status?: string;
+  isWithinPlanDates?: boolean;
 }
 
 interface ClassCardProps {
@@ -60,9 +61,9 @@ export function ClassCard({
   // Para usuarios registrados, siempre pueden cancelar (si la clase lo permite)
   const canCancelRegistration = isRegistered && canPerformAction;
 
-  // Para usuarios no registrados, solo pueden registrarse si el plan está activo
+  // Para usuarios no registrados, solo pueden registrarse si el plan está activo y la clase está dentro de la vigencia
   const canRegisterForNewClass =
-    !isRegistered && canPerformAction && canRegisterForClass;
+    !isRegistered && canPerformAction && canRegisterForClass && classItem.isWithinPlanDates;
 
   const handleAction = () => {
     if (isRegistered) {
@@ -88,12 +89,11 @@ export function ClassCard({
         <ClassStatusBadge
           classItem={{
             ...classItem,
-            status: classItem.status as
+            status: (classItem.status || "scheduled") as
               | "scheduled"
               | "cancelled"
               | "completed"
-              | "in_progress"
-              | undefined,
+              | "in_progress",
           }}
         />
       </div>
@@ -159,7 +159,7 @@ export function ClassCard({
       </div>
 
       {/* Mensaje informativo cuando no se puede registrar */}
-      {!canRegisterForClass && !isRegistered && canPerformAction && (
+      {!canRegisterForNewClass && !isRegistered && canPerformAction && (
         <div className="mt-2 text-xs text-center">
           {planStatus === "pending" ? (
             <span className="text-yellow-600">
@@ -172,6 +172,10 @@ export function ClassCard({
           ) : planStatus === "expired" ? (
             <span className="text-orange-600">
               Renueva tu plan para inscribirte
+            </span>
+          ) : !classItem.isWithinPlanDates ? (
+            <span className="text-orange-600">
+              Clase fuera de rango de tu plan actual
             </span>
           ) : (
             <span className="text-gray-500">No disponible</span>

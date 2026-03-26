@@ -90,8 +90,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         setEditPlanId(m.planId || "");
         setEditClassLimit(m.planConfig?.classLimit ?? 0);
         setEditPrice(m.monthlyPrice ?? 0);
-        setEditStartDate(m.currentPeriodStart ? m.currentPeriodStart.substring(0, 10) : "");
-        setEditEndDate(m.currentPeriodEnd ? m.currentPeriodEnd.substring(0, 10) : "");
+        setEditStartDate(m.currentPeriodStart ? format(new Date(m.currentPeriodStart), 'yyyy-MM-dd') : "");
+        setEditEndDate(m.currentPeriodEnd ? format(new Date(m.currentPeriodEnd), 'yyyy-MM-dd') : "");
         setEditPaymentMethod(student.formaDePago || "transferencia");
         setEditNotes(student.notes || "");
       }
@@ -170,8 +170,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         planId: editPlanId,
         membershipType: selectedPlan ? selectedPlan.name : student.membership?.membershipType,
         monthlyPrice: Number(editPrice),
-        currentPeriodStart: new Date(editStartDate).toISOString(),
-        currentPeriodEnd: new Date(editEndDate).toISOString(),
+        currentPeriodStart: new Date(editStartDate + "T00:00:00").toISOString(),
+        currentPeriodEnd: new Date(editEndDate + "T23:59:59").toISOString(),
         planConfig: {
           ...(student.membership?.planConfig || {}),
           classLimit: Number(editClassLimit),
@@ -209,7 +209,11 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     if (!student?.membership?.currentPeriodStart || !student?.membership?.currentPeriodEnd) return [];
     
     const start = new Date(student.membership.currentPeriodStart);
-    const end = new Date(student.membership.currentPeriodEnd);
+    
+    // Obtenemos solo la fecha YYYY-MM-DD y forzamos su límite al final del día local
+    const endDateStr = student.membership.currentPeriodEnd;
+    const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
+    const end = new Date(endDateOnly + "T23:59:59");
 
     return (classSessions || [])
       .filter(s => {

@@ -31,7 +31,7 @@ import { useToast } from "@/components/ui/use-toast";
 import type { FitCenterUserProfile } from "@/lib/types";
 // Removed unused pagination imports
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDateShort } from "@/lib/utils";
+import { formatDateShort, getPlanStatus } from "@/lib/utils";
 
 // Función helper para formatear fechas
 const formatDate = (dateString: string | undefined): string => {
@@ -253,20 +253,22 @@ export default function AlumnosPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                studentsOnly.map((student: FitCenterUserProfile) => (
+                studentsOnly.map((student: FitCenterUserProfile) => {
+                  const currentPlanStatus = getPlanStatus(student);
+                  return (
                   <TableRow
                     key={student.id}
                     className={
-                      student.membership?.status === "pending"
+                      currentPlanStatus === "pending"
                         ? "bg-yellow-50 border-l-4 border-yellow-400"
-                        : student.membership?.status === "expired"
+                        : currentPlanStatus === "expired" || currentPlanStatus === "exhausted"
                         ? "bg-red-50 border-l-4 border-red-400"
                         : ""
                     }
                   >
                     <TableCell className="font-medium">
                       {student.firstName} {student.lastName}
-                      {student.membership?.status === "expired" && (
+                      {(currentPlanStatus === "expired" || currentPlanStatus === "exhausted") && (
                         <Badge className="ml-2 bg-red-500 text-white">
                           Renovar
                         </Badge>
@@ -278,7 +280,7 @@ export default function AlumnosPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(student.membership?.status || "inactive")}
+                      {getStatusBadge(currentPlanStatus)}
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -302,7 +304,8 @@ export default function AlumnosPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

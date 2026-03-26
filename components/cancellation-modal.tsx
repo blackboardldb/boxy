@@ -81,13 +81,11 @@ export default function CancellationModal({
       <DrawerContent className="sm:max-w-xl w-full mx-auto text-center">
         <DrawerHeader>
           <DrawerTitle className="text-lg text-center">
-            {isCancelled ? "" : "¿Estás seguro de cancelar la clase?"}
+            {isCancelled ? "Clase cancelada" : "¿Estás seguro de cancelar la clase?"}
           </DrawerTitle>
-          {!isCancelled && (
-            <DrawerDescription className="text-center">
-              Verifica los detalles de la clase antes de cancelar
-            </DrawerDescription>
-          )}
+          <DrawerDescription className={isCancelled ? "sr-only" : "text-center"}>
+            {isCancelled ? "Detalles de confirmación de reserva cancelada" : "Verifica los detalles de la clase antes de cancelar"}
+          </DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-4">

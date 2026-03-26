@@ -15,6 +15,7 @@ import type {
 } from "./types";
 import { getDataProvider } from "./data-layer/provider-factory";
 import { DataProvider } from "./data-layer/types";
+import { getPlanStatus, isClassWithinPlanValidity } from "./utils";
 
 // Helper function to get cancellation rule for a specific time
 function getCancellationRule(
@@ -104,8 +105,13 @@ export class ValidationService {
     }
 
     // 5. Verificar si el usuario tiene un plan activo
-    if (!user.membership || user.membership.status !== "active") {
+    if (!user.membership || getPlanStatus(user) !== "active") {
       return { canRegister: false, reason: "Tu plan no está activo" };
+    }
+
+    // 5.5 Verificar si la clase ocurre dentro de las fechas límite del plan
+    if (!isClassWithinPlanValidity(user, classSession.dateTime)) {
+       return { canRegister: false, reason: "La fecha de esta clase supera la fecha de expiración de tu plan" };
     }
 
     // 6. Verificar si el usuario tiene clases disponibles en su plan
