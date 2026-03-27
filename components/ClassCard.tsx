@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { parseISO, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ClassStatusBadge } from "@/components/class-status-badge";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
 import { Clock, User, Users } from "lucide-react";
@@ -108,7 +107,9 @@ export function ClassCard({
       {/* Información principal */}
       <div className="space-y-2">
       
-         <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full uppercase">{formattedTime}</span>
+         <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full uppercase">
+      
+          {formattedTime}</span>
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-2xl text-gray-900">{classItem.name}</h3>
         </div>
@@ -116,14 +117,8 @@ export function ClassCard({
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500"></span>
         </div>
-
-        {/* Indicador de clase de hoy */}
-        {isClassToday && (
-          <Badge variant="secondary" className="text-xs">
-            Hoy
-          </Badge>
-        )}
-
+      </div>
+      {/* ocultar esto tambien sefun condiciiones*/}
 <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
          
       
@@ -142,11 +137,17 @@ export function ClassCard({
           </div>
           <div className=" inline-flex items-center gap-1">
           <Clock className="w-4 h-4" />
-          <span>{formatWeekday(classItem.dateTime)}{" "}
+          <span>
+                 {/* Indicador de clase de hoy */}
+        {isClassToday && (
+          <>
+            Hoy {""}
+          </>
+        )}
+            {formatWeekday(classItem.dateTime)}{" "}
             {formatDayMonth(classItem.dateTime)}</span>
             </div>
         </div>
-      </div>
 
       {/* Botones de acción */}
       <div className="mt-3 flex gap-2">
