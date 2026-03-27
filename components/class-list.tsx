@@ -104,7 +104,7 @@ export default function ClassList({
       </div>
 
       {/* Class list */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {sortedClasses.length > 0 ? (
           sortedClasses.map((classItem) => (
             <ClassCard

@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { parseISO, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ClassStatusBadge } from "@/components/class-status-badge";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
 import { Clock, User, Users } from "lucide-react";
 
@@ -35,6 +34,8 @@ interface ClassCardProps {
     | "scheduled"
     | "inactive";
 }
+
+
 
 export function ClassCard({
   classItem,
@@ -79,47 +80,61 @@ export function ClassCard({
     }
   };
 
+  // Simplificación: ¿Es una clase con la que el usuario puede interactuar (inscribirse o cancelar)?
+  const isActionable = canCancelRegistration || canRegisterForNewClass;
+
+  // Lógica de estado simplificada para el span
+  const statusInfo = isCancelled 
+    ? { label: "Cancelada", className: "text-red-500" }
+    : isCompleted 
+    ? { label: "Finalizada", className: "text-gray-400" }
+    : isInProgress 
+    ? { label: "En curso", className: "text-green-600 font-bold" }
+    : null;
+
   return (
     <div
       className={`
         border rounded-lg p-3 transition-all duration-200 relative
         ${
-          isCancelled
-            ? "opacity-20 bg-white"
+          !isActionable
+            ? "opacity-50 bg-white"
             : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
         }
       `}
     >
-      {/* Badge de estado */}
-      <div className="absolute top-2 right-2">
-        <ClassStatusBadge
-          classItem={{
-            ...classItem,
-            status: (classItem.status || "scheduled") as
-              | "scheduled"
-              | "cancelled"
-              | "completed"
-              | "in_progress",
-          }}
-        />
-      </div>
+      {/* Estado de la clase como span 
+      {statusInfo && (
+        <span className={`absolute top-3 right-3 text-[10px] uppercase font-bold tracking-tight ${statusInfo.className}`}>
+          {statusInfo.label}
+        </span>
+      )}
+*/}
+ 
 
       {/* Información principal */}
       <div className="space-y-2">
       
-         <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full uppercase">
-      
+       
+        <div className="flex items-center justify-between pb-3">
+          <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
+            <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full ">
+             {/* Estado de la clase como span */}
+      {statusInfo && (
+        <>
+          {statusInfo.label} {""}
+        </>
+      )}
           {formattedTime}</span>
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-2xl text-gray-900">{classItem.name}</h3>
         </div>
 
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500"></span>
         </div>
       </div>
-      {/* ocultar esto tambien sefun condiciiones*/}
-<div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+      
+      {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
+      <div className={`flex items-center gap-4 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}`}>
          
       
               <div className=" inline-flex items-center gap-1">
@@ -149,26 +164,23 @@ export function ClassCard({
             </div>
         </div>
 
-      {/* Botones de acción */}
-      <div className="mt-3 flex gap-2">
-        <Button
-          variant={isRegistered ? "destructive" : "default"}
-          size="sm"
-          onClick={handleAction}
-          className={`flex-1 ${
-            !canRegisterForNewClass && !canCancelRegistration
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-          disabled={!canCancelRegistration && !canRegisterForNewClass}
-        >
-          {isRegistered ? "Cancelar" : "Inscribirse"}
-        </Button>
-      </div>
+      {/* Botones de acción - Ocultos si no hay acción posible (en lugar de deshabilitados) */}
+      {isActionable && (
+        <div className="mt-3 flex gap-2">
+          <Button
+            variant={isRegistered ? "destructive" : "default"}
+            size="sm"
+            onClick={handleAction}
+            className="flex-1"
+          >
+            {isRegistered ? "Cancelar" : "Inscribirse"}
+          </Button>
+        </div>
+      )}
 
       {/* Mensaje informativo cuando no se puede registrar */}
       {!canRegisterForNewClass && !isRegistered && canPerformAction && (
-        <div className="mt-2 text-xs text-center">
+        <div className="mt-2 text-sm text-center w-full border-t border-t-2 border-gray-100 pt-3">
           {planStatus === "pending" ? (
             <span className="text-yellow-600">
               Plan pendiente de validación
@@ -178,7 +190,7 @@ export function ClassCard({
               Renueva tu plan o verifica tus clases
             </span>
           ) : !classItem.isWithinPlanDates ? (
-            <span className="text-orange-600">
+            <span className="text-sky-600">
               Clase fuera de rango de tu plan actual
             </span>
           ) : (
