@@ -20,15 +20,18 @@ import Link from "next/link";
 import { getPlanStatus } from "@/lib/utils";
 
 export function AdminDashboard() {
-  const { users = [], fetchUsers, egresos = [] } = useBlackSheepStore();
+  const { users = [], fetchUsers, egresos = [], fetchEgresos } = useBlackSheepStore();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cargar datos de usuarios al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        await fetchUsers(1, 1000); // Cargar todos los usuarios para el dashboard
+        await Promise.all([
+          fetchUsers(1, 1000),
+          fetchEgresos()
+        ]);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -37,7 +40,7 @@ export function AdminDashboard() {
     };
 
     loadData();
-  }, [fetchUsers]);
+  }, [fetchUsers, fetchEgresos]);
 
   // Memoizar estadísticas principales
   const stats = useMemo(() => {
@@ -173,7 +176,6 @@ export function AdminDashboard() {
       .slice(0, 10);
   }, [users]);
 
-  // Componente de métrica con loader
   const MetricCard = ({
     title,
     value,
@@ -189,16 +191,20 @@ export function AdminDashboard() {
     isLoading?: boolean;
     linkTo?: string;
   }) => {
-    const CardComponent = (
-      <Card
-        className={cn(
-          "rounded-xl",
-          linkTo ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-        )}
-      >
+    return (
+      <Card className="rounded-xl overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {title}
+          </CardTitle>
+          {linkTo && (
+            <Link
+              href={linkTo}
+              className="text-sm underline font-bold text-zinc-900 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
+            >
+              Ver detalle
+            </Link>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -208,20 +214,18 @@ export function AdminDashboard() {
             </>
           ) : (
             <>
-              <div className="text-2xl font-bold">{value}</div>
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
-              {linkTo && (
-                <p className="text-xs text-blue-600 hover:text-blue-800 mt-1">
-                  Ver detalles →
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-bold text-zinc-900">{value}</div>
+                <Icon className="h-5 w-5 text-zinc-400" />
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {subtitle}
+              </div>
             </>
           )}
         </CardContent>
       </Card>
     );
-
-    return linkTo ? <Link href={linkTo}>{CardComponent}</Link> : CardComponent;
   };
 
   return (
@@ -244,14 +248,15 @@ export function AdminDashboard() {
           }
           icon={Users}
           isLoading={isLoading}
+          linkTo="/admin/alumnos"
         />
 
         <MetricCard
           title="Balance"
-          value={`$${monthlyRevenue.toLocaleString()}`}
+          value={`$${(monthlyRevenue - totalEgresosMes).toLocaleString()}`}
           subtitle={
             <>
-              Ganancia del mes
+              Ganancia del mes ${monthlyRevenue.toLocaleString()}
               <br />
               Egresos Mensuales ${totalEgresosMes.toLocaleString()}
             </>
