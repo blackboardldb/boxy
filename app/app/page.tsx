@@ -17,18 +17,24 @@ export default function Page() {
   const { classSessions, instructors, fetchUserClasses, fetchInstructors } =
     useBlackSheepStore();
 
-  // Cargar clases e instructores una sola vez
+  // Cargar clases e instructores una sola vez al montar si no hay datos
   useEffect(() => {
-    if (currentUser && (!classSessions || classSessions.length === 0)) {
-      // Fetch only classes registered to this specific student within current period for optimization
-      fetchUserClasses(
-        currentUser.id, 
-        currentUser.membership?.currentPeriodStart, 
-        currentUser.membership?.currentPeriodEnd
-      );
+    if (currentUser) {
+      if (!classSessions || classSessions.length === 0) {
+        fetchUserClasses(
+          currentUser.id, 
+          currentUser.membership?.currentPeriodStart, 
+          currentUser.membership?.currentPeriodEnd
+        );
+      }
+      if (!instructors || instructors.length === 0) {
+        fetchInstructors();
+      }
     }
-    if (!instructors || instructors.length === 0) fetchInstructors();
-  }, [classSessions, instructors, fetchUserClasses, fetchInstructors, currentUser]);
+    // Solo dependemos de currentUser y las funciones de fetch. 
+    // No incluir classSessions o instructors aquí para evitar loops infinitos
+    // cuando el resultado del fetch es un array vacío.
+  }, [currentUser, fetchUserClasses, fetchInstructors]);
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {

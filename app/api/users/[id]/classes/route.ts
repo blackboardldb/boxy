@@ -34,15 +34,30 @@ export async function GET(
     // until the repository supports complex includes, but the count is already optimized.
     
     // BACKWARD COMPATIBILITY: Format same as before but with metadata
+    // Robust date parsing (extract only date part if already an ISO string)
+    const parseSafeDate = (dateStr: string | null) => {
+      if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
+      const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      const d = new Date(cleanDate);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
+    const start = parseSafeDate(startDate);
+    const end = parseSafeDate(endDate);
+
     const registrationsWithDetails = await prisma.classRegistration.findMany({
       where: { 
         userId,
         status: { not: 'cancelled' as any },
-        ...(startDate && endDate ? {
+        ...(start && end ? {
           class: {
             dateTime: {
-              gte: new Date(startDate),
-              lte: new Date(endDate + "T23:59:59")
+              gte: start,
+              lte: (() => {
+                const date = new Date(end);
+                date.setHours(23, 59, 59, 999);
+                return date;
+              })()
             }
           }
         } : {})

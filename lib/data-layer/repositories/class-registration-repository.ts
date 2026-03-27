@@ -114,6 +114,12 @@ export class PrismaClassRegistrationRepository implements IClassRegistrationRepo
     const start = new Date(startDate);
     const end = new Date(endDate);
     
+    // Validar fechas antes de proceder
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        console.warn(`[ClassRegistrationRepository] Invalid date range: \${startDate} - \${endDate}`);
+        return 0;
+    }
+    
     // Forzamos el final del día para el rango de búsqueda
     if (typeof endDate === 'string') {
         end.setHours(23, 59, 59, 999);

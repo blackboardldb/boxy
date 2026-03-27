@@ -549,15 +549,18 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         try {
           set({ isLoading: true, error: null });
           
-          let url = `/api/users/${userId}/classes`;
-          if (startDate && endDate) {
-            url += `?startDate=${startDate}&endDate=${endDate}`;
-          } else if (startDate) {
-            url += `?startDate=${startDate}`;
-          }
+          const params = new URLSearchParams();
+          if (startDate) params.append("startDate", startDate);
+          if (endDate) params.append("endDate", endDate);
+          
+          const queryString = params.toString();
+          const url = `/api/users/${userId}/classes${queryString ? `?${queryString}` : ""}`;
 
           const response = await fetch(url);
-          if (!response.ok) throw new Error("Failed to fetch user classes");
+          if (!response.ok) {
+            const errorMsg = await response.json().catch(() => ({})).then(r => r.error?.message || r.message || "Unknown error");
+            throw new Error(`Failed to fetch user classes: ${errorMsg}`);
+          }
           
           const result = await response.json();
           if (result.success) {
