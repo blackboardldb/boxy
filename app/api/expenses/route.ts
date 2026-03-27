@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 // Tipo para el egreso
 export type Expense = {
@@ -15,6 +16,12 @@ export type Expense = {
 
 export async function GET(request: NextRequest) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(request.url);
     const year = searchParams.get("year");
     const month = searchParams.get("month");
@@ -93,6 +100,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
     const { motivo, fecha, monto } = body;
 
@@ -173,3 +186,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

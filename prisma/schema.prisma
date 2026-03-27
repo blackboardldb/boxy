@@ -17,12 +17,12 @@ model User {
   email              String              @unique
   phone              String?
   role               String              @default("user")
-  gender             String?
-  dateOfBirth        DateTime?
-  emergencyContact   String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   membership         Json?
+  dateOfBirth        DateTime?
+  emergencyContact   String?
+  gender             String?
   classRegistrations ClassRegistration[]
   membershipRenewals MembershipRenewal[]
 

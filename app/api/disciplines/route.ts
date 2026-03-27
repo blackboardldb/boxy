@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DisciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
 // Initialize services
 const disciplineService = new DisciplineService();
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación básica
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const isActive = searchParams.get("isActive");
@@ -35,6 +42,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Solo administradores pueden crear disciplinas
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
 
     // Use DisciplineService to create discipline with validation
@@ -52,3 +65,4 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+

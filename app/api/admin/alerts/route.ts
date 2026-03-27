@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 export async function GET() {
   try {
+    // Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const alerts = await prisma.inAppAlert.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -15,6 +22,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await req.json();
     const { title, content, type, startDate, endDate } = body;
 
@@ -34,3 +47,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create alert" }, { status: 500 });
   }
 }
+

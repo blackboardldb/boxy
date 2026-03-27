@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { UserService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 // Initialize services
 const userService = new UserService();
 
 export async function GET(request: NextRequest) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
@@ -38,6 +45,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
 
     // 1. Crear el usuario en Supabase Authentication con contraseña por defecto
@@ -87,3 +100,4 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+

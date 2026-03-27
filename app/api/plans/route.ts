@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PlanService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
 // Initialize services
 const planService = new PlanService();
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación básica
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
@@ -44,6 +51,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Solo administradores pueden crear planes
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
 
     // Use PlanService to create plan with validation
@@ -64,6 +77,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Solo administradores pueden actualizar planes
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -92,9 +111,16 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  let id: string | null = null;
   try {
+    // Solo administradores pueden eliminar planes
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -116,7 +142,9 @@ export async function DELETE(request: NextRequest) {
     return ErrorHandler.createResponse(error, {
       operation: "deletePlan",
       resource: "plans",
-      metadata: { id },
+      metadata: { id: id ?? undefined },
     });
   }
 }
+
+
