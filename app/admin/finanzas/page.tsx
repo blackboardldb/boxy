@@ -121,7 +121,7 @@ export default function FinanzasPage() {
         <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Flujo de Caja (Ingresos Reales)
+              Ingresos {selectedMonthName}
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
@@ -154,7 +154,7 @@ export default function FinanzasPage() {
 
         <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">Balance </CardTitle>
             <DollarSign
               className={`h-4 w-4 ${
                 balance >= 0 ? "text-green-600" : "text-red-600"
@@ -181,7 +181,7 @@ export default function FinanzasPage() {
         {/* Ingresos */}
         <Card className="h-full rounded-xl">
           <CardHeader>
-            <CardTitle>Flujo de Caja: Ingresos Reales ({selectedMonthName})</CardTitle>
+            <p className="text-lg font-bold ">Planes contratados <span className=" font-medium ">{selectedMonthName}</span></p>
           </CardHeader>
           <CardContent>
             {ingresosMes.length === 0 ? (
@@ -197,7 +197,7 @@ export default function FinanzasPage() {
                     className="flex items-center justify-between py-2"
                   >
                     <div>
-                      <div className="font-medium">{i.nombre}</div>
+                      <div className="font-medium text-sm">{i.nombre}</div>
                       <div className="text-xs text-muted-foreground">
                         {i.plan} |{" "}
                         {i.fecha && new Date(i.fecha).toLocaleDateString()}

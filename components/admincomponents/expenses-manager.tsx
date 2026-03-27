@@ -35,7 +35,7 @@ export function ExpensesManager({
   return (
     <Card className="h-full rounded-xl">
       <CardHeader>
-        <CardTitle>Egresos de {selectedMonthName}</CardTitle>
+        <p className="text-lg font-bold ">Egresos <span className=" font-medium ">{selectedMonthName}</span></p>
         <AddExpenseModal onSuccess={() => fetchEgresos(selectedYear, selectedMonth)} />
       </CardHeader>
       <CardContent>

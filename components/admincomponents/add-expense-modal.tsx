@@ -37,7 +37,7 @@ export function AddExpenseModal({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default">Agregar Egreso</Button>
+        <Button variant="default" className="rounded-xl ">Agregar compra o gasto</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

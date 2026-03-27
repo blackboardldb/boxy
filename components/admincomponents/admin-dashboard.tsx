@@ -373,13 +373,14 @@ export function AdminDashboard() {
               <div className="space-y-3">
                 {upcomingExpirations.map((u: FitCenterUserProfile) => (
                   <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{u.firstName} {u.lastName}</span>
+                    <div className="">
+                      <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
+                       <span className="text-xs font-semibold ml-2">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <span className="text-xs font-semibold">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Ver Perfil</Link>
+                     
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-slate-100">Ver Perfil</Link>
                     </div>
                   </div>
                 ))}
@@ -405,13 +406,14 @@ export function AdminDashboard() {
               <div className="space-y-3">
                 {recentlyInactive.map((u: FitCenterUserProfile) => (
                   <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{u.firstName} {u.lastName}</span>
+                    <div className="">
+                      <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
+                        <span className="text-xs text-red-600 font-medium ml-2">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <span className="text-xs text-red-600 font-medium">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Ver Perfil</Link>
+                    
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-slate-100">Ver Perfil</Link>
                     </div>
                   </div>
                 ))}
