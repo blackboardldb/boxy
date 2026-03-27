@@ -236,14 +236,9 @@ export class DisciplineService extends BaseService<Discipline> {
 
         // 3. Re-generar clases solo SI está activa y cambió el horario
         if (scheduleChanged && updatedRecord.isActive) {
-          console.log("[DisciplineService] Re-generando clases con el nuevo patrón...");
-          const start = new Date();
-          start.setDate(1); // Desde inicio de mes actual
-          const end = new Date();
-          end.setMonth(end.getMonth() + 2);
-          end.setDate(0); // Hasta fin del mes siguiente
-
-          await generateClassesFromSchedules(start, end, updatedRecord.id);
+          console.log("[DisciplineService] Re-generando clases con el nuevo patrón (Ventana 15 días)...");
+          // Llamamos sin fechas para que use el default de 15 días (Hoy + 14)
+          await generateClassesFromSchedules(undefined, undefined, updatedRecord.id);
           console.log("[DisciplineService] Re-generación completada.");
         } else if (deactivated) {
           console.log("[DisciplineService] Disciplina inactiva: las clases futuras CON alumnos permanecen para gestión manual.");

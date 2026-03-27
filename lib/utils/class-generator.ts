@@ -15,15 +15,25 @@ const dayMap: { [key: string]: number } = {
 
 /**
  * Genera clases automáticamente masivamente usando createMany (ultra rápido).
+ * Ventana por defecto: 15 días (Hoy inclusive + 14 días futuros).
  */
 export async function generateClassesFromSchedules(
-  startDate: string | Date,
-  endDate: string | Date,
+  startDate?: string | Date,
+  endDate?: string | Date,
   specificDisciplineId?: string
 ) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  // 1. Definir ventana de tiempo (00:00:00 del día actual hasta +14 días)
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setHours(0, 0, 0, 0);
+
+  const end = endDate ? new Date(endDate) : new Date(start);
+  if (!endDate) {
+    end.setDate(start.getDate() + 14); // Hoy + 14 = 15 días total
+  }
+  end.setHours(23, 59, 59, 999);
   
+  console.log(`[ClassGenerator] Proyectando ventana: ${start.toISOString()} -> ${end.toISOString()}`);
+
   // Fetch real disciplines and instructors from the DB
   const disciplines = await prisma.discipline.findMany({
     where: { 
@@ -44,7 +54,7 @@ export async function generateClassesFromSchedules(
 
     let scheduleArray = typeof discipline.schedule === "string" 
       ? JSON.parse(discipline.schedule) 
-      : discipline.schedule;
+      : (discipline.schedule as any);
 
     if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
@@ -98,11 +108,11 @@ export async function generateClassesFromSchedules(
 
   if (classesToCreate.length > 0) {
     // Bulk create skipping already existing ones (by ID)
-    await prisma.classSession.createMany({
+    const result = await prisma.classSession.createMany({
       data: classesToCreate,
       skipDuplicates: true,
     });
-    console.log(`[ClassGenerator] Proceso masivo completado. Se intentaron crear ${classesToCreate.length} clases.`);
+    console.log(`[ClassGenerator] Proceso masivo completado. Creadas ${result.count} nuevas clases.`);
   }
 
   return classesToCreate;

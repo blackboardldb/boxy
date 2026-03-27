@@ -508,7 +508,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         startDate?: string,
         endDate?: string,
         page: number = 1,
-        limit: number = 10,
+        limit: number = 100,
         filters?: { status?: string; orderBy?: "asc" | "desc" }
       ) => {
         try {

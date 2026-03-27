@@ -144,14 +144,23 @@ export default function CalendarPage() {
     [instructors, disciplines, currentUser]
   );
 
-  // Función para cargar clases con filtrado por fecha
-  const loadClassesForDate = useCallback(async (dateToLoad: Date) => {
+  // Función para cargar un rango semanal (mejor UX)
+  const currentWeekStart = useMemo(() => format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd"), [selectedDate]);
+
+  const loadClassesForWeek = useCallback(async (dateInWeek: Date) => {
     try {
+      setIsLoading(true);
       if (!instructors || instructors.length === 0) await fetchInstructors();
       if (!disciplines || disciplines.length === 0) await fetchDisciplines();
       
-      const formattedDate = format(dateToLoad, "yyyy-MM-dd");
-      await fetchClassSessions(formattedDate, formattedDate, 1, 100);
+      const start = startOfWeek(dateInWeek, { weekStartsOn: 1 });
+      const end = endOfWeek(dateInWeek, { weekStartsOn: 1 });
+      
+      const startStr = format(start, "yyyy-MM-dd");
+      const endStr = format(end, "yyyy-MM-dd");
+      
+      console.log(`[Calendar] Prefetching week: ${startStr} to ${endStr}`);
+      await fetchClassSessions(startStr, endStr, 1, 150);
     } catch (error) {
       console.error("Error loading classes:", error);
       toast({
@@ -171,10 +180,10 @@ export default function CalendarPage() {
     toast,
   ]);
 
-  // Cargar clases al montar el componente y al cambiar la fecha o forzar recarga
+  // Solo recargar si cambiamos de semana física o refresh manual
   useEffect(() => {
-    loadClassesForDate(selectedDate);
-  }, [selectedDate, loadClassesForDate, refreshTrigger]);
+    loadClassesForWeek(selectedDate);
+  }, [currentWeekStart, loadClassesForWeek, refreshTrigger]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
