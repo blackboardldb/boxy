@@ -13,14 +13,35 @@ export async function GET() {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
 
-    // Buscar por email (lowercased) en public.users
-    const dbUser = await prisma.user.findFirst({
+    // 1. Buscar en public.users (donde están alumnos/clientes)
+    let dbUser: any = await prisma.user.findFirst({
       where: { email: { equals: user.email!, mode: "insensitive" } },
     });
 
+    // 2. Si no es un usuario/alumno, buscar en public.instructors (coaches/admin si están ahí)
+    if (!dbUser) {
+      const instructor = await prisma.instructor.findFirst({
+        where: { email: { equals: user.email!, mode: "insensitive" } },
+      });
+      
+      if (instructor) {
+        dbUser = {
+          id: instructor.id,
+          firstName: instructor.firstName,
+          lastName: instructor.lastName,
+          email: instructor.email,
+          phone: instructor.phone,
+          role: instructor.role || "coach",
+          createdAt: instructor.createdAt,
+          updatedAt: instructor.updatedAt,
+          membership: null,
+        };
+      }
+    }
+
     if (!dbUser) {
       return NextResponse.json(
-        { error: "Usuario no encontrado en la base de datos" },
+        { error: "Usuario o Instructor no encontrado en la base de datos" },
         { status: 404 }
       );
     }

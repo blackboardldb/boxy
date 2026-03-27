@@ -32,36 +32,52 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // ─── Sin sesión → redirigir a /login si intenta acceder a zonas protegidas
+  // 1. Sin sesión → redirigir a /login si intenta acceder a zonas protegidas
   if (!user && (pathname.startsWith("/app") || pathname.startsWith("/admin"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // ─── Con sesión en /admin → verificar que sea admin o coach
-  if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  // 2. Con sesión → Manejo de roles y redirecciones
+  if (user) {
+    const isLoginRoute = pathname === "/login";
+    const isAdminRoute = pathname.startsWith("/admin");
+    const isAppRoute = pathname.startsWith("/app");
 
-    if (profile?.role !== "admin" && profile?.role !== "coach") {
-      return NextResponse.redirect(new URL("/app", request.url));
+    // Solo consultar el rol si estamos en rutas que dependen de él
+    if (isLoginRoute || isAdminRoute || isAppRoute) {
+      // 1. Intentar obtener el rol de los metadatos (rápido y evita RLS)
+      let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
+
+      // 2. Si no hay rol en metadatos, consultar la tabla profiles
+      if (!role) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        role = profile?.role;
+      }
+
+      // --- Lógica de Redirecciones ---
+
+      // A. Redirección desde login
+      if (isLoginRoute) {
+        if (role === "admin" || role === "coach") {
+          return NextResponse.redirect(new URL("/admin", request.url));
+        }
+        return NextResponse.redirect(new URL("/app", request.url));
+      }
+
+      // B. Proteger zona administrativa (solo admin y coach)
+      if (isAdminRoute && role !== "admin" && role !== "coach") {
+        return NextResponse.redirect(new URL("/app", request.url));
+      }
+
+      // C. Evitar que personal de gestión entre a la zona de alumnos
+      if (isAppRoute && (role === "admin" || role === "coach")) {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
     }
-  }
-
-  // ─── Con sesión intentando ver /login → redirigir a su zona
-  if (user && pathname === "/login") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role === "admin") {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
-    return NextResponse.redirect(new URL("/app", request.url));
   }
 
   return response;

@@ -22,16 +22,28 @@ import { getPlanStatus } from "@/lib/utils";
 export function AdminDashboard() {
   const { users = [], fetchUsers, egresos = [], fetchEgresos } = useBlackSheepStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
 
   // Cargar datos al montar el componente
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        await Promise.all([
-          fetchUsers(1, 1000),
-          fetchEgresos()
-        ]);
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Obtener rol (preferir app_metadata o user_metadata)
+        const userRole = (user?.app_metadata?.role as string) || (user?.user_metadata?.role as string);
+        setRole(userRole);
+
+        // Promesas de carga (Egresos solo para admin)
+        const fetchPromises = [fetchUsers(1, 1000)];
+        if (userRole === "admin") {
+          fetchPromises.push(fetchEgresos());
+        }
+
+        await Promise.all(fetchPromises);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -251,20 +263,22 @@ export function AdminDashboard() {
           linkTo="/admin/alumnos"
         />
 
-        <MetricCard
-          title="Balance"
-          value={`$${(monthlyRevenue - totalEgresosMes).toLocaleString()}`}
-          subtitle={
-            <>
-              Ganancia del mes ${monthlyRevenue.toLocaleString()}
-              <br />
-              Egresos Mensuales ${totalEgresosMes.toLocaleString()}
-            </>
-          }
-          icon={DollarSign}
-          isLoading={isLoading}
-          linkTo="/admin/finanzas"
-        />
+        {role === "admin" && (
+          <MetricCard
+            title="Balance"
+            value={`$${(monthlyRevenue - totalEgresosMes).toLocaleString()}`}
+            subtitle={
+              <>
+                Ganancia del mes ${monthlyRevenue.toLocaleString()}
+                <br />
+                Egresos Mensuales ${totalEgresosMes.toLocaleString()}
+              </>
+            }
+            icon={DollarSign}
+            isLoading={isLoading}
+            linkTo="/admin/finanzas"
+          />
+        )}
 
         <MetricCard
           title="Acción Requerida"

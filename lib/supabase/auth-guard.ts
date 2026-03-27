@@ -27,14 +27,20 @@ export async function requireAuth(): Promise<AuthResult> {
     return { error: "No autenticado", status: 401 };
   }
 
-  // Obtenemos el perfil para tener el rol disponible incluso en auth básica
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // 1. Intentar obtener el rol de los metadatos (rápido y evita RLS)
+  let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
 
-  return { user, role: profile?.role || "alumno" };
+  // 2. Si no hay el rol en metadatos, fallback a la tabla profiles
+  if (!role) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = profile?.role;
+  }
+
+  return { user, role: role || "alumno" };
 }
 
 /**

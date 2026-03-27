@@ -42,12 +42,20 @@ export function Navigation() {
     async function getProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        setRole(profile?.role || "user");
+        // 1. Obtener rol de los metadatos (rápido y evita RLS)
+        let userRole = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
+
+        // 2. Fallback a la tabla profiles si no hay en metadatos
+        if (!userRole) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          userRole = profile?.role;
+        }
+
+        setRole(userRole || "alumno");
       }
     }
     getProfile();
