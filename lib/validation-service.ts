@@ -80,7 +80,9 @@ export class ValidationService {
     allClassSessions?: ClassSession[]
   ): Promise<{ canRegister: boolean; reason?: string }> {
     const now = new Date();
-    const classStart = parseISO(classSession.dateTime);
+    const classStart = typeof classSession.dateTime === 'string' 
+      ? parseISO(classSession.dateTime) 
+      : classSession.dateTime;
     const classEnd = addMinutes(classStart, classSession.durationMinutes || 60);
 
     // 1. Verificar si la clase está cancelada
@@ -144,12 +146,16 @@ export class ValidationService {
 
     // 8. Verificar límite de inscripciones por día
     let targetDayClasses: ClassSession[] = [];
-    const targetDate = classSession.dateTime.split("T")[0];
+    const targetDate = typeof classSession.dateTime === 'string' 
+      ? classSession.dateTime.split("T")[0]
+      : (classSession.dateTime as any).toISOString().split("T")[0];
 
     if (allClassSessions) {
       // Use provided sessions if available
       targetDayClasses = allClassSessions.filter((session) => {
-        const sessionDate = session.dateTime.split("T")[0];
+        const sessionDate = typeof session.dateTime === 'string'
+          ? session.dateTime.split("T")[0]
+          : (session.dateTime as any).toISOString().split("T")[0];
         return sessionDate === targetDate;
       });
     } else {
@@ -203,8 +209,12 @@ export class ValidationService {
     discipline: Discipline
   ): CancellationValidation {
     const now = new Date();
-    const classStart = parseISO(classSession.dateTime);
-    const classTime = classSession.dateTime.split("T")[1].substring(0, 5); // "08:00"
+    const classStart = typeof classSession.dateTime === 'string' 
+      ? parseISO(classSession.dateTime) 
+      : classSession.dateTime;
+    const classTime = typeof classSession.dateTime === 'string'
+      ? classSession.dateTime.split("T")[1].substring(0, 5)
+      : (classSession.dateTime as any).toISOString().split("T")[1].substring(0, 5); // "08:00"
 
     // 1. Verificar si el usuario está inscrito
     if (!classSession.registeredParticipantsIds.includes(user.id)) {
@@ -275,7 +285,9 @@ export class ValidationService {
     classSession: ClassSession
   ): { canCancel: boolean; reason?: string } {
     const now = new Date();
-    const classStart = parseISO(classSession.dateTime);
+    const classStart = typeof classSession.dateTime === 'string' 
+      ? parseISO(classSession.dateTime) 
+      : classSession.dateTime;
 
     // 1. Verificar si el usuario está inscrito
     if (!classSession.registeredParticipantsIds.includes(user.id)) {

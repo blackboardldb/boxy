@@ -70,32 +70,52 @@ export default function Page() {
       });
   }, [classSessions, instructors, currentUser]);
 
+  // Membresía y stats
+  const studentAllEnrolledClasses = useMemo(() => {
+    if (!currentUser?.membership?.currentPeriodStart || !currentUser?.membership?.currentPeriodEnd) return [];
+    
+    const start = new Date(currentUser.membership.currentPeriodStart);
+    // Forzar término de periodo al final del día
+    const endStr = currentUser.membership.currentPeriodEnd;
+    const end = new Date((typeof endStr === 'string' ? endStr.substring(0, 10) : (endStr as any).toISOString().substring(0, 10)) + "T23:59:59");
+
+    return (classSessions || [])
+      .filter(s => {
+        const sessionDate = new Date(s.dateTime);
+        return (
+          sessionDate >= start &&
+          sessionDate <= end
+        );
+      });
+  }, [classSessions, currentUser]);
+
   // Mostrar skeleton mientras carga el usuario
   if (userLoading || !currentUser) {
     return <SkeletonHomePage />;
   }
 
   // Datos del plan
-  const membershipType =
-    currentUser.membership?.membershipType || "Sin Plan";
+  const membershipType = currentUser.membership?.membershipType || "Sin Plan";
   const monthlyPrice = currentUser.membership?.monthlyPrice ?? 0;
 
-const planClassLimit = currentUser.membership?.planConfig?.classLimit ?? 0;
-const remainingClasses = currentUser.membership?.centerStats?.currentMonth?.remainingClasses ?? 0;
+  const planClassLimit = currentUser.membership?.planConfig?.classLimit ?? 0;
+  
+  const classesConsumedTotal = studentAllEnrolledClasses.length;
+  const classesConsumed = planClassLimit > 0
+    ? classesConsumedTotal
+    : (currentUser.membership?.centerStats?.currentMonth?.classesAttended ?? classesConsumedTotal);
 
-const classesConsumed = planClassLimit > 0
-  ? Math.max(0, planClassLimit - remainingClasses)
-  : currentUser.membership?.centerStats?.currentMonth?.classesAttended ?? 0;
+  const remainingClasses = planClassLimit > 0 ? Math.max(0, planClassLimit - classesConsumed) : 0;
 
-const currentMonthStats = {
-  ...(currentUser.membership?.centerStats?.currentMonth || {
-    noShows: 0,
-    lastMinuteCancellations: 0,
-  }),
-  classesContracted: planClassLimit, // ← usa el valor real del plan (respeta overrides)
-  classesAttended: classesConsumed,
-  remainingClasses,
-};
+  const currentMonthStats = {
+    ...(currentUser.membership?.centerStats?.currentMonth || {
+      noShows: 0,
+      lastMinuteCancellations: 0,
+    }),
+    classesContracted: planClassLimit,
+    classesAttended: classesConsumed,
+    remainingClasses,
+  };
 
 const progressPercentage =
   planClassLimit > 0

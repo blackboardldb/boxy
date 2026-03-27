@@ -285,10 +285,13 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const isUnlimited = planClassLimit === 0;
   
   // Calculate consumed safely based on override or direct attendance
-  const remainingClasses = student?.membership?.centerStats?.currentMonth?.remainingClasses ?? 0;
+  // Calculate consumed safely based on the actual enrolled classes count in the current period
+  const classesConsumedTotal = studentAllEnrolledClasses.length;
   const classesConsumed = !isUnlimited
-    ? Math.max(0, planClassLimit - remainingClasses)
-    : student?.membership?.centerStats?.currentMonth?.classesAttended ?? 0;
+    ? classesConsumedTotal
+    : student?.membership?.centerStats?.currentMonth?.classesAttended ?? classesConsumedTotal;
+  
+  const remainingClasses = !isUnlimited ? Math.max(0, planClassLimit - classesConsumed) : 0;
 
   if (isLoading) return <div className="p-8">Cargando perfil del alumno...</div>;
   if (!student) return <div className="p-8">Alumno no encontrado.</div>;
