@@ -16,9 +16,7 @@ import type {
 // Removed UserService import (not needed in client)
 // Removed unused import
 
-// Create missing mock data
-const initialClassRegistrations: unknown[] = [];
-const initialMembershipRenewals: unknown[] = [];
+
 
 // NUEVO: Tipo para el estado de paginación
 export interface PaginationState {
@@ -57,8 +55,7 @@ interface BlackSheepStore {
 
   egresos: Egreso[];
 
-  // Provider management
-  currentProviderType: "mock" | "prisma";
+
 
   // User actions
   addUser: (user: User) => void;
@@ -171,7 +168,6 @@ interface BlackSheepStore {
   deleteEgreso: (id: string) => Promise<void>;
 
   // Provider management actions
-  switchProvider: (providerType: "mock" | "prisma") => Promise<boolean>;
   getProviderHealth: () => Promise<any>;
 }
 
@@ -188,42 +184,15 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       plans: [],
       membershipPlans: [],
       initialOrganization: null,
-      classRegistrations: initialClassRegistrations,
-      membershipRenewals: initialMembershipRenewals,
+      classRegistrations: [],
+      membershipRenewals: [],
       selectedUser: null,
       searchResults: [],
       userStats: null,
       isLoading: false,
       error: null,
-      currentProviderType: "prisma",
 
-      egresos: [
-        // Datos de prueba para diferentes meses
-        {
-          id: "egreso_1",
-          motivo: "Alquiler del local",
-          fecha: "2025-01-15T00:00:00.000Z",
-          monto: 150000,
-        },
-        {
-          id: "egreso_2",
-          motivo: "Equipamiento nuevo",
-          fecha: "2025-01-20T00:00:00.000Z",
-          monto: 75000,
-        },
-        {
-          id: "egreso_3",
-          motivo: "Servicios básicos",
-          fecha: "2024-12-10T00:00:00.000Z",
-          monto: 45000,
-        },
-        {
-          id: "egreso_4",
-          motivo: "Mantenimiento",
-          fecha: "2024-11-25T00:00:00.000Z",
-          monto: 30000,
-        },
-      ],
+      egresos: [],
 
       // User actions
       addUser: (user) => set((state) => ({ users: [...state.users, user] })),
@@ -1117,8 +1086,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           ),
         })),
       fetchClassRegistrations: () => {
-        // In a real app, this would fetch from API
-        set({ classRegistrations: initialClassRegistrations });
+        // En una app real esto vendría de la API real, por ahora lo mantenemos vacío para no romper tipos
+        set({ classRegistrations: [] });
       },
 
       // Renewal actions
@@ -1139,8 +1108,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           ),
         })),
       fetchMembershipRenewals: () => {
-        // In a real app, this would fetch from API
-        set({ membershipRenewals: initialMembershipRenewals });
+        // En una app real esto vendría de la API real, por ahora lo mantenemos vacío para no romper tipos
+        set({ membershipRenewals: [] });
       },
 
       requestPlanRenewal: async (
@@ -1229,23 +1198,19 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       // Egreso actions
       fetchEgresos: async () => {
         try {
-          // Intentar usar la API primero
           const response = await fetch("/api/expenses");
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
               set({ egresos: data.data });
-              return;
             }
           }
-        } catch {
-          console.log("API no disponible, usando datos en memoria");
+        } catch (error) {
+          console.error("Error al obtener egresos de la API:", error);
         }
-        // Fallback: mantener datos en memoria (no hacer nada)
       },
       addEgreso: async (egreso) => {
         try {
-          // Intentar usar la API primero
           const response = await fetch("/api/expenses", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1255,28 +1220,20 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
-              // Actualizar el estado con el egreso creado por la API
               set((state) => ({
                 egresos: [...state.egresos, data.data],
               }));
               return;
             }
           }
-        } catch {
-          console.log("API no disponible, usando almacenamiento en memoria");
+          throw new Error("No se pudo agregar el egreso a la API");
+        } catch (error) {
+          console.error("Error al agregar egreso de la API:", error);
+          throw error;
         }
-
-        // Fallback: agregar en memoria como antes
-        set((state) => ({
-          egresos: [
-            ...state.egresos,
-            { ...egreso, id: `egreso_${Date.now()}` },
-          ],
-        }));
       },
       deleteEgreso: async (id) => {
         try {
-          // Intentar usar la API primero
           const response = await fetch(`/api/expenses/${id}`, {
             method: "DELETE",
           });
@@ -1284,21 +1241,17 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
-              // Actualizar el estado eliminando el egreso
               set((state) => ({
                 egresos: state.egresos.filter((e) => e.id !== id),
               }));
               return;
             }
           }
-        } catch {
-          console.log("API no disponible, usando almacenamiento en memoria");
+          throw new Error("No se pudo eliminar el egreso de la API");
+        } catch (error) {
+          console.error("Error al eliminar egreso de la API:", error);
+          throw error;
         }
-
-        // Fallback: eliminar de memoria como antes
-        set((state) => ({
-          egresos: state.egresos.filter((e) => e.id !== id),
-        }));
       },
     }),
     {
@@ -1388,30 +1341,3 @@ export const STATE_COLORS = {
   pending: "#f59e0b", // Orange
   scheduled: "#0ea5e9", // Blue
 } as const;
-
-export const MEMBERSHIP_TYPES = [
-  {
-    id: "basic",
-    name: "Básico",
-    description: "Acceso a clases básicas",
-    price: 25000,
-    durationMonths: 1,
-    maxClassesPerMonth: 8,
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    description: "Acceso completo a todas las clases",
-    price: 35000,
-    durationMonths: 1,
-    maxClassesPerMonth: 20,
-  },
-  {
-    id: "unlimited",
-    name: "Ilimitado",
-    description: "Acceso ilimitado a todas las clases",
-    price: 45000,
-    durationMonths: 1,
-    maxClassesPerMonth: -1,
-  },
-];

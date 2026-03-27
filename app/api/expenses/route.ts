@@ -66,40 +66,27 @@ export async function GET(request: NextRequest) {
         success: true,
         data: formattedExpenses,
         total: formattedExpenses.length,
-        source: "database",
       });
     } catch (dbError) {
-      console.log("Database not available, using mock data:", dbError);
-
-      // Fallback a mock data
-      let filteredExpenses = expenses;
-
-      if (year && month) {
-        const targetYear = parseInt(year);
-        const targetMonth = parseInt(month); // 0-indexed
-
-        filteredExpenses = expenses.filter((expense) => {
-          const date = new Date(expense.fecha);
-          return (
-            date.getFullYear() === targetYear && date.getMonth() === targetMonth
-          );
-        });
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: filteredExpenses,
-        total: filteredExpenses.length,
-        source: "memory",
-      });
+      console.error("Database error in GET expenses:", dbError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "Error fetching expenses from database",
+            details: dbError instanceof Error ? dbError.message : String(dbError),
+          },
+        },
+        { status: 500 }
+      );
     }
   } catch (error) {
-    console.error("Error fetching expenses:", error);
+    console.error("Critical error fetching expenses:", error);
     return NextResponse.json(
       {
         success: false,
         error: {
-          message: "Error fetching expenses",
+          message: "Internal server error",
           details: error instanceof Error ? error.message : String(error),
         },
       },
@@ -162,37 +149,27 @@ export async function POST(request: NextRequest) {
         success: true,
         data: formattedExpense,
         message: "Egreso creado exitosamente",
-        source: "database",
       });
     } catch (dbError) {
-      console.log("Database not available, using mock storage:", dbError);
-
-      // Fallback a mock storage
-      const newExpense: Expense = {
-        id: `expense_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        motivo: motivo.trim(),
-        fecha,
-        monto: Number(monto),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      expenses.push(newExpense);
-
-      return NextResponse.json({
-        success: true,
-        data: newExpense,
-        message: "Egreso creado exitosamente",
-        source: "memory",
-      });
+      console.error("Database error in POST expenses:", dbError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "Error creating expense in database",
+            details: dbError instanceof Error ? dbError.message : String(dbError),
+          },
+        },
+        { status: 500 }
+      );
     }
   } catch (error) {
-    console.error("Error creating expense:", error);
+    console.error("Critical error creating expense:", error);
     return NextResponse.json(
       {
         success: false,
         error: {
-          message: "Error creating expense",
+          message: "Internal server error",
           details: error instanceof Error ? error.message : String(error),
         },
       },
