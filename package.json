@@ -15,7 +15,8 @@
     "db:reset": "prisma migrate reset",
     "db:fix-dst": "tsx maintenance/dst-tools/fix-class-dst.ts",
     "migrate:to-prisma": "./scripts/migrate-to-prisma.sh",
-    "migrate:to-mock": "./scripts/rollback-to-mock.sh"
+    "migrate:to-mock": "./scripts/rollback-to-mock.sh",
+    "sync:auth": "pnpm exec tsx --env-file=.env scripts/sync-auth-users.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -88,6 +89,7 @@
     "eslint-config-next": "15.3.5",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

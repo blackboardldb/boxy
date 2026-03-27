@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { createAuthUser } from "@/lib/supabase/admin";
 
 // Initialize services
 const userService = new UserService();
@@ -39,7 +40,39 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Use UserService to create user with validation
+    // 1. Crear el usuario en Supabase Authentication con contraseña por defecto
+    //    Esto permite que el alumno/usuario pueda iniciar sesión
+    try {
+      await createAuthUser(
+        body.email,
+        "alumno", // Los usuarios creados desde el panel son alumnos por defecto
+        {
+          firstName: body.firstName,
+          lastName: body.lastName,
+        }
+      );
+    } catch (authError: any) {
+      // Si el error es que ya existe en Auth, no bloqueamos la creación en Prisma
+      const msg = authError?.message ?? "";
+      if (!msg.includes("already")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "AUTH_CREATE_FAILED",
+              message: `No se pudo crear el usuario en el sistema de autenticación: ${msg}`,
+            },
+          },
+          { status: 500 }
+        );
+      }
+      console.warn(
+        "[POST /api/users] User already exists in Auth, continuing with Prisma creation:",
+        body.email
+      );
+    }
+
+    // 2. Crear el perfil de usuario en Prisma (public.users)
     const response = await userService.createUser(body);
 
     // Return standardized response

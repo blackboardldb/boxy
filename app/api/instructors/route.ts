@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { InstructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { createAuthUser } from "@/lib/supabase/admin";
 
 // Initialize services
 const instructorService = new InstructorService();
@@ -48,7 +49,39 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Use InstructorService to create instructor with validation
+    // Determinar el rol en Supabase Auth según el rol del instructor
+    // "admin" → admin en profiles, "coach" → coach en profiles
+    const authRole: "coach" | "admin" =
+      body.role === "admin" ? "admin" : "coach";
+
+    // 1. Crear en Supabase Authentication con contraseña por defecto
+    //    Esto permite que el instructor/coach/admin pueda iniciar sesión
+    try {
+      await createAuthUser(body.email, authRole, {
+        firstName: body.firstName,
+        lastName: body.lastName,
+      });
+    } catch (authError: any) {
+      const msg = authError?.message ?? "";
+      if (!msg.includes("already")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "AUTH_CREATE_FAILED",
+              message: `No se pudo crear el instructor en el sistema de autenticación: ${msg}`,
+            },
+          },
+          { status: 500 }
+        );
+      }
+      console.warn(
+        "[POST /api/instructors] Instructor already exists in Auth, continuing:",
+        body.email
+      );
+    }
+
+    // 2. Crear el registro del instructor en Prisma (public.instructors)
     const response = await instructorService.createInstructor(body);
 
     // Return standardized response
