@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Importar el mock storage del archivo principal
-// En una implementación real, esto vendría de la base de datos
-const expenses: Array<{
-  id: string;
-  motivo: string;
-  fecha: string;
-  monto: number;
-}> = [];
+import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -29,30 +21,33 @@ export async function DELETE(
       );
     }
 
-    // Buscar el índice del egreso
-    const expenseIndex = expenses.findIndex((expense) => expense.id === id);
+    // Intentar eliminar del DB (Prisma)
+    try {
+      const deletedExpense = await prisma.expense.delete({
+        where: { id },
+      });
 
-    if (expenseIndex === -1) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Egreso no encontrado",
-            details: `No se encontró un egreso con ID: ${id}`,
+      return NextResponse.json({
+        success: true,
+        data: deletedExpense,
+        message: "Egreso eliminado exitosamente",
+      });
+    } catch (dbError: any) {
+      // Prisma error for not found (P2025)
+      if (dbError.code === "P2025") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              message: "Egreso no encontrado",
+              details: `No se encontró un egreso con ID: ${id}`,
+            },
           },
-        },
-        { status: 404 }
-      );
+          { status: 404 }
+        );
+      }
+      throw dbError;
     }
-
-    // Eliminar el egreso
-    const deletedExpense = expenses.splice(expenseIndex, 1)[0];
-
-    return NextResponse.json({
-      success: true,
-      data: deletedExpense,
-      message: "Egreso eliminado exitosamente",
-    });
   } catch (error) {
     console.error("Error deleting expense:", error);
     return NextResponse.json(
@@ -70,10 +65,10 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { motivo, fecha, monto } = body;
 
@@ -90,38 +85,42 @@ export async function PUT(
       );
     }
 
-    // Buscar el egreso
-    const expenseIndex = expenses.findIndex((expense) => expense.id === id);
-
-    if (expenseIndex === -1) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Egreso no encontrado",
-            details: `No se encontró un egreso con ID: ${id}`,
-          },
+    // Actualizar en DB
+    try {
+      const updatedExpense = await prisma.expense.update({
+        where: { id },
+        data: {
+          ...(motivo && { motivo: motivo.trim() }),
+          ...(fecha && { fecha: new Date(fecha) }),
+          ...(monto && { monto: Number(monto) }),
         },
-        { status: 404 }
-      );
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...updatedExpense,
+          fecha: updatedExpense.fecha.toISOString(),
+          createdAt: updatedExpense.createdAt.toISOString(),
+          updatedAt: updatedExpense.updatedAt.toISOString(),
+        },
+        message: "Egreso actualizado exitosamente",
+      });
+    } catch (dbError: any) {
+      if (dbError.code === "P2025") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              message: "Egreso no encontrado",
+              details: `No se encontró un egreso con ID: ${id}`,
+            },
+          },
+          { status: 404 }
+        );
+      }
+      throw dbError;
     }
-
-    // Actualizar el egreso
-    const updatedExpense = {
-      ...expenses[expenseIndex],
-      ...(motivo && { motivo: motivo.trim() }),
-      ...(fecha && { fecha }),
-      ...(monto && { monto: Number(monto) }),
-      updatedAt: new Date().toISOString(),
-    };
-
-    expenses[expenseIndex] = updatedExpense;
-
-    return NextResponse.json({
-      success: true,
-      data: updatedExpense,
-      message: "Egreso actualizado exitosamente",
-    });
   } catch (error) {
     console.error("Error updating expense:", error);
     return NextResponse.json(

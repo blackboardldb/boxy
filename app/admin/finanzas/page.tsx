@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -16,6 +16,8 @@ import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 export default function FinanzasPage() {
   const users = useBlackSheepStore((s) => s.users);
   const egresos = useBlackSheepStore((s) => s.egresos);
+  const fetchUsers = useBlackSheepStore((s) => s.fetchUsers);
+  const fetchEgresos = useBlackSheepStore((s) => s.fetchEgresos);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -24,6 +26,14 @@ export default function FinanzasPage() {
       "0"
     )}`;
   });
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    // Cargamos una cantidad mayor de usuarios para asegurar que el cálculo de ingresos sea preciso
+    // en una implementación ideal, esto sería un endpoint específico de finanzas
+    fetchUsers(1, 1000);
+    fetchEgresos();
+  }, [fetchUsers, fetchEgresos]);
 
   // Parsear mes seleccionado
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);

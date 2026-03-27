@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 // Tipo para el egreso
 export type Expense = {
@@ -11,11 +11,7 @@ export type Expense = {
   updatedAt?: string;
 };
 
-// Inicializar Prisma Client
-const prisma = new PrismaClient();
-
-// Mock storage (fallback en memoria)
-const expenses: Expense[] = [];
+// El mock storage se ha movido/eliminado para usar solo Prisma
 
 export async function GET(request: NextRequest) {
   try {

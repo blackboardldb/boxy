@@ -163,7 +163,7 @@ interface BlackSheepStore {
 
 
   // Egreso actions
-  fetchEgresos: () => Promise<void>;
+  fetchEgresos: (year?: number, month?: number) => Promise<void>;
   addEgreso: (egreso: Omit<Egreso, "id">) => Promise<void>;
   deleteEgreso: (id: string) => Promise<void>;
 
@@ -1196,9 +1196,14 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
 
 
       // Egreso actions
-      fetchEgresos: async () => {
+      fetchEgresos: async (year?: number, month?: number) => {
         try {
-          const response = await fetch("/api/expenses");
+          const params = new URLSearchParams();
+          if (year !== undefined) params.append("year", year.toString());
+          if (month !== undefined) params.append("month", month.toString());
+          
+          const url = `/api/expenses${params.toString() ? `?${params.toString()}` : ""}`;
+          const response = await fetch(url);
           if (response.ok) {
             const data = await response.json();
             if (data.success) {

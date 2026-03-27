@@ -23,8 +23,8 @@ export function ExpensesManager({
   const deleteEgreso = useBlackSheepStore((s) => s.deleteEgreso);
 
   useEffect(() => {
-    fetchEgresos();
-  }, [fetchEgresos]);
+    fetchEgresos(selectedYear, selectedMonth);
+  }, [fetchEgresos, selectedYear, selectedMonth]);
 
   // Filtrar egresos del mes seleccionado
   const egresosMes = egresos.filter((e) => {
@@ -36,7 +36,7 @@ export function ExpensesManager({
     <Card className="h-full rounded-xl">
       <CardHeader>
         <CardTitle>Egresos de {selectedMonthName}</CardTitle>
-        <AddExpenseModal onSuccess={fetchEgresos} />
+        <AddExpenseModal onSuccess={() => fetchEgresos(selectedYear, selectedMonth)} />
       </CardHeader>
       <CardContent>
         {egresosMes.length === 0 ? (
