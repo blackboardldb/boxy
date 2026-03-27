@@ -11,7 +11,6 @@ import type {
   Instructor,
   MembershipPlan as Plan,
   Organization,
-  Banner,
   PendingRenewalRequest,
 } from "./types";
 // Removed UserService import (not needed in client)
@@ -55,7 +54,7 @@ interface BlackSheepStore {
   userStats: Record<string, unknown> | null;
   isLoading: boolean;
   error: string | null;
-  banners: Banner[];
+
   egresos: Egreso[];
 
   // Provider management
@@ -164,13 +163,7 @@ interface BlackSheepStore {
     paymentMethod: string
   ) => Promise<void>;
 
-  // Banner actions
-  addBanner: (banner: Omit<Banner, "id" | "createdAt">) => void;
-  updateBanner: (id: string, updates: Partial<Banner>) => void;
-  deleteBanner: (bannerId: string) => void;
-  toggleBanner: (bannerId: string) => void;
-  reorderBanners: (banners: Banner[]) => void;
-  getActiveBanners: () => Banner[];
+
 
   // Egreso actions
   fetchEgresos: () => Promise<void>;
@@ -203,7 +196,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       isLoading: false,
       error: null,
       currentProviderType: "prisma",
-      banners: [],
+
       egresos: [
         // Datos de prueba para diferentes meses
         {
@@ -1231,76 +1224,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         }
       },
 
-      // Banner actions
-      addBanner: (bannerData) => {
-        const newBanner: Banner = {
-          ...bannerData,
-          id: `banner_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date().toISOString(),
-          order: get().banners.length, // Auto-assign order
-        };
 
-        // Enforce maximum of 7 banners
-        const currentBanners = get().banners;
-        if (currentBanners.length >= 7) {
-          set({ error: "Máximo 7 banners permitidos" });
-          return;
-        }
-
-        set((state) => ({
-          banners: [...state.banners, newBanner],
-          error: null,
-        }));
-      },
-
-      updateBanner: (id, updates) =>
-        set((state) => ({
-          banners: state.banners.map((b) =>
-            b.id === id ? { ...b, ...updates } : b
-          ),
-          error: null,
-        })),
-
-      deleteBanner: (bannerId) =>
-        set((state) => {
-          const filteredBanners = state.banners.filter(
-            (b) => b.id !== bannerId
-          );
-          // Reorder remaining banners
-          const reorderedBanners = filteredBanners.map((banner, index) => ({
-            ...banner,
-            order: index,
-          }));
-          return {
-            banners: reorderedBanners,
-            error: null,
-          };
-        }),
-
-      toggleBanner: (bannerId) =>
-        set((state) => ({
-          banners: state.banners.map((b) =>
-            b.id === bannerId ? { ...b, isActive: !b.isActive } : b
-          ),
-          error: null,
-        })),
-
-      reorderBanners: (banners) => {
-        // Update order property based on array position
-        const reorderedBanners = banners.map((banner, index) => ({
-          ...banner,
-          order: index,
-        }));
-        set({ banners: reorderedBanners, error: null });
-      },
-
-      getActiveBanners: () => {
-        const { banners } = get();
-        return banners
-          .filter((banner) => banner.isActive)
-          .sort((a, b) => a.order - b.order)
-          .slice(0, 7); // Ensure max 7 banners
-      },
 
       // Egreso actions
       fetchEgresos: async () => {
@@ -1445,18 +1369,7 @@ export const useActiveDisciplines = () =>
     state.disciplines.filter((discipline) => discipline.isActive)
   );
 
-export const useActiveBanners = () => {
-  const banners = useBlackSheepStore((state) => state.banners);
 
-  return React.useMemo(() => {
-    return banners
-      .filter((banner) => banner.isActive)
-      .sort((a, b) => a.order - b.order)
-      .slice(0, 7);
-  }, [banners]);
-};
-
-export const useBanners = () => useBlackSheepStore((state) => state.banners);
 
 // ========================================================================================
 // Constants for UI components

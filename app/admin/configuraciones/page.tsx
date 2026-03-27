@@ -234,26 +234,7 @@ export default function ConfiguracionesPage() {
 
         <AlertsManager />
 
-        {/* Canales de Comunicación Card */}
-        <Card className="rounded-xl border shadow-md border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 overflow-hidden">
-          <CardHeader className="px-6 py-4 bg-slate-50/30 dark:bg-slate-900/10">
-            <CardTitle className="text-base font-bold">Canales de Comunicación</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/20 dark:bg-transparent transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50 gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shadow-inner">✨</div>
-                <div>
-                  <p className="font-bold text-sm">Gestión de Banners Activos</p>
-                  <p className="text-[11px] text-muted-foreground">Carrusel de anuncios internos para alumnos</p>
-                </div>
-              </div>
-              <Button asChild variant="outline" size="sm" className="rounded-xl px-6 border-2 font-bold hover:bg-primary hover:text-white transition-all">
-                <a href="/admin/configuraciones/banners">Gestionar Banners</a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { HomePage } from "@/components/HomePage";
 import Logo from "@/components/Logo";
-import BannerCarousel from "@/components/banner-carousel";
+
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { format } from "date-fns";
@@ -134,11 +134,7 @@ const progressPercentage =
         formattedPeriodEnd={formattedPeriodEnd}
         registeredClasses={registeredClasses}
       />
-      <aside className="p-4 max-w-4xl mx-auto pb-28 w-full">
-        <div className="w-full bg-zinc-800 p-4 rounded-lg space-y-3">
-          <BannerCarousel />
-        </div>
-      </aside>
+
     </main>
   );
 }
