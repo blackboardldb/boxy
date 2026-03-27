@@ -10,6 +10,7 @@ import { PrismaInstructorRepository } from "../repositories/instructor-repositor
 import { PrismaPlanRepository } from "../repositories/plan-repository";
 import { PrismaOrganizationRepository } from "../repositories/organization-repository";
 import { PrismaMembershipRenewalRepository } from "../repositories/membership-renewal-repository";
+import { PrismaClassRegistrationRepository } from "../repositories/class-registration-repository";
 import { InternalError } from "../../errors/types";
 
 // Prisma client type (will be imported when Prisma is set up)
@@ -24,6 +25,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
   public readonly plans: PrismaPlanRepository;
   public readonly organizations: PrismaOrganizationRepository;
   public readonly membershipRenewals: PrismaMembershipRenewalRepository;
+  public readonly classRegistrations: PrismaClassRegistrationRepository;
 
   private config: DataProviderFactoryConfig;
   private prismaClient: PrismaClient | null = null;
@@ -53,6 +55,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
     this.plans = new PrismaPlanRepository();
     this.organizations = new PrismaOrganizationRepository();
     this.membershipRenewals = new PrismaMembershipRenewalRepository();
+    this.classRegistrations = new PrismaClassRegistrationRepository();
 
     if (this.config.enableLogging) {
       console.log("[PrismaDataProvider] Initialized with config:", {

@@ -148,6 +148,26 @@ export interface MembershipRenewalRepository
   findByStatus(status: string): Promise<import("../types").PendingRenewalRequest[]>;
 }
 
+export interface ClassRegistration extends BaseEntity {
+  userId: string;
+  classId: string;
+  status: string;
+  registeredAt: string;
+  cancelledAt?: string;
+  notes?: string;
+}
+
+export interface ClassRegistrationRepository extends Repository<ClassRegistration> {
+  findByUser(userId: string): Promise<ClassRegistration[]>;
+  findByClass(classId: string): Promise<ClassRegistration[]>;
+  countUserRegistrationsInPeriod(
+    userId: string, 
+    startDate: string | Date, 
+    endDate: string | Date,
+    excludeCancelled?: boolean
+  ): Promise<number>;
+}
+
 // Main DataProvider interface that aggregates all repositories
 export interface DataProvider {
   users: UserRepository;
@@ -157,6 +177,7 @@ export interface DataProvider {
   plans: PlanRepository;
   organizations: OrganizationRepository;
   membershipRenewals: MembershipRenewalRepository;
+  classRegistrations: ClassRegistrationRepository;
 }
 
 // Transaction support for providers that support it

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { getDataProvider } from "@/lib/data-layer/provider-factory";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -8,13 +9,43 @@ export async function GET(
 ) {
   let userId = "unknown";
   try {
-    userId = (await params).id;
+    const { id } = await params;
+    userId = id;
+    
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
-    // Get all class registrations for this user with session details
-    const registrations = await prisma.classRegistration.findMany({
+    const provider = getDataProvider();
+
+    // Get period totals (optimized SQL count)
+    let totalInPeriod = 0;
+    if (startDate && endDate) {
+      totalInPeriod = await provider.classRegistrations.countUserRegistrationsInPeriod(
+        userId, 
+        startDate, 
+        endDate
+      );
+    }
+
+    // 3. Enrich with session details (already handled by repository findMany if implemented correctly,
+    // but the current repository implementation might need custom include support)
+    // In this specific case, we'll continue using prisma directly temporarily for the enrichment 
+    // until the repository supports complex includes, but the count is already optimized.
+    
+    // BACKWARD COMPATIBILITY: Format same as before but with metadata
+    const registrationsWithDetails = await prisma.classRegistration.findMany({
       where: { 
         userId,
-        status: { not: 'cancelled' } // Only active registrations
+        status: { not: 'cancelled' as any },
+        ...(startDate && endDate ? {
+          class: {
+            dateTime: {
+              gte: new Date(startDate),
+              lte: new Date(endDate + "T23:59:59")
+            }
+          }
+        } : {})
       },
       include: {
         class: {
@@ -24,20 +55,13 @@ export async function GET(
           }
         }
       },
-      orderBy: {
-        class: {
-          dateTime: 'desc'
-        }
-      }
+      orderBy: { class: { dateTime: 'desc' } }
     });
 
-    // Format response to look like ClassSession list for backward compatibility
-    // but enriched with registration status
-    const result = registrations.map(reg => ({
+    const result = registrationsWithDetails.map((reg: any) => ({
       ...reg.class,
       registrationStatus: reg.status,
       registeredAt: reg.registeredAt,
-      // Ensure date is string for frontend
       dateTime: reg.class.dateTime.toISOString()
     }));
 
@@ -45,7 +69,10 @@ export async function GET(
       success: true,
       data: result,
       meta: {
+        totalInPeriod,
         count: result.length,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         timestamp: new Date().toISOString()
       }
     });

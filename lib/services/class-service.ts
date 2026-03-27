@@ -1,13 +1,11 @@
-// Enhanced ClassService using new data layer architecture
-// Maintains existing API while using new provider-based architecture
-
 import { BaseService } from "./base-service";
 import { ClassSession } from "../types";
 import { ClassRepository } from "../data-layer/types";
-import { ApiResponse, PaginatedApiResponse } from "../api/types";
-// Removed unused imports
+import { ApiResponse, PaginatedApiResponse, createSuccessResponse } from "../api/types";
 import { ValidationError } from "../errors/types";
 import { getChileOffset } from "../utils";
+import { prisma } from "../prisma";
+import { ValidationService } from "../validation-service";
 
 export class ClassService extends BaseService<ClassSession> {
   protected repositoryName = "classes" as const;
@@ -58,7 +56,6 @@ export class ClassService extends BaseService<ClassSession> {
     if (params?.startDate || params?.endDate) {
       const dateTimeFilter: Record<string, Date> = {};
       if (params.startDate) {
-        // Obtenemos el offset dinámico de Chile para esa fecha
         const offset = getChileOffset(new Date(`${params.startDate}T12:00:00`));
         const startStr = params.startDate.includes("T") 
           ? params.startDate 
@@ -66,7 +63,6 @@ export class ClassService extends BaseService<ClassSession> {
         dateTimeFilter.gte = new Date(startStr);
       }
       if (params.endDate) {
-        // Obtenemos el offset dinámico de Chile para esa fecha (podría ser distinto si el rango es largo)
         const offset = getChileOffset(new Date(`${params.endDate}T12:00:00`));
         const endStr = params.endDate.includes("T") 
           ? params.endDate 
@@ -80,7 +76,6 @@ export class ClassService extends BaseService<ClassSession> {
       findParams.where = where;
     }
 
-    // Default ordering by date
     findParams.orderBy = { dateTime: "asc" };
 
     return await this.findMany(findParams);
@@ -106,110 +101,206 @@ export class ClassService extends BaseService<ClassSession> {
     return await this.delete(id);
   }
 
-  // Get classes by date range (common use case)
-  async getClassesByDateRange(
-    startDate: string,
-    endDate: string,
-    filters?: {
-      disciplineId?: string;
-      instructorId?: string;
-      status?: string;
-    }
-  ): Promise<PaginatedApiResponse<ClassSession>> {
-    return await this.getClasses({
-      startDate,
-      endDate,
-      ...filters,
-      limit: 1000, // Get all classes in range
-    });
+  // REGISTRATION OPERATIONS
+
+  /**
+   * Universal registration method (handles validation, daily limits, and transactions)
+   */
+  async registerStudent(
+    classId: string, 
+    userId: string, 
+    options: { isAdmin?: boolean } = {}
+  ): Promise<ApiResponse<ClassSession>> {
+    const { withErrorHandling } = require("../errors/handler");
+    
+    return withErrorHandling(
+      async () => {
+        const provider = this.dataProvider;
+        
+        // 1. Fetch data
+        const [classSession, user] = await Promise.all([
+          provider.classes.findUnique({ where: { id: classId } }),
+          provider.users.findUnique({ where: { id: userId } })
+        ]);
+
+        if (!classSession) throw new ValidationError("Clase no encontrada");
+        if (!user) throw new ValidationError("Usuario no encontrado");
+
+        // 2. VALIDATION
+        if (classSession.status === "cancelled") throw new ValidationError("La clase ha sido cancelada");
+        if (classSession.registeredParticipantsIds.includes(userId)) throw new ValidationError("Ya estás inscrito/a en esta clase");
+        if (classSession.registeredParticipantsIds.length >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
+
+        if (!options.isAdmin) {
+          const targetDay = classSession.dateTime.split("T")[0];
+          const queryStart = new Date(`${targetDay}T00:00:00`);
+          const queryEnd = new Date(`${targetDay}T23:59:59`);
+          
+          const dayRegistrations = await prisma.classRegistration.findMany({
+            where: {
+              userId,
+              status: 'registered',
+              class: { dateTime: { gte: queryStart, lte: queryEnd } }
+            },
+            include: { class: true }
+          });
+
+          const validation = await ValidationService.canUserRegisterToClass(
+            user as any,
+            classSession as any,
+            dayRegistrations.map(r => r.class) as any
+          );
+
+          if (!validation.canRegister) {
+            throw new ValidationError(validation.reason || "Validation failed");
+          }
+        }
+
+        // 3. TRANSACTION
+        const updatedRecord = await prisma.$transaction(async (tx) => {
+          await tx.classRegistration.upsert({
+            where: { userId_classId: { userId, classId } },
+            update: { status: 'registered', registeredAt: new Date() },
+            create: { userId, classId, status: 'registered' }
+          });
+
+          const updatedClass = await tx.classSession.update({
+            where: { id: classId },
+            data: {
+              registeredParticipantsIds: [
+                ...classSession.registeredParticipantsIds.filter(id => id !== userId),
+                userId
+              ]
+            }
+          });
+
+          const memberData = user.membership as any;
+          if ((memberData?.planConfig?.classLimit || 0) > 0) {
+            const remaining = memberData?.centerStats?.currentMonth?.remainingClasses;
+            await tx.user.update({
+              where: { id: userId },
+              data: {
+                membership: {
+                  ...memberData,
+                  centerStats: {
+                    ...memberData.centerStats,
+                    currentMonth: {
+                      ...memberData.centerStats?.currentMonth,
+                      remainingClasses: Math.max(0, (remaining || 1) - 1)
+                    }
+                  }
+                }
+              }
+            });
+          }
+          
+          return updatedClass;
+        });
+
+        return createSuccessResponse(this.mapToEntity(updatedRecord));
+      },
+      { operation: "registerStudent", resource: "classes", metadata: { classId, userId, isAdmin: options.isAdmin } }
+    );
   }
 
-  // Get classes for a specific instructor
-  async getClassesByInstructor(
-    instructorId: string,
-    params?: {
-      startDate?: string;
-      endDate?: string;
-      status?: string;
-    }
-  ): Promise<PaginatedApiResponse<ClassSession>> {
-    return await this.getClasses({
-      instructorId,
-      ...params,
-    });
+  /**
+   * Universal cancellation method
+   */
+  async cancelRegistration(classId: string, userId: string): Promise<ApiResponse<ClassSession>> {
+    const { withErrorHandling } = require("../errors/handler");
+
+    return withErrorHandling(
+      async () => {
+        const provider = this.dataProvider;
+        const [classSession, user] = await Promise.all([
+          provider.classes.findUnique({ where: { id: classId } }),
+          provider.users.findUnique({ where: { id: userId } })
+        ]);
+
+        if (!classSession) throw new ValidationError("Clase no encontrada");
+        if (!user) throw new ValidationError("Usuario no encontrado");
+
+        const discipline = await prisma.discipline.findUnique({ where: { id: classSession.disciplineId } });
+        if (!discipline) throw new ValidationError("Disciplina no encontrada");
+
+        const validation = await ValidationService.canUserCancelClassWithRules(
+          user as any,
+          classSession as any,
+          discipline as any
+        );
+
+        if (!validation.canCancel) {
+          throw new ValidationError(validation.reason || "No se puede cancelar");
+        }
+
+        const updatedRecord = await prisma.$transaction(async (tx) => {
+          await tx.classRegistration.update({
+            where: { userId_classId: { userId, classId } },
+            data: { status: 'cancelled', cancelledAt: new Date() }
+          });
+
+          const updatedClass = await tx.classSession.update({
+            where: { id: classId },
+            data: {
+              registeredParticipantsIds: classSession.registeredParticipantsIds.filter(id => id !== userId),
+              waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(id => id !== userId)
+            }
+          });
+
+          const memberData = user.membership as any;
+          if ((memberData?.planConfig?.classLimit || 0) > 0) {
+            const remaining = memberData?.centerStats?.currentMonth?.remainingClasses;
+            await tx.user.update({
+              where: { id: userId },
+              data: {
+                membership: {
+                  ...memberData,
+                  centerStats: {
+                    ...memberData.centerStats,
+                    currentMonth: {
+                      ...memberData.centerStats?.currentMonth,
+                      remainingClasses: (remaining || 0) + 1
+                    }
+                  }
+                }
+              }
+            });
+          }
+
+          return updatedClass;
+        });
+
+        return createSuccessResponse(this.mapToEntity(updatedRecord));
+      },
+      { operation: "cancelRegistration", resource: "classes", metadata: { classId, userId } }
+    );
   }
 
-  // Get classes for a specific discipline
-  async getClassesByDiscipline(
-    disciplineId: string,
-    params?: {
-      startDate?: string;
-      endDate?: string;
-      status?: string;
-    }
-  ): Promise<PaginatedApiResponse<ClassSession>> {
-    return await this.getClasses({
-      disciplineId,
-      ...params,
-    });
+  private mapToEntity(prismaClass: any): ClassSession {
+    return {
+      id: prismaClass.id,
+      organizationId: prismaClass.organizationId,
+      disciplineId: prismaClass.disciplineId,
+      name: prismaClass.name,
+      dateTime: prismaClass.dateTime.toISOString(),
+      durationMinutes: prismaClass.durationMinutes,
+      instructorId: prismaClass.instructorId,
+      capacity: prismaClass.capacity,
+      registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
+      waitlistParticipantsIds: prismaClass.waitlistParticipantsIds || [],
+      status: prismaClass.status as any,
+      notes: prismaClass.notes || undefined,
+      isGenerated: prismaClass.isGenerated,
+    };
   }
 
-  // Validation hooks (override from BaseService)
-
-  protected async validateCreateData(
-    data: Partial<ClassSession>
-  ): Promise<void> {
-    // Validate required fields
+  protected async validateCreateData(data: Partial<ClassSession>): Promise<void> {
     if (!data.disciplineId || !data.instructorId || !data.dateTime) {
-      throw new ValidationError(
-        "Faltan campos requeridos: disciplineId, instructorId, dateTime"
-      );
-    }
-
-    // Validate date format
-    if (data.dateTime && isNaN(Date.parse(data.dateTime))) {
-      throw new ValidationError("Formato de fecha inválido en dateTime");
-    }
-
-    // Validate capacity
-    if (
-      data.capacity &&
-      (typeof data.capacity !== "number" || data.capacity <= 0)
-    ) {
-      throw new ValidationError("La capacidad debe ser un número positivo");
-    }
-
-    // Validate duration
-    if (
-      data.durationMinutes &&
-      (typeof data.durationMinutes !== "number" || data.durationMinutes <= 0)
-    ) {
-      throw new ValidationError("La duración debe ser un número positivo");
+      throw new ValidationError("Faltan campos requeridos");
     }
   }
 
-  protected async validateUpdateData(
-    id: string,
-    data: Partial<ClassSession>,
-    _existingRecord: ClassSession
-  ): Promise<void> {
-    // Same validations as create, but only for provided fields
-    if (data.dateTime && isNaN(Date.parse(data.dateTime))) {
-      throw new ValidationError("Formato de fecha inválido en dateTime");
-    }
-
-    if (
-      data.capacity &&
-      (typeof data.capacity !== "number" || data.capacity <= 0)
-    ) {
-      throw new ValidationError("La capacidad debe ser un número positivo");
-    }
-
-    if (
-      data.durationMinutes &&
-      (typeof data.durationMinutes !== "number" || data.durationMinutes <= 0)
-    ) {
-      throw new ValidationError("La duración debe ser un número positivo");
-    }
+  protected async validateUpdateData(id: string, data: Partial<ClassSession>): Promise<void> {
+    // validation...
   }
 }

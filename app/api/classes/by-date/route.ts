@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
 import { getChileOffset, localToUTC } from "@/lib/utils";
+import { getDataProvider } from "@/lib/data-layer/provider-factory";
 
 /**
  * Genera clases para un día específico basado en los horarios de las disciplinas.
@@ -117,26 +118,27 @@ export async function GET(request: NextRequest) {
       targetEndDate = new Date(`${endDate}T23:59:59.999${offsetEnd}`);
     }
 
-    // 1. Buscar clases REALES que ya existan para ese rango de fechas en la BD
-    const realClasses = await prisma.classSession.findMany({
+    const provider = getDataProvider();
+
+    // 1. Buscar clases REALES que ya existan para ese rango de fechas en la BD usando repositorio
+    const realClassesResult = await provider.classes.findMany({
       where: {
         dateTime: {
           gte: targetStartDate.toISOString(),
           lte: targetEndDate.toISOString(),
         },
       },
-    }) as any[];
-
-    // Convertir fechas de Prisma (Date) a string (ISO) para cumplir con el tipo ClassSession
-    const normalizedRealClasses = realClasses.map(cls => ({
-      ...cls,
-      dateTime: cls.dateTime instanceof Date ? cls.dateTime.toISOString() : cls.dateTime
-    })) as ClassSession[];
-
-    // 2. Obtener disciplinas activas
-    const disciplines = await prisma.discipline.findMany({
-      where: { isActive: true },
+      limit: 1000,
     });
+    
+    const normalizedRealClasses = realClassesResult.items;
+
+    // 2. Obtener disciplinas activas via repositorio
+    const disciplinesResult = await provider.disciplines.findMany({
+      where: { isActive: true },
+      limit: 100,
+    });
+    const disciplines = disciplinesResult.items;
 
     // 3. Generar todas las clases para el rango completo
     const allGeneratedClasses = generateClassesForDateRange(
@@ -169,10 +171,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       classes: allClasses,
-      source: realClasses.length > 0 ? "mixed" : "generated",
+      source: normalizedRealClasses.length > 0 ? "mixed" : "generated",
       count: allClasses.length,
-      realClassesCount: realClasses.length,
-      generatedClassesCount: allClasses.length - realClasses.length,
+      realClassesCount: normalizedRealClasses.length,
+      generatedClassesCount: allClasses.length - normalizedRealClasses.length,
     });
   } catch (error) {
     console.error("Error fetching classes by date range:", error);

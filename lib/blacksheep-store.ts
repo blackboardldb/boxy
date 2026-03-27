@@ -86,7 +86,7 @@ interface BlackSheepStore {
     page?: number,
     limit?: number
   ) => Promise<any>;
-  fetchUserClasses: (userId: string) => Promise<ClassSession[]>;
+  fetchUserClasses: (userId: string, startDate?: string, endDate?: string) => Promise<ClassSession[]>;
 
   // Discipline actions
   addDiscipline: (discipline: Discipline) => void;
@@ -545,10 +545,18 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           return { classes: [], pagination: null };
         }
       },
-      fetchUserClasses: async (userId: string) => {
+      fetchUserClasses: async (userId: string, startDate?: string, endDate?: string) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await fetch(`/api/users/${userId}/classes`);
+          
+          let url = `/api/users/${userId}/classes`;
+          if (startDate && endDate) {
+            url += `?startDate=${startDate}&endDate=${endDate}`;
+          } else if (startDate) {
+            url += `?startDate=${startDate}`;
+          }
+
+          const response = await fetch(url);
           if (!response.ok) throw new Error("Failed to fetch user classes");
           
           const result = await response.json();

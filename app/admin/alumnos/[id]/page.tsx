@@ -15,7 +15,7 @@ import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, K
 import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { getPlanStatus } from "@/lib/utils";
+import { getPlanStatus, getStudentClassesInPeriod } from "@/lib/utils";
 
 export default function StudentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -250,26 +250,12 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const now = new Date();
   
   const studentAllEnrolledClasses = useMemo(() => {
-    if (!student?.membership?.currentPeriodStart || !student?.membership?.currentPeriodEnd) return [];
-    
-    const start = new Date(student.membership.currentPeriodStart);
-    
-    // Obtenemos solo la fecha YYYY-MM-DD y forzamos su límite al final del día local
-    const endDateStr = student.membership.currentPeriodEnd;
-    const endDateOnly = typeof endDateStr === "string" ? endDateStr.substring(0, 10) : new Date(endDateStr).toISOString().substring(0, 10);
-    const end = new Date(endDateOnly + "T23:59:59");
-
-    return (classSessions || [])
-      .filter(s => {
-        const sessionDate = new Date(s.dateTime);
-        return (
-          s.status !== "cancelled" &&
-          sessionDate >= start &&
-          sessionDate <= end
-        );
-      })
-      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
-  }, [classSessions, resolvedParams.id, student]);
+    return getStudentClassesInPeriod(
+      classSessions, 
+      student?.membership?.currentPeriodStart, 
+      student?.membership?.currentPeriodEnd
+    );
+  }, [classSessions, student]);
 
   // Determine plan status
   const planStatus = student ? getPlanStatus(student) : "inactive";

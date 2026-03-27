@@ -72,8 +72,11 @@ export interface FitCenterMembership {
   // Estadísticas del centro relacionadas con esta membresía
   centerStats: {
     currentMonth: {
+      /** @deprecated Usar historial de inscripciones para cálculo real */
       classesAttended: number;
+      /** @deprecated Usar planConfig.classLimit */
       classesContracted: number;
+      /** @deprecated Usar historial de inscripciones para cálculo real */
       remainingClasses: number;
       noShows: number;
       lastMinuteCancellations: number;

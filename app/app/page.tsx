@@ -8,7 +8,7 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { formatTimeLocal, formatWeekday } from "@/lib/utils";
+import { formatTimeLocal, formatWeekday, getStudentClassesInPeriod } from "@/lib/utils";
 import { SkeletonHomePage } from "@/components/ui/skeleton";
 
 export default function Page() {
@@ -20,8 +20,12 @@ export default function Page() {
   // Cargar clases e instructores una sola vez
   useEffect(() => {
     if (currentUser && (!classSessions || classSessions.length === 0)) {
-      // Fetch only classes registered to this specific student
-      fetchUserClasses(currentUser.id);
+      // Fetch only classes registered to this specific student within current period for optimization
+      fetchUserClasses(
+        currentUser.id, 
+        currentUser.membership?.currentPeriodStart, 
+        currentUser.membership?.currentPeriodEnd
+      );
     }
     if (!instructors || instructors.length === 0) fetchInstructors();
   }, [classSessions, instructors, fetchUserClasses, fetchInstructors, currentUser]);
@@ -72,21 +76,11 @@ export default function Page() {
 
   // Membresía y stats
   const studentAllEnrolledClasses = useMemo(() => {
-    if (!currentUser?.membership?.currentPeriodStart || !currentUser?.membership?.currentPeriodEnd) return [];
-    
-    const start = new Date(currentUser.membership.currentPeriodStart);
-    // Forzar término de periodo al final del día
-    const endStr = currentUser.membership.currentPeriodEnd;
-    const end = new Date((typeof endStr === 'string' ? endStr.substring(0, 10) : (endStr as any).toISOString().substring(0, 10)) + "T23:59:59");
-
-    return (classSessions || [])
-      .filter(s => {
-        const sessionDate = new Date(s.dateTime);
-        return (
-          sessionDate >= start &&
-          sessionDate <= end
-        );
-      });
+    return getStudentClassesInPeriod(
+      classSessions, 
+      currentUser?.membership?.currentPeriodStart, 
+      currentUser?.membership?.currentPeriodEnd
+    );
   }, [classSessions, currentUser]);
 
   // Mostrar skeleton mientras carga el usuario

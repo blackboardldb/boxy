@@ -446,6 +446,38 @@ export function getPlanStatus(
 }
 
 /**
+ * Obtiene las clases inscritas de un alumno dentro de un periodo específico
+ * @param classSessions - Lista de sesiones de clase
+ * @param periodStart - Fecha de inicio del periodo
+ * @param periodEnd - Fecha de fin del periodo
+ * @returns Lista de clases filtradas
+ */
+export function getStudentClassesInPeriod(
+  classSessions: any[],
+  periodStart?: string | Date,
+  periodEnd?: string | Date
+): any[] {
+  if (!periodStart || !periodEnd) return [];
+  
+  const start = new Date(periodStart);
+  
+  // Forzar término de periodo al final del día
+  const endDateOnly = typeof periodEnd === "string" 
+    ? periodEnd.substring(0, 10) 
+    : new Date(periodEnd).toISOString().substring(0, 10);
+  const end = new Date(endDateOnly + "T23:59:59");
+
+  return (classSessions || []).filter(s => {
+    const sessionDate = new Date(s.dateTime);
+    return (
+      s.status !== "cancelled" &&
+      sessionDate >= start &&
+      sessionDate <= end
+    );
+  });
+}
+
+/**
  * Verifica si el usuario puede inscribirse en clases
  * @param user - Usuario con membresía
  * @returns true si puede inscribirse, false si no

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDataProvider } from "@/lib/data-layer/provider-factory";
 
 export async function POST(
   request: NextRequest,
@@ -8,8 +9,10 @@ export async function POST(
   try {
     const { id: classId } = await params;
 
-    // Get the class session
-    const classSession = await prisma.classSession.findUnique({
+    const provider = getDataProvider();
+
+    // Get the class session via repository
+    const classSession = await provider.classes.findUnique({
       where: { id: classId },
     });
 
