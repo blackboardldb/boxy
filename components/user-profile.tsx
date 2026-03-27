@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit3, ChevronRight } from "lucide-react";
+import { Edit3, ChevronRight, Lock } from "lucide-react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import type { FitCenterUserProfile } from "@/lib/types";
@@ -38,6 +38,11 @@ export function UserProfile() {
   const [editableEmergencyContact, setEditableEmergencyContact] = useState("");
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para cambio de contraseña
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Sincronizar cuando llegan los datos del usuario real
   useEffect(() => {
@@ -136,6 +141,40 @@ export function UserProfile() {
     }
   };
 
+  const savePassword = async () => {
+    setPasswordMsg(null);
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordMsg({ ok: false, text: "La contraseña debe tener al menos 6 caracteres." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ ok: false, text: "Las contraseñas no coinciden." });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/me/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPasswordMsg({ ok: true, text: "¡Contraseña actualizada correctamente!" });
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => {
+          setExpandedSection(null);
+          setPasswordMsg(null);
+        }, 1800);
+      } else {
+        setPasswordMsg({ ok: false, text: json.error ?? "Error al actualizar." });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const formatMemberSince = (isoDateString: string) => {
     try {
       return format(new Date(isoDateString), "MMMM yyyy", { locale: es });
@@ -160,8 +199,6 @@ export function UserProfile() {
   const gender = (userData as any).gender;
   const dateOfBirth = (userData as any).dateOfBirth;
   const emergencyContact = (userData as any).emergencyContact;
-  const hasPersonalInfo = gender || dateOfBirth;
-  const hasEmergencyContact = !!emergencyContact;
 
   const estimatedTotalHours =
     userData.membership?.centerStats?.lifetimeStats?.totalClasses ?? 0;
@@ -240,6 +277,7 @@ export function UserProfile() {
         )}
 
         {/* Secciones editables */}
+        {/* BSProfileButton — botones nativos del perfil de usuario */}
         <div className="space-y-4">
           {/* Nombre */}
           <div className="bg-white/5 rounded-lg p-4">
@@ -282,18 +320,25 @@ export function UserProfile() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={saveNameInfo} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                  <button
+                    onClick={saveNameInfo}
+                    disabled={isSaving}
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
                     {isSaving ? "Guardando..." : "Guardar"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setExpandedSection(null)} className="border-zinc-600 text-white hover:bg-zinc-700">
+                  </button>
+                  <button
+                    onClick={() => setExpandedSection(null)}
+                    className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
                     Cancelar
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Contacto — email readonly, teléfono editable */}
+          {/* Informacion de Contacto */}
           <div className="bg-white/5 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -336,20 +381,97 @@ export function UserProfile() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={saveContactInfo} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                  <button
+                    onClick={saveContactInfo}
+                    disabled={isSaving}
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
                     {isSaving ? "Guardando..." : "Guardar"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setExpandedSection(null)} className="border-zinc-600 text-white hover:bg-zinc-700">
+                  </button>
+                  <button
+                    onClick={() => setExpandedSection(null)}
+                    className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
                     Cancelar
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Información personal: solo si hay datos o es visible */}
-          {hasPersonalInfo && (
-            <div className="bg-white/5 rounded-lg p-4">
+          {/* Seguridad — cambio de contraseña */}
+          <div className="bg-white/5 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Seguridad</h3>
+                <p className="text-zinc-400">Contraseña de acceso</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setExpandedSection(expandedSection === "password" ? null : "password");
+                  setPasswordMsg(null);
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+                className="text-white hover:bg-white/10"
+              >
+                <Lock className="w-4 h-4" />
+              </Button>
+            </div>
+            {expandedSection === "password" && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label htmlFor="new-password" className="text-white">Nueva contraseña</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password" className="text-white">Confirmar contraseña</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repite la nueva contraseña"
+                    className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                  />
+                </div>
+                {passwordMsg && (
+                  <p className={`text-sm font-medium ${
+                    passwordMsg.ok ? "text-emerald-400" : "text-red-400"
+                  }`}>
+                    {passwordMsg.text}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={savePassword}
+                    disabled={isSaving || !newPassword || !confirmPassword}
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    {isSaving ? "Guardando..." : "Cambiar contraseña"}
+                  </button>
+                  <button
+                    onClick={() => { setExpandedSection(null); setPasswordMsg(null); }}
+                    className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Información personal */}
+          <div className="bg-white/5 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Información Personal</h3>
@@ -395,21 +517,26 @@ export function UserProfile() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={savePersonalInfo} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                    <button
+                      onClick={savePersonalInfo}
+                      disabled={isSaving}
+                      className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    >
                       {isSaving ? "Guardando..." : "Guardar"}
-                    </Button>
-                    <Button variant="outline" onClick={() => setExpandedSection(null)} className="border-zinc-600 text-white hover:bg-zinc-700">
+                    </button>
+                    <button
+                      onClick={() => setExpandedSection(null)}
+                      className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    >
                       Cancelar
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Contacto de emergencia: solo si existe */}
-          {hasEmergencyContact && (
-            <div className="bg-white/5 rounded-lg p-4">
+          {/* Contacto de emergencia */}
+          <div className="bg-white/5 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Contacto de Emergencia</h3>
@@ -437,17 +564,23 @@ export function UserProfile() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={saveEmergencyContactInfo} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                    <button
+                      onClick={saveEmergencyContactInfo}
+                      disabled={isSaving}
+                      className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    >
                       {isSaving ? "Guardando..." : "Guardar"}
-                    </Button>
-                    <Button variant="outline" onClick={() => setExpandedSection(null)} className="border-zinc-600 text-white hover:bg-zinc-700">
+                    </button>
+                    <button
+                      onClick={() => setExpandedSection(null)}
+                      className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    >
                       Cancelar
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          )}
         </div>
       </div>
     </div>

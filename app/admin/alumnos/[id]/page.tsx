@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell } from "lucide-react";
+import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, KeyRound } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -27,6 +27,9 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Password reset state
+  const [resetPasswordStatus, setResetPasswordStatus] = useState<"idle" | "loading" | "done">("idle");
 
   // States for Datos Personales
   const [editFirstName, setEditFirstName] = useState("");
@@ -150,6 +153,30 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     } finally {
       setIsSaving(false);
       setEditingSection(null);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!student?.email) return;
+    setResetPasswordStatus("loading");
+    try {
+      const res = await fetch(`/api/users/${student.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: student.email }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setResetPasswordStatus("done");
+        // Vuelve al estado idle despues de 3 segundos
+        setTimeout(() => setResetPasswordStatus("idle"), 3000);
+      } else {
+        toast({ title: "Error", description: json.error ?? "No se pudo resetear la contraseña.", variant: "destructive" });
+        setResetPasswordStatus("idle");
+      }
+    } catch {
+      toast({ title: "Error", description: "Error inesperado al resetear la contraseña.", variant: "destructive" });
+      setResetPasswordStatus("idle");
     }
   };
 
@@ -351,15 +378,41 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
             )}
           </Card>
 
+          {/* Tarjeta de Contraseña */}
+          <Card className="shadow-sm border-zinc-200 rounded-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Contraseña</CardTitle>
+              <CardDescription>Restablece la clave de acceso del alumno a la contraseña por defecto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetPasswordStatus === "loading" || resetPasswordStatus === "done"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed ${
+                  resetPasswordStatus === "done"
+                    ? "bg-emerald-500 text-white focus:ring-emerald-400"
+                    : "bg-zinc-900 hover:bg-zinc-700 text-white focus:ring-zinc-600"
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                {resetPasswordStatus === "loading"
+                  ? "Cambiando contraseña..."
+                  : resetPasswordStatus === "done"
+                  ? "Contraseña cambiada"
+                  : "Restablecer contraseña"}
+              </button>
+            </CardContent>
+          </Card>
+
           {/* Tarjeta de Membresía Actual */}
           <Card className="shadow-sm border-zinc-200 rounded-xl">
             {editingSection !== "membership" ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                   <div>
-                    <p className="text-lg">Membresía Actual</p>
+                    <p className="text-md font-semibold">Plan Actual</p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingSection("membership")}>
+                  <Button variant="ghost" size="sm" className="underline " onClick={() => setEditingSection("membership")}>
                     <Edit className="w-4 h-4 text-muted-foreground mr-1" /> Editar
                   </Button>
                 </CardHeader>
@@ -386,35 +439,15 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                             ? "Validar plan"
                             : "Inactivo"}
                         </span>
-                        <div className="inline-flex gap-1.5 text-xs text-zinc-400 bg-black/40 px-2 py-1 rounded-xl items-center">
-                          <Ticket size={14} className="text-zinc-500" />
-                          <span>
-                            {student.membership?.currentPeriodStart
-                              ? format(
-                                  new Date(student.membership?.currentPeriodStart),
-                                  "dd MMM",
-                                  { locale: es }
-                                )
-                              : "—"}{" "}
-                            -{" "}
-                            {student.membership?.currentPeriodEnd
-                              ? format(
-                                  new Date(student.membership?.currentPeriodEnd),
-                                  "dd MMM",
-                                  { locale: es }
-                                )
-                              : "—"}
-                          </span>
+                        <div className="inline-flex gap-1.5 text-xs text-zinc-600 bg-black/5 px-2 py-1 rounded-xl items-center">
+                          
+                        
                         </div>
                       </div>
                       <h2 className="  font-bold text-2xl">{student.membership?.membershipType || "Sin plan activo"}</h2>
-                      <p className=" /70 font-medium mt-1">
-                        {isUnlimited ? "Ilimitadas" : `${planClassLimit} clases`} • $
-                        {student.membership?.monthlyPrice ? student.membership.monthlyPrice.toLocaleString("es-CL") : "N/A"}
-                      </p>
                     </div>
 
-                    <div>
+                    <div className="p-4 rounded-xl bg-zinc-100">
                       <div className="flex justify-between items-center mb-2">
                          <span className="text-sm font-medium  ">Clases consumidas</span>
                          <p className="text-sm  ">
@@ -436,9 +469,33 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   <div className="grid grid-cols-2 gap-y-3 text-sm px-2">
+                    <div className="text-muted-foreground">Clases totales</div>
+                    <div className="font-medium text-right text-zinc-900">
+                       {isUnlimited ? "Ilimitadas" : `${planClassLimit} clases`}
+                      </div>
+                    <div className="text-muted-foreground">Precio plan</div>
+                    <div className="font-medium text-right text-zinc-900">
+                       $
+                        {student.membership?.monthlyPrice ? student.membership.monthlyPrice.toLocaleString("es-CL") : "N/A"}
+                      </div>
                     <div className="text-muted-foreground">Duración</div>
                     <div className="font-medium text-right text-zinc-900">
-                       {student.membership?.planId && plans.find(p => p.id === student.membership?.planId)?.durationInMonths ? `${plans.find(p => p.id === student.membership?.planId)?.durationInMonths} mes(es)` : "-"}
+                      
+                            {student.membership?.currentPeriodStart
+                              ? format(
+                                  new Date(student.membership?.currentPeriodStart),
+                                  "dd MMM",
+                                  { locale: es }
+                                )
+                              : "—"}{" "}
+                            -{" "}
+                            {student.membership?.currentPeriodEnd
+                              ? format(
+                                  new Date(student.membership?.currentPeriodEnd),
+                                  "dd MMM",
+                                  { locale: es }
+                                )
+                              : "—"}
                     </div>
                     
                     <div className="text-muted-foreground">Forma de pago</div>
@@ -455,8 +512,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       </Button>
                     )}
                     <Button 
-                      variant="outline" 
-                      className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl"
+                      variant="default" 
+                      className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl"
                       onClick={() => router.push(`/admin/alumnos/${student.id}/nuevo-plan`)}
                     >
                       <Ticket className="w-4 h-4 mr-2" /> Activar Nuevo Plan

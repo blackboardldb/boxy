@@ -53,8 +53,11 @@ export class PrismaUserRepository implements IUserRepository {
         email: data.email,
         phone: data.phone,
         role: data.role || "user",
+        gender: (data as any).gender ?? undefined,
+        dateOfBirth: (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
+        emergencyContact: (data as any).emergencyContact ?? undefined,
         membership: (data.membership as any) || undefined,
-      },
+      } as any,
     });
     return this.mapToEntity(created);
   }
@@ -68,8 +71,11 @@ export class PrismaUserRepository implements IUserRepository {
         email: data.email,
         phone: data.phone,
         role: data.role,
+        gender: (data as any).gender,
+        dateOfBirth: (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
+        emergencyContact: (data as any).emergencyContact,
         membership: (data.membership as any),
-      },
+      } as any,
     });
     return this.mapToEntity(updated);
   }
@@ -158,6 +164,11 @@ export class PrismaUserRepository implements IUserRepository {
       email: prismaUser.email,
       phone: prismaUser.phone,
       role: prismaUser.role,
+      gender: prismaUser.gender ?? undefined,
+      dateOfBirth: prismaUser.dateOfBirth
+        ? new Date(prismaUser.dateOfBirth).toISOString().split("T")[0]
+        : undefined,
+      emergencyContact: prismaUser.emergencyContact ?? undefined,
       membership: prismaUser.membership || undefined,
     } as FitCenterUserProfile;
   }
