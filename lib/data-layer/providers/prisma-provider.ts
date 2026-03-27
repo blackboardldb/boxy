@@ -9,6 +9,7 @@ import { PrismaDisciplineRepository } from "../repositories/discipline-repositor
 import { PrismaInstructorRepository } from "../repositories/instructor-repository";
 import { PrismaPlanRepository } from "../repositories/plan-repository";
 import { PrismaOrganizationRepository } from "../repositories/organization-repository";
+import { PrismaMembershipRenewalRepository } from "../repositories/membership-renewal-repository";
 import { InternalError } from "../../errors/types";
 
 // Prisma client type (will be imported when Prisma is set up)
@@ -22,6 +23,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
   public readonly instructors: PrismaInstructorRepository;
   public readonly plans: PrismaPlanRepository;
   public readonly organizations: PrismaOrganizationRepository;
+  public readonly membershipRenewals: PrismaMembershipRenewalRepository;
 
   private config: DataProviderFactoryConfig;
   private prismaClient: PrismaClient | null = null;
@@ -50,6 +52,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
     this.instructors = new PrismaInstructorRepository();
     this.plans = new PrismaPlanRepository();
     this.organizations = new PrismaOrganizationRepository();
+    this.membershipRenewals = new PrismaMembershipRenewalRepository();
 
     if (this.config.enableLogging) {
       console.log("[PrismaDataProvider] Initialized with config:", {
@@ -221,6 +224,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
     instructors: number;
     plans: number;
     organizations: number;
+    membershipRenewals: number;
     totalEntities: number;
     connectionInfo: {
       status: string;
@@ -236,6 +240,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
         instructorCount,
         planCount,
         organizationCount,
+        membershipRenewalCount,
       ] = await Promise.all([
         this.users.count(),
         this.classes.count(),
@@ -243,6 +248,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
         this.instructors.count(),
         this.plans.count(),
         this.organizations.count(),
+        this.membershipRenewals.count(),
       ]);
 
       const totalEntities =
@@ -251,7 +257,8 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
         disciplineCount +
         instructorCount +
         planCount +
-        organizationCount;
+        organizationCount +
+        membershipRenewalCount;
 
       return {
         users: userCount,
@@ -260,6 +267,7 @@ export class PrismaDataProvider implements DataProvider, TransactionProvider {
         instructors: instructorCount,
         plans: planCount,
         organizations: organizationCount,
+        membershipRenewals: membershipRenewalCount,
         totalEntities,
         connectionInfo: {
           status: this.initialized ? "connected" : "disconnected",

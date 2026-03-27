@@ -142,6 +142,12 @@ export interface OrganizationRepository
   findByType(type: string): Promise<import("../types").Organization[]>;
 }
 
+export interface MembershipRenewalRepository
+  extends Repository<import("../types").PendingRenewalRequest> {
+  findByUser(userId: string): Promise<import("../types").PendingRenewalRequest[]>;
+  findByStatus(status: string): Promise<import("../types").PendingRenewalRequest[]>;
+}
+
 // Main DataProvider interface that aggregates all repositories
 export interface DataProvider {
   users: UserRepository;
@@ -150,6 +156,7 @@ export interface DataProvider {
   instructors: InstructorRepository;
   plans: PlanRepository;
   organizations: OrganizationRepository;
+  membershipRenewals: MembershipRenewalRepository;
 }
 
 // Transaction support for providers that support it

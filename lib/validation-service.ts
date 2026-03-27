@@ -1,3 +1,4 @@
+import { prisma } from "./prisma";
 import {
   parseISO,
   addMinutes,
@@ -149,28 +150,32 @@ export class ValidationService {
       // Use provided sessions if available
       targetDayClasses = allClassSessions.filter((session) => {
         const sessionDate = session.dateTime.split("T")[0];
-        return (
-          sessionDate === targetDate &&
-          session.registeredParticipantsIds.includes(user.id)
-        );
+        return sessionDate === targetDate;
       });
     } else {
-      // Fetch target day's classes from data provider
+      // Fetch target day's registrations from DB
       try {
-        const provider = this.getProvider();
-        const targetDayClassesResult = await provider.classes.findByDateRange(
-          targetDate,
-          targetDate
-        );
-        targetDayClasses = targetDayClassesResult.filter((session) =>
-          session.registeredParticipantsIds.includes(user.id)
-        );
+        const registrations = await prisma.classRegistration.findMany({
+          where: {
+            userId: user.id,
+            status: 'registered',
+            class: {
+              dateTime: {
+                gte: new Date(`${targetDate}T00:00:00`),
+                lte: new Date(`${targetDate}T23:59:59`)
+              }
+            }
+          },
+          include: {
+            class: true
+          }
+        });
+        targetDayClasses = registrations.map(r => r.class) as any;
       } catch (error) {
         console.warn(
-          "[ValidationService] Could not fetch target day's classes for validation:",
+          "[ValidationService] Could not fetch target day's registrations for validation:",
           error
         );
-        // Continue without this validation if data fetch fails
       }
     }
 

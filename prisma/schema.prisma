@@ -23,6 +23,7 @@ model User {
   dateOfBirth        DateTime?
   emergencyContact   String?
   gender             String?
+  formaDePago        String?
   classRegistrations ClassRegistration[]
   membershipRenewals MembershipRenewal[]
 
@@ -156,6 +157,7 @@ model MembershipRenewal {
   currentPlanId   String?
   requestedPlanId String?
   status          String    @default("pending")
+  paymentMethod   String?
   requestedAt     DateTime  @default(now())
   processedAt     DateTime?
   notes           String?
@@ -169,46 +171,7 @@ model MembershipRenewal {
   @@schema("public")
 }
 
-model SystemLog {
-  id        String   @id @default(cuid())
-  level     String
-  message   String
-  context   Json?
-  timestamp DateTime @default(now())
-  operation String?
-  resource  String?
-  userId    String?
-  sessionId String?
 
-  @@index([level])
-  @@index([timestamp])
-  @@index([operation])
-  @@index([resource])
-  @@index([userId])
-  @@map("system_logs")
-  @@schema("public")
-}
-
-model PerformanceMetric {
-  id          String   @id @default(cuid())
-  operation   String
-  resource    String
-  provider    String
-  duration    Int
-  success     Boolean
-  recordCount Int?
-  cacheHit    Boolean?
-  timestamp   DateTime @default(now())
-  metadata    Json?
-
-  @@index([operation])
-  @@index([resource])
-  @@index([provider])
-  @@index([timestamp])
-  @@index([success])
-  @@map("performance_metrics")
-  @@schema("public")
-}
 
 model Expense {
   id        String   @id @default(cuid())

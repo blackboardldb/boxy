@@ -332,7 +332,7 @@ export interface DashboardStats {
 }
 
 export interface PendingRenewalRequest {
-  id?: string; // Unique identifier for the renewal request
+  id: string; // Unique identifier for the renewal request
   requestedPlanId: string;
   requestedPlanName?: string;
   requestedPlanPrice?: number;

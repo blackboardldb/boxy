@@ -491,13 +491,28 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     this.clearCache();
     this.clearCache(`user_email_${updatedRecord.email}`);
 
-    // Log significant changes
-    if (
-      previousRecord.membership?.status !== updatedRecord.membership?.status
-    ) {
-      console.log(
-        `[UserService] User membership status changed: ${updatedRecord.id} (${previousRecord.membership?.status} -> ${updatedRecord.membership?.status})`
-      );
+    // Detect plan change and create a renewal record
+    if (updatedRecord.membership?.planId !== previousRecord.membership?.planId) {
+      try {
+        await this.dataProvider.membershipRenewals.create({
+          id: `ren_${Date.now()}_${updatedRecord.id.substring(0, 8)}`,
+          requestedPlanId: updatedRecord.membership?.planId || "",
+          requestedPlanName: updatedRecord.membership?.membershipType,
+          requestedPlanPrice: updatedRecord.membership?.monthlyPrice,
+          requestedPlanClassLimit: updatedRecord.membership?.planConfig?.classLimit,
+          requestedPlanDuration: undefined, // Plan duration not directly in membership
+          requestedPaymentMethod: (updatedRecord.formaDePago as any) || "transferencia",
+          requestDate: new Date().toISOString(),
+          status: "approved", // Automatically approved for admin changes
+          requestedBy: updatedRecord.id,
+          processedDate: new Date().toISOString(),
+          notes: `Plan changed from ${previousRecord.membership?.membershipType || "none"} to ${updatedRecord.membership?.membershipType || "none"}`,
+          previousPlanId: previousRecord.membership?.planId,
+        });
+        console.log(`[UserService] MembershipRenewal created for user ${updatedRecord.id}`);
+      } catch (error) {
+        console.error(`[UserService] Failed to create MembershipRenewal:`, error);
+      }
     }
 
     await this.afterUserUpdate(updatedRecord, previousRecord);

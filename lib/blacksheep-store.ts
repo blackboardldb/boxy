@@ -86,6 +86,7 @@ interface BlackSheepStore {
     page?: number,
     limit?: number
   ) => Promise<any>;
+  fetchUserClasses: (userId: string) => Promise<ClassSession[]>;
 
   // Discipline actions
   addDiscipline: (discipline: Discipline) => void;
@@ -542,6 +543,27 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           console.error("Error fetching class sessions:", error);
           set({ classSessions: [] });
           return { classes: [], pagination: null };
+        }
+      },
+      fetchUserClasses: async (userId: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`/api/users/${userId}/classes`);
+          if (!response.ok) throw new Error("Failed to fetch user classes");
+          
+          const result = await response.json();
+          if (result.success) {
+            set({ classSessions: result.data || [] });
+            return result.data || [];
+          } else {
+            throw new Error(result.error?.message || "Error fetching user classes");
+          }
+        } catch (error) {
+          console.error("Error fetching user classes:", error);
+          set({ classSessions: [] });
+          return [];
+        } finally {
+          set({ isLoading: false });
         }
       },
 

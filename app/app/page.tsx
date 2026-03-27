@@ -14,18 +14,17 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { classSessions, instructors, fetchClassSessions, fetchInstructors } =
+  const { classSessions, instructors, fetchUserClasses, fetchInstructors } =
     useBlackSheepStore();
 
   // Cargar clases e instructores una sola vez
   useEffect(() => {
-    if (!classSessions || classSessions.length === 0) {
-      const todayStr = format(new Date(), "yyyy-MM-dd");
-      // Fetch classes from today onwards with a large limit
-      fetchClassSessions(todayStr, undefined, 1, 100);
+    if (currentUser && (!classSessions || classSessions.length === 0)) {
+      // Fetch only classes registered to this specific student
+      fetchUserClasses(currentUser.id);
     }
     if (!instructors || instructors.length === 0) fetchInstructors();
-  }, [classSessions, instructors, fetchClassSessions, fetchInstructors]);
+  }, [classSessions, instructors, fetchUserClasses, fetchInstructors, currentUser]);
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {

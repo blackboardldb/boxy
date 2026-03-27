@@ -66,7 +66,23 @@ export async function POST(
 
     // Use transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx: any) => {
-      // Update class session
+      // 1. Update/Delete registration record
+      // We'll marked it as cancelled or just delete it. 
+      // The user wants to keep history, but ClassRegistration has a 'cancelled' status option in schema.
+      await tx.classRegistration.update({
+        where: {
+          userId_classId: {
+            userId,
+            classId
+          }
+        },
+        data: {
+          status: 'cancelled',
+          cancelledAt: new Date()
+        }
+      });
+
+      // 2. Update class session array (keeping in sync for now)
       const updatedClassSession = await tx.classSession.update({
         where: { id: classId },
         data: {
@@ -80,7 +96,7 @@ export async function POST(
         },
       });
 
-      // Update user's remaining classes if applicable
+      // 3. Update user's remaining classes if applicable
       const memberData = user.membership as any;
       if (memberData?.planConfig?.classLimit > 0) {
         await tx.user.update({

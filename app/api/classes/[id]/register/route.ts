@@ -35,28 +35,44 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get all class sessions for validation (needed for daily limit check)
-    // Note: optimization needed here to not query ALL classes
-    const allClassSessions = await prisma.classSession.findMany({
-       where: { registeredParticipantsIds: { has: userId } }
+    // Get current registration status for this user in this class
+    const existingRegistration = await prisma.classRegistration.findUnique({
+      where: {
+        userId_classId: {
+          userId,
+          classId
+        }
+      }
     });
 
-    // Formatear fechas de Prisma (objetos Date) a strings (como las espera el validation service)
-    const classSessionWithStrDate = { 
-      ...classSession, 
-      dateTime: classSession.dateTime instanceof Date ? classSession.dateTime.toISOString() : classSession.dateTime 
-    };
-    
-    const allClassSessionsWithStrDate = allClassSessions.map((c: any) => ({
-      ...c,
-      dateTime: c.dateTime instanceof Date ? c.dateTime.toISOString() : c.dateTime
-    }));
+    if (existingRegistration && existingRegistration.status === 'registered') {
+      return NextResponse.json({ error: "Ya estás inscrito a esta clase" }, { status: 400 });
+    }
+
+    // Get all class registrations for the target day for daily limit check
+    const targetDate = classSession.dateTime.toISOString().split("T")[0];
+    const dayRegistrations = await prisma.classRegistration.findMany({
+      where: {
+        userId,
+        status: 'registered',
+        class: {
+          dateTime: {
+            gte: new Date(`${targetDate}T00:00:00`),
+            lte: new Date(`${targetDate}T23:59:59`)
+          }
+        }
+      },
+      include: {
+        class: true
+      }
+    });
 
     // Validate if user can register using the validation service
+    // For now, keep the interface but we should eventually update it
     const validation = await ValidationService.canUserRegisterToClass(
       user as any,
-      classSessionWithStrDate as any,
-      allClassSessionsWithStrDate as any
+      classSession as any,
+      dayRegistrations.map(r => r.class) as any
     );
 
     if (!validation.canRegister) {
@@ -65,18 +81,37 @@ export async function POST(
 
     // Use transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx: any) => {
-      // Update class session
+      // 1. Create registration record
+      const registration = await tx.classRegistration.upsert({
+        where: {
+          userId_classId: {
+            userId,
+            classId
+          }
+        },
+        update: {
+          status: 'registered',
+          registeredAt: new Date()
+        },
+        create: {
+          userId,
+          classId,
+          status: 'registered'
+        }
+      });
+
+      // 2. Update class session array (keeping in sync for now)
       const updatedClassSession = await tx.classSession.update({
         where: { id: classId },
         data: {
           registeredParticipantsIds: [
-            ...classSession.registeredParticipantsIds,
+            ...classSession.registeredParticipantsIds.filter(id => id !== userId),
             userId,
           ],
         },
       });
 
-      // Update user's remaining classes if applicable
+      // 3. Update user's remaining classes if applicable
       const memberData = user.membership as any;
       if (memberData?.planConfig?.classLimit > 0) {
         await tx.user.update({

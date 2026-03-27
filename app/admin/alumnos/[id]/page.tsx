@@ -21,7 +21,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { users, fetchUserById, classSessions, disciplines, fetchClassSessions, fetchDisciplines, plans, fetchPlans, updateUser } = useBlackSheepStore();
+  const { users, fetchUserById, classSessions, disciplines, fetchUserClasses, fetchDisciplines, plans, fetchPlans, updateUser } = useBlackSheepStore();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,17 +62,15 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       if (!useBlackSheepStore.getState().plans?.length) {
         await fetchPlans(1, 100);
       }
-      // Siempre forzar la carga de un volumen grande de clases (ej. 300) 
-      // para asegurar que las clases de este alumno se encuentren en memoria del store
-      // ya que sin parámetros solo carga las primeras 10 globales.
-      fetchClassSessions(undefined, undefined, 1, 300);
+      // Fetch only classes registered to this specific student
+      await fetchUserClasses(resolvedParams.id);
       if (!useBlackSheepStore.getState().disciplines?.length) {
         fetchDisciplines();
       }
       setIsLoading(false);
     };
     loadData();
-  }, [resolvedParams.id, fetchUserById, fetchPlans, fetchClassSessions, fetchDisciplines, users]);
+  }, [resolvedParams.id, fetchUserById, fetchPlans, fetchUserClasses, fetchDisciplines, users]);
 
   // Populate data when starting to edit
   useEffect(() => {
@@ -194,7 +192,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       const newEnrolledClasses = (classSessions || []).filter(s => {
         const sessionDate = new Date(s.dateTime);
         return (
-          s.registeredParticipantsIds.includes(student.id) &&
           s.status !== "cancelled" &&
           sessionDate >= newStart &&
           sessionDate <= newEnd
@@ -266,7 +263,6 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       .filter(s => {
         const sessionDate = new Date(s.dateTime);
         return (
-          s.registeredParticipantsIds.includes(resolvedParams.id) &&
           s.status !== "cancelled" &&
           sessionDate >= start &&
           sessionDate <= end

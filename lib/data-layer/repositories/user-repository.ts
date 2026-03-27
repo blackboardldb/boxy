@@ -56,6 +56,7 @@ export class PrismaUserRepository implements IUserRepository {
         gender: (data as any).gender ?? undefined,
         dateOfBirth: (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
         emergencyContact: (data as any).emergencyContact ?? undefined,
+        formaDePago: (data as any).formaDePago ?? undefined,
         membership: (data.membership as any) || undefined,
       } as any,
     });
@@ -74,6 +75,7 @@ export class PrismaUserRepository implements IUserRepository {
         gender: (data as any).gender,
         dateOfBirth: (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
         emergencyContact: (data as any).emergencyContact,
+        formaDePago: (data as any).formaDePago,
         membership: (data.membership as any),
       } as any,
     });
@@ -169,6 +171,7 @@ export class PrismaUserRepository implements IUserRepository {
         ? new Date(prismaUser.dateOfBirth).toISOString().split("T")[0]
         : undefined,
       emergencyContact: prismaUser.emergencyContact ?? undefined,
+      formaDePago: prismaUser.formaDePago ?? undefined,
       membership: prismaUser.membership || undefined,
     } as FitCenterUserProfile;
   }
