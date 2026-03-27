@@ -407,7 +407,7 @@ export default function CalendarPage() {
         />
       </div>
 
-      <div className="bg-black min-h-[calc(100vh-293px)]">
+      <div className="bg-black min-h-screen pb-28">
         {/* Plan Status Banner */}
         {planStatus !== "active" && (
           <div className="max-w-4xl mx-auto px-4 py-3 md:px-6">
@@ -434,10 +434,10 @@ export default function CalendarPage() {
             ) : (
               <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3 mb-4">
                 <p className="text-orange-200 text-sm font-medium mb-1">
-                  Plan ya no está vigente
+                  🟠 Plan ya no está vigente 
                 </p>
                 <p className="text-orange-300 text-xs">
-                  Renueva tu plan para poder inscribirte en clases.
+                  Renueva tu plan para poder agendar clases.
                 </p>
               </div>
             )}

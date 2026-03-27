@@ -57,10 +57,10 @@ const classLimit = userProfile.membership?.planConfig?.classLimit ?? currentMont
 const isUnlimited = classLimit === 0;
 
   return (
-    <main className="p-4 max-w-4xl mx-auto pb-6">
+    <main className="p-4 max-w-4xl mx-auto pb-28">
       <InAppAlerts />
       <div className="text-left mb-6">
-        <span className="uppercase text-lime-400 text-xs">
+        <span className="uppercase text-lime-400 text-sm font-bold">
           Hola, {userProfile.firstName}
         </span>
         <p className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-sm mb-6 sm:mb-12">

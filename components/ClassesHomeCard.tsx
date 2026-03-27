@@ -49,8 +49,8 @@ export function ClassesHomeCard({
       {/* Clases de Hoy */}
     
           <div className="flex items-center gap-2 text-lg font-semibold text-white">
-            <Clock3 className="h-5 w-5" />
-            Clases de Hoy
+       
+         Hoy
 </div>
         <div>
           {todayClasses.length === 0 ? (
@@ -94,8 +94,8 @@ export function ClassesHomeCard({
 
 
       {/* Próximas Clases */}
-               <div className="flex items-center gap-2 text-lg font-semibold text-white mt-6">
-            <Clock3 className="h-5 w-5" />
+               <div className="flex items-center gap-2 text-base font-semibold text-white mt-6">
+           
             Próximas Clases
 </div>
           {upcomingClasses.length === 0 ? (

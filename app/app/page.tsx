@@ -121,7 +121,7 @@ const progressPercentage =
 
   return (
     <main className="min-h-screen bg-black">
-      <div className="p-4 max-w-4xl mx-auto text-white">
+      <div className="p-4 pt-10 max-w-4xl mx-auto text-white">
         <Logo />
       </div>
       <HomePage

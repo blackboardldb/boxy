@@ -169,7 +169,7 @@ export function UserProfile() {
     userData.membership?.centerStats?.lifetimeStats?.totalClasses ?? 0;
 
   return (
-    <div className="min-h-screen">
+    <div>
       <div className="py-6 space-y-6 mx-auto">
         {/* Foto de perfil y cabecera */}
         <div className="overflow-hidden">
