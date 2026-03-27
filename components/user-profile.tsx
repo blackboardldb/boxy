@@ -173,12 +173,8 @@ export function UserProfile() {
         <div className="overflow-hidden">
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
-              <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                <AvatarImage
-                  src={`/avatars/${(userData as any).avatarId || "default"}.png`}
-                  alt={`${userData.firstName} ${userData.lastName}`}
-                />
-                <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <Avatar className="w-24 h-24 border-4 border-white/10 shadow-lg">
+                <AvatarFallback className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-yellow-200">
                   {userData.firstName?.[0] ?? "?"}
                   {userData.lastName?.[0] ?? "?"}
                 </AvatarFallback>
@@ -195,12 +191,8 @@ export function UserProfile() {
                 </p>
               )}
             </div>
-
-           
-            
           </div>
         </div>
-
         {/* Plan */}
         {userData.membership && (
           <div className="bg-white/5 rounded-lg p-4">
