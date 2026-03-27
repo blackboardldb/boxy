@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit3, BarChart3, ChevronRight } from "lucide-react";
-import { StatsDrawer } from "./stats-drawer";
+import { Edit3, ChevronRight } from "lucide-react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import type { FitCenterUserProfile } from "@/lib/types";
@@ -38,7 +37,6 @@ export function UserProfile() {
   const [editableDateOfBirth, setEditableDateOfBirth] = useState("");
   const [editableEmergencyContact, setEditableEmergencyContact] = useState("");
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [isStatsDrawerOpen, setIsStatsDrawerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Sincronizar cuando llegan los datos del usuario real
@@ -198,64 +196,22 @@ export function UserProfile() {
               )}
             </div>
 
-            {/* Quick Stats
-            
-            <div className="grid grid-cols-3 gap-4 w-full mt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {userData.membership?.centerStats?.lifetimeStats?.totalClasses ?? 0}
-                </div>
-                <div className="text-xs text-zinc-400">Clases</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {userData.membership?.centerStats?.currentMonth?.classesAttended ?? 0}
-                </div>
-                <div className="text-xs text-zinc-400">Este mes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  {estimatedTotalHours}h
-                </div>
-                <div className="text-xs text-zinc-400">Horas</div>
-              </div>
-            </div>
-            
-            */}
+           
             
           </div>
-        </div>
-
-        {/* Estadísticas - Drawer */}
-        <div
-          className="p-4 bg-zinc-800 cursor-pointer transition-colors flex items-center justify-between rounded-lg"
-          onClick={() => setIsStatsDrawerOpen(true)}
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <div className="font-medium text-white">Mis Estadísticas</div>
-              <div className="text-sm text-zinc-400">Ver estadísticas detalladas</div>
-            </div>
-          </div>
-          <ChevronRight className="h-5 w-5 text-white" />
         </div>
 
         {/* Plan */}
         {userData.membership && (
           <div className="bg-white/5 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white mb-3">Mi Plan</h3>
-            <div className="space-y-2 text-sm">
+            <h3 className="text-lg font-semibold text-white">Mi Plan</h3>
+            <div className="space-y-2 text-sm mt-4">
               <div className="flex justify-between items-center">
                 <span className="text-zinc-400">Plan:</span>
-                <span className="font-medium text-white">
+                <div className="flex gap-2">
+                  <span className="text-white">
                   {userData.membership.membershipType}
                 </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400">Estado:</span>
                 <span
                   className="font-semibold"
                   style={{
@@ -264,7 +220,9 @@ export function UserProfile() {
                 >
                   {MEMBERSHIP_STATUS_LABELS[userData.membership.status] || "N/A"}
                 </span>
+                </div>
               </div>
+             
               {userData.membership.currentPeriodStart && userData.membership.currentPeriodEnd && (
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
@@ -500,12 +458,6 @@ export function UserProfile() {
           )}
         </div>
       </div>
-
-      <StatsDrawer
-        isOpen={isStatsDrawerOpen}
-        onClose={() => setIsStatsDrawerOpen(false)}
-        userData={userData}
-      />
     </div>
   );
 }

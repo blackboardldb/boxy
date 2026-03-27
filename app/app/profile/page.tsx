@@ -27,8 +27,8 @@ export default function ProfilePage() {
       <section className="p-4 mx-auto space-y-6 max-w-4xl pb-28">
         <UserProfile />
         <Button
-          variant="outline"
-          className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+         
+          className="w-full bg-red-600/70 text-white hover:bg-red-600/80 rounded-xl"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >
