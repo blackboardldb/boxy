@@ -6,6 +6,7 @@ import { ClassesHomeCard } from "@/components/ClassesHomeCard";
 import { Button } from "@/components/ui/button";
 
 import { Calendar, Ticket, AlertCircle, Clock } from "lucide-react";
+import { InAppAlerts } from "@/components/InAppAlerts";
 import Link from "next/link";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { getPlanStatus } from "@/lib/utils";
@@ -44,7 +45,6 @@ const HomePage: React.FC<HomePageProps> = ({
   membershipType,
   monthlyPrice,
   currentMonthStats,
-  progressPercentage,
   formattedPeriodStart,
   formattedPeriodEnd,
   registeredClasses,
@@ -58,6 +58,7 @@ const isUnlimited = classLimit === 0;
 
   return (
     <main className="p-4 max-w-4xl mx-auto pb-6">
+      <InAppAlerts />
       <div className="text-left mb-6">
         <span className="uppercase text-lime-400 text-xs">
           Hola, {userProfile.firstName}

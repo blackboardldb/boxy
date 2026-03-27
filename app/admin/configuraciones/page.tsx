@@ -9,6 +9,7 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { AlertsManager } from "@/components/admincomponents/alerts-manager";
 
 export default function ConfiguracionesPage() {
   const { initialOrganization, updateOrganization, fetchOrganization } = useBlackSheepStore();
@@ -230,6 +231,8 @@ export default function ConfiguracionesPage() {
             )}
           </CardContent>
         </Card>
+
+        <AlertsManager />
 
         {/* Canales de Comunicación Card */}
         <Card className="rounded-xl border shadow-md border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 overflow-hidden">
