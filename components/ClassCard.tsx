@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import { parseISO, isToday } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
 import { Clock, User, Users } from "lucide-react";
 
@@ -162,14 +161,19 @@ export function ClassCard({
       {/* Botones de acción - Ocultos si no hay acción posible (en lugar de deshabilitados) */}
       {isActionable && (
         <div className="mt-3 flex gap-2">
-          <Button
-            variant={isRegistered ? "destructive" : "default"}
-            size="sm"
+          <button
             onClick={handleAction}
-            className="flex-1 p-6 rounded-lg bg-lime-500 text-black text-base font-bold hover:bg-lime-600 hover:text-black transition-colors duration-200"
+            className={`
+              flex-1 p-2.5 rounded-lg text-base font-bold transition-colors duration-200
+              ${
+                isRegistered
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "bg-lime-400 text-black hover:bg-lime-500"
+              }
+            `}
           >
             {isRegistered ? "Cancelar clase" : "Inscribir clase"}
-          </Button>
+          </button>
         </div>
       )}
 

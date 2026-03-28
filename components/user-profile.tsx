@@ -233,14 +233,9 @@ export function UserProfile() {
         {/* Plan */}
         {userData.membership && (
           <div className="bg-white/5 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white">Mi Plan</h3>
-            <div className="space-y-2 text-sm mt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400">Plan:</span>
-                <div className="flex gap-2">
-                  <span className="text-white">
-                  {userData.membership.membershipType}
-                </span>
+            <h3 className="text-lg font-semibold text-white">
+                  {userData.membership.membershipType} {" "}
+              
                 <span
                   className="font-semibold"
                   style={{
@@ -248,10 +243,10 @@ export function UserProfile() {
                   }}
                 >
                   {MEMBERSHIP_STATUS_LABELS[userData.membership.status] || "N/A"}
-                </span>
-                </div>
-              </div>
-             
+             </span>
+            </h3>
+            <div className="space-y-2 text-sm mt-4">
+  
               {userData.membership.currentPeriodStart && userData.membership.currentPeriodEnd && (
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
@@ -264,7 +259,7 @@ export function UserProfile() {
               )}
               {userData.membership.planConfig && (
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Clases del plan:</span>
+                  <span className="text-zinc-400">Clases incluidas:</span>
                   <span className="text-white">
                     {userData.membership.planConfig.classLimit === 0
                       ? "Ilimitadas"

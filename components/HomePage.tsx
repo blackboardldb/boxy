@@ -38,6 +38,7 @@ interface HomePageProps {
   formattedPeriodStart: string;
   formattedPeriodEnd: string;
   registeredClasses: FormattedClassItem[];
+  isLoadingStats?: boolean;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -48,13 +49,14 @@ const HomePage: React.FC<HomePageProps> = ({
   formattedPeriodStart,
   formattedPeriodEnd,
   registeredClasses,
+  isLoadingStats = false,
 }) => {
   // Determinar el estado real del plan
   const planStatus = getPlanStatus(userProfile);
 
   // Derivar el límite real desde planConfig (respeta el override)
-const classLimit = userProfile.membership?.planConfig?.classLimit ?? currentMonthStats.classesContracted;
-const isUnlimited = classLimit === 0;
+  const classLimit = userProfile.membership?.planConfig?.classLimit ?? currentMonthStats.classesContracted;
+  const isUnlimited = classLimit === 0;
 
   return (
     <main className="p-4 max-w-4xl mx-auto pb-28">
@@ -79,24 +81,24 @@ const isUnlimited = classLimit === 0;
 
         {planStatus === "active" && (
           <div>
-           {!isUnlimited && (
-             <div className="w-full bg-zinc-700/50 rounded-full h-2 mt-3 overflow-hidden">
-               <div 
-                 className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
-                 style={{ width: `${Math.min(100, (currentMonthStats.classesAttended / classLimit) * 100)}%` }}
-               />
-             </div>
-           )}
+            {!isUnlimited && (
+              <div className="w-full bg-zinc-700/50 rounded-full h-2 mt-3 overflow-hidden">
+                <div 
+                  className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${Math.min(100, (currentMonthStats.classesAttended / classLimit) * 100)}%` }}
+                />
+              </div>
+            )}
             <div className="flex justify-between items-center mt-2">
               <span className="text-base font-medium text-white ">
                 Clases consumidas
               </span>
-             <p className="text-base text-white">
-  <span className="text-lime-500 font-semibold">
-    {currentMonthStats.classesAttended}
-  </span>{" "}
-  {isUnlimited ? "realizadas" : `/ ${classLimit}`}
-</p>
+              <p className="text-base text-white">
+                <span className={`text-lime-500 font-semibold px-1 rounded ${isLoadingStats ? 'animate-pulse bg-lime-500/20' : ''}`}>
+                  {isLoadingStats ? "—" : currentMonthStats.classesAttended}
+                </span>{" "}
+                {isUnlimited ? "realizadas" : `/ ${classLimit}`}
+              </p>
             </div>
           </div>
         )}

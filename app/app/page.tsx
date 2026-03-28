@@ -14,7 +14,7 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { classSessions, instructors, fetchUserClasses, fetchInstructors } =
+  const { classSessions, instructors, fetchUserClasses, fetchInstructors, isLoading: statsLoading } =
     useBlackSheepStore();
 
   // Cargar clases e instructores una sola vez al montar si no hay datos
@@ -152,6 +152,7 @@ const progressPercentage =
         formattedPeriodStart={formattedPeriodStart}
         formattedPeriodEnd={formattedPeriodEnd}
         registeredClasses={registeredClasses}
+        isLoadingStats={statsLoading}
       />
 
     </main>
