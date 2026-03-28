@@ -2,7 +2,7 @@
   "name": "BlackSheep CrossFit",
   "short_name": "BlackSheep",
   "description": "Sistema de gestión para BlackSheep CrossFit - Reserva clases, gestiona membresías y más",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
