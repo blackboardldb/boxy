@@ -2,6 +2,7 @@ import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+
 export default function Page() {
   return (
     <main className="min-h-screen bg-black flex items-center justify-center">
