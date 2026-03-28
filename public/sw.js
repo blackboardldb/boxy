@@ -10,8 +10,8 @@ const DYNAMIC_CACHE = "blacksheep-dynamic-v1.0.0";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
+  "/BS-icons/BS-icon-192x192.png",
+  "/BS-icons/BS-icon-512x512.png",
   "/app/globals.css",
 ];
 
@@ -278,8 +278,8 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: event.data ? event.data.text() : "Nueva notificación de BlackSheep",
-    icon: "/icons/icon-192x192.png",
-    badge: "/icons/icon-192x192.png",
+    icon: "/icons/BS-icon-192x192.png",
+    badge: "/icons/BS-icon-192x192.png",
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -289,12 +289,12 @@ self.addEventListener("push", (event) => {
       {
         action: "explore",
         title: "Ver más",
-        icon: "/icons/icon-192x192.png",
+        icon: "/icons/BS-icon-192x192.png",
       },
       {
         action: "close",
         title: "Cerrar",
-        icon: "/icons/icon-192x192.png",
+        icon: "/icons/BS-icon-192x192.png",
       },
     ],
   };

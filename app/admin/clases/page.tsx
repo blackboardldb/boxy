@@ -7,7 +7,6 @@ import AdminClassDetailDrawer from "@/components/admincomponents/admin-class-det
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { startOfDay, format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ClassSession, ClassListItem, Discipline } from "@/lib/types";
 import { toDateString, toTimeString, createLocalDate, formatDateChile, formatTimeChile } from "@/lib/utils";
@@ -18,6 +17,8 @@ import {
   getDay,
   getYear,
   getMonth,
+  startOfWeek,
+  endOfWeek,
 } from "date-fns";
 import type { DayOfWeek } from "@/lib/types";
 
@@ -46,7 +47,7 @@ export default function AdminClasesPage() {
     fetchInstructors,
   } = useBlackSheepStore();
 
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Deprecated and causing infinite loops
 
   // Estado de paginación
   const [page, setPage] = useState(1);
@@ -100,13 +101,25 @@ export default function AdminClasesPage() {
   );
 
 
-  // Función para cargar clases con filtrado por fecha
-  const loadClassesForDate = useCallback(async (dateToLoad: Date) => {
+  // Función para cargar un rango semanal (mejor UX y evita bucles)
+  const currentWeekStartStr = useMemo(
+    () => format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    [selectedDate]
+  );
+
+  const loadClassesForWeek = useCallback(async (dateInWeek: Date) => {
     setIsLoading(true);
     try {
-      const formattedDate = format(dateToLoad, "yyyy-MM-dd");
-      // Pedimos a la API exactamente las clases de ESE día
-      await fetchClassSessions(formattedDate, formattedDate, 1, 100);
+      const start = startOfWeek(dateInWeek, { weekStartsOn: 1 });
+      const end = endOfWeek(dateInWeek, { weekStartsOn: 1 });
+      const startStr = format(start, "yyyy-MM-dd");
+      const endStr = format(end, "yyyy-MM-dd");
+
+      console.log(`[AdminClases] Loading week range: ${startStr} to ${endStr}`);
+      
+      // Pedimos a la API las clases de toda la semana
+      await fetchClassSessions(startStr, endStr, 1, 150);
+      
       await Promise.all([
         fetchUsers(1, 1000), // Traer todos los alumnos (hasta 1000) para uso local en Modals
         disciplines?.length === 0 || !disciplines ? fetchDisciplines() : Promise.resolve(),
@@ -114,11 +127,7 @@ export default function AdminClasesPage() {
       ]);
     } catch (error) {
       console.error("Error loading classes:", error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las clases",
-        variant: "destructive",
-      });
+      // Reemplazado toast por console.error ya que está deprecado
     } finally {
       setIsLoading(false);
     }
@@ -129,13 +138,12 @@ export default function AdminClasesPage() {
     fetchInstructors,
     disciplines?.length,
     instructors?.length,
-    toast,
   ]);
 
-  // Cargar clases al montar y cuando cambie la fecha
+  // Cargar clases al montar y cuando cambie la semana física
   useEffect(() => {
-    loadClassesForDate(selectedDate);
-  }, [selectedDate, loadClassesForDate]);
+    loadClassesForWeek(selectedDate);
+  }, [currentWeekStartStr, loadClassesForWeek]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
@@ -187,18 +195,10 @@ export default function AdminClasesPage() {
       if (!response.ok) {
         throw new Error("Error al cancelar la clase");
       }
-
-      toast({
-        title: "Clase cancelada",
-        description: "La clase ha sido cancelada exitosamente",
-      });
+      // Opcional: Recargar datos o mostrar feedback en consola/UI
+      console.log("Clase cancelada exitosamente");
     } catch (error) {
       console.error("Error canceling class:", error);
-      toast({
-        title: "Error",
-        description: "Error al cancelar la clase",
-        variant: "destructive",
-      });
     }
   };
 

@@ -10,15 +10,15 @@
   "scope": "/",
   "lang": "es",
   "categories": ["fitness", "health", "lifestyle"],
-  "icons": [
+  "BS-icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/BS-icons/BS-icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/BS-icons/BS-icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
@@ -30,9 +30,9 @@
       "short_name": "Calendario",
       "description": "Ver y reservar clases",
       "url": "/app/calendar",
-      "icons": [
+      "BS-icons": [
         {
-          "src": "/icons/icon-192x192.png",
+          "src": "/BS-icons/BS-icon-192x192.png",
           "sizes": "192x192"
         }
       ]
@@ -42,9 +42,9 @@
       "short_name": "Perfil",
       "description": "Ver mi perfil y estadísticas",
       "url": "/app/profile",
-      "icons": [
+      "BS-icons": [
         {
-          "src": "/icons/icon-192x192.png",
+          "src": "/BS-icons/BS-icon-192x192.png",
           "sizes": "192x192"
         }
       ]
@@ -54,9 +54,9 @@
       "short_name": "Admin",
       "description": "Panel de administración",
       "url": "/admin",
-      "icons": [
+      "BS-icons": [
         {
-          "src": "/icons/icon-192x192.png",
+          "src": "/BS-icons/BS-icon-192x192.png",
           "sizes": "192x192"
         }
       ]
