@@ -19,6 +19,19 @@ export class PrismaClassRepository implements IClassRepository {
         orderBy: params?.orderBy || { dateTime: 'asc' },
         take: limit,
         skip,
+        select: {
+          id: true,
+          name: true,
+          dateTime: true,
+          durationMinutes: true,
+          instructorId: true,
+          disciplineId: true,
+          capacity: true,
+          status: true,
+          _count: {
+            select: { registrations: true }
+          }
+        }
       }),
       this.prisma.classSession.count({ where: params?.where })
     ]);
@@ -26,7 +39,10 @@ export class PrismaClassRepository implements IClassRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: classes.map((c: any) => this.mapToEntity(c)),
+      items: classes.map((c: any) => ({
+        ...this.mapToEntity(c),
+        enrolledCount: c._count?.registrations ?? 0
+      })),
       pagination: {
         page,
         limit,
@@ -157,18 +173,18 @@ export class PrismaClassRepository implements IClassRepository {
   private mapToEntity(prismaClass: any): ClassSession {
     return {
       id: prismaClass.id,
-      organizationId: prismaClass.organizationId,
-      disciplineId: prismaClass.disciplineId,
-      name: prismaClass.name,
-      dateTime: prismaClass.dateTime.toISOString(),
-      durationMinutes: prismaClass.durationMinutes,
-      instructorId: prismaClass.instructorId,
-      capacity: prismaClass.capacity,
+      organizationId: prismaClass.organizationId || "",
+      disciplineId: prismaClass.disciplineId || "",
+      name: prismaClass.name || "",
+      dateTime: prismaClass.dateTime?.toISOString() || new Date().toISOString(),
+      durationMinutes: prismaClass.durationMinutes || 60,
+      instructorId: prismaClass.instructorId || "",
+      capacity: prismaClass.capacity || 15,
       registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
       waitlistParticipantsIds: prismaClass.waitlistParticipantsIds || [],
-      status: prismaClass.status as any,
+      status: (prismaClass.status as any) || "scheduled",
       notes: prismaClass.notes || undefined,
-      isGenerated: prismaClass.isGenerated,
+      isGenerated: !!prismaClass.isGenerated,
     };
   }
 }

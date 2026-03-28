@@ -68,10 +68,10 @@ export default function Page() {
           name: session.name,
           instructor: instructorName,
           duration: "60 min",
-          alumnRegistred: `${session.registeredParticipantsIds.length}/${
+          alumnRegistred: `${session.enrolledCount ?? session.registeredParticipantsIds.length}/${
             session.capacity || 15
           }`,
-          isRegistered: session.registeredParticipantsIds.includes(
+          isRegistered: session.isUserRegistered ?? session.registeredParticipantsIds.includes(
             currentUser.id
           ),
           formattedDayLabel: formatWeekday(session.dateTime),

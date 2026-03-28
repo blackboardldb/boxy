@@ -18,6 +18,11 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         orderBy: params?.orderBy,
         take: limit,
         skip,
+        select: {
+          id: true,
+          name: true,
+          settings: true,
+        }
       }),
       this.prisma.organization.count({ where: params?.where })
     ]);
@@ -40,6 +45,11 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   async findUnique(params: FindUniqueParams): Promise<Organization | null> {
     const organization = await this.prisma.organization.findUnique({
       where: params.where as any,
+      select: {
+        id: true,
+        name: true,
+        settings: true,
+      }
     });
     return organization ? this.mapToEntity(organization) : null;
   }
@@ -95,9 +105,13 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   }
 
   async findByType(type: string): Promise<Organization[]> {
-    const organizations = await this.prisma.organization.findMany();
-    // Since type is in JSON settings, we filter in-memory for now 
-    // or use JSON query if needed. In-memory is safer for small number of orgs.
+    const organizations = await this.prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        settings: true,
+      }
+    });
     return organizations
       .map((o: any) => this.mapToEntity(o))
       .filter(o => o.type === type);
@@ -106,13 +120,25 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   // Mapper
   private mapToEntity(prismaOrg: any): Organization {
     const settings = (prismaOrg.settings as any) || {};
+
+    // Smart pick to avoid redundant nested data while keeping operational configs
+    const filteredSettings = {
+      timezone: settings.timezone || "America/Santiago",
+      language: settings.language || "es",
+      currency: settings.currency || "CLP",
+      operatingHours: settings.operatingHours || [],
+      defaultCancellationHours: settings.defaultCancellationHours || 6,
+      maxBookingsPerDay: settings.maxBookingsPerDay || 3,
+      waitlistEnabled: settings.waitlistEnabled !== undefined ? settings.waitlistEnabled : true,
+    };
+
     return {
       id: prismaOrg.id,
       name: prismaOrg.name,
       description: settings.description || "",
       type: settings.type || "gym",
       branding: settings.branding || { primaryColor: "#3b82f6", secondaryColor: "#10b981" },
-      settings: settings,
-    } as Organization;
+      settings: filteredSettings as any,
+    };
   }
 }

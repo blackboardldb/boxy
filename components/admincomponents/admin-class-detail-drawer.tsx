@@ -51,6 +51,35 @@ export default function AdminClassDetailDrawer({
 
   // Estado local para la clase actualizada
   const [currentClassItem, setCurrentClassItem] = useState(classItem);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+
+  // Cargar participantes bajo demanda al abrir el drawer
+  useEffect(() => {
+    async function fetchParticipants() {
+      if (!isOpen || !classItem?.id) return;
+      
+      setIsLoadingParticipants(true);
+      try {
+        const response = await fetch(`/api/classes/${classItem.id}/participants`);
+        const result = await response.json();
+        if (result.success) {
+          setParticipants(result.data);
+          // Actualizar los IDs locales para que la lógica de búsqueda funcione
+          setCurrentClassItem(prev => prev ? ({
+            ...prev,
+            registeredParticipantsIds: result.data.map((p: any) => p.userId)
+          }) : null);
+        }
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+      } finally {
+        setIsLoadingParticipants(false);
+      }
+    }
+
+    fetchParticipants();
+  }, [isOpen, classItem?.id]);
 
   // Optimizar búsqueda con useMemo para evitar re-cálculos innecesarios
   const availableUsers = useMemo(() => {
@@ -87,7 +116,8 @@ export default function AdminClassDetailDrawer({
     setNotesSaved(false);
     setIsAddingStudent(false); // Reset del estado de agregar estudiante
     setCurrentClassItem(classItem); // Sincronizar con la prop
-  }, [classItem]);
+    if (!isOpen) setParticipants([]); // Limpiar al cerrar
+  }, [classItem, isOpen]);
 
   if (!currentClassItem) return null;
 
@@ -110,10 +140,7 @@ export default function AdminClassDetailDrawer({
     }
   );
 
-  const enrolledStudents =
-    users?.filter((user: FitCenterUserProfile) =>
-      currentClassItem.registeredParticipantsIds?.includes(user.id)
-    ) || [];
+  const enrolledStudents = participants;
 
   const waitlistStudents =
     users?.filter((user: FitCenterUserProfile) =>
@@ -178,14 +205,18 @@ export default function AdminClassDetailDrawer({
             ...(currentClassItem.registeredParticipantsIds || []),
             userId,
           ],
-          enrolled: (currentClassItem.enrolled || 0) + 1,
-          alumnRegistred: `${(currentClassItem.enrolled || 0) + 1}/${
+          enrolledCount: (currentClassItem.enrolledCount || 0) + 1,
+          alumnRegistred: `${(currentClassItem.enrolledCount || 0) + 1}/${
             currentClassItem.capacity || 15
           }`,
         };
 
         // Actualizar el estado local
         setCurrentClassItem(updatedClassItem);
+        // Recargar participantes para asegurar consistencia
+        const pResponse = await fetch(`/api/classes/${classId}/participants`);
+        const pResult = await pResponse.json();
+        if (pResult.success) setParticipants(pResult.data);
 
         // Limpiar el término de búsqueda para mostrar el cambio
         setSearchTerm("");
@@ -241,15 +272,19 @@ export default function AdminClassDetailDrawer({
         const updatedClassItem = {
           ...currentClassItem,
           registeredParticipantsIds: updatedRegisteredIds,
-          enrolled: Math.max(0, (currentClassItem.enrolled || 0) - 1),
+          enrolledCount: Math.max(0, (currentClassItem.enrolledCount || 0) - 1),
           alumnRegistred: `${Math.max(
             0,
-            (currentClassItem.enrolled || 0) - 1
+            (currentClassItem.enrolledCount || 0) - 1
           )}/${currentClassItem.capacity || 15}`,
         };
 
         // Actualizar el estado local
         setCurrentClassItem(updatedClassItem);
+        // Recargar participantes para asegurar consistencia
+        const pResponse = await fetch(`/api/classes/${currentClassItem.id}/participants`);
+        const pResult = await pResponse.json();
+        if (pResult.success) setParticipants(pResult.data);
 
         // Mostrar toast de éxito
         const removedUser = users?.find((u) => u.id === userId);
@@ -293,7 +328,7 @@ export default function AdminClassDetailDrawer({
               <span>•</span>
               <Users className="w-4 h-4" />
               <span>
-                {enrolledStudents.length}/{currentClassItem.capacity || "∞"}{" "}
+                {currentClassItem.enrolledCount ?? enrolledStudents.length}/{currentClassItem.capacity || "∞"}{" "}
                 inscritos
               </span>
             </div>
@@ -308,7 +343,7 @@ export default function AdminClassDetailDrawer({
               >
                 <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1">
                   <TabsTrigger value="inscritos" className="rounded-xl">
-                    Inscritos ({enrolledStudents.length})
+                    Inscritos ({currentClassItem.enrolledCount ?? enrolledStudents.length})
                   </TabsTrigger>
                   <TabsTrigger value="agregar" className="rounded-xl">Agregar Alumnos</TabsTrigger>
                   <TabsTrigger value="notes" className="rounded-xl">Notas</TabsTrigger>
@@ -316,11 +351,18 @@ export default function AdminClassDetailDrawer({
 
                 {/* Tab: Inscritos */}
                 <TabsContent value="inscritos" className="space-y-4">
-                  {enrolledStudents.length > 0 ? (
+                  {isLoadingParticipants ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                      <p className="text-sm text-muted-foreground animate-pulse">
+                        Cargando participantes...
+                      </p>
+                    </div>
+                  ) : enrolledStudents.length > 0 ? (
                     <div className="space-y-2">
                       {enrolledStudents.map((student) => (
                         <div
-                          key={student.id}
+                          key={student.userId}
                           className="flex items-center justify-between p-3 border rounded-xl"
                         >
                           <div className="flex-1">
@@ -333,12 +375,12 @@ export default function AdminClassDetailDrawer({
                           </div>
                           <div className="flex items-center gap-2">
                              <Badge variant="outline" className="rounded-xl">
-                               {student.membership?.status || "Sin estado"}
+                               {student.membershipType || "Sin estado"}
                              </Badge>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleRemoveStudent(student.id)}
+                              onClick={() => handleRemoveStudent(student.userId)}
                               disabled={isAddingStudent}
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
                             >

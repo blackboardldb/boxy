@@ -16,7 +16,24 @@ export async function GET() {
     // 1. Buscar en public.users (donde están alumnos/clientes)
     let dbUser: any = await prisma.user.findFirst({
       where: { email: { equals: user.email!, mode: "insensitive" } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        dateOfBirth: true,
+        gender: true,
+        role: true,
+        membership: true,
+      }
     });
+
+    // Limpiar campos pesados de la membresía para el fetch inicial (como el historial)
+    if (dbUser && dbUser.membership) {
+      const { history, ...membershipData } = dbUser.membership as any;
+      dbUser.membership = membershipData;
+    }
 
     // 2. Si no es un usuario/alumno, buscar en public.instructors (coaches/admin si están ahí)
     if (!dbUser) {

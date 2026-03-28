@@ -246,6 +246,8 @@ export interface ClassSession {
   status: ClassStatus; // "scheduled" | "cancelled" | "completed" | "in_progress"
   notes?: string; // Notas para la clase (ej. WOD)
   isGenerated?: boolean; // Flag para identificar clases generadas dinámicamente
+  enrolledCount?: number; // Optimización: Conteo de participantes registrados
+  isUserRegistered?: boolean; // Optimización: Flag booleano para el usuario actual
 }
 
 // Interface para el Instructor (nueva entidad para una gestión más robusta)
@@ -395,6 +397,8 @@ export interface ClassListItem {
   registeredParticipantsIds: string[];
   waitlistParticipantsIds?: string[];
   notes?: string;
+  enrolledCount?: number;
+  isUserRegistered?: boolean;
 }
 
 

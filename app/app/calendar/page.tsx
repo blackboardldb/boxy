@@ -104,7 +104,7 @@ export default function CalendarPage() {
         ? `${instructor.firstName} ${instructor.lastName}`
         : "Por asignar";
 
-      const isRegistered = session.registeredParticipantsIds.includes(
+      const isRegistered = session.isUserRegistered ?? session.registeredParticipantsIds.includes(
         currentUser.id
       );
 
@@ -131,7 +131,7 @@ export default function CalendarPage() {
         name: discipline?.name || session.name,
         instructor: instructorName,
         duration: "60 min",
-        alumnRegistred: `${session.registeredParticipantsIds.length}/${
+        alumnRegistred: `${session.enrolledCount ?? session.registeredParticipantsIds.length}/${
           session.capacity || 15
         }`,
         isRegistered,

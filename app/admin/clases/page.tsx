@@ -71,7 +71,7 @@ export default function AdminClasesPage() {
       );
       // Los instructorId referencian la entidad Instructor, NO la de usuarios/alumnos
       const instructor = instructors?.find((i) => i.id === session.instructorId);
-      const enrolled = session.registeredParticipantsIds.length;
+      const enrolled = session.enrolledCount ?? session.registeredParticipantsIds.length;
 
       return {
         id: session.id,
@@ -82,7 +82,7 @@ export default function AdminClasesPage() {
           : "Por asignar",
         duration: `${session.durationMinutes || 60} min`,
         alumnRegistred: `${enrolled}/${session.capacity || 15}`,
-        isRegistered: false, // Relevante para la vista de alumno, no de admin.
+        isRegistered: session.isUserRegistered || false, // Relevante para la vista de alumno, no de admin.
         status: session.status,
         discipline: discipline?.name || session.name,
         disciplineId: session.disciplineId,

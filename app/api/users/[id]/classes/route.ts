@@ -62,11 +62,23 @@ export async function GET(
           }
         } : {})
       },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        registeredAt: true,
         class: {
-          include: {
-            discipline: true,
-            instructor: true
+          select: {
+            id: true,
+            name: true,
+            dateTime: true,
+            durationMinutes: true,
+            instructorId: true,
+            disciplineId: true,
+            capacity: true,
+            status: true,
+            _count: {
+              select: { registrations: true }
+            }
           }
         }
       },
@@ -77,7 +89,12 @@ export async function GET(
       ...reg.class,
       registrationStatus: reg.status,
       registeredAt: reg.registeredAt,
-      dateTime: reg.class.dateTime.toISOString()
+      dateTime: reg.class.dateTime.toISOString(),
+      // Optimization: Send only necessary info for list view
+      enrolledCount: reg.class._count.registrations,
+      isUserRegistered: true,
+      registeredParticipantsIds: [], // Empty to save BW in lists
+      waitlistParticipantsIds: []
     }));
 
     return NextResponse.json({
