@@ -16,16 +16,11 @@ import {
   isBefore,
   startOfWeek,
   endOfWeek,
-  addWeeks,
-  eachDayOfInterval,
-  getDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClassSession, DayOfWeek, ClassStatus } from "@/lib/types";
+import { ClassSession } from "@/lib/types";
 import {
-  formatTimeLocal,
   formatWeekday,
   getPlanStatus,
   canUserRegisterForClasses,
@@ -56,11 +51,7 @@ export default function CalendarPage() {
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,
-    addClassSession,
-    updateClassSession,
   } = useBlackSheepStore();
-
-  const { toast } = useToast();
 
   // Estado de paginación y loading
   const [isLoading, setIsLoading] = useState(true);
@@ -163,11 +154,6 @@ export default function CalendarPage() {
       await fetchClassSessions(startStr, endStr, 1, 150);
     } catch (error) {
       console.error("Error loading classes:", error);
-      toast({
-        title: "Error",
-        description: "Error al cargar las clases",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +163,6 @@ export default function CalendarPage() {
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,
-    toast,
   ]);
 
   // Solo recargar si cambiamos de semana física o refresh manual
@@ -246,11 +231,6 @@ export default function CalendarPage() {
 
   const handleRegister = (classItem: FormattedClassItem) => {
     if (!currentUser) {
-      toast({
-        title: "Error",
-        description: "No se pudo identificar el usuario actual",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -258,31 +238,14 @@ export default function CalendarPage() {
     const planStatus = getPlanStatus(currentUser);
 
     if (planStatus === "inactive") {
-      toast({
-        title: "Plan no vigente",
-        description:
-          "Debes renovar tu plan o verificar tus clases disponibles para poder inscribirte",
-        variant: "destructive",
-      });
       return;
     }
 
     if (planStatus === "pending") {
-      toast({
-        title: "Plan pendiente de validación",
-        description:
-          "Tu plan está siendo validado. Pronto podrás reservar clases.",
-        variant: "destructive",
-      });
       return;
     }
 
     if (!canUserRegisterForClasses(currentUser)) {
-      toast({
-        title: "No puedes registrarte",
-        description: "Tu plan actual no permite el registro en clases",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -309,11 +272,6 @@ export default function CalendarPage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Registro exitoso",
-          description: "Te has registrado exitosamente en la clase",
-        });
-
         // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
         reloadUser();
@@ -322,12 +280,7 @@ export default function CalendarPage() {
         throw new Error(errorData.error || "Error al registrarse en la clase");
       }
     } catch (error) {
-      toast({
-        title: "Error al registrarse",
-        description:
-          error instanceof Error ? error.message : "Error desconocido",
-        variant: "destructive",
-      });
+      console.error("Error al registrarse:", error);
       throw error; // Re-lanzar para que el modal no muestre éxito
     }
   };
@@ -348,16 +301,11 @@ export default function CalendarPage() {
           (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
         // Buscar regla aplicable para esta hora específica
-        const applicableRule = discipline.cancellationRules.find((rule) =>
+        const applicableRule = discipline.cancellationRules.find((rule: any) =>
           selectedClass.formattedTime.startsWith(rule.time)
         );
 
         if (applicableRule && hoursUntilClass < applicableRule.hoursBefore) {
-          toast({
-            title: "No se puede cancelar",
-            description: `Debes cancelar al menos ${applicableRule.hoursBefore} horas antes de la clase`,
-            variant: "destructive",
-          });
           return;
         }
       }
@@ -370,11 +318,6 @@ export default function CalendarPage() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Cancelación exitosa",
-          description: "Has cancelado tu registro exitosamente",
-        });
-
         // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
         reloadUser();
@@ -383,12 +326,7 @@ export default function CalendarPage() {
         throw new Error(errorData.error || "Error al cancelar la inscripción");
       }
     } catch (error) {
-      toast({
-        title: "Error al cancelar",
-        description:
-          error instanceof Error ? error.message : "Error desconocido",
-        variant: "destructive",
-      });
+      console.error("Error al cancelar:", error);
       throw error; // Re-lanzar para que el modal no muestre éxito
     }
   };
@@ -459,7 +397,7 @@ export default function CalendarPage() {
         {(planStatus === "active" || planStatus === "scheduled") && (
           <ClassList
             selectedDate={selectedDate}
-            classes={getClassesForDate(selectedDate)}
+            classes={currentClasses}
             onRegister={handleRegister}
             onCancel={handleCancel}
             className="max-w-4xl mx-auto min-h-svh pb-20 px-4 py-6 md:px-6 md:py-8"

@@ -1,8 +1,6 @@
 import { useState, useCallback } from "react";
-import { useToast } from "@/components/ui/use-toast";
 
 interface ErrorHandlerOptions {
-  showToast?: boolean;
   logError?: boolean;
   fallbackMessage?: string;
 }
@@ -14,12 +12,10 @@ interface ErrorState {
 
 export function useErrorHandler(options: ErrorHandlerOptions = {}) {
   const {
-    showToast = true,
     logError = true,
     fallbackMessage = "Ha ocurrido un error inesperado",
   } = options;
 
-  const { toast } = useToast();
   const [errorState, setErrorState] = useState<ErrorState>({
     error: null,
     isError: false,
@@ -39,17 +35,9 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
         isError: true,
       });
 
-      if (showToast) {
-        toast({
-          title: "Error",
-          description: customMessage || errorObj.message || fallbackMessage,
-          variant: "destructive",
-        });
-      }
-
       return errorObj;
     },
-    [toast, showToast, logError, fallbackMessage]
+    [logError]
   );
 
   const clearError = useCallback(() => {

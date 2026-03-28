@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { EmailStep } from "./_components/email-step";
 import { CodeStep } from "./_components/code-step";
@@ -18,7 +17,6 @@ import { useAuthReducer } from "./_hooks/use-auth-reducer";
 export default function AuthCompletePage() {
   const router = useRouter();
   const { addUser, users } = useBlackSheepStore();
-  const { toast } = useToast();
 
   // Reducer personalizado
   const {
@@ -104,10 +102,7 @@ export default function AuthCompletePage() {
     // Simular delay de envío
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    toast({
-      title: "Código enviado",
-      description: `Hemos enviado un código de verificación a ${email}`,
-    });
+    console.log(`📧 Mock OTP enviado a ${email}: ${mockOTP}`);
   };
 
   // Verificar OTP (mock)
@@ -127,11 +122,7 @@ export default function AuthCompletePage() {
     try {
       await sendOTP(formData.email);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo reenviar el código. Intenta nuevamente.",
-        variant: "destructive",
-      });
+      console.error("No se pudo reenviar el código. Intenta nuevamente.");
     }
   };
 
@@ -221,10 +212,7 @@ export default function AuthCompletePage() {
           },
         };
         addUser(newUser);
-        toast({
-          title: "¡Cuenta creada exitosamente!",
-          description: "Bienvenido a BlackSheep CrossFit",
-        });
+        console.log("¡Cuenta creada exitosamente! Bienvenido a BlackSheep CrossFit");
         clearAuthStorage();
         resetState();
         router.push("/app");
@@ -234,11 +222,7 @@ export default function AuthCompletePage() {
       }
     } catch {
       setError("Error inesperado. Por favor intenta nuevamente.");
-      toast({
-        title: "Error",
-        description: "Error inesperado. Por favor intenta nuevamente.",
-        variant: "destructive",
-      });
+      console.error("Error inesperado. Por favor intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -330,7 +314,7 @@ export default function AuthCompletePage() {
             onContinue={handleContinue}
             onResendOTP={handleResendOTP}
             isLoading={isLoading}
-            error={error}
+            error={error || undefined}
           />
         );
       default:

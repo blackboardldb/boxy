@@ -4,7 +4,6 @@ import type React from "react";
 import { useState } from "react";
 import { Navigation } from "../../components/admincomponents/navigation";
 import Logo from "@/components/Logo";
-import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import Link from "next/link";
@@ -75,7 +74,6 @@ export default function AdminLayout({
         </main>
       </div>
 
-      <Toaster />
     </div>
   );
 }

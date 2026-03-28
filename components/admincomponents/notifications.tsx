@@ -13,7 +13,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,8 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Clock,
-  CheckCircle,
   XCircle,
   Bell,
   RefreshCw,
@@ -45,7 +42,6 @@ export function Notifications() {
     isLoading: storeLoading 
   } = useBlackSheepStore() as any;
   
-  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
   const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
@@ -107,9 +103,6 @@ export function Notifications() {
     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
     .slice(0, 5);
 
-   const totalNotificationsCount = pendingRenewals.length + cancelledClasses.length;
-
-
   const handleApproveRenewal = async (user: any, renewal: any) => {
     try {
       const startDate = customStartDate || new Date().toISOString().split("T")[0];
@@ -139,11 +132,10 @@ export function Notifications() {
 
       const result = await updateUserById(user.id, updatedUserData);
       if (result) {
-        toast({ title: "Renovación aprobada", description: `Plan ${updatedUserData.membership.membershipType} activado para ${user.firstName}.` });
         setShowRenewalModal(false);
       }
     } catch (error) {
-      toast({ title: "Error", description: "Error al procesar la renovación.", variant: "destructive" });
+      console.error("Error al procesar la renovación:", error);
     }
   };
 
@@ -165,13 +157,12 @@ export function Notifications() {
 
       const result = await updateUserById(user.id, updatedUserData);
       if (result) {
-        toast({ title: "Renovación rechazada", description: "Se ha notificado al alumno.", variant: "destructive" });
         setShowRejectModal(false);
         setRejectReason("");
         setShowRenewalModal(false);
       }
     } catch (error) {
-      toast({ title: "Error", description: "Error al procesar el rechazo.", variant: "destructive" });
+      console.error("Error al procesar el rechazo:", error);
     }
   };
 
