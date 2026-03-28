@@ -21,19 +21,11 @@ export async function GET() {
         firstName: true,
         lastName: true,
         email: true,
-        phone: true,
-        dateOfBirth: true,
-        gender: true,
         role: true,
         membership: true,
+        // Omitimos phone, gender, dateOfBirth para el dashboard inicial (Tarea 2)
       }
     });
-
-    // Limpiar campos pesados de la membresía para el fetch inicial (como el historial)
-    if (dbUser && dbUser.membership) {
-      const { history, ...membershipData } = dbUser.membership as any;
-      dbUser.membership = membershipData;
-    }
 
     // 2. Si no es un usuario/alumno, buscar en public.instructors (coaches/admin si están ahí)
     if (!dbUser) {

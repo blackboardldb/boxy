@@ -121,15 +121,11 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   private mapToEntity(prismaOrg: any): Organization {
     const settings = (prismaOrg.settings as any) || {};
 
-    // Smart pick to avoid redundant nested data while keeping operational configs
+    // Tarea 2: Mantener settings solo con timezone, operatingHours, defaultCancellationHours
     const filteredSettings = {
       timezone: settings.timezone || "America/Santiago",
-      language: settings.language || "es",
-      currency: settings.currency || "CLP",
       operatingHours: settings.operatingHours || [],
       defaultCancellationHours: settings.defaultCancellationHours || 6,
-      maxBookingsPerDay: settings.maxBookingsPerDay || 3,
-      waitlistEnabled: settings.waitlistEnabled !== undefined ? settings.waitlistEnabled : true,
     };
 
     return {

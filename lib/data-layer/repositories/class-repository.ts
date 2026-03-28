@@ -180,8 +180,9 @@ export class PrismaClassRepository implements IClassRepository {
       durationMinutes: prismaClass.durationMinutes || 60,
       instructorId: prismaClass.instructorId || "",
       capacity: prismaClass.capacity || 15,
+      // Tarea 2: Eliminar de listados. Devolvemos vacío para evitar romper UI types.
       registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
-      waitlistParticipantsIds: prismaClass.waitlistParticipantsIds || [],
+      waitlistParticipantsIds: [], 
       status: (prismaClass.status as any) || "scheduled",
       notes: prismaClass.notes || undefined,
       isGenerated: !!prismaClass.isGenerated,

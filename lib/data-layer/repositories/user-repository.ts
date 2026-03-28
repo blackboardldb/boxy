@@ -159,6 +159,13 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   private mapToEntity(prismaUser: any): FitCenterUserProfile {
+    const membership = prismaUser.membership ? { ...(prismaUser.membership as any) } : undefined;
+    
+    // Tarea 2: Excluir historial pesado por defecto para optimizar todas las consultas de usuario
+    if (membership && membership.history) {
+      delete membership.history;
+    }
+
     return {
       id: prismaUser.id,
       firstName: prismaUser.firstName,
@@ -172,7 +179,7 @@ export class PrismaUserRepository implements IUserRepository {
         : undefined,
       emergencyContact: prismaUser.emergencyContact ?? undefined,
       formaDePago: prismaUser.formaDePago ?? undefined,
-      membership: prismaUser.membership || undefined,
+      membership: membership as any,
     } as FitCenterUserProfile;
   }
 }
