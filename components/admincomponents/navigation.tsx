@@ -31,7 +31,7 @@ const navigationItems = [
   { name: "Configuración", href: "/admin/configuraciones", icon: Settings, roles: ["admin"] },
 ];
 
-export function Navigation() {
+export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
@@ -63,6 +63,7 @@ export function Navigation() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
+    if (onNavigate) onNavigate();
     router.push("/login");
   }
 
@@ -79,6 +80,9 @@ export function Navigation() {
           <Link
             key={item.name}
             href={item.href}
+            onClick={() => {
+              if (onNavigate) onNavigate();
+            }}
             className={cn(
               "flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all relative group",
               isActive(item.href)
