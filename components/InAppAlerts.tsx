@@ -80,7 +80,7 @@ export function InAppAlerts() {
             </div>
             <button 
               onClick={() => hideAlert(alert.id)}
-              className="absolute top-3 right-3 p-1 rounded-full hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
+              className="absolute top-3 right-3 p-1 rounded-full hover:bg-white/20 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>

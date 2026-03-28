@@ -287,7 +287,7 @@ export function UserProfile() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "name" ? null : "name")}
-                className="text-white hover:bg-white/10"
+                className="text-white hover:bg-white/90"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -301,7 +301,7 @@ export function UserProfile() {
                       id="firstName"
                       value={editableFirstName}
                       onChange={(e) => setEditableFirstName(e.target.value)}
-                      className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                      className="mt-1 bg-white border-zinc-800 text-black"
                     />
                   </div>
                   <div>
@@ -310,7 +310,7 @@ export function UserProfile() {
                       id="lastName"
                       value={editableLastName}
                       onChange={(e) => setEditableLastName(e.target.value)}
-                      className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                      className="mt-1 bg-white border-zinc-800 text-black"
                     />
                   </div>
                 </div>
@@ -345,7 +345,7 @@ export function UserProfile() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "contact" ? null : "contact")}
-                className="text-white hover:bg-white/10"
+                className="text-white hover:bg-white/90"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -372,7 +372,7 @@ export function UserProfile() {
                     type="tel"
                     value={editablePhone}
                     onChange={(e) => setEditablePhone(e.target.value)}
-                    className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                    className="mt-1 bg-white border-zinc-800 text-black"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -398,8 +398,8 @@ export function UserProfile() {
           <div className="bg-white/5 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Seguridad</h3>
-                <p className="text-zinc-400">Contraseña de acceso</p>
+                <h3 className="text-lg font-semibold text-white">Contraseña</h3>
+                <p className="text-zinc-400">Cambiar contraseña</p>
               </div>
               <Button
                 variant="ghost"
@@ -410,9 +410,9 @@ export function UserProfile() {
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="text-white hover:bg-white/10"
+                className="text-white hover:bg-white/90"
               >
-                <Lock className="w-4 h-4" />
+                <Edit3 className="w-4 h-4" />
               </Button>
             </div>
             {expandedSection === "password" && (
@@ -425,7 +425,7 @@ export function UserProfile() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
-                    className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                    className="mt-1 bg-white border-zinc-800 text-black"
                   />
                 </div>
                 <div>
@@ -436,12 +436,12 @@ export function UserProfile() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repite la nueva contraseña"
-                    className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                    className="mt-1 bg-white border-zinc-800 text-black"
                   />
                 </div>
                 {passwordMsg && (
                   <p className={`text-sm font-medium ${
-                    passwordMsg.ok ? "text-emerald-400" : "text-red-400"
+                    passwordMsg.ok ? "text-zinc-900" : "text-red-400"
                   }`}>
                     {passwordMsg.text}
                   </p>
@@ -481,7 +481,7 @@ export function UserProfile() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setExpandedSection(expandedSection === "personal" ? null : "personal")}
-                  className="text-white hover:bg-white/10"
+                  className="text-white hover:bg-white/90"
                 >
                   <Edit3 className="w-4 h-4" />
                 </Button>
@@ -491,7 +491,7 @@ export function UserProfile() {
                   <div>
                     <Label htmlFor="gender" className="text-white">Género</Label>
                     <Select value={editableGender} onValueChange={setEditableGender}>
-                      <SelectTrigger className="mt-1 bg-zinc-800 border-zinc-600 text-white">
+                      <SelectTrigger className="mt-1 bg-white border-zinc-800 text-black">
                         <SelectValue placeholder="Selecciona tu género" />
                       </SelectTrigger>
                       <SelectContent>
@@ -508,7 +508,7 @@ export function UserProfile() {
                       type="date"
                       value={editableDateOfBirth}
                       onChange={(e) => setEditableDateOfBirth(e.target.value)}
-                      className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                      className="mt-1 bg-white border-zinc-800 text-black"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -541,7 +541,7 @@ export function UserProfile() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setExpandedSection(expandedSection === "emergency" ? null : "emergency")}
-                  className="text-white hover:bg-white/10"
+                  className="text-white hover:bg-white/90"
                 >
                   <Edit3 className="w-4 h-4" />
                 </Button>
@@ -554,7 +554,7 @@ export function UserProfile() {
                       id="emergencyContact"
                       value={editableEmergencyContact}
                       onChange={(e) => setEditableEmergencyContact(e.target.value)}
-                      className="mt-1 bg-zinc-800 border-zinc-600 text-white"
+                      className="mt-1 bg-white border-zinc-800 text-black"
                       placeholder="Nombre y teléfono"
                     />
                   </div>

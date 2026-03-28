@@ -59,9 +59,9 @@ const HomePage: React.FC<HomePageProps> = ({
   const isUnlimited = classLimit === 0;
 
   return (
-    <main className="p-4 max-w-4xl mx-auto pb-28">
+    <main className="max-w-4xl mx-auto pb-28 px-4">
       <InAppAlerts />
-      <div className="text-left mb-6">
+      <div className="text-left mt-4 mb-6">
         <span className="uppercase text-lime-400 text-sm font-bold">
           Hola, {userProfile.firstName}
         </span>

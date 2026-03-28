@@ -40,3 +40,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+nav a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
