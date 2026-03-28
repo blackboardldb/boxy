@@ -405,20 +405,22 @@ export default function CalendarPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-3 sm:pt-12">
-        <h1 className="text-4xl font-bold text-gray-900 pb-6 hidden sm:block">
+      <div className="max-w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-12 bg-white rounded-t-xl">
+        <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
           Reserva de clases
         </h1>
-        <WeeklyDatePicker
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          className=""
-        />
+          <WeeklyDatePicker
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            className=""
+          />
+        </div>
       </div>
 
       <div className="bg-black min-h-screen pb-28">
-        {/* Plan Status Banner */}
-        {planStatus !== "active" && (
+        {/* Plan Status Banner - Only show if not loading user data */}
+        {!userLoading && planStatus !== "active" && (
           <div className="max-w-4xl mx-auto px-4 py-3 md:px-6">
             {planStatus === "pending" ? (
               <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3 mb-4">

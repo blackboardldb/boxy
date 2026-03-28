@@ -48,7 +48,7 @@ export default function GlobalNav() {
   ];
 
   return (
-    <nav className="fixed p-2.5 border border-white/10 bottom-2 inset-x-0 mx-auto rounded-full flex flex-row justify-around w-[90dvw] sm:w-[60dvw] bg-zinc-900/80 backdrop-blur-xl text-center z-30 safe-area-inset-bottom">
+    <nav className="fixed p-2.5 border border-white/10 bottom-2 inset-x-0 mx-auto rounded-full flex flex-row justify-around w-[90dvw] sm:w-[60dvw] bg-zinc-900/80 backdrop-blur-xl text-center z-30" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       {navItems.map(({ href, icon, label, extraClass }) => (
         <a key={href} href={href} className={getLinkClass(href, extraClass)}>
           {icon}
