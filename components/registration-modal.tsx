@@ -80,7 +80,7 @@ export default function RegistrationModal({
     >
       <DrawerContent className="sm:max-w-xl w-full mx-auto text-center">
         <DrawerHeader>
-          <DrawerTitle className="text-lg text-center">
+          <DrawerTitle className="text-lg text-center text-black">
             {isConfirmed ? "Clase reservada" : "Vas a reservar la siguiente clase"}
           </DrawerTitle>
           <DrawerDescription className="sr-only">

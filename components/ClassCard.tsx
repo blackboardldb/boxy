@@ -95,7 +95,7 @@ export function ClassCard({
   return (
     <div
       className={`
-        border rounded-lg p-3 transition-all duration-200 relative
+        border rounded-xl p-3 transition-all duration-200 relative
         ${
           !isActionable
             ? "opacity-50 bg-white"
@@ -114,9 +114,7 @@ export function ClassCard({
 
       {/* Información principal */}
       <div className="space-y-2">
-      
-       
-        <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center justify-between">
           <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
             <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full ">
              {/* Estado de la clase como span */}
@@ -127,14 +125,10 @@ export function ClassCard({
       )}
           {formattedTime}</span>
         </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500"></span>
-        </div>
       </div>
       
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
-      <div className={`flex items-center gap-4 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}`}>
+      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}`}>
          
       
               <div className=" inline-flex items-center gap-1">
@@ -150,18 +144,19 @@ export function ClassCard({
           <Users className="w-4 h-4" />
           <span>{classItem.alumnRegistred}</span>
           </div>
+                 {/* Indicador de clase de hoy
           <div className=" inline-flex items-center gap-1">
           <Clock className="w-4 h-4" />
           <span>
-                 {/* Indicador de clase de hoy */}
         {isClassToday && (
           <>
             Hoy {""}
           </>
         )}
-            {formatWeekday(classItem.dateTime)}{" "}
+           
             {formatDayMonth(classItem.dateTime)}</span>
             </div>
+             */}
         </div>
 
       {/* Botones de acción - Ocultos si no hay acción posible (en lugar de deshabilitados) */}
@@ -171,9 +166,9 @@ export function ClassCard({
             variant={isRegistered ? "destructive" : "default"}
             size="sm"
             onClick={handleAction}
-            className="flex-1"
+            className="flex-1 p-6 rounded-lg bg-lime-500 text-black text-base font-bold hover:bg-lime-600 hover:text-black transition-colors duration-200"
           >
-            {isRegistered ? "Cancelar" : "Inscribirse"}
+            {isRegistered ? "Cancelar clase" : "Inscribir clase"}
           </Button>
         </div>
       )}
