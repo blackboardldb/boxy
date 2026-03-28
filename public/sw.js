@@ -99,21 +99,26 @@ self.addEventListener("fetch", (event) => {
 async function handleGetRequest(request) {
   const url = new URL(request.url);
 
-  // API requests - Network first, fallback to cache
+  // 1. Navegación de página (HTML) - Siempre intentar network first para data fresca
+  if (request.mode === "navigate") {
+    return networkFirst(request, DYNAMIC_CACHE);
+  }
+
+  // 2. API requests - Network first, fallback to cache
   if (url.pathname.startsWith("/api/")) {
     return networkFirst(request, DYNAMIC_CACHE);
   }
 
-  // Páginas principales - Cache first, fallback to network
+  // 3. Páginas principales (redundante pero preventivo) - Network first
   if (
     OFFLINE_ROUTES.some(
       (route) => url.pathname === route || url.pathname.startsWith(route)
     )
   ) {
-    return cacheFirst(request, STATIC_CACHE);
+    return networkFirst(request, DYNAMIC_CACHE);
   }
 
-  // Assets estáticos - Cache first
+  // 4. Assets estáticos - Cache first
   if (isStaticAsset(url.pathname)) {
     return cacheFirst(request, STATIC_CACHE);
   }
