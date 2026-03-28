@@ -243,7 +243,7 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6 mb-16">
       {/* Estadísticas Principales */}
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           title="Total Miembros"
           value={totalMembers}

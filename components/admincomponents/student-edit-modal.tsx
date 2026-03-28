@@ -24,14 +24,15 @@ export function StudentEditModal({
 
   return (
     <AddStudentModal
-      onEditStudent={(id, updates) => {
+      onEditStudent={async (id, updates) => {
         onEdit({ ...student, ...updates, id });
         onClose();
+        return true;
       }}
       plans={membershipPlans}
       onClose={onClose}
       initialStudent={student}
-      onAddStudent={() => {}}
+      onAddStudent={async () => true}
       onSuccess={onSuccess}
     />
   );

@@ -27,7 +27,6 @@ import {
   STUDENT_STATES,
   STATE_COLORS,
 } from "@/lib/blacksheep-store";
-import { useToast } from "@/components/ui/use-toast";
 import type { FitCenterUserProfile } from "@/lib/types";
 // Removed unused pagination imports
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,7 +58,7 @@ export default function AlumnosPage() {
     (user) => !user.role || user.role === "user" // Solo usuarios sin rol o con rol "user"
   );
 
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Eliminado
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -132,18 +131,7 @@ export default function AlumnosPage() {
         <AddStudentModal
           onAddStudent={async (studentData) => {
             const result = await createUser(studentData);
-            if (result) {
-              toast({
-                title: "Alumno agregado",
-                description: "El alumno se ha agregado correctamente",
-              });
-            } else {
-              toast({
-                title: "Error",
-                description: "Error al agregar el alumno",
-                variant: "destructive",
-              });
-            }
+            return !!result;
           }}
           plans={plans}
           onSuccess={() => {

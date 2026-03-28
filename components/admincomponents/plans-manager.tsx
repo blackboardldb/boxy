@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   calcularClasesSegunDuracion,
   filterPlansByCategory,
@@ -38,6 +38,9 @@ import {
   Search,
   Receipt,
   CalendarCheck,
+  Loader2,
+  AlertCircle,
+  Save,
 } from "lucide-react";
 
 const emptyPlan: Omit<MembershipPlan, "id" | "organizationId"> = {
@@ -75,7 +78,6 @@ export default function PlansManager() {
     deletePlanById,
     fetchDisciplines,
   } = useBlackSheepStore();
-  const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -84,6 +86,8 @@ export default function PlansManager() {
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [planForm, setPlanForm] =
     useState<Omit<MembershipPlan, "id" | "organizationId">>(emptyPlan);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
@@ -117,6 +121,8 @@ export default function PlansManager() {
   const handleNewPlan = () => {
     setPlanForm(emptyPlan);
     setEditingPlan(null);
+    setError(null);
+    setIsSubmitting(false);
     setShowPlanModal(true);
   };
 
@@ -135,6 +141,8 @@ export default function PlansManager() {
       isActive: plan.isActive,
     });
     setEditingPlan(plan.id);
+    setError(null);
+    setIsSubmitting(false);
     setShowPlanModal(true);
   };
 
@@ -157,22 +165,9 @@ export default function PlansManager() {
             searchTerm,
             activeFilter !== "todos" ? activeFilter : ""
           );
-
-          toast({
-            title: "Plan eliminado",
-            description: "El plan se ha eliminado correctamente",
-          });
         }
       } catch (error) {
         console.error("Error deleting plan:", error);
-        toast({
-          title: "Error al eliminar plan",
-          description:
-            error instanceof Error
-              ? error.message
-              : "No se pudo eliminar el plan. Es posible que esté en uso por algún alumno.",
-          variant: "destructive",
-        });
       } finally {
         setShowDeleteModal(false);
         setPlanToDelete(null);
@@ -228,11 +223,7 @@ export default function PlansManager() {
   const handleSavePlan = async () => {
     // Validación básica
     if (!planForm.name || !planForm.price) {
-      toast({
-        title: "Error",
-        description: "Nombre y precio son requeridos",
-        variant: "destructive",
-      });
+      setError("El nombre y el precio son campos obligatorios.");
       return;
     }
 
@@ -242,23 +233,18 @@ export default function PlansManager() {
         ? Number(planForm.price)
         : planForm.price;
     if (isNaN(priceValue) || priceValue < 0) {
-      toast({
-        title: "Error",
-        description: "El precio debe ser un número válido mayor o igual a 0",
-        variant: "destructive",
-      });
+      setError("El precio debe ser un número válido mayor o igual a 0.");
       return;
     }
 
     // Validación de límite de clases
     if (planForm.classLimit < 0) {
-      toast({
-        title: "Error",
-        description: "El límite de clases debe ser mayor o igual a 0",
-        variant: "destructive",
-      });
+      setError("El límite de clases debe ser mayor o igual a 0.");
       return;
     }
+
+    setIsSubmitting(true);
+    setError(null);
 
     try {
       // Preparar datos del plan con validación
@@ -277,27 +263,13 @@ export default function PlansManager() {
         organizationId: "org_blacksheep_001",
       };
 
-      console.log("Saving plan data:", planData);
-
       let result;
       if (editingPlan) {
         // Actualizar plan existente
         result = await updatePlanById(editingPlan, planData);
-        if (result) {
-          toast({
-            title: "Plan actualizado",
-            description: "El plan se ha actualizado correctamente",
-          });
-        }
       } else {
         // Crear nuevo plan
         result = await createPlan(planData);
-        if (result) {
-          toast({
-            title: "Plan agregado",
-            description: "El plan se ha agregado correctamente",
-          });
-        }
       }
 
       if (result) {
@@ -313,17 +285,14 @@ export default function PlansManager() {
         setShowPlanModal(false);
         setPlanForm(emptyPlan);
         setEditingPlan(null);
+      } else {
+        setError("No se pudo guardar el plan. Por favor revisa los datos e intenta nuevamente.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving plan:", error);
-      toast({
-        title: "Error al guardar plan",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Error desconocido al guardar el plan",
-        variant: "destructive",
-      });
+      setError(error.message || "Error inesperado al guardar el plan.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -577,6 +546,13 @@ export default function PlansManager() {
             </DialogTitle>
           </DialogHeader>
 
+          {error && (
+            <Alert variant="destructive" className="rounded-xl py-2 mb-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-6">
             {/* Información básica - 3 campos en una columna */}
             <div className="grid grid-cols-1 gap-4">
@@ -759,15 +735,30 @@ export default function PlansManager() {
               </div>
             </div>
 
-            {/* Botones de acción */}
             <div className="flex gap-2 pt-4 border-t">
               <Button
                 onClick={handleSavePlan}
-                className="bg-green-600 hover:bg-green-700 rounded-xl"
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700 rounded-xl min-w-[140px]"
               >
-                Guardar
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Guardar Plan
+                  </>
+                )}
               </Button>
-              <Button variant="outline" onClick={() => setShowPlanModal(false)} className="rounded-xl">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPlanModal(false)} 
+                className="rounded-xl"
+                disabled={isSubmitting}
+              >
                 Cancelar
               </Button>
             </div>

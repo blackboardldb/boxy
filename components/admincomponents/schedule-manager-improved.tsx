@@ -23,7 +23,7 @@ import {
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { DayOfWeek, Discipline, CancellationRule } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +38,7 @@ import {
   Settings,
   CheckCircle2,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 const dayLabels: Record<DayOfWeek, string> = {
@@ -69,9 +70,9 @@ export default function ScheduleManagerImproved() {
     updateDisciplineById,
   } = useBlackSheepStore();
 
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Estados para gestión de disciplinas
   const [showDisciplineModal, setShowDisciplineModal] = useState(false);
@@ -115,6 +116,7 @@ export default function ScheduleManagerImproved() {
     setSelectedDays([]);
     setSelectedDayForSchedule("");
     setSelectedCancellationTime("");
+    setError(null);
     setShowDisciplineModal(true);
   };
 
@@ -124,6 +126,7 @@ export default function ScheduleManagerImproved() {
     setSelectedDays(discipline.schedule.map((s) => s.day));
     setSelectedDayForSchedule("");
     setSelectedCancellationTime("");
+    setError(null);
     setShowDisciplineModal(true);
   };
 
@@ -137,10 +140,7 @@ export default function ScheduleManagerImproved() {
     if (disciplineToDelete) {
       const result = await deleteDiscipline(disciplineToDelete);
       if (result) {
-        toast({
-          title: "Disciplina eliminada",
-          description: "La disciplina se eliminó permanentemente.",
-        });
+        // La lista se refresca automáticamente via store o useEffect
       }
       // El store ya limpia el estado local o alertará si falla
       setShowDeleteModal(false);
@@ -233,8 +233,13 @@ export default function ScheduleManagerImproved() {
   };
 
   const handleSaveDiscipline = async () => {
-    if (!disciplineForm.name) return;
+    if (!disciplineForm.name) {
+      setError("El nombre de la disciplina es obligatorio.");
+      return;
+    }
+    
     setIsSaving(true);
+    setError(null);
 
     const filteredSchedule = disciplineForm.schedule.filter((s) =>
       selectedDays.includes(s.day)
@@ -245,20 +250,23 @@ export default function ScheduleManagerImproved() {
       schedule: filteredSchedule,
     };
 
-    let result;
-    if (editingDiscipline) {
-      result = await updateDisciplineById(editingDiscipline, disciplineData);
-    } else {
-      result = await createDiscipline(disciplineData);
-    }
+    try {
+      let result;
+      if (editingDiscipline) {
+        result = await updateDisciplineById(editingDiscipline, disciplineData);
+      } else {
+        result = await createDiscipline(disciplineData);
+      }
 
-    setIsSaving(false);
-    if (result) {
-      toast({
-        title: editingDiscipline ? "Disciplina actualizada" : "Disciplina creada",
-        description: "Se guardaron los horarios y el estado de la disciplina.",
-      });
-      setShowDisciplineModal(false);
+      if (result) {
+        setShowDisciplineModal(false);
+      } else {
+        setError("No se pudo guardar la disciplina. Por favor verifica los datos e intenta nuevamente.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Error inesperado al guardar la disciplina.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -322,10 +330,7 @@ export default function ScheduleManagerImproved() {
                         onCheckedChange={async (checked) => {
                           const result = await updateDisciplineById(d.id, { isActive: checked });
                           if (result) {
-                            toast({
-                              title: checked ? "Disciplina activada" : "Disciplina desactivada",
-                              description: checked ? "Los horarios vuelven a estar vigentes." : "Se han eliminado las clases futuras sin alumnos.",
-                            });
+                            // Cambiado exitosamente
                           }
                         }}
                       />
@@ -420,6 +425,13 @@ export default function ScheduleManagerImproved() {
               />
             </div>
           </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive" className="mx-8 mt-4 rounded-xl py-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{error}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white dark:bg-slate-950">
             {/* Información básica */}

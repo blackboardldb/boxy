@@ -53,9 +53,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // 1. Crear el usuario en Supabase Authentication con contraseña por defecto
-    //    Esto permite que el alumno/usuario pueda iniciar sesión
     try {
+      console.log("[POST /api/users] Creando usuario en Supabase Auth:", body.email);
       await createAuthUser(
         body.email,
         "alumno", // Los usuarios creados desde el panel son alumnos por defecto
@@ -67,6 +66,8 @@ export async function POST(request: NextRequest) {
     } catch (authError: any) {
       // Si el error es que ya existe en Auth, no bloqueamos la creación en Prisma
       const msg = authError?.message ?? "";
+      console.error("[POST /api/users] Error en createAuthUser:", msg);
+      
       if (!msg.includes("already")) {
         return NextResponse.json(
           {

@@ -40,11 +40,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { Instructor } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle, Plus, Edit, Trash2, Search } from "lucide-react";
 
 export function InstructorsManager() {
   const {
@@ -59,7 +59,6 @@ export function InstructorsManager() {
     toggleInstructorStatus,
   } = useBlackSheepStore();
 
-  const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -106,7 +105,7 @@ export function InstructorsManager() {
     setPage(1);
   }, [searchTerm, roleFilter, activeFilter]);
 
-  const handleSaveInstructor = async (instructorData: Partial<Instructor>) => {
+  const handleSaveInstructor = async (instructorData: Partial<Instructor>): Promise<boolean> => {
     if (editingInstructor) {
       // Actualizar instructor existente
       const result = await updateInstructorById(
@@ -114,91 +113,38 @@ export function InstructorsManager() {
         instructorData
       );
       if (result) {
-        toast({
-          title: "Instructor actualizado",
-          description: "El instructor se ha actualizado correctamente",
-        });
         setEditingInstructor(null);
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al actualizar el instructor",
-          variant: "destructive",
-        });
+        // Refrescar la lista después de editar
+        fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
+        return true;
       }
+      return false;
     } else {
       // Crear nuevo instructor
       const result = await createInstructor(instructorData);
       if (result) {
-        toast({
-          title: "Instructor agregado",
-          description: "El instructor se ha agregado correctamente",
-        });
         setIsAddingInstructor(false);
-      } else {
-        toast({
-          title: "Error",
-          description: "Error al agregar el instructor",
-          variant: "destructive",
-        });
+        // Refrescar la lista después de agregar
+        fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
+        return true;
       }
+      return false;
     }
-
-    // Refrescar la lista después de agregar/editar
-    fetchInstructors(
-      page,
-      limit,
-      searchTerm,
-      roleFilter !== "todos" ? roleFilter : "",
-      activeFilter !== "todos" ? activeFilter : ""
-    );
   };
 
   const handleDeleteInstructor = async (instructorId: string) => {
     const result = await deleteInstructorById(instructorId);
     if (result) {
-      toast({
-        title: "Instructor eliminado",
-        description: "El instructor se ha eliminado correctamente",
-      });
       // Refrescar la lista después de eliminar
-      fetchInstructors(
-        page,
-        limit,
-        searchTerm,
-        roleFilter !== "todos" ? roleFilter : "",
-        activeFilter !== "todos" ? activeFilter : ""
-      );
-    } else {
-      toast({
-        title: "Error",
-        description: "Error al eliminar el instructor",
-        variant: "destructive",
-      });
+      fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
     }
   };
 
   const handleToggleStatus = async (instructorId: string) => {
     const result = await toggleInstructorStatus(instructorId);
     if (result) {
-      toast({
-        title: "Estado actualizado",
-        description: "El estado del instructor se ha actualizado correctamente",
-      });
       // Refrescar la lista después del cambio de estado
-      fetchInstructors(
-        page,
-        limit,
-        searchTerm,
-        roleFilter !== "todos" ? roleFilter : "",
-        activeFilter !== "todos" ? activeFilter : ""
-      );
-    } else {
-      toast({
-        title: "Error",
-        description: "Error al cambiar el estado del instructor",
-        variant: "destructive",
-      });
+      fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
     }
   };
 
@@ -221,6 +167,9 @@ export function InstructorsManager() {
       role: instructor?.role || "coach",
     });
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
     // Actualizar el formulario cuando cambie el instructor
     useEffect(() => {
       setFormData({
@@ -234,10 +183,18 @@ export function InstructorsManager() {
         isActive: instructor?.isActive ?? true,
         role: instructor?.role || "coach",
       });
+      setError(null);
+      setIsSubmitting(false);
     }, [instructor]);
 
-    const handleSubmit = () => {
-      if (!formData.firstName || !formData.lastName || !formData.email) return;
+    const handleSubmit = async () => {
+      if (!formData.firstName || !formData.lastName || !formData.email) {
+        setError("Por favor completa los campos obligatorios (Nombre, Apellido, Email).");
+        return;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
 
       // Agregar campos requeridos que no están en el formulario
       const instructorData = {
@@ -245,8 +202,18 @@ export function InstructorsManager() {
         organizationId: "org_blacksheep_001", // ID de la organización
       };
 
-      handleSaveInstructor(instructorData);
-      onClose();
+      try {
+        const success = await handleSaveInstructor(instructorData);
+        if (success) {
+          onClose();
+        } else {
+          setError("No se pudo guardar la información del instructor. Por favor intenta nuevamente.");
+        }
+      } catch (err: any) {
+        setError(err.message || "Ocurrió un error inesperado al guardar.");
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     const handleCancel = () => {
@@ -280,7 +247,13 @@ export function InstructorsManager() {
     };
 
     return (
-      <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+        {error && (
+          <Alert variant="destructive" className="rounded-xl py-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
+        )}
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -407,11 +380,27 @@ export function InstructorsManager() {
           </div>
         </div>
 
-        <div className="flex gap-2 pt-4">
-          <Button onClick={handleSubmit} className="flex-1 rounded-xl">
-            {instructor ? "Actualizar" : "Crear"} Instructor
+        <div className="flex gap-2 pt-4 border-t">
+          <Button 
+            onClick={handleSubmit} 
+            className="flex-1 rounded-xl min-w-[140px]" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              (instructor ? "Actualizar" : "Crear") + " Instructor"
+            )}
           </Button>
-          <Button variant="outline" onClick={handleCancel} className="rounded-xl">
+          <Button 
+            variant="outline" 
+            onClick={handleCancel} 
+            className="rounded-xl"
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
         </div>

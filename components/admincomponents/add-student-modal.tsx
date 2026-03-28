@@ -3,11 +3,11 @@
 import type React from "react";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -31,11 +31,11 @@ import {
 import { MembershipDatePicker } from "./membership-date-picker";
 
 interface AddStudentModalProps {
-  onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => void;
+  onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => Promise<boolean>;
   onEditStudent?: (
     id: string,
     updates: Omit<FitCenterUserProfile, "id">
-  ) => void;
+  ) => Promise<boolean>;
   plans: MembershipPlan[];
   onClose?: () => void;
   initialStudent?: FitCenterUserProfile;
@@ -129,6 +129,8 @@ export function AddStudentModal({
 }: AddStudentModalProps) {
   // El modal se abre cuando el usuario hace clic en el trigger o cuando se pasa initialStudent
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const createInitialFormData = (student?: FitCenterUserProfile) => ({
     firstName: student?.firstName || "",
@@ -169,6 +171,8 @@ export function AddStudentModal({
     if (open) {
       setFormData(createInitialFormData(initialStudent));
       setLastPaymentTouched(false);
+      setError(null);
+      setIsSubmitting(false);
     }
   }, [open, initialStudent]);
 
@@ -226,7 +230,7 @@ export function AddStudentModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -236,8 +240,12 @@ export function AddStudentModal({
       !formData.phone ||
       !selectedPlan
     ) {
+      setError("Por favor completa todos los campos obligatorios.");
       return;
     }
+
+    setIsSubmitting(true);
+    setError(null);
 
     const studentData = createStudentData(
       formData,
@@ -245,16 +253,26 @@ export function AddStudentModal({
       initialStudent
     );
 
-    if (initialStudent && onEditStudent) {
-      onEditStudent(initialStudent.id, studentData);
-    } else {
-      onAddStudent(studentData);
+    try {
+      let success = false;
+      if (initialStudent && onEditStudent) {
+        success = await onEditStudent(initialStudent.id, studentData);
+      } else {
+        success = await onAddStudent(studentData);
+      }
+
+      if (success) {
+        // Llamar al callback de éxito para refrescar la lista
+        onSuccess?.();
+        setOpen(false);
+      } else {
+        setError("No se pudo guardar la información del alumno. Por favor revisa los datos e intenta nuevamente.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Ocurrió un error inesperado al guardar.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Llamar al callback de éxito para refrescar la lista
-    onSuccess?.();
-
-    setOpen(false);
   };
 
   return (
@@ -278,6 +296,15 @@ export function AddStudentModal({
               : "Completa la información para agregar un nuevo alumno."}
           </DialogDescription>
         </DialogHeader>
+
+        {error && (
+          <Alert variant="destructive" className="mb-4 py-2 rounded-xl">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="flex-1 overflow-y-auto space-y-6 pr-2">
             <div className="grid grid-cols-2 gap-4">
@@ -501,11 +528,23 @@ export function AddStudentModal({
               variant="outline"
               onClick={() => setOpen(false)}
               className="rounded-xl"
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
-            <Button type="submit" className="rounded-xl">
-              {initialStudent ? "Guardar Cambios" : "Agregar Alumno"}
+            <Button 
+              type="submit" 
+              className="rounded-xl min-w-[140px]" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                initialStudent ? "Guardar Cambios" : "Agregar Alumno"
+              )}
             </Button>
           </div>
         </form>

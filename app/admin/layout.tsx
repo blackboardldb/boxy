@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export default function AdminLayout({
   children,
@@ -21,7 +22,9 @@ export default function AdminLayout({
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex flex-col w-72 h-screen border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800/50">
-          <Logo />
+           <Link href="/admin">
+            <Logo size={160} />
+          </Link>
         </div>
         <div className="flex-1 overflow-hidden">
           <Navigation />
@@ -64,7 +67,9 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header (Trigger) */}
         <header className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
-          <Logo size={120} />
+          <Link href="/admin">
+            <Logo size={140} />
+          </Link>
           <Button 
             variant="ghost" 
             size="icon" 
