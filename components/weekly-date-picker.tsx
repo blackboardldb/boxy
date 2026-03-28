@@ -151,7 +151,7 @@ export default function WeeklyDatePicker({
   };
 
   return (
-    <div className={`bg-white sticky top-0 z-10 ${className}`}>
+    <div className={`max-w-4xl mx-auto ${className}`}>
       {/* Header */}
       <div className="pb-4  border-b border-zinc-100">
         <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ export default function WeeklyDatePicker({
       {/* Week view */}
       <div
         ref={containerRef}
-        className=" pt-6 pb-4  select-none "
+        className=" pt-6 pb-4  select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

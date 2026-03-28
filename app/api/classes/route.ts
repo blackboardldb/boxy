@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Identificar clases donde el usuario actual está inscrito
     let userRegisteredClassIds: Set<string> = new Set();
+    let dbUserId: string | null = null;
     
     if (authUser && authUser.email) {
       // Optimizamos buscando al usuario en DB solo si hay sesión
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (dbUser) {
+        dbUserId = dbUser.id;
         const registrations = await prisma.classRegistration.findMany({
           where: {
             userId: dbUser.id,
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
       // Mantenemos compatibility con UI: registeredParticipantsIds ahora es solo el ID del usuario
       // para minimizar payload pero permitir lógica local si fuese estrictamente necesario.
       // Sin embargo, según la propuesta, en listados enviamos vacíos.
-      registeredParticipantsIds: userRegisteredClassIds.has(session.id) ? [authUser?.id] : [],
+      registeredParticipantsIds: userRegisteredClassIds.has(session.id) ? [dbUserId] : [],
       waitlistParticipantsIds: [],
       // Aseguramos que enrolledCount venga del repo
       alumnRegistred: `${session.enrolledCount || 0}/${session.capacity || 15}`

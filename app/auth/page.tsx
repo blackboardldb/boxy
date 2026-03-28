@@ -97,12 +97,8 @@ export default function AuthCompletePage() {
   const sendOTP = async (email: string) => {
     // Mock: simular envío de OTP
     const mockOTP = "123456"; // En producción, esto sería generado y enviado por email
-    console.log(`📧 Mock OTP enviado a ${email}: ${mockOTP}`);
 
-    // Simular delay de envío
     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    console.log(`📧 Mock OTP enviado a ${email}: ${mockOTP}`);
   };
 
   // Verificar OTP (mock)

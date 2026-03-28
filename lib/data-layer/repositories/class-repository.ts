@@ -8,6 +8,30 @@ export class PrismaClassRepository implements IClassRepository {
     return prisma;
   }
 
+  private get defaultSelect() {
+    return {
+      id: true,
+      organizationId: true,
+      name: true,
+      dateTime: true,
+      durationMinutes: true,
+      instructorId: true,
+      disciplineId: true,
+      capacity: true,
+      status: true,
+      notes: true,
+      isGenerated: true,
+      registeredParticipantsIds: true,
+      _count: {
+        select: {
+          registrations: {
+            where: { status: "registered" }
+          }
+        }
+      }
+    };
+  }
+
   async findMany(params: FindManyParams = {}): Promise<PaginatedResult<ClassSession>> {
     const page = params?.page || 1;
     const limit = params?.limit || params?.take || 10;
@@ -19,19 +43,7 @@ export class PrismaClassRepository implements IClassRepository {
         orderBy: params?.orderBy || { dateTime: 'asc' },
         take: limit,
         skip,
-        select: {
-          id: true,
-          name: true,
-          dateTime: true,
-          durationMinutes: true,
-          instructorId: true,
-          disciplineId: true,
-          capacity: true,
-          status: true,
-          _count: {
-            select: { registrations: true }
-          }
-        }
+        select: this.defaultSelect
       }),
       this.prisma.classSession.count({ where: params?.where })
     ]);
@@ -39,10 +51,7 @@ export class PrismaClassRepository implements IClassRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: classes.map((c: any) => ({
-        ...this.mapToEntity(c),
-        enrolledCount: c._count?.registrations ?? 0
-      })),
+      items: classes.map((c: any) => this.mapToEntity(c)),
       pagination: {
         page,
         limit,
@@ -57,6 +66,7 @@ export class PrismaClassRepository implements IClassRepository {
   async findUnique(params: FindUniqueParams): Promise<ClassSession | null> {
     const classSession = await this.prisma.classSession.findUnique({
       where: params.where as any,
+      select: this.defaultSelect
     });
     return classSession ? this.mapToEntity(classSession) : null;
   }
@@ -78,6 +88,7 @@ export class PrismaClassRepository implements IClassRepository {
         notes: data.notes,
         isGenerated: data.isGenerated || false,
       },
+      select: this.defaultSelect
     });
     return this.mapToEntity(created);
   }
@@ -98,6 +109,7 @@ export class PrismaClassRepository implements IClassRepository {
         notes: data.notes,
         isGenerated: data.isGenerated,
       },
+      select: this.defaultSelect
     });
     return this.mapToEntity(updated);
   }
@@ -105,6 +117,7 @@ export class PrismaClassRepository implements IClassRepository {
   async delete(id: string): Promise<ClassSession> {
     const deleted = await this.prisma.classSession.delete({
       where: { id },
+      select: this.defaultSelect
     });
     return this.mapToEntity(deleted);
   }
@@ -123,7 +136,8 @@ export class PrismaClassRepository implements IClassRepository {
           lte: new Date(endDate),
         },
       },
-      orderBy: { dateTime: 'asc' }
+      orderBy: { dateTime: 'asc' },
+      select: this.defaultSelect
     });
     return classes.map((c: any) => this.mapToEntity(c));
   }
@@ -131,7 +145,8 @@ export class PrismaClassRepository implements IClassRepository {
   async findByDiscipline(disciplineId: string): Promise<ClassSession[]> {
     const classes = await this.prisma.classSession.findMany({
       where: { disciplineId },
-      orderBy: { dateTime: 'asc' }
+      orderBy: { dateTime: 'asc' },
+      select: this.defaultSelect
     });
     return classes.map((c: any) => this.mapToEntity(c));
   }
@@ -139,7 +154,8 @@ export class PrismaClassRepository implements IClassRepository {
   async findByInstructor(instructorId: string): Promise<ClassSession[]> {
     const classes = await this.prisma.classSession.findMany({
       where: { instructorId },
-      orderBy: { dateTime: 'asc' }
+      orderBy: { dateTime: 'asc' },
+      select: this.defaultSelect
     });
     return classes.map((c: any) => this.mapToEntity(c));
   }
@@ -147,7 +163,8 @@ export class PrismaClassRepository implements IClassRepository {
   async findByStatus(status: string): Promise<ClassSession[]> {
     const classes = await this.prisma.classSession.findMany({
       where: { status },
-      orderBy: { dateTime: 'asc' }
+      orderBy: { dateTime: 'asc' },
+      select: this.defaultSelect
     });
     return classes.map((c: any) => this.mapToEntity(c));
   }
@@ -186,6 +203,7 @@ export class PrismaClassRepository implements IClassRepository {
       status: (prismaClass.status as any) || "scheduled",
       notes: prismaClass.notes || undefined,
       isGenerated: !!prismaClass.isGenerated,
+      enrolledCount: prismaClass._count?.registrations ?? 0,
     };
   }
 }

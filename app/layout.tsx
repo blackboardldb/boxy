@@ -7,7 +7,13 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "BlackSheep",
-  description: "Gestiona tus clases",
+  description: "Sistema de gestión para BlackSheep CrossFit",
+  manifest: "/manifest.json",
+  icons: {
+    apple: [
+      { url: "/icons/BS-icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -18,6 +24,8 @@ export const viewport: Viewport = {
 };
 
 
+import PWAInitializer from "@/components/PWAInitializer";
+
 export default function RootLayout({
   children,
 }: {
@@ -25,7 +33,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} bg-black`}>{children}</body>
+      <body className={`${inter.className} bg-black`}>
+        <PWAInitializer />
+        {children}
+      </body>
     </html>
   );
 }

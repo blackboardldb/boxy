@@ -10,8 +10,8 @@ const DYNAMIC_CACHE = "blacksheep-dynamic-v1.0.0";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
-  "/BS-icons/BS-icon-192x192.png",
-  "/BS-icons/BS-icon-512x512.png",
+  "/icons/BS-icon-192x192.png",
+  "/icons/BS-icon-512x512.png",
   "/app/globals.css",
 ];
 

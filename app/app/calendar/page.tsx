@@ -206,7 +206,7 @@ export default function CalendarPage() {
 
           // Lógica para días pasados: mostrar solo clases inscritas
           if (isPastDate) {
-            return session.registeredParticipantsIds.includes(currentUser.id);
+            return (session as any).isUserRegistered || session.registeredParticipantsIds.includes(currentUser.id);
           }
 
           // Para hoy: mostrar clases no canceladas
@@ -348,13 +348,15 @@ export default function CalendarPage() {
         <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
           Reserva de clases
         </h1>
+        </div>
+      </div>
+        <div className=" sticky top-0 z-10 max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white">
           <WeeklyDatePicker
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
             className=""
           />
-        </div>
-      </div>
+          </div>
 
       <div className="bg-black min-h-screen pb-28">
         {/* Plan Status Banner - Only show if not loading user data */}
