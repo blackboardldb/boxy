@@ -37,6 +37,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editGender, setEditGender] = useState("");
+  const [editDateOfBirth, setEditDateOfBirth] = useState("");
+  const [editEmergencyContact, setEditEmergencyContact] = useState("");
 
   // States for Membresía
   const [editPlanId, setEditPlanId] = useState("");
@@ -48,15 +50,14 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     const loadData = async () => {
-      let found = users.find((u) => u.id === resolvedParams.id);
-      
-      if (!found) {
-        const user = await fetchUserById(resolvedParams.id);
-        if (user) found = user;
-      }
-      
-      if (found) {
-        setStudent(found);
+      // Always fetch fresh data to ensure we have the latest membership history
+      const user = await fetchUserById(resolvedParams.id);
+      if (user) {
+        setStudent(user);
+      } else {
+        // Fallback to store if API fails for some reason
+        const found = users.find((u) => u.id === resolvedParams.id);
+        if (found) setStudent(found);
       }
       
       if (!useBlackSheepStore.getState().plans?.length) {
@@ -80,6 +81,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       setEditEmail(student.email || "");
       setEditPhone(student.phone || "");
       setEditGender(student.gender || "");
+      setEditDateOfBirth(student.dateOfBirth || "");
+      setEditEmergencyContact(student.emergencyContact || "");
 
       const m = student.membership;
       if (m) {
@@ -133,6 +136,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         email: editEmail,
         phone: editPhone,
         gender: editGender,
+        dateOfBirth: editDateOfBirth,
+        emergencyContact: editEmergencyContact,
       };
       
       await fetch(`/api/users/${student.id}`, {
@@ -328,6 +333,26 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Teléfono</p>
                     <p className="font-medium text-zinc-900">{student.phone || "-"}</p>
                   </div>
+                  {student.gender && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Género</p>
+                      <p className="font-medium text-zinc-900 capitalize">{student.gender}</p>
+                    </div>
+                  )}
+                  {student.dateOfBirth && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Fecha de Nacimiento</p>
+                      <p className="font-medium text-zinc-900">
+                        {format(parseISO(student.dateOfBirth), "d 'de' MMMM yyyy", { locale: es })}
+                      </p>
+                    </div>
+                  )}
+                  {student.emergencyContact && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Contacto de Emergencia</p>
+                      <p className="font-medium text-zinc-900">{student.emergencyContact}</p>
+                    </div>
+                  )}
                 </CardContent>
               </>
             ) : (
@@ -354,6 +379,33 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     <Label className="text-zinc-700 font-medium">Teléfono</Label>
                     <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="rounded-xl" />
                   </div>
+                  {student.gender && (
+                    <div className="space-y-2">
+                      <Label className="text-zinc-700 font-medium">Género</Label>
+                      <Select value={editGender} onValueChange={setEditGender}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Seleccionar género" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="femenino">Femenino</SelectItem>
+                          <SelectItem value="otro">Otro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {student.dateOfBirth && (
+                    <div className="space-y-2">
+                      <Label className="text-zinc-700 font-medium">Fecha de Nacimiento</Label>
+                      <Input type="date" value={editDateOfBirth} onChange={e => setEditDateOfBirth(e.target.value)} className="rounded-xl" />
+                    </div>
+                  )}
+                  {student.emergencyContact && (
+                    <div className="space-y-2">
+                      <Label className="text-zinc-700 font-medium">Contacto de Emergencia</Label>
+                      <Input value={editEmergencyContact} onChange={e => setEditEmergencyContact(e.target.value)} className="rounded-xl" />
+                    </div>
+                  )}
                   <div className="flex justify-end gap-2 mt-4">
                     <Button variant="outline" onClick={() => setEditingSection(null)} className="rounded-xl">Cancelar</Button>
                     <Button onClick={savePersonalInfo} disabled={isSaving} className="rounded-xl">{isSaving ? "Guardando..." : "Guardar cambios"}</Button>
@@ -363,31 +415,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
             )}
           </Card>
 
-          {/* Tarjeta de Contraseña */}
-          <Card className="shadow-sm border-zinc-200 rounded-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Contraseña</CardTitle>
-              <CardDescription>Restablece la clave de acceso del alumno a la contraseña por defecto</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <button
-                onClick={handleResetPassword}
-                disabled={resetPasswordStatus === "loading" || resetPasswordStatus === "done"}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed ${
-                  resetPasswordStatus === "done"
-                    ? "bg-emerald-500 text-white focus:ring-emerald-400"
-                    : "bg-zinc-900 hover:bg-zinc-700 text-white focus:ring-zinc-600"
-                }`}
-              >
-                <KeyRound className="w-4 h-4" />
-                {resetPasswordStatus === "loading"
-                  ? "Cambiando contraseña..."
-                  : resetPasswordStatus === "done"
-                  ? "Contraseña cambiada"
-                  : "Restablecer contraseña"}
-              </button>
-            </CardContent>
-          </Card>
+
 
           {/* Tarjeta de Membresía Actual */}
           <Card className="shadow-sm border-zinc-200 rounded-xl">
@@ -567,15 +595,41 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
           </Card>
         </div>
 
-        {/* Lado Derecho: Acordeones Separados */}
-        <div className="lg:col-span-1 xl:col-span-2">
+        {/* Lado Derecho: Contraseña y Acordeones */}
+        <div className="lg:col-span-1 xl:col-span-2 space-y-6">
           
-          <Accordion type="multiple" defaultValue={["asistencia", "planes"]} className="w-full space-y-4">
+          {/* Tarjeta de Contraseña (Movida aquí) */}
+          <Card className="shadow-sm border-zinc-200 rounded-xl">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-base font-bold">Seguridad de la cuenta</CardTitle>
+                <CardDescription>Restablece la clave de acceso del alumno a la contraseña por defecto</CardDescription>
+              </div>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetPasswordStatus === "loading" || resetPasswordStatus === "done"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-not-allowed ${
+                  resetPasswordStatus === "done"
+                    ? "bg-emerald-500 text-white focus:ring-emerald-400"
+                    : "bg-zinc-900 hover:bg-zinc-700 text-white focus:ring-zinc-600"
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                {resetPasswordStatus === "loading"
+                  ? "Cambiando..."
+                  : resetPasswordStatus === "done"
+                  ? "Cambiado"
+                  : "Restablecer contraseña"}
+              </button>
+            </CardHeader>
+          </Card>
+
+          <Accordion type="multiple" defaultValue={["planes"]} className="w-full space-y-4">
             
             {/* HISTORIAL DE ASISTENCIA */}
             <AccordionItem value="asistencia" className="border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden px-1">
               <AccordionTrigger className="px-4 hover:no-underline hover:bg-zinc-50 font-semibold tracking-tight text-lg py-4">
-                Historial de Asistencia y Reservas
+                Clases consumidas del plan actual
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4 pt-0 border-t border-zinc-100">
                 <div className="space-y-4 pt-4 max-h-[500px] overflow-y-auto">
@@ -632,42 +686,11 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                             : "text-zinc-500"
                         }`}
                       >
-                        {student.membership.membershipType}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {isPlanActive || isScheduled ? (
-                          `${
-                            isPlanActive ? "Activo" : "Programado"
-                          } desde: ${
-                            student.membership.currentPeriodStart
-                              ? new Date(
-                                  student.membership.currentPeriodStart
-                                ).toLocaleDateString()
-                              : "-"
-                          } hasta ${
-                            student.membership.currentPeriodEnd
-                              ? new Date(
-                                  student.membership.currentPeriodEnd
-                                ).toLocaleDateString()
-                              : "-"
-                          }`
-                        ) : (
-                          `Finalizado | ${
-                            student.membership.currentPeriodStart
-                              ? new Date(
-                                  student.membership.currentPeriodStart
-                                ).toLocaleDateString()
-                              : "-"
-                          } hasta ${
-                            student.membership.currentPeriodEnd
-                              ? new Date(
-                                  student.membership.currentPeriodEnd
-                                ).toLocaleDateString()
-                              : "-"
-                          } | ${classesConsumed}/${
-                            isUnlimited ? "∞" : planClassLimit
-                          } clases`
-                        )}
+                        {student.membership.membershipType} | {student.membership.currentPeriodStart
+                          ? format(new Date(student.membership.currentPeriodStart), "d/M/yyyy")
+                          : "-"} hasta {student.membership.currentPeriodEnd
+                          ? format(new Date(student.membership.currentPeriodEnd), "d/M/yyyy")
+                          : "-"} | {classesConsumed}/{isUnlimited ? "∞" : planClassLimit}
                       </p>
                     </div>
                   )}
@@ -687,9 +710,12 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       return (
                           <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
                               <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
-                              <p className="text-sm font-medium text-zinc-700">{pastMem.membershipType}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Finalizado | {pastMem.currentPeriodStart ? new Date(pastMem.currentPeriodStart).toLocaleDateString() : "-"} hasta {pastMem.currentPeriodEnd ? new Date(pastMem.currentPeriodEnd).toLocaleDateString() : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted} clases
+                              <p className="text-sm font-medium text-zinc-500">
+                                {pastMem.membershipType} | {pastMem.currentPeriodStart 
+                                  ? format(new Date(pastMem.currentPeriodStart), "d/M/yyyy") 
+                                  : "-"} hasta {pastMem.currentPeriodEnd 
+                                  ? format(new Date(pastMem.currentPeriodEnd), "d/M/yyyy") 
+                                  : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted}
                               </p>
                           </div>
                       );

@@ -161,10 +161,8 @@ export class PrismaUserRepository implements IUserRepository {
   private mapToEntity(prismaUser: any): FitCenterUserProfile {
     const membership = prismaUser.membership ? { ...(prismaUser.membership as any) } : undefined;
     
-    // Tarea 2: Excluir historial pesado por defecto para optimizar todas las consultas de usuario
-    if (membership && membership.history) {
-      delete membership.history;
-    }
+    // Tarea 2: El historial se mantiene para permitir ver planes expirados.
+    // Solo se excluirá explícitamente en consultas de listado masivo si es necesario.
 
     return {
       id: prismaUser.id,

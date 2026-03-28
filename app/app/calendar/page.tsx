@@ -405,7 +405,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <div className="max-w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-8 bg-white rounded-t-xl sticky top-0 z-10">
+      <div className="max-w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-8 bg-white">
         <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
           Reserva de clases

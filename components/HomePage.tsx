@@ -163,7 +163,7 @@ const HomePage: React.FC<HomePageProps> = ({
             <div className="text-zinc-200 inline-flex gap-2 text-sm items-center">
               <Ticket size={16} />
               <p className="sm:text-sm">
-                Tu plan inició el {formattedPeriodStart} hasta el{" "}
+                Inició el {formattedPeriodStart} hasta el{" "}
                 {formattedPeriodEnd}
               </p>
             </div>
@@ -203,9 +203,9 @@ const HomePage: React.FC<HomePageProps> = ({
           <ClassesHomeCard classes={registeredClasses} />
         ) : (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Calendar className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
             {planStatus === "active" ? (
-              <p className="text-gray-500 text-base">
+              <p className="text-zinc-500 text-base">
                 Aún no te has inscrito en una clase.
               </p>
             ) : planStatus === "pending" ? (
@@ -219,7 +219,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 <p className="text-orange-400 text-base font-medium">
                   Pronto podrás reservar clases
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-zinc-400 text-sm">
                   Renueva tu plan para continuar entrenando
                 </p>
               </div>

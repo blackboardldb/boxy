@@ -49,15 +49,17 @@ export async function GET(
       where: { 
         userId,
         status: { not: 'cancelled' as any },
-        ...(start && end ? {
+        ...(start || end ? {
           class: {
             dateTime: {
-              gte: start,
-              lte: (() => {
-                const date = new Date(end);
-                date.setHours(23, 59, 59, 999);
-                return date;
-              })()
+              ...(start ? { gte: start } : {}),
+              ...(end ? { 
+                lte: (() => {
+                  const date = new Date(end);
+                  date.setHours(23, 59, 59, 999);
+                  return date;
+                })()
+              } : {})
             }
           }
         } : {})

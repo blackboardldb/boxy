@@ -54,7 +54,7 @@ export function ClassesHomeCard({
 </div>
         <div>
           {todayClasses.length === 0 ? (
-            <p className="text-muted-foreground">
+            <p className="text-zinc-400">
               No hay clases programadas para hoy
             </p>
           ) : (
@@ -68,13 +68,13 @@ export function ClassesHomeCard({
               
                     <div className="inline-flex gap-2 items-center">
                       <p className="font-medium">{classItem.name}</p>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-zinc-400">
                         {format(parseISO(classItem.dateTime), "HH:mm", {
                           locale: es,
                         })}
                       </span>
                     
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-zinc-400">
                        {classItem.duration}
                       </span>
 
@@ -99,7 +99,7 @@ export function ClassesHomeCard({
             Próximas Clases
 </div>
           {upcomingClasses.length === 0 ? (
-            <p className="text-muted-foreground">
+            <p className="text-zinc-400">
               No hay clases programadas próximamente
             </p>
           ) : (
@@ -114,7 +114,7 @@ export function ClassesHomeCard({
                    
                     <div>
                       <p className="font-medium">{classItem.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-zinc-400">
                         {format(
                           parseISO(classItem.dateTime),
                           "EEEE, d 'de' MMMM 'a las' HH:mm",

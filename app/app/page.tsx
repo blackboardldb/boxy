@@ -23,8 +23,7 @@ export default function Page() {
       if (!classSessions || classSessions.length === 0) {
         fetchUserClasses(
           currentUser.id, 
-          currentUser.membership?.currentPeriodStart, 
-          currentUser.membership?.currentPeriodEnd
+          currentUser.membership?.currentPeriodStart
         );
       }
       if (!instructors || instructors.length === 0) {
@@ -47,7 +46,7 @@ export default function Page() {
         today.setHours(0, 0, 0, 0);
         return (
           sessionDate >= today &&
-          session.registeredParticipantsIds.includes(currentUser.id)
+          (session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id))
         );
       })
       .sort(

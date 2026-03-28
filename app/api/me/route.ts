@@ -23,7 +23,11 @@ export async function GET() {
         email: true,
         role: true,
         membership: true,
-        // Omitimos phone, gender, dateOfBirth para el dashboard inicial (Tarea 2)
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        emergencyContact: true,
+        formaDePago: true,
       }
     });
 
