@@ -90,9 +90,9 @@ export default function AdminClassCard({
         )}
 
         {/* Layout principal con flex */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Contenido a la izquierda */}
-          <div className="flex-1">
+          <div className="flex-1 w-full md:w-auto">
             {/* Hora como badge CSS - con estado finalizado integrado */}
             <div
               className={`inline-block text-xs px-2 py-1 rounded-xl mb-2 ${
@@ -142,12 +142,12 @@ export default function AdminClassCard({
           </div>
 
           {/* Botones a la derecha */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full md:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onViewClass(classItem)}
-              className="opacity-100 rounded-xl" // Mantener opacidad 100% siempre
+              className="opacity-100 rounded-xl w-full md:w-auto" // Mantener opacidad 100% siempre
             >
               Ver Clase
             </Button>
@@ -156,7 +156,7 @@ export default function AdminClassCard({
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowCancelDialog(true)}
-                className="rounded-xl"
+                className="rounded-xl w-full md:w-auto"
               >
                 Cancelar
               </Button>

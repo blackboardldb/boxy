@@ -39,6 +39,7 @@ interface BlackSheepStore {
   users: User[];
   pagination: PaginationState | null;
   classSessions: ClassSession[];
+  myBookings: ClassSession[];
   disciplines: Discipline[];
   instructors: Instructor[];
   instructorsPagination: PaginationState | null;
@@ -87,6 +88,7 @@ interface BlackSheepStore {
     limit?: number
   ) => Promise<any>;
   fetchUserClasses: (userId: string, startDate?: string, endDate?: string) => Promise<ClassSession[]>;
+  fetchMyBookings: (userId: string, startDate?: string, endDate?: string) => Promise<ClassSession[]>;
 
   // Discipline actions
   addDiscipline: (discipline: Discipline) => void;
@@ -179,6 +181,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       users: [],
       pagination: null,
       classSessions: [],
+      myBookings: [],
       disciplines: [],
       instructors: [],
       instructorsPagination: null,
@@ -523,7 +526,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           // but we can pass it through anyway or handle it in the service if we update it.
           // For now, let's just ensure we can at least filter by status.
 
-          const response = await fetch(`/api/classes?${params.toString()}`);
+          const response = await fetch(`/api/classes?${params.toString()}`, { cache: 'no-store' });
           if (!response.ok) {
             throw new Error("Failed to fetch classes");
           }
@@ -556,7 +559,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           const queryString = params.toString();
           const url = `/api/users/${userId}/classes${queryString ? `?${queryString}` : ""}`;
 
-          const response = await fetch(url);
+          const response = await fetch(url, { cache: 'no-store' });
           if (!response.ok) {
             const errorMsg = await response.json().catch(() => ({})).then(r => r.error?.message || r.message || "Unknown error");
             throw new Error(`Failed to fetch user classes: ${errorMsg}`);
@@ -572,6 +575,38 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         } catch (error) {
           console.error("Error fetching user classes:", error);
           set({ classSessions: [] });
+          return [];
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+      fetchMyBookings: async (userId: string, startDate?: string, endDate?: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          const params = new URLSearchParams();
+          if (startDate) params.append("startDate", startDate);
+          if (endDate) params.append("endDate", endDate);
+          
+          const queryString = params.toString();
+          const url = `/api/users/${userId}/classes${queryString ? `?${queryString}` : ""}`;
+
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) {
+            const errorMsg = await response.json().catch(() => ({})).then(r => r.error?.message || r.message || "Unknown error");
+            throw new Error(`Failed to fetch my bookings: ${errorMsg}`);
+          }
+          
+          const result = await response.json();
+          if (result.success) {
+            set({ myBookings: result.data || [] });
+            return result.data || [];
+          } else {
+            throw new Error(result.error?.message || "Error fetching my bookings");
+          }
+        } catch (error) {
+          console.error("Error fetching my bookings:", error);
+          set({ myBookings: [] });
           return [];
         } finally {
           set({ isLoading: false });

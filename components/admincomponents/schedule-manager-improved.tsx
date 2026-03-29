@@ -283,7 +283,7 @@ export default function ScheduleManagerImproved() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto p-4 md:p-8">
       {/* Header con gestión de disciplinas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-xl border border-slate-100 shadow-premium">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 ">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Configuración de Horarios</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestiona tus disciplinas, horarios semanales y reglas de cupos.</p>

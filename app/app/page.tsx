@@ -14,14 +14,15 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { classSessions, instructors, fetchUserClasses, fetchInstructors, isLoading: statsLoading } =
+  const { myBookings, instructors, fetchMyBookings, fetchInstructors, isLoading: statsLoading } =
     useBlackSheepStore();
 
   // Cargar clases e instructores una sola vez al montar si no hay datos
   useEffect(() => {
     if (currentUser) {
-      if (!classSessions || classSessions.length === 0) {
-        fetchUserClasses(
+      // Usamos myBookings para separar el contexto del alumno del calendario global
+      if (!myBookings || myBookings.length === 0) {
+        fetchMyBookings(
           currentUser.id, 
           currentUser.membership?.currentPeriodStart
         );
@@ -31,15 +32,13 @@ export default function Page() {
       }
     }
     // Solo dependemos de currentUser y las funciones de fetch. 
-    // No incluir classSessions o instructors aquí para evitar loops infinitos
-    // cuando el resultado del fetch es un array vacío.
-  }, [currentUser, fetchUserClasses, fetchInstructors]);
+  }, [currentUser, fetchMyBookings, fetchInstructors]);
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {
-    if (!currentUser || !classSessions || classSessions.length === 0) return [];
+    if (!currentUser || !myBookings || myBookings.length === 0) return [];
 
-    return classSessions
+    return myBookings
       .filter((session) => {
         const sessionDate = new Date(session.dateTime);
         const today = new Date();
@@ -77,16 +76,16 @@ export default function Page() {
           formattedTime: formatTimeLocal(session.dateTime),
         };
       });
-  }, [classSessions, instructors, currentUser]);
+  }, [myBookings, instructors, currentUser]);
 
   // Membresía y stats
   const studentAllEnrolledClasses = useMemo(() => {
     return getStudentClassesInPeriod(
-      classSessions, 
+      myBookings, 
       currentUser?.membership?.currentPeriodStart, 
       currentUser?.membership?.currentPeriodEnd
     );
-  }, [classSessions, currentUser]);
+  }, [myBookings, currentUser]);
 
   // Mostrar skeleton mientras carga el usuario
   if (userLoading || !currentUser) {

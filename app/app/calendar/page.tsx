@@ -51,6 +51,7 @@ export default function CalendarPage() {
     fetchInstructors,
     fetchDisciplines,
     fetchClassSessions,
+    fetchMyBookings,
   } = useBlackSheepStore();
 
   // Estado de paginación y loading
@@ -275,6 +276,8 @@ export default function CalendarPage() {
         // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
         reloadUser();
+        // Sincronizar clases del usuario para el contexto del home
+        fetchMyBookings(currentUser.id, currentUser.membership?.currentPeriodStart);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al registrarse en la clase");
@@ -321,6 +324,8 @@ export default function CalendarPage() {
         // Refrescar las clases y usuario para mostrar el cambio
         setRefreshTrigger((prev) => prev + 1);
         reloadUser();
+        // Sincronizar clases del usuario para el contexto del home
+        fetchMyBookings(currentUser.id, currentUser.membership?.currentPeriodStart);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Error al cancelar la inscripción");
