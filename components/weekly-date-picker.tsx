@@ -64,6 +64,7 @@ export default function WeeklyDatePicker({
     const newWeekStart = new Date(currentWeekStart);
     newWeekStart.setDate(currentWeekStart.getDate() - 7);
     setCurrentWeekStart(newWeekStart);
+    onDateSelect(newWeekStart);
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
@@ -74,6 +75,7 @@ export default function WeeklyDatePicker({
     const newWeekStart = new Date(currentWeekStart);
     newWeekStart.setDate(currentWeekStart.getDate() + 7);
     setCurrentWeekStart(newWeekStart);
+    onDateSelect(newWeekStart);
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
