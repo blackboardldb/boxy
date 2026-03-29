@@ -541,7 +541,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           }
         } catch (error) {
           console.error("Error fetching class sessions:", error);
-          set({ classSessions: [] });
+          // Punto 1: No limpiar el store en caso de error para evitar que la UI quede vacía (Flicker)
           return { classes: [], pagination: null };
         }
       },

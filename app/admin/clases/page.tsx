@@ -120,14 +120,14 @@ export default function AdminClasesPage() {
       // Pedimos a la API las clases de toda la semana
       await fetchClassSessions(startStr, endStr, 1, 150);
       
+      // Punto 1 matizado: Solo cargar si no existen en el store
       await Promise.all([
-        fetchUsers(1, 1000), // Traer todos los alumnos (hasta 1000) para uso local en Modals
-        disciplines?.length === 0 || !disciplines ? fetchDisciplines() : Promise.resolve(),
-        instructors?.length === 0 || !instructors ? fetchInstructors() : Promise.resolve(),
+        users.length === 0 ? fetchUsers(1, 1000) : Promise.resolve(),
+        disciplines.length === 0 ? fetchDisciplines() : Promise.resolve(),
+        instructors.length === 0 ? fetchInstructors() : Promise.resolve(),
       ]);
     } catch (error) {
       console.error("Error loading classes:", error);
-      // Reemplazado toast por console.error ya que está deprecado
     } finally {
       setIsLoading(false);
     }
@@ -136,8 +136,9 @@ export default function AdminClasesPage() {
     fetchUsers,
     fetchDisciplines,
     fetchInstructors,
-    disciplines?.length,
-    instructors?.length,
+    users.length,
+    disciplines.length,
+    instructors.length,
   ]);
 
   // Cargar clases al montar y cuando cambie la semana física
@@ -195,8 +196,10 @@ export default function AdminClasesPage() {
       if (!response.ok) {
         throw new Error("Error al cancelar la clase");
       }
-      // Opcional: Recargar datos o mostrar feedback en consola/UI
-      console.log("Clase cancelada exitosamente");
+      
+      // Punto 3: Sincronización de mutaciones - Recargar la semana para ver cambios en UI
+      console.log("Clase cancelada exitosamente, recargando semana...");
+      await loadClassesForWeek(selectedDate);
     } catch (error) {
       console.error("Error canceling class:", error);
     }
@@ -259,7 +262,7 @@ export default function AdminClasesPage() {
       </div>
 
       {/* Lista de clases */}
-      {isLoading ? (
+      {isLoading && activeClasses.length === 0 ? (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />

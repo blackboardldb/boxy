@@ -96,18 +96,22 @@ export default function ScheduleManagerImproved() {
   );
   const [disciplineToDeleteName, setDisciplineToDeleteName] = useState<string>("");
 
-  // Cargar disciplinas al montar el componente
+  // Cargar disciplinas al montar el componente si no hay ninguna cargada (Punto 1 matizado)
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchDisciplines();
-      } finally {
+      if (disciplines.length === 0) {
+        setIsLoading(true);
+        try {
+          await fetchDisciplines();
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [fetchDisciplines]);
+  }, [fetchDisciplines, disciplines.length]);
 
   // --- Gestión de disciplinas ---
   const handleNewDiscipline = () => {

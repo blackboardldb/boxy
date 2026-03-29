@@ -93,8 +93,17 @@ export default function PlansManager() {
 
   // Estados para filtros y búsqueda
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("todos");
   const [durationFilter, setDurationFilter] = useState("todos");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -103,10 +112,10 @@ export default function PlansManager() {
         await fetchPlans(
           1,
           50,
-          searchTerm,
+          debouncedSearch,
           activeFilter !== "todos" ? activeFilter : ""
         );
-        // También cargar disciplinas si no están disponibles
+        // Solo cargar disciplinas si no están disponibles (Punto 1 matizado)
         if (!disciplines || disciplines.length === 0) {
           await fetchDisciplines();
         }
@@ -115,7 +124,7 @@ export default function PlansManager() {
       }
     };
     loadData();
-  }, [fetchPlans, searchTerm, activeFilter, disciplines]);
+  }, [debouncedSearch, activeFilter, fetchPlans, fetchDisciplines, disciplines.length]);
 
   // --- Gestión de planes ---
   const handleNewPlan = () => {

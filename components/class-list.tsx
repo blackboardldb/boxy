@@ -52,8 +52,8 @@ export default function ClassList({
     return format(date, "EEEE dd 'de' MMMM", { locale: es });
   };
 
-  // Mostrar skeleton loader mientras carga
-  if (isLoading) {
+  // Mostrar skeleton loader mientras carga (Solo si no hay datos en memoria para evitar parpadeo)
+  if (isLoading && (!classes || classes.length === 0)) {
     return (
       <div className={`${className}`}>
         {/* Header */}

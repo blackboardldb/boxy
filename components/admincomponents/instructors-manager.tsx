@@ -65,9 +65,18 @@ export function InstructorsManager() {
   // Estado de paginación y filtros
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("todos");
   const [activeFilter, setActiveFilter] = useState("todos");
   const limit = 10;
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(
     null
@@ -76,10 +85,12 @@ export function InstructorsManager() {
   const [deletingInstructor, setDeletingInstructor] =
     useState<Instructor | null>(null);
 
-  // Cargar disciplinas al montar el componente
+  // Cargar disciplinas al montar el componente si no hay ninguna cargada (Punto 1 matizado)
   useEffect(() => {
-    fetchDisciplines();
-  }, [fetchDisciplines]);
+    if (disciplines.length === 0) {
+      fetchDisciplines();
+    }
+  }, [fetchDisciplines, disciplines.length]);
 
   // Cargar instructores al montar el componente y cuando cambian filtros/página
   useEffect(() => {
@@ -89,7 +100,7 @@ export function InstructorsManager() {
         await fetchInstructors(
           page,
           limit,
-          searchTerm,
+          debouncedSearch,
           roleFilter !== "todos" ? roleFilter : "",
           activeFilter !== "todos" ? activeFilter : ""
         );
@@ -98,12 +109,12 @@ export function InstructorsManager() {
       }
     };
     loadData();
-  }, [page, searchTerm, roleFilter, activeFilter, fetchInstructors]);
+  }, [page, debouncedSearch, roleFilter, activeFilter, fetchInstructors]);
 
   // Resetear página si cambia el filtro de búsqueda o estado
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, roleFilter, activeFilter]);
+  }, [debouncedSearch, roleFilter, activeFilter]);
 
   const handleSaveInstructor = async (instructorData: Partial<Instructor>): Promise<boolean> => {
     if (editingInstructor) {

@@ -29,11 +29,12 @@ export default function FinanzasPage() {
 
   // Cargar datos iniciales
   useEffect(() => {
-    // Cargamos una cantidad mayor de usuarios para asegurar que el cálculo de ingresos sea preciso
-    // en una implementación ideal, esto sería un endpoint específico de finanzas
-    fetchUsers(1, 1000);
-    fetchEgresos();
-  }, [fetchUsers, fetchEgresos]);
+    // Solo cargar usuarios si no existen (Punto 1 matizado)
+    if (users.length === 0) {
+      fetchUsers(1, 1000);
+    }
+    // fetchEgresos() redundante eliminado de aquí; lo gestiona ExpensesManager
+  }, [fetchUsers, users.length]);
 
   // Parsear mes seleccionado
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);

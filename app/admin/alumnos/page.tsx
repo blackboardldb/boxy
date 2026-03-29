@@ -65,8 +65,17 @@ export default function AlumnosPage() {
   // Estado de paginación y filtros
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const limit = 10;
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Cargar usuarios al montar el componente y cuando cambian filtros/página
   useEffect(() => {
@@ -76,7 +85,7 @@ export default function AlumnosPage() {
         await fetchUsers(
           page,
           limit,
-          searchTerm,
+          debouncedSearch,
           undefined, // No filtrar por rol específico (incluye usuarios sin rol = alumnos)
           statusFilter !== "todos" ? statusFilter : undefined
         );
@@ -85,15 +94,17 @@ export default function AlumnosPage() {
       }
     };
     loadData();
-    if (!plans || plans.length === 0) {
+    
+    // Solo cargar planes si no existen (optimización Punto 1 matizado)
+    if (plans.length === 0) {
       fetchPlans(1, 100);
     }
-  }, [page, searchTerm, statusFilter, fetchUsers, fetchPlans, plans.length]);
+  }, [page, debouncedSearch, statusFilter, fetchUsers, fetchPlans, plans.length]);
 
   // Resetear página si cambia el filtro de búsqueda o estado
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     const color =
