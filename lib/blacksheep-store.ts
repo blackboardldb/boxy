@@ -51,6 +51,8 @@ interface BlackSheepStore {
   selectedUser: User | null;
   searchResults: User[];
   userStats: Record<string, unknown> | null;
+  currentUser: User | null;
+  isUserLoading: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -76,6 +78,8 @@ interface BlackSheepStore {
   searchUsers: (query: string) => Promise<User[]>;
   getUserStats: () => Promise<any>;
   getUsersByMembershipStatus: (status: string) => Promise<User[]>;
+  fetchMe: () => Promise<User | null>;
+  setCurrentUser: (user: User | null) => void;
 
   // Class session actions
   addClassSession: (classSession: ClassSession) => void;
@@ -193,6 +197,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       selectedUser: null,
       searchResults: [],
       userStats: null,
+      currentUser: null,
+      isUserLoading: false,
       isLoading: false,
       error: null,
 
@@ -487,6 +493,38 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           return [];
         } finally {
           set({ isLoading: false });
+        }
+      },
+
+      setCurrentUser: (user) => set({ currentUser: user }),
+
+      fetchMe: async () => {
+        const { currentUser, isUserLoading } = get();
+        if (currentUser) return currentUser;
+        if (isUserLoading) return null;
+
+        try {
+          set({ isUserLoading: true, error: null });
+          const res = await fetch("/api/me", { 
+            cache: "no-store", 
+            headers: { "Pragma": "no-cache" } 
+          });
+          
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || `Error ${res.status}`);
+          }
+
+          const { data } = await res.json();
+          set({ currentUser: data as User });
+          return data as User;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : "Error desconocido";
+          console.error("Error fetching me:", errMsg);
+          set({ error: errMsg, currentUser: null });
+          return null;
+        } finally {
+          set({ isUserLoading: false });
         }
       },
 
@@ -1385,7 +1423,7 @@ export const useClassesForDate = (date: Date) =>
     })
   );
 
-export const useCurrentUser = (userId?: string) =>
+export const useUserById = (userId?: string) =>
   useBlackSheepStore((state) =>
     userId ? state.users.find((user) => user.id === userId) : null
   );

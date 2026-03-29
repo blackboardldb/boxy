@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { FitCenterUserProfile } from "@/lib/types";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
 interface UseCurrentUserResult {
   currentUser: FitCenterUserProfile | null;
@@ -9,42 +10,20 @@ interface UseCurrentUserResult {
 }
 
 export function useCurrentUser(): UseCurrentUserResult {
-  const [currentUser, setCurrentUser] = useState<FitCenterUserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [trigger, setTrigger] = useState(0);
+  const { currentUser, isUserLoading, error, fetchMe } = useBlackSheepStore();
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function fetchMe() {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const res = await fetch("/api/me", { cache: "no-store", headers: { "Pragma": "no-cache" } });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `Error ${res.status}`);
-        }
-
-        const { data } = await res.json();
-        if (!cancelled) {
-          setCurrentUser(data as FitCenterUserProfile);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error desconocido");
-          setCurrentUser(null);
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
+    // Solo dispara el fetch si no existe el usuario y no está cargando actualmente.
+    // El store también tiene su propio chequeo interno, pero esto evita el efecto aquí.
+    if (!currentUser && !isUserLoading) {
+      fetchMe();
     }
+  }, [currentUser, isUserLoading, fetchMe]);
 
-    fetchMe();
-    return () => { cancelled = true; };
-  }, [trigger]);
-
-  return { currentUser, isLoading, error, reload: () => setTrigger((t) => t + 1) };
+  return { 
+    currentUser, 
+    isLoading: isUserLoading, 
+    error, 
+    reload: () => fetchMe() 
+  };
 }
