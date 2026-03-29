@@ -23,10 +23,10 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden">
+    <div className="min-h-screen bg-slate-50  flex overflow-hidden">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-72 h-screen border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-        <div className="p-8 border-b border-slate-50 dark:border-slate-800/50">
+      <aside className="hidden lg:flex flex-col w-72 h-screen border-r border-slate-200 bg-white shrink-0">
+        <div className="p-8 border-b border-slate-50">
            <Link href="/admin">
             <Logo size={160} />
           </Link>
@@ -39,7 +39,7 @@ export default function AdminLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header with Drawer Navigation */}
-        <header className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <header className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30">
           <Link href="/admin">
             <Logo size={140} />
           </Link>
@@ -48,13 +48,13 @@ export default function AdminLayout({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="rounded-xl hover:bg-slate-100"
               >
-                <Menu className="h-6 w-6 text-slate-700 dark:text-slate-300" />
+                <Menu className="h-6 w-6 text-slate-700" />
               </Button>
             </DrawerTrigger>
             <DrawerContent className="h-[80vh] px-0">
-              <DrawerHeader className="px-6 border-b border-slate-50 dark:border-slate-800/50 pb-4">
+              <DrawerHeader className="px-6 border-b border-slate-50 pb-4">
                 <div className="flex items-center justify-between">
                   <DrawerTitle>
                     <Logo size={120} />
@@ -69,7 +69,7 @@ export default function AdminLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950 p-4 md:p-8 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8 custom-scrollbar">
           {children}
         </main>
       </div>

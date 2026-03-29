@@ -207,7 +207,7 @@ export default function AlumnosPage() {
         )}
       </div>
 
-      <Card className="rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
+      <Card className="rounded-xl overflow-hidden border-slate-200">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

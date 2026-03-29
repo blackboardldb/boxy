@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { Discipline, DayOfWeek, CancellationRule } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -59,7 +59,7 @@ export default function DisciplinesManager() {
     updateDisciplineById,
   } = useBlackSheepStore();
 
-  const { toast } = useToast();
+
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<Discipline>(emptyDiscipline);
   const [showModal, setShowModal] = useState(false);
@@ -180,17 +180,9 @@ export default function DisciplinesManager() {
 
     setIsLoading(false);
     if (result) {
-      toast({
-        title: editing ? "Disciplina actualizada" : "Disciplina creada",
-        description: "Los cambios se guardaron. Si desactivaste la disciplina, las clases futuras sin alumnos se eliminaron automáticamente.",
-      });
       handleCloseModal();
     } else {
-      toast({
-        title: "Error",
-        description: "Hubo un error al procesar la solicitud.",
-        variant: "destructive",
-      });
+      console.error("Hubo un error al procesar la solicitud.");
     }
   };
 
@@ -216,10 +208,7 @@ export default function DisciplinesManager() {
     if (confirmation) {
       const result = await deleteDiscipline(id);
       if (result) {
-        toast({
-          title: "Disciplina eliminada",
-          description: "Se ha eliminado del sistema permanentemente.",
-        });
+        // Disciplina eliminada
       }
     }
   };
@@ -233,7 +222,7 @@ export default function DisciplinesManager() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800 shadow-premium">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-xl border border-slate-100 shadow-premium">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Gestión de Disciplinas</h2>
           <p className="text-sm text-muted-foreground mt-1">Configura horarios, reglas de cancelación y disponibilidad.</p>
@@ -245,7 +234,7 @@ export default function DisciplinesManager() {
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-2xl h-[90vh] flex flex-col rounded-xl p-0 border-none shadow-2xl overflow-hidden">
-          <DialogHeader className="p-6 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+          <DialogHeader className="p-6 bg-zinc-50 border-b border-zinc-100 shrink-0">
             <div className="flex items-center justify-between w-full pr-6">
               <DialogTitle className="text-lg font-bold">
                 {editing ? "Editar Disciplina" : "Crear Nueva Disciplina"}
@@ -257,12 +246,12 @@ export default function DisciplinesManager() {
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white dark:bg-slate-950">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white">
             {/* Basic Info Section */}
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700 dark:text-slate-300">Nombre</Label>
+                  <Label className="font-bold text-slate-700">Nombre</Label>
                   <Input
                     name="name"
                     value={form.name}
@@ -273,7 +262,7 @@ export default function DisciplinesManager() {
                 </div>
 
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700 dark:text-slate-300">Color</Label>
+                  <Label className="font-bold text-slate-700">Color</Label>
                   <div className="flex gap-2 h-11">
                     <Input
                       name="color"
@@ -293,7 +282,7 @@ export default function DisciplinesManager() {
               </div>
 
               <div className="space-y-2">
-                <Label className="font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+                <Label className="font-bold text-slate-700">Descripción</Label>
                 <Input
                   name="description"
                   value={form.description}
@@ -303,7 +292,7 @@ export default function DisciplinesManager() {
                 />
               </div>
 
-              <div className="h-px bg-slate-100 dark:bg-slate-800 w-full mt-6" />
+              <div className="h-px bg-slate-100 w-full mt-6" />
             </div>
 
             {/* Days Section */}
@@ -321,7 +310,7 @@ export default function DisciplinesManager() {
                       "px-4 py-2 text-sm font-bold rounded-xl transition-all border",
                       selectedDays.includes(day as DayOfWeek)
                         ? "bg-primary text-white border-primary shadow-md"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                     )}
                   >
                     {label}
@@ -332,7 +321,7 @@ export default function DisciplinesManager() {
               {selectedDays.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 mt-4">
                   {selectedDays.map((day) => (
-                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/20 rounded-xl border border-slate-100 dark:border-slate-800 group transition-all hover:bg-white dark:hover:bg-slate-800/40">
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100 group transition-all hover:bg-white">
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                           <Calendar className="w-4 h-4" />
@@ -342,12 +331,12 @@ export default function DisciplinesManager() {
 
                       <div className="flex-1 flex flex-wrap gap-2">
                         {(form.schedule.find((d) => d.day === day) || { times: [] }).times.map((time) => (
-                          <Badge key={time} variant="secondary" className="pl-3 pr-1 py-1.5 h-8 gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-none">
+                          <Badge key={time} variant="secondary" className="pl-3 pr-1 py-1.5 h-8 gap-1 rounded-xl bg-slate-100 text-slate-700 font-bold border-none">
                             <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
                             {time}
                             <button
                               onClick={() => handleRemoveTime(day, time)}
-                              className="w-6 h-6 flex items-center justify-center rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-red-500 transition-colors"
+                              className="w-6 h-6 flex items-center justify-center rounded-xl hover:bg-slate-200 text-red-500 transition-colors"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -387,14 +376,14 @@ export default function DisciplinesManager() {
               </Label>
               <div className="space-y-3">
                 {form.cancellationRules.map((rule) => (
-                  <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 group">
+                  <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 group">
                     <div className="flex items-center gap-4">
-                      <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-xl text-xs font-bold">
+                      <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-xl text-xs font-bold">
                         {rule.time}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-yellow-900 dark:text-yellow-200">{rule.hoursBefore} horas de anticipación</p>
-                        <p className="text-xs text-yellow-700/70 dark:text-yellow-400/70">{rule.description || "Sin descripción"}</p>
+                        <p className="text-sm font-bold text-yellow-900">{rule.hoursBefore} horas de anticipación</p>
+                        <p className="text-xs text-yellow-700/70">{rule.description || "Sin descripción"}</p>
                       </div>
                     </div>
                     <Button size="icon" variant="ghost" className="rounded-xl h-10 w-10 text-red-400 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveRule(rule.id)}>
@@ -403,7 +392,7 @@ export default function DisciplinesManager() {
                   </div>
                 ))}
 
-                <div className="flex flex-col sm:flex-row gap-3 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-dotted border-slate-300 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row gap-3 p-4 bg-slate-50 rounded-xl border border-dotted border-slate-300">
                   <Input className="sm:w-24 rounded-xl h-10" placeholder="Hora" id="rule-time" />
                   <Input className="sm:w-24 rounded-xl h-10" placeholder="Horas" type="number" id="rule-hours" />
                   <Input className="flex-1 rounded-xl h-10" placeholder="Motivo/Descripción" id="rule-desc" />
@@ -425,9 +414,9 @@ export default function DisciplinesManager() {
             </div>
           </div>
 
-          <DialogFooter className="p-8 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 shrink-0 flex flex-row items-center justify-end gap-3">
+          <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 shrink-0 flex flex-row items-center justify-end gap-3">
             <Button variant="ghost" onClick={handleCloseModal} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
-            <Button onClick={handleSave} disabled={isLoading} className="rounded-xl h-12 px-10 bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-bold shadow-xl hover:scale-105 transition-transform disabled:opacity-70">
+            <Button onClick={handleSave} disabled={isLoading} className="rounded-xl h-12 px-10 bg-slate-950 text-white font-bold shadow-xl hover:scale-105 transition-transform disabled:opacity-70">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
               {editing ? "Actualizar Disciplina" : "Guardar Disciplina"}
             </Button>
@@ -463,10 +452,7 @@ export default function DisciplinesManager() {
                       onCheckedChange={async (checked) => {
                         const result = await updateDisciplineById(d.id, { isActive: checked });
                         if (result) {
-                          toast({
-                            title: checked ? "Disciplina activada" : "Disciplina desactivada",
-                            description: checked ? "Los alumnos podrán inscribirse nuevamente." : "Se han eliminado las clases futuras sin alumnos.",
-                          });
+                          // Estado actualizado
                         }
                       }}
                     />
@@ -482,7 +468,7 @@ export default function DisciplinesManager() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleDisciplineExpansion(d.id)}
-                      className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800"
+                      className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50"
                     >
                       {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                     </Button>
@@ -507,7 +493,7 @@ export default function DisciplinesManager() {
 
               <CardContent className="px-6 pb-6 empty:hidden">
                 {expandedDisciplines.has(d.id) && (
-                  <div className="space-y-6 pt-2 border-t border-slate-50 dark:border-slate-900 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-6 pt-2 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Días y Horarios</span>
@@ -515,17 +501,17 @@ export default function DisciplinesManager() {
                   </div>
 
                   {d.schedule.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-dotted border-slate-200 dark:border-slate-800 text-center text-xs text-muted-foreground">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-dotted border-slate-200 text-center text-xs text-muted-foreground">
                       Sin horarios definidos
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-1.5 px-1">
                       {d.schedule.map((s) => (
-                        <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 transition-colors hover:bg-slate-100/50">
+                        <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 transition-colors hover:bg-slate-100/50">
                           <span className="text-xs font-bold w-16">{dayLabels[s.day]}</span>
                           <div className="flex flex-wrap gap-1 justify-end max-w-[140px]">
                             {s.times.map((t) => (
-                              <span key={t} className="text-[9px] font-black px-2 py-0.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 shadow-sm">
+                              <span key={t} className="text-[9px] font-black px-2 py-0.5 rounded-xl bg-white border border-slate-100 shadow-sm">
                                 {t}
                               </span>
                             ))}
@@ -537,11 +523,11 @@ export default function DisciplinesManager() {
                 </div>
 
                 {d.cancellationRules.length > 0 && (
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="pt-4 border-t border-slate-100">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3 pl-1">Política de Cancelación</span>
                     <div className="flex flex-wrap gap-2 pr-2">
                        {d.cancellationRules.map((r) => (
-                         <div key={r.id} className="text-[9px] font-black px-2.5 py-1 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-100 dark:border-yellow-900/10 flex items-center gap-1.5 shadow-sm">
+                         <div key={r.id} className="text-[9px] font-black px-2.5 py-1 rounded-xl bg-yellow-50 text-yellow-700 border border-yellow-100 flex items-center gap-1.5 shadow-sm">
                            <Clock className="w-3 h-3 text-yellow-500/50" />
                            {r.time} → {r.hoursBefore}h
                          </div>

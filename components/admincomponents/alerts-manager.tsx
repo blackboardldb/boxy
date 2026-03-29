@@ -24,7 +24,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -39,7 +39,7 @@ interface InAppAlert {
 }
 
 export function AlertsManager() {
-  const { toast } = useToast();
+
   const [alerts, setAlerts] = useState<InAppAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,11 +70,7 @@ export function AlertsManager() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content || !startDate || !endDate) {
-      toast({
-        title: "Campos incompletos",
-        description: "Por favor completa todos los campos de la alerta.",
-        variant: "destructive",
-      });
+      console.warn("Campos incompletos para la alerta.");
       return;
     }
 
@@ -93,10 +89,6 @@ export function AlertsManager() {
       });
 
       if (resp.ok) {
-        toast({
-          title: "Alerta publicada",
-          description: "La alerta se ha creado correctamente.",
-        });
         setTitle("");
         setContent("");
         fetchAlerts();
@@ -104,11 +96,7 @@ export function AlertsManager() {
         throw new Error("Failed to create alert");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo crear la alerta.",
-        variant: "destructive",
-      });
+      console.error("Error al crear alerta:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -123,20 +111,12 @@ export function AlertsManager() {
       });
 
       if (resp.ok) {
-        toast({
-          title: "Alerta eliminada",
-          description: "La alerta ha sido eliminada permanentemente.",
-        });
         fetchAlerts();
       } else {
         throw new Error("Failed to delete alert");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la alerta.",
-        variant: "destructive",
-      });
+      console.error("Error al eliminar alerta:", error);
     }
   };
 
@@ -170,8 +150,8 @@ export function AlertsManager() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
       {/* Columna Izquierda: Crear Alerta */}
-      <Card className="rounded-xl border shadow-sm border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
-        <CardHeader className="border-b border-slate-50 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10 px-6 py-4">
+      <Card className="rounded-xl border shadow-sm border-slate-100 bg-white">
+        <CardHeader className="border-b border-slate-50 bg-slate-50/30 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Bell className="w-5 h-5" />
@@ -265,8 +245,8 @@ export function AlertsManager() {
       </Card>
 
       {/* Columna Derecha: Historial */}
-      <Card className="rounded-xl border shadow-sm border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
-        <CardHeader className="border-b border-slate-50 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/10 px-6 py-4">
+      <Card className="rounded-xl border shadow-sm border-slate-100 bg-white">
+        <CardHeader className="border-b border-slate-50 bg-slate-50/30 px-6 py-4">
           <CardTitle className="text-lg font-bold">Historial de Alertas</CardTitle>
           <CardDescription className="text-xs">Alertas publicadas y programadas</CardDescription>
         </CardHeader>
@@ -283,9 +263,9 @@ export function AlertsManager() {
                 <p className="text-xs font-medium italic">No hay alertas registradas</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50 dark:divide-slate-900">
+              <div className="divide-y divide-slate-50">
                 {alerts.map((alert) => (
-                  <div key={alert.id} className="p-6 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
+                  <div key={alert.id} className="p-6 transition-colors hover:bg-slate-50/50">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className={`mt-1 p-2 rounded-lg text-white ${getAlertColor(alert.type)}`}>
@@ -301,7 +281,7 @@ export function AlertsManager() {
                               {format(new Date(alert.startDate), "dd/MM/yy")} - {format(new Date(alert.endDate), "dd/MM/yy")}
                             </span>
                           </div>
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{alert.title}</h4>
+                          <h4 className="font-bold text-sm text-slate-900">{alert.title}</h4>
                           <p className="text-xs text-slate-500 line-clamp-2 mt-1">{alert.content}</p>
                         </div>
                       </div>

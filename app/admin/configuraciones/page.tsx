@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
-import { useToast } from "@/components/ui/use-toast";
+
 import { Edit, Save, X, Globe, Building2, Palette } from "lucide-react";
 import SquareLogo from "@/components/SquareLogo";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
@@ -13,7 +13,7 @@ import { AlertsManager } from "@/components/admincomponents/alerts-manager";
 
 export default function ConfiguracionesPage() {
   const { initialOrganization, updateOrganization, fetchOrganization } = useBlackSheepStore();
-  const { toast } = useToast();
+
   
   // States for general info
   const [centerName, setCenterName] = useState("");
@@ -61,20 +61,12 @@ export default function ConfiguracionesPage() {
       const success = await updateOrganization(updatedOrg);
       
       if (success) {
-        toast({
-          title: "Configuración actualizada",
-          description: "La información del centro se ha guardado correctamente.",
-        });
         setEditingSection(null);
       } else {
         throw new Error("Failed to update organization");
       }
     } catch (error) {
-      toast({
-        title: "Error al guardar",
-        description: "No se pudo actualizar la configuración. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
+      console.error("Error al guardar configuración:", error);
     } finally {
       setIsSaving(false);
     }
@@ -106,8 +98,8 @@ export default function ConfiguracionesPage() {
 
       <div className="grid grid-cols-1 gap-8 max-w-5xl">
         {/* Información del Centro - Airbnb Style */}
-        <Card className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4">
+        <Card className="rounded-xl border border-slate-200 bg-white">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/50 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Building2 className="w-5 h-5" />
@@ -122,7 +114,7 @@ export default function ConfiguracionesPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setEditingSection("identity")}
-                className="rounded-xl px-4 border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900 transition-all font-semibold text-xs"
+                className="rounded-xl px-4 border-slate-200 hover:bg-slate-50 transition-all font-semibold text-xs"
               >
                 <Edit className="w-3.5 h-3.5 mr-2" /> Editar
               </Button>
@@ -132,21 +124,21 @@ export default function ConfiguracionesPage() {
           <CardContent className="p-0">
             {editingSection !== "identity" ? (
               /* VISTA LECTURA */
-              <div className="divide-y divide-slate-50 dark:divide-slate-900">
+              <div className="divide-y divide-slate-50">
                 <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre del Centro</p>
-                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 italic">{centerName || "No definido"}</p>
+                    <p className="text-lg font-semibold text-slate-900 italic">{centerName || "No definido"}</p>
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Horizontal</p>
-                    <div className="h-12 flex items-center bg-slate-50/50 dark:bg-slate-900/50 rounded-xl px-4 border border-slate-100 dark:border-slate-800 overflow-hidden">
+                    <div className="h-12 flex items-center bg-slate-50/50 rounded-xl px-4 border border-slate-100 overflow-hidden">
                       {logoHorizontalSvg ? <Logo size={120} /> : <span className="text-xs text-slate-400 italic">Sin configurar</span>}
                     </div>
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Cuadrado</p>
-                    <div className="h-12 w-12 flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                    <div className="h-12 w-12 flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden">
                       {logoSquareSvg ? <SquareLogo size={32} /> : <span className="text-[10px] text-slate-400 italic">N/A</span>}
                     </div>
                   </div>
@@ -160,14 +152,14 @@ export default function ConfiguracionesPage() {
                     <Label className="text-sm font-bold flex items-center gap-2">
                        <Globe className="w-4 h-4 text-primary" /> Nombre Público del Centro
                     </Label>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 tracking-tighter uppercase">Visible en Login y Dashboard</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-xl bg-blue-100 text-blue-700 tracking-tighter uppercase">Visible en Login y Dashboard</span>
                   </div>
                   <input 
                     type="text" 
                     value={centerName}
                     onChange={(e) => setCenterName(e.target.value)}
                     placeholder="Ej. BlackSheep CrossFit"
-                    className="w-full p-4 text-sm font-medium border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all"
+                    className="w-full p-4 text-sm font-medium border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-primary outline-none transition-all"
                   />
                 </div>
 
@@ -180,12 +172,12 @@ export default function ConfiguracionesPage() {
                     </div>
                     <textarea
                       rows={6}
-                      className="w-full p-4 font-mono text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all"
+                      className="w-full p-4 font-mono text-xs border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-primary outline-none transition-all"
                       placeholder="<svg ...> ... </svg>"
                       value={logoHorizontalSvg}
                       onChange={(e) => setLogoHorizontalSvg(e.target.value)}
                     />
-                    <div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/30">
+                    <div className="p-4 border border-dashed border-slate-200 rounded-xl bg-white">
                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Navbar</p>
                        <div className="h-10 flex items-center"><Logo size={100} /></div>
                     </div>
@@ -199,23 +191,23 @@ export default function ConfiguracionesPage() {
                     </div>
                     <textarea
                       rows={6}
-                      className="w-full p-4 font-mono text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none transition-all"
+                      className="w-full p-4 font-mono text-xs border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-primary outline-none transition-all"
                       placeholder="<svg ...> ... </svg>"
                       value={logoSquareSvg}
                       onChange={(e) => setLogoSquareSvg(e.target.value)}
                     />
-                    <div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/30">
+                    <div className="p-4 border border-dashed border-slate-200 rounded-xl bg-white">
                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Login</p>
                        <div className="h-10 flex items-center"><SquareLogo size={40} /></div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-slate-50 dark:border-slate-900">
+                <div className="flex justify-end gap-3 pt-6 border-t border-slate-50">
                   <Button 
                     variant="ghost" 
                     onClick={handleCancel}
-                    className="rounded-xl px-6 transition-all hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold"
+                    className="rounded-xl px-6 transition-all hover:bg-slate-100 font-semibold"
                   >
                     <X className="w-4 h-4 mr-2" /> Cancelar
                   </Button>
