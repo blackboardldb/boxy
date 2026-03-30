@@ -86,13 +86,13 @@ export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
             className={cn(
               "flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all relative group",
               isActive(item.href)
-                ? "bg-slate-950 text-white shadow-md"
-                : "text-slate-500 hover:text-slate-950 hover:bg-slate-100/80"
+                ? "bg-zinc-950 text-white shadow-md"
+                : "text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100/80"
             )}
           >
             <item.icon className={cn(
               "mr-4 h-5 w-5 transition-transform group-hover:scale-110",
-              isActive(item.href) ? "" : "text-slate-400"
+              isActive(item.href) ? "" : "text-zinc-400"
             )} />
             {item.name}
             {item.hasDot && notificationCount > 0 && (
@@ -102,7 +102,7 @@ export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
+      <div className="p-4 border-t border-zinc-100">
         <button
           onClick={handleLogout}
           className="flex items-center w-full px-4 py-3 text-sm font-bold text-red-600 rounded-xl hover:bg-red-50 transition-all group"

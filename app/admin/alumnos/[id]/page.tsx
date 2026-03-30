@@ -308,7 +308,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-1 xl:col-span-1 space-y-6">
           
           {/* Tarjeta de Datos Personales */}
-          <Card className="shadow-sm border-zinc-200 rounded-xl">
+          <Card className="shadow-sm border-zinc-100 rounded-xl">
             {editingSection !== "personal" ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -418,7 +418,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
 
 
           {/* Tarjeta de Membresía Actual */}
-          <Card className="shadow-sm border-zinc-200 rounded-xl">
+          <Card className="shadow-sm border-zinc-100 rounded-xl">
             {editingSection !== "membership" ? (
               <>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -599,7 +599,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         <div className="lg:col-span-1 xl:col-span-2 space-y-6">
           
           {/* Tarjeta de Contraseña (Movida aquí) */}
-          <Card className="shadow-sm border-zinc-200 rounded-xl">
+          <Card className="shadow-sm border-zinc-100 rounded-xl">
             <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="text-base font-bold">Seguridad de la cuenta</CardTitle>
@@ -627,7 +627,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
           <Accordion type="multiple" defaultValue={["planes"]} className="w-full space-y-4">
             
             {/* HISTORIAL DE ASISTENCIA */}
-            <AccordionItem value="asistencia" className="border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden px-1">
+            <AccordionItem value="asistencia" className="border border-zinc-100 bg-white rounded-xl shadow-sm overflow-hidden px-1">
               <AccordionTrigger className="px-4 hover:no-underline hover:bg-zinc-50 font-semibold tracking-tight text-lg py-4">
                 Clases consumidas del plan actual
               </AccordionTrigger>
@@ -654,7 +654,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
             </AccordionItem>
 
             {/* HISTORIAL DE PLANES */}
-            <AccordionItem value="planes" className="border border-zinc-200 bg-white rounded-xl shadow-sm overflow-hidden px-1">
+            <AccordionItem value="planes" className="border border-zinc-100 bg-white rounded-xl shadow-sm overflow-hidden px-1">
               <AccordionTrigger className="px-4 hover:no-underline hover:bg-zinc-50 font-semibold tracking-tight text-lg py-4">
                 Historial de Planes
               </AccordionTrigger>
@@ -695,7 +695,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                     </div>
                   )}
                   {(!student?.membership?.history || student.membership.history.length === 0) && !student?.membership?.membershipType && (
-                    <div className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
+                    <div className="relative pl-6 border-l-2 border-zinc-100 space-y-1.5 py-4">
                         <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-sm -left-[5.5px] top-5" />
                         <p className="text-sm font-medium text-zinc-400">Sin historial previo</p>
                         <p className="text-xs text-zinc-400">Aún no hay membresías asignadas para este alumno.</p>
@@ -708,7 +708,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
                       const consumed = !isPastUnlimited ? Math.max(0, classesContracted - remainingClasses) : (pastMem.centerStats?.currentMonth?.classesAttended ?? 0);
                       
                       return (
-                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-200 space-y-1.5 py-4">
+                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-100 space-y-1.5 py-4">
                               <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
                               <p className="text-sm font-medium text-zinc-500">
                                 {pastMem.membershipType} | {pastMem.currentPeriodStart 

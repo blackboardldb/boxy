@@ -69,7 +69,7 @@ export default function AdminClassList({
             />
           ))
         ) : (
-          <div className="text-center py-16 border border-zinc-200 rounded-xl bg-slate-50">
+          <div className="text-center py-16 border border-zinc-100 rounded-xl bg-zinc-50">
             <Calendar className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
             <p className="text-gray-400 text-base">
               No hay clases disponibles para este día

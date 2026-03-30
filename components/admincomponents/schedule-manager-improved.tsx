@@ -307,13 +307,13 @@ export default function ScheduleManagerImproved() {
             </Card>
           ))
         ) : !disciplines || disciplines.length === 0 ? (
-          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
-            <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center mb-6">
-              <Settings className="w-10 h-10 text-slate-300" />
+          <Card className="col-span-full border-2 border-dashed border-zinc-100 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
+            <div className="w-20 h-20 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
+              <Settings className="w-10 h-10 text-zinc-300" />
             </div>
-            <h3 className="text-xl font-bold text-slate-500">No hay disciplinas configuradas</h3>
-            <p className="text-sm text-slate-400 mt-2 mb-8 max-w-xs mx-auto">Crea una disciplina para empezar a programar tus horarios semanales.</p>
-            <Button onClick={handleNewDiscipline} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
+            <h3 className="text-xl font-bold text-zinc-500">No hay disciplinas configuradas</h3>
+            <p className="text-sm text-zinc-400 mt-2 mb-8 max-w-xs mx-auto">Crea una disciplina para empezar a programar tus horarios semanales.</p>
+            <Button onClick={handleNewDiscipline} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-zinc-50">
               Crear Disciplina
             </Button>
           </Card>
@@ -341,7 +341,7 @@ export default function ScheduleManagerImproved() {
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
                         <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
-                        {!d.isActive && <span className="text-[10px] font-black uppercase text-slate-400">Inactiva</span>}
+                        {!d.isActive && <span className="text-[10px] font-black uppercase text-zinc-400">Inactiva</span>}
                       </div>
                     </div>
                     
@@ -350,7 +350,7 @@ export default function ScheduleManagerImproved() {
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleDisciplineExpansion(d.id)}
-                        className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50"
+                        className="text-xs font-bold h-10 px-4 rounded-xl bg-zinc-50"
                       >
                         {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                       </Button>
@@ -375,17 +375,17 @@ export default function ScheduleManagerImproved() {
 
                 <CardContent className="px-6 pb-6 empty:hidden">
                   {expandedDisciplines.has(d.id) && (
-                    <div className="space-y-4 pt-2 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-4 pt-2 border-t border-zinc-50 animate-in slide-in-from-top-2 duration-300">
                       {d.schedule.length === 0 ? (
                         <div className="p-4 rounded-xl border-2 border-dotted text-center text-xs text-muted-foreground italic">Sin horarios configurados</div>
                       ) : (
                         <div className="space-y-1.5">
                           {d.schedule.map((s) => (
-                            <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50">
+                            <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50/50">
                               <span className="text-xs font-bold w-12">{dayLabels[s.day]}</span>
                               <div className="flex flex-wrap gap-1 justify-end">
                                 {s.times.map((t) => (
-                                  <Badge key={t} variant="outline" className="text-[10px] bg-white border-slate-200 rounded-xl">
+                                  <Badge key={t} variant="outline" className="text-[10px] bg-white border-zinc-100 rounded-xl">
                                     {t}
                                   </Badge>
                                 ))}
@@ -396,8 +396,8 @@ export default function ScheduleManagerImproved() {
                       )}
 
                       {d.cancellationRules.length > 0 && (
-                        <div className="pt-4 border-t border-slate-100">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Reglas de Cancelación</p>
+                        <div className="pt-4 border-t border-zinc-100">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Reglas de Cancelación</p>
                           <div className="flex flex-wrap gap-1.5">
                             {d.cancellationRules.map((r) => (
                               <Badge key={r.id} variant="outline" className="text-[10px] bg-yellow-50 text-yellow-700 border-yellow-100 font-bold rounded-xl">
@@ -442,48 +442,48 @@ export default function ScheduleManagerImproved() {
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700">Nombre</Label>
+                  <Label className="font-bold text-zinc-700">Nombre</Label>
                   <Input
                     name="name"
                     value={disciplineForm.name}
                     onChange={handleDisciplineChange}
                     placeholder="Ej: CrossFit, Yoga"
-                    className="rounded-xl h-11 border-slate-200"
+                    className="rounded-xl h-11 border-zinc-100"
                   />
                 </div>
 
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700">Color</Label>
+                  <Label className="font-bold text-zinc-700">Color</Label>
                   <div className="flex gap-2 h-11">
                     <Input
                       name="color"
                       type="color"
                       value={disciplineForm.color}
                       onChange={handleDisciplineChange}
-                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-slate-200 overflow-hidden"
+                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-zinc-100 overflow-hidden"
                     />
                     <Input 
                       value={disciplineForm.color}
                       onChange={handleDisciplineChange}
                       name="color"
-                      className="flex-1 h-full rounded-xl border-slate-200 font-mono text-sm"
+                      className="flex-1 h-full rounded-xl border-zinc-100 font-mono text-sm"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="font-bold text-slate-700">Descripción</Label>
+                <Label className="font-bold text-zinc-700">Descripción</Label>
                 <Input
                   name="description"
                   value={disciplineForm.description}
                   onChange={handleDisciplineChange}
                   placeholder="Descripción de la disciplina"
-                  className="rounded-xl h-11 border-slate-200"
+                  className="rounded-xl h-11 border-zinc-100"
                 />
               </div>
 
-              <div className="h-px bg-slate-100 w-full mt-6" />
+              <div className="h-px bg-zinc-100 w-full mt-6" />
             </div>
 
             {/* Selección de días */}
@@ -498,8 +498,8 @@ export default function ScheduleManagerImproved() {
                     className={cn(
                       "px-4 py-2 text-sm font-bold rounded-xl transition-all border",
                       selectedDays.includes(day as DayOfWeek)
-                        ? "bg-slate-900 text-white border-slate-900 shadow-md"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-md"
+                        : "bg-white text-zinc-600 border-zinc-100 hover:bg-zinc-50"
                     )}
                   >
                     {label}
@@ -514,21 +514,21 @@ export default function ScheduleManagerImproved() {
                 <Label className="text-lg font-bold">Horarios por día</Label>
 
                 {/* Inputs para agregar horarios */}
-                <div className="bg-slate-50 rounded-xl p-4 border-2 border-dotted border-slate-200 space-y-4">
+                <div className="bg-zinc-50 rounded-xl p-4 border-2 border-dotted border-zinc-100 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-base">Programar nueva hora clase</span>
                   </div>
 
                   <div className="flex flex-wrap gap-4 items-end">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400">Día</Label>
+                      <Label className="text-[10px] font-black uppercase text-zinc-400">Día</Label>
                       <Select
                         value={selectedDayForSchedule}
                         onValueChange={(value) =>
                           setSelectedDayForSchedule(value as DayOfWeek)
                         }
                       >
-                        <SelectTrigger className="w-40 rounded-xl h-10 border-slate-200">
+                        <SelectTrigger className="w-40 rounded-xl h-10 border-zinc-100">
                           <SelectValue placeholder="Elegir día" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
@@ -542,7 +542,7 @@ export default function ScheduleManagerImproved() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-slate-400">Hora (HH:MM)</Label>
+                      <Label className="text-[10px] font-black uppercase text-zinc-400">Hora (HH:MM)</Label>
                       <div className="flex gap-2">
                         <Input
                           className="w-16 rounded-xl h-10"
@@ -592,9 +592,9 @@ export default function ScheduleManagerImproved() {
                     if (daySchedule.times.length === 0) return null;
 
                     return (
-                      <div key={day} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100">
+                      <div key={day} className="flex items-center justify-between p-4 bg-white rounded-xl border border-zinc-100">
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="h-8 rounded-xl px-3 bg-slate-50 font-bold border-slate-200">
+                          <Badge variant="outline" className="h-8 rounded-xl px-3 bg-zinc-50 font-bold border-zinc-100">
                             {dayLabels[day]}
                           </Badge>
                         </div>
@@ -631,7 +631,7 @@ export default function ScheduleManagerImproved() {
 
               <div className="space-y-4">
                 {availableTimes.length > 0 && (
-                  <div className="flex flex-wrap gap-4 items-end p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex flex-wrap gap-4 items-end p-4 bg-zinc-50 rounded-xl border border-zinc-100">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-yellow-700">Para la clase de:</Label>
                       <Select value={selectedCancellationTime} onValueChange={setSelectedCancellationTime}>
@@ -682,11 +682,11 @@ export default function ScheduleManagerImproved() {
 
                 <div className="grid grid-cols-1 gap-2">
                   {disciplineForm.cancellationRules.map((rule) => (
-                    <div key={rule.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100">
+                    <div key={rule.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-zinc-100">
                       <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-sm bg-yellow-400" />
                         <span className="text-sm font-bold">Clase: <span className="text-primary">{rule.time}</span></span>
-                        <span className="text-sm text-slate-500">Mínimo <span className="font-bold text-slate-700">{rule.hoursBefore}h</span> antes</span>
+                        <span className="text-sm text-zinc-500">Mínimo <span className="font-bold text-zinc-700">{rule.hoursBefore}h</span> antes</span>
                       </div>
                       <Button 
                         className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl" 
@@ -703,7 +703,7 @@ export default function ScheduleManagerImproved() {
 
           <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 shrink-0 flex flex-row items-center justify-end gap-3">
             <Button variant="ghost" onClick={() => setShowDisciplineModal(false)} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
-            <Button onClick={handleSaveDiscipline} disabled={isSaving} className="rounded-xl h-12 px-10 bg-slate-950 text-white font-bold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-70">
+            <Button onClick={handleSaveDiscipline} disabled={isSaving} className="rounded-xl h-12 px-10 bg-zinc-950 text-white font-bold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-70">
               {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
               {editingDiscipline ? "Actualizar Horario" : "Guardar Disciplina"}
             </Button>
@@ -721,8 +721,8 @@ export default function ScheduleManagerImproved() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-slate-600 font-medium leading-relaxed">
-              ¿Estás seguro de que quieres eliminar la disciplina <span className="font-black text-slate-800">"{disciplineToDeleteName}"</span>?
+            <p className="text-zinc-600 font-medium leading-relaxed">
+              ¿Estás seguro de que quieres eliminar la disciplina <span className="font-black text-zinc-800">"{disciplineToDeleteName}"</span>?
             </p>
             <div className="p-4 bg-red-50 rounded-xl border border-red-100">
               <p className="text-sm text-red-700 font-bold flex items-start gap-2">
@@ -730,7 +730,7 @@ export default function ScheduleManagerImproved() {
                 Esta acción SOLO funcionará si la disciplina NO tiene historial de clases (pasadas o inscritas).
               </p>
             </div>
-            <p className="text-sm text-slate-500 italic">
+            <p className="text-sm text-zinc-500 italic">
               * Si tiene historial, te recomendamos usar el interruptor de <span className="font-bold underline">Desactivar</span> en la tarjeta para limpiar el calendario de forma segura.
             </p>
           </div>

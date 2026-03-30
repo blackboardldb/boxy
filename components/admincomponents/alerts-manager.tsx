@@ -150,8 +150,8 @@ export function AlertsManager() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
       {/* Columna Izquierda: Crear Alerta */}
-      <Card className="rounded-xl border shadow-sm border-slate-100 bg-white">
-        <CardHeader className="border-b border-slate-50 bg-slate-50/30 px-6 py-4">
+      <Card className="rounded-xl border shadow-sm border-zinc-100 bg-white">
+        <CardHeader className="border-b border-zinc-50 bg-zinc-50/30 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Bell className="w-5 h-5" />
@@ -168,7 +168,7 @@ export function AlertsManager() {
               <div className="space-y-2">
                 <Label htmlFor="startDate">Desde</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
                   <Input 
                     id="startDate" 
                     type="date" 
@@ -181,7 +181,7 @@ export function AlertsManager() {
               <div className="space-y-2">
                 <Label htmlFor="endDate">Hasta</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
                   <Input 
                     id="endDate" 
                     type="date" 
@@ -245,27 +245,27 @@ export function AlertsManager() {
       </Card>
 
       {/* Columna Derecha: Historial */}
-      <Card className="rounded-xl border shadow-sm border-slate-100 bg-white">
-        <CardHeader className="border-b border-slate-50 bg-slate-50/30 px-6 py-4">
+      <Card className="rounded-xl border shadow-sm border-zinc-100 bg-white">
+        <CardHeader className="border-b border-zinc-50 bg-zinc-50/30 px-6 py-4">
           <CardTitle className="text-lg font-bold">Historial de Alertas</CardTitle>
           <CardDescription className="text-xs">Alertas publicadas y programadas</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="max-h-[500px] overflow-y-auto">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center p-12 text-zinc-400">
                 <Loader2 className="w-8 h-8 animate-spin mb-2" />
                 <p className="text-xs font-medium">Cargando alertas...</p>
               </div>
             ) : alerts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center p-12 text-zinc-400">
                 <Bell className="w-8 h-8 mb-2 opacity-20" />
                 <p className="text-xs font-medium italic">No hay alertas registradas</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-zinc-50">
                 {alerts.map((alert) => (
-                  <div key={alert.id} className="p-6 transition-colors hover:bg-slate-50/50">
+                  <div key={alert.id} className="p-6 transition-colors hover:bg-zinc-50/50">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className={`mt-1 p-2 rounded-lg text-white ${getAlertColor(alert.type)}`}>
@@ -276,19 +276,19 @@ export function AlertsManager() {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               {getAlertLabel(alert.type)}
                             </span>
-                            <span className="text-[10px] text-slate-300">•</span>
-                            <span className="text-[10px] font-medium text-slate-400">
+                            <span className="text-[10px] text-zinc-300">•</span>
+                            <span className="text-[10px] font-medium text-zinc-400">
                               {format(new Date(alert.startDate), "dd/MM/yy")} - {format(new Date(alert.endDate), "dd/MM/yy")}
                             </span>
                           </div>
-                          <h4 className="font-bold text-sm text-slate-900">{alert.title}</h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{alert.content}</p>
+                          <h4 className="font-bold text-sm text-zinc-900">{alert.title}</h4>
+                          <p className="text-xs text-zinc-500 line-clamp-2 mt-1">{alert.content}</p>
                         </div>
                       </div>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="text-slate-400 hover:text-red-500 transition-colors h-8 w-8"
+                        className="text-zinc-400 hover:text-red-500 transition-colors h-8 w-8"
                         onClick={() => handleDelete(alert.id)}
                       >
                         <Trash2 className="w-4 h-4" />

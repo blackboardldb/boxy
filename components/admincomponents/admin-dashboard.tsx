@@ -212,7 +212,7 @@ export function AdminDashboard() {
           {linkTo && (
             <Link
               href={linkTo}
-              className="text-sm underline font-bold text-zinc-900 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
+              className="text-sm underline font-bold text-zinc-900 px-2 py-1 rounded-md hover:bg-zinc-100 transition-colors"
             >
               Ver detalle
             </Link>
@@ -394,7 +394,7 @@ export function AdminDashboard() {
                     </div>
                     <div className="flex items-center space-x-4">
                      
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-slate-100">Ver Perfil</Link>
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
                     </div>
                   </div>
                 ))}
@@ -427,7 +427,7 @@ export function AdminDashboard() {
                     </div>
                     <div className="flex items-center space-x-4">
                     
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-slate-100">Ver Perfil</Link>
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
                     </div>
                   </div>
                 ))}

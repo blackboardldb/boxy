@@ -198,7 +198,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      <Card className="shadow-sm border-zinc-200 rounded-xl">
+      <Card className="shadow-sm border-zinc-100 rounded-xl">
         <CardHeader className="border-b border-zinc-100 pb-5">
           <CardTitle>Configuración de Membresía</CardTitle>
           <CardDescription className="pt-2">
@@ -209,7 +209,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         </CardHeader>
         <CardContent className="pt-6">
           {student.membership && (
-             <div className="mb-6 bg-zinc-50 rounded-xl p-4 border border-zinc-200">
+             <div className="mb-6 bg-zinc-50 rounded-xl p-4 border border-zinc-100">
                <h3 className="text-sm font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
                <div className="space-y-1 text-sm">
                  <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
@@ -289,8 +289,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
-            <div className="border border-zinc-200 rounded-xl overflow-hidden p-0">
-               <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
+            <div className="border border-zinc-100 rounded-xl overflow-hidden p-0">
+               <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-100">
                  <h3 className="text-sm font-semibold text-zinc-800">Vigencia del Nuevo Plan</h3>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-6 bg-white">

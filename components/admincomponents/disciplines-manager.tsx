@@ -222,7 +222,7 @@ export default function DisciplinesManager() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-xl border border-slate-100 shadow-premium">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-xl border border-zinc-100 shadow-premium">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Gestión de Disciplinas</h2>
           <p className="text-sm text-muted-foreground mt-1">Configura horarios, reglas de cancelación y disponibilidad.</p>
@@ -251,48 +251,48 @@ export default function DisciplinesManager() {
             <div className="space-y-6">
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700">Nombre</Label>
+                  <Label className="font-bold text-zinc-700">Nombre</Label>
                   <Input
                     name="name"
                     value={form.name}
                     onChange={handleChange}
                     placeholder="Ej: CrossFit, Yoga"
-                    className="rounded-xl h-11 border-slate-200"
+                    className="rounded-xl h-11 border-zinc-100"
                   />
                 </div>
 
                 <div className="flex-1 space-y-2">
-                  <Label className="font-bold text-slate-700">Color</Label>
+                  <Label className="font-bold text-zinc-700">Color</Label>
                   <div className="flex gap-2 h-11">
                     <Input
                       name="color"
                       type="color"
                       value={form.color}
                       onChange={handleChange}
-                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-slate-200 overflow-hidden"
+                      className="w-14 h-full p-1 rounded-xl cursor-pointer border-zinc-100 overflow-hidden"
                     />
                     <Input 
                       value={form.color}
                       onChange={handleChange}
                       name="color"
-                      className="flex-1 h-full rounded-xl border-slate-200 font-mono text-sm"
+                      className="flex-1 h-full rounded-xl border-zinc-100 font-mono text-sm"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="font-bold text-slate-700">Descripción</Label>
+                <Label className="font-bold text-zinc-700">Descripción</Label>
                 <Input
                   name="description"
                   value={form.description}
                   onChange={handleChange}
                   placeholder="Descripción breve..."
-                  className="rounded-xl h-11 border-slate-200"
+                  className="rounded-xl h-11 border-zinc-100"
                 />
               </div>
 
-              <div className="h-px bg-slate-100 w-full mt-6" />
+              <div className="h-px bg-zinc-100 w-full mt-6" />
             </div>
 
             {/* Days Section */}
@@ -310,7 +310,7 @@ export default function DisciplinesManager() {
                       "px-4 py-2 text-sm font-bold rounded-xl transition-all border",
                       selectedDays.includes(day as DayOfWeek)
                         ? "bg-primary text-white border-primary shadow-md"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                        : "bg-white text-zinc-600 border-zinc-100 hover:bg-zinc-50"
                     )}
                   >
                     {label}
@@ -321,7 +321,7 @@ export default function DisciplinesManager() {
               {selectedDays.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 mt-4">
                   {selectedDays.map((day) => (
-                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100 group transition-all hover:bg-white">
+                    <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-zinc-50 rounded-xl border border-zinc-100 group transition-all hover:bg-white">
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                           <Calendar className="w-4 h-4" />
@@ -331,12 +331,12 @@ export default function DisciplinesManager() {
 
                       <div className="flex-1 flex flex-wrap gap-2">
                         {(form.schedule.find((d) => d.day === day) || { times: [] }).times.map((time) => (
-                          <Badge key={time} variant="secondary" className="pl-3 pr-1 py-1.5 h-8 gap-1 rounded-xl bg-slate-100 text-slate-700 font-bold border-none">
-                            <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                          <Badge key={time} variant="secondary" className="pl-3 pr-1 py-1.5 h-8 gap-1 rounded-xl bg-zinc-100 text-zinc-700 font-bold border-none">
+                            <Clock className="w-3.5 h-3.5 mr-1 text-zinc-400" />
                             {time}
                             <button
                               onClick={() => handleRemoveTime(day, time)}
-                              className="w-6 h-6 flex items-center justify-center rounded-xl hover:bg-slate-200 text-red-500 transition-colors"
+                              className="w-6 h-6 flex items-center justify-center rounded-xl hover:bg-zinc-200 text-red-500 transition-colors"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -376,7 +376,7 @@ export default function DisciplinesManager() {
               </Label>
               <div className="space-y-3">
                 {form.cancellationRules.map((rule) => (
-                  <div key={rule.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 group">
+                  <div key={rule.id} className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl border border-zinc-100 group">
                     <div className="flex items-center gap-4">
                       <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-xl text-xs font-bold">
                         {rule.time}
@@ -392,7 +392,7 @@ export default function DisciplinesManager() {
                   </div>
                 ))}
 
-                <div className="flex flex-col sm:flex-row gap-3 p-4 bg-slate-50 rounded-xl border border-dotted border-slate-300">
+                <div className="flex flex-col sm:flex-row gap-3 p-4 bg-zinc-50 rounded-xl border border-dotted border-zinc-300">
                   <Input className="sm:w-24 rounded-xl h-10" placeholder="Hora" id="rule-time" />
                   <Input className="sm:w-24 rounded-xl h-10" placeholder="Horas" type="number" id="rule-hours" />
                   <Input className="flex-1 rounded-xl h-10" placeholder="Motivo/Descripción" id="rule-desc" />
@@ -416,7 +416,7 @@ export default function DisciplinesManager() {
 
           <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 shrink-0 flex flex-row items-center justify-end gap-3">
             <Button variant="ghost" onClick={handleCloseModal} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
-            <Button onClick={handleSave} disabled={isLoading} className="rounded-xl h-12 px-10 bg-slate-950 text-white font-bold shadow-xl hover:scale-105 transition-transform disabled:opacity-70">
+            <Button onClick={handleSave} disabled={isLoading} className="rounded-xl h-12 px-10 bg-zinc-950 text-white font-bold shadow-xl hover:scale-105 transition-transform disabled:opacity-70">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
               {editing ? "Actualizar Disciplina" : "Guardar Disciplina"}
             </Button>
@@ -426,13 +426,13 @@ export default function DisciplinesManager() {
 
       <div className="flex flex-col gap-4">
         {!disciplines || disciplines.length === 0 ? (
-          <Card className="col-span-full border-2 border-dashed border-slate-200 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
-            <div className="w-20 h-20 rounded-xl bg-slate-100 flex items-center justify-center mb-6">
-              <Calendar className="w-10 h-10 text-slate-300" />
+          <Card className="col-span-full border-2 border-dashed border-zinc-100 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
+            <div className="w-20 h-20 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
+              <Calendar className="w-10 h-10 text-zinc-300" />
             </div>
-            <h3 className="text-xl font-bold text-slate-500">No hay disciplinas registradas</h3>
-            <p className="text-sm text-slate-400 mt-2 mb-8 max-w-xs mx-auto">Comienza creando tu primera disciplina para configurar los horarios de clases.</p>
-            <Button onClick={handleNew} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-slate-50">
+            <h3 className="text-xl font-bold text-zinc-500">No hay disciplinas registradas</h3>
+            <p className="text-sm text-zinc-400 mt-2 mb-8 max-w-xs mx-auto">Comienza creando tu primera disciplina para configurar los horarios de clases.</p>
+            <Button onClick={handleNew} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-zinc-50">
               <Plus className="w-5 h-5 mr-1" /> Crear Disciplina
             </Button>
           </Card>
@@ -459,7 +459,7 @@ export default function DisciplinesManager() {
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
                       <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
-                      {!d.isActive && <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">Inactiva</span>}
+                      {!d.isActive && <span className="text-[10px] font-black uppercase tracking-tighter text-zinc-400">Inactiva</span>}
                     </div>
                   </div>
 
@@ -468,7 +468,7 @@ export default function DisciplinesManager() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleDisciplineExpansion(d.id)}
-                      className="text-xs font-bold h-10 px-4 rounded-xl bg-slate-50"
+                      className="text-xs font-bold h-10 px-4 rounded-xl bg-zinc-50"
                     >
                       {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                     </Button>
@@ -493,25 +493,25 @@ export default function DisciplinesManager() {
 
               <CardContent className="px-6 pb-6 empty:hidden">
                 {expandedDisciplines.has(d.id) && (
-                  <div className="space-y-6 pt-2 border-t border-slate-50 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-6 pt-2 border-t border-zinc-50 animate-in slide-in-from-top-2 duration-300">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Días y Horarios</span>
-                    <Badge variant="outline" className="rounded-xl text-[9px] uppercase font-bold px-2 py-0 border-slate-200">Cronograma</Badge>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Días y Horarios</span>
+                    <Badge variant="outline" className="rounded-xl text-[9px] uppercase font-bold px-2 py-0 border-zinc-100">Cronograma</Badge>
                   </div>
 
                   {d.schedule.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-dotted border-slate-200 text-center text-xs text-muted-foreground">
+                    <div className="p-4 rounded-xl bg-zinc-50 border border-dotted border-zinc-100 text-center text-xs text-muted-foreground">
                       Sin horarios definidos
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-1.5 px-1">
                       {d.schedule.map((s) => (
-                        <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 transition-colors hover:bg-slate-100/50">
+                        <div key={s.day} className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50/50 transition-colors hover:bg-zinc-100/50">
                           <span className="text-xs font-bold w-16">{dayLabels[s.day]}</span>
                           <div className="flex flex-wrap gap-1 justify-end max-w-[140px]">
                             {s.times.map((t) => (
-                              <span key={t} className="text-[9px] font-black px-2 py-0.5 rounded-xl bg-white border border-slate-100 shadow-sm">
+                              <span key={t} className="text-[9px] font-black px-2 py-0.5 rounded-xl bg-white border border-zinc-100 shadow-sm">
                                 {t}
                               </span>
                             ))}
@@ -523,8 +523,8 @@ export default function DisciplinesManager() {
                 </div>
 
                 {d.cancellationRules.length > 0 && (
-                  <div className="pt-4 border-t border-slate-100">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3 pl-1">Política de Cancelación</span>
+                  <div className="pt-4 border-t border-zinc-100">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mb-3 pl-1">Política de Cancelación</span>
                     <div className="flex flex-wrap gap-2 pr-2">
                        {d.cancellationRules.map((r) => (
                          <div key={r.id} className="text-[9px] font-black px-2.5 py-1 rounded-xl bg-yellow-50 text-yellow-700 border border-yellow-100 flex items-center gap-1.5 shadow-sm">
