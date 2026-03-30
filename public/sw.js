@@ -132,8 +132,8 @@ async function handleNonGetRequest(request) {
     // Intentar network primero
     const response = await fetch(request);
 
-    // Si es exitoso, actualizar cache si es necesario
-    if (response.ok && request.method === "POST") {
+    // Si es exitoso, actualizar cache si es necesario (SOLO SI ES GET)
+    if (response.ok && request.method === "GET") {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, response.clone());
     }
