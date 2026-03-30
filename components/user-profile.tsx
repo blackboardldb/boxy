@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit3, ChevronRight, Lock } from "lucide-react";
+import { Edit3, ChevronRight, Lock, Bell } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import type { FitCenterUserProfile } from "@/lib/types";
@@ -43,6 +44,74 @@ export function UserProfile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Notificaciones Push
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported" | "loading">("loading");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (!("Notification" in window)) {
+        setPermission("unsupported");
+      } else {
+        setPermission(Notification.permission);
+      }
+    }
+  }, []);
+
+  const togglePush = async (checked: boolean) => {
+    if (permission === "unsupported") return;
+    
+    // Si ya tiene permiso denegado en sistema
+    if (permission === "denied" && checked) {
+      alert("Las notificaciones están bloqueadas en tu dispositivo. Debes activarlas manualmente desde el menú de Configuración del sistema.");
+      setPermission("denied"); // Reforzar estado
+      return;
+    }
+
+    // Proceso de activación (solo si pasa a true)
+    if (checked && permission !== "granted") {
+      try {
+        const result = await Notification.requestPermission();
+        setPermission(result);
+
+        if (result === "granted") {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+          });
+          
+          await fetch("/api/push/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(subscription)
+          });
+        }
+      } catch (err) {
+        console.error("Error al activar notificaciones:", err);
+      }
+    }
+    
+    // Si desactiva (checked=false)
+    if (!checked && permission === "granted") {
+      // Simplemente eliminamos suscripción localmente o notificamos borrado al servidor
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await fetch("/api/push/subscribe", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+          await subscription.unsubscribe();
+        }
+      } catch (err) {
+        console.error("Error al desactivar:", err);
+      }
+      setPermission("default" as any); // Resetear visualmente para que vuelva a pedir permiso al activar
+    }
+  };
 
   // Sincronizar cuando llegan los datos del usuario real
   useEffect(() => {
@@ -576,6 +645,28 @@ export function UserProfile() {
                 </div>
               )}
             </div>
+
+          {/* Notificaciones App */}
+          {permission !== "unsupported" && (
+            <div className="bg-white/5 rounded-lg p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">Notificaciones App</p>
+                      <p className="text-[10px] text-zinc-400">Recibe avisos de clases y cancelaciones</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={permission === "granted"} 
+                    onCheckedChange={togglePush}
+                    className="data-[state=checked]:bg-indigo-500"
+                  />
+                </div>
+              </div>
+          )}
         </div>
       </div>
     </div>

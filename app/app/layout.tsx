@@ -14,34 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   useEffect(() => {
-    // 1. Suscripción a Push Notifications
-    const setupPush = async () => {
-      try {
-        if ("Notification" in window && "serviceWorker" in navigator && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            const registration = await navigator.serviceWorker.ready;
-            
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-            });
-            
-            await fetch("/api/push/subscribe", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(subscription)
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Error setting up push notifications:", err);
-      }
-    };
-
-    setupPush();
-
-    // 2. Banner de instalación PWA
+    // 1. Banner de instalación PWA
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
