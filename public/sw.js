@@ -281,14 +281,33 @@ async function syncBooking(booking) {
 self.addEventListener("push", (event) => {
   console.log("[SW] Push notification recibida");
 
+  let pushData = {
+    title: "BlackSheep CrossFit",
+    body: "Nueva notificación de BlackSheep",
+    type: "noticia"
+  };
+
+  if (event.data) {
+    try {
+      const json = event.data.json();
+      pushData = {
+        title: json.title || pushData.title,
+        body: json.body || pushData.body,
+        type: json.type || pushData.type
+      };
+    } catch (e) {
+      pushData.body = event.data.text();
+    }
+  }
+
   const options = {
-    body: event.data ? event.data.text() : "Nueva notificación de BlackSheep",
+    body: pushData.body,
     icon: "/icons/BS-icon-192x192.png",
     badge: "/icons/BS-icon-192x192.png",
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: 1,
+      type: pushData.type
     },
     actions: [
       {
@@ -305,7 +324,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification("BlackSheep CrossFit", options)
+    self.registration.showNotification(pushData.title, options)
   );
 });
 

@@ -69,7 +69,7 @@ export default function AdminLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto bg-zinc-50/50 p-4 md:p-8 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto bg-zinc-50/50 custom-scrollbar">
           {children}
         </main>
       </div>

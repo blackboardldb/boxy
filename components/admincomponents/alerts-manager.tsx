@@ -10,12 +10,14 @@ import {
   AlertTriangle, 
   XOctagon, 
   Megaphone,
-  Loader2
+  Loader2,
+  SendHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { 
   Select, 
@@ -48,6 +50,7 @@ export function AlertsManager() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [type, setType] = useState("noticia");
+  const [sendPush, setSendPush] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
 
@@ -85,6 +88,7 @@ export function AlertsManager() {
           type,
           startDate: new Date(startDate).toISOString(),
           endDate: new Date(endDate).toISOString(),
+          sendPush: type === "cancelacion" ? true : sendPush,
         }),
       });
 
@@ -227,6 +231,32 @@ export function AlertsManager() {
                   <SelectItem value="advertencia">Advertencia</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Configuración de NOTIFICACIONES PUSH */}
+            <div className={`p-4 rounded-xl border ${type === 'cancelacion' ? 'bg-red-50/50 border-red-100' : 'bg-blue-50/50 border-blue-100'}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${type === 'cancelacion' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                    <SendHorizontal className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-zinc-900">Notificación Push</h5>
+                    <p className="text-[10px] text-zinc-500">
+                      {type === 'cancelacion' 
+                        ? 'Se enviará notificación push automáticamente' 
+                        : 'Enviar este aviso como notificación al móvil'}
+                    </p>
+                  </div>
+                </div>
+                {type !== 'cancelacion' && (
+                  <Switch 
+                    checked={sendPush} 
+                    onCheckedChange={setSendPush}
+                    className="data-[state=checked]:bg-blue-600"
+                  />
+                )}
+              </div>
             </div>
 
             <Button 
