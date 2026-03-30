@@ -339,7 +339,25 @@ export function UserProfile() {
             </div>
           </div>
         )}
-
+   {/* Notificaciones App */}
+          {permission !== "unsupported" && (
+            <div className="bg-white/5 rounded-lg p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    
+                    <div>
+                      <p className="text-lg font-semibold text-white">Notificaciones App</p>
+                      <p className="text-sm text-zinc-400">Recibe avisos de clases y cancelaciones</p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={permission === "granted"} 
+                    onCheckedChange={togglePush}
+                    className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-zinc-700"
+                  />
+                </div>
+              </div>
+          )}
         {/* Secciones editables */}
         {/* BSProfileButton — botones nativos del perfil de usuario */}
         <div className="space-y-4">
@@ -646,27 +664,7 @@ export function UserProfile() {
               )}
             </div>
 
-          {/* Notificaciones App */}
-          {permission !== "unsupported" && (
-            <div className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">Notificaciones App</p>
-                      <p className="text-[10px] text-zinc-400">Recibe avisos de clases y cancelaciones</p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={permission === "granted"} 
-                    onCheckedChange={togglePush}
-                    className="data-[state=checked]:bg-indigo-500"
-                  />
-                </div>
-              </div>
-          )}
+       
         </div>
       </div>
     </div>
