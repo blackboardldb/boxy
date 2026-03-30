@@ -140,6 +140,7 @@ export interface PlanRepository
 export interface OrganizationRepository
   extends Repository<import("../types").Organization> {
   findByType(type: string): Promise<import("../types").Organization[]>;
+  findFirst(): Promise<import("../types").Organization | null>;
 }
 
 export interface MembershipRenewalRepository

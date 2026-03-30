@@ -117,6 +117,11 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
       .filter(o => o.type === type);
   }
 
+  async findFirst(): Promise<Organization | null> {
+    const result = await this.prisma.organization.findFirst();
+    return result ? this.mapToEntity(result) : null;
+  }
+
   // Mapper
   private mapToEntity(prismaOrg: any): Organization {
     const settings = (prismaOrg.settings as any) || {};
