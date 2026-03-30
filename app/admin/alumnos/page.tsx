@@ -231,7 +231,7 @@ export default function AlumnosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isLoading && users.length === 0 ? (
                 // Skeleton para tabla
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>

@@ -528,7 +528,7 @@ export function InstructorsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isLoading && instructors.length === 0 ? (
                 // Skeleton para tabla
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
