@@ -77,9 +77,9 @@ export default function FinanzasPage() {
 
   // Generar opciones de meses (últimos 12 meses)
   const monthOptions = [];
+  const now = new Date();
   for (let i = 0; i < 12; i++) {
-    const date = new Date();
-    date.setMonth(date.getMonth() - i);
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const value = `${year}-${String(month).padStart(2, "0")}`;
