@@ -70,7 +70,7 @@ const HomePage: React.FC<HomePageProps> = ({
         </p>
       </div>
       <p className=" uppercase text-white/80 text-xs mb-2">Tu plan</p>
-      <div className="w-full bg-zinc-800 p-4 rounded-lg mb-10 space-y-3">
+      <div className="w-full bg-zinc-900 p-4 rounded-lg mb-10 space-y-3">
         <div className="mb-6">
           <h2 className="text-white font-bold text-2xl">{membershipType}</h2>
         <p className="text-white/70">
@@ -198,7 +198,7 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      <div className="w-full bg-zinc-800 p-4 pt-2 rounded-lg divide-y divide-zinc-700">
+      <div className="w-full bg-zinc-900 p-4 pt-2 rounded-lg divide-y divide-zinc-700">
         {registeredClasses.length > 0 && planStatus === "active" ? (
           <ClassesHomeCard classes={registeredClasses} />
         ) : (

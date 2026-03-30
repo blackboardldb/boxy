@@ -229,6 +229,9 @@ export default function CalendarPage() {
   );
 
   const currentClasses = getClassesForDate(selectedDate);
+  const bookedClassesCount = useMemo(() => {
+    return currentClasses.filter((c) => c.isRegistered).length;
+  }, [currentClasses]);
 
   const handleRegister = (classItem: FormattedClassItem) => {
     if (!currentUser) {
@@ -423,6 +426,7 @@ export default function CalendarPage() {
             onClose={closeRegistrationModal}
             classItem={selectedClass}
             onConfirm={confirmRegistration}
+            isLimitReached={bookedClassesCount >= 2}
           />
           <CancellationModal
             isOpen={isCancellationModalOpen}
