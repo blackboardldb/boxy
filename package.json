@@ -10,17 +10,12 @@
     "fix:lint": "node scripts/fix-lint-errors.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "db:fix-dst": "tsx maintenance/dst-tools/fix-class-dst.ts",
-    "migrate:to-prisma": "./scripts/migrate-to-prisma.sh",
-    "migrate:to-mock": "./scripts/rollback-to-mock.sh",
     "sync:auth": "pnpm exec tsx --env-file=.env scripts/sync-auth-users.ts"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
+
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.19.2",
