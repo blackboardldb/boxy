@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       parseInt(request.nextUrl.searchParams.get("take") || "10"),
       50 // tope de seguridad
     );
+    const skip = parseInt(request.nextUrl.searchParams.get("skip") || "0");
 
     const { organizationId } = auth;
     const today = new Date().toISOString().split("T")[0];
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
         AND membership->>'currentPeriodEnd' < ${today}
       ORDER BY membership->>'currentPeriodEnd' DESC
       LIMIT ${take}
+      OFFSET ${skip}
     `;
 
     const data = rows.map((u) => {

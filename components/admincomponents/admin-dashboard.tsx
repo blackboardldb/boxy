@@ -50,6 +50,10 @@ export function AdminDashboard() {
   });
   const [expiringData, setExpiringData] = useState<MemberListItem[]>([]);
   const [expiredData, setExpiredData] = useState<MemberListItem[]>([]);
+  const [loadingMoreExpiring, setLoadingMoreExpiring] = useState(false);
+  const [loadingMoreExpired, setLoadingMoreExpired] = useState(false);
+  const [hasMoreExpiring, setHasMoreExpiring] = useState(false);
+  const [hasMoreExpired, setHasMoreExpired] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,18 +71,24 @@ export function AdminDashboard() {
           .catch((e) => console.error("[AdminDashboard] stats fetch failed:", e))
           .finally(() => setStatsLoading(false));
 
-        // Listas: 3 fetches en paralelo, todos limitados en el backend
+        // Listas: fetches limitados a 5 para carga progresiva
         const listsPromise = (async () => {
           try {
             const requests: Promise<any>[] = [
-              fetch("/api/admin/members/expiring?take=10").then((r) => r.json()),
-              fetch("/api/admin/members/expired?take=10").then((r) => r.json()),
+              fetch("/api/admin/members/expiring?take=5").then((r) => r.json()),
+              fetch("/api/admin/members/expired?take=5").then((r) => r.json()),
             ];
             if (userRole === "admin") requests.push(fetchEgresos() as any);
 
             const [expiring, expired] = await Promise.all(requests);
-            if (expiring?.success) setExpiringData(expiring.data);
-            if (expired?.success) setExpiredData(expired.data);
+            if (expiring?.success) {
+              setExpiringData(expiring.data);
+              setHasMoreExpiring(expiring.data.length === 5);
+            }
+            if (expired?.success) {
+              setExpiredData(expired.data);
+              setHasMoreExpired(expired.data.length === 5);
+            }
           } catch (error) {
             console.error("[AdminDashboard] lists fetch failed:", error);
           } finally {
@@ -122,6 +132,62 @@ export function AdminDashboard() {
   // Listas vienen directo del estado local — ya filtradas, ordenadas y limitadas en el backend
   const upcomingExpirations = expiringData;
   const recentlyInactive = expiredData;
+
+  const loadMoreExpiring = async () => {
+    if (loadingMoreExpiring || expiringData.length >= 15) return;
+    setLoadingMoreExpiring(true);
+    try {
+      const skip = expiringData.length;
+      const res = await fetch(`/api/admin/members/expiring?take=5&skip=${skip}`);
+      const json = await res.json();
+      if (json.success) {
+        const newData = json.data;
+        setExpiringData((prev) => {
+          const combined = [...prev, ...newData];
+          // Usar Map para asegurar unicidad por ID (O(n))
+          const uniqueMap = new Map(combined.map((item) => [item.id, item]));
+          const uniqueList = Array.from(uniqueMap.values());
+
+          if (newData.length < 5 || uniqueList.length >= 15) {
+            setHasMoreExpiring(false);
+          }
+          return uniqueList;
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingMoreExpiring(false);
+    }
+  };
+
+  const loadMoreExpired = async () => {
+    if (loadingMoreExpired || expiredData.length >= 15) return;
+    setLoadingMoreExpired(true);
+    try {
+      const skip = expiredData.length;
+      const res = await fetch(`/api/admin/members/expired?take=5&skip=${skip}`);
+      const json = await res.json();
+      if (json.success) {
+        const newData = json.data;
+        setExpiredData((prev) => {
+          const combined = [...prev, ...newData];
+          // Usar Map para asegurar unicidad por ID (O(n))
+          const uniqueMap = new Map(combined.map((item) => [item.id, item]));
+          const uniqueList = Array.from(uniqueMap.values());
+
+          if (newData.length < 5 || uniqueList.length >= 15) {
+            setHasMoreExpired(false);
+          }
+          return uniqueList;
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingMoreExpired(false);
+    }
+  };
 
   const MetricCard = ({
     title,
@@ -332,6 +398,16 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+                
+                {hasMoreExpiring && (
+                  <button
+                    onClick={loadMoreExpiring}
+                    disabled={loadingMoreExpiring}
+                    className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl mt-2 disabled:opacity-50"
+                  >
+                    {loadingMoreExpiring ? "Cargando..." : "Ver más"}
+                  </button>
+                )}
               </div>
             )}
           </CardContent>
@@ -364,6 +440,16 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+
+                {hasMoreExpired && (
+                  <button
+                    onClick={loadMoreExpired}
+                    disabled={loadingMoreExpired}
+                    className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl mt-2 disabled:opacity-50"
+                  >
+                    {loadingMoreExpired ? "Cargando..." : "Ver más"}
+                  </button>
+                )}
               </div>
             )}
           </CardContent>
