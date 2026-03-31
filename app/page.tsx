@@ -8,7 +8,7 @@ export default function Page() {
       <div className="text-white p-4 flex items-center justify-center">
          <Logo size={240} />
       </div>
-      <div className=" relative p-8 flex-1  sm:m-6 rounded-xl bg-[#54549f]  text-white space-y-3 flex flex-col items-end justify-end">
+      <div className=" relative p-8 flex-1  sm:m-6 rounded-xl bg-[#54549f]  text-white space-y-3 flex flex-col content-around items-stretch sm:justify-end">
         <div className="absolute inset-0 opacity-10 bg-noise z-0"></div>
        <div className="w-full z-10">
        <svg  width="792.519" height="658.895" className="w-full max-w-sm md:max-w-lg" viewBox="0 0 792.519 658.895">
