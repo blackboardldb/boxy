@@ -11,7 +11,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(alerts);
+    return NextResponse.json({ success: true, data: alerts });
   } catch (error) {
     console.error("Error fetching active alerts:", error);
     return NextResponse.json({ error: "Failed to fetch active alerts" }, { status: 500 });

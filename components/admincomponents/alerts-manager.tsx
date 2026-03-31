@@ -29,6 +29,7 @@ import {
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
 interface InAppAlert {
   id: string;
@@ -45,6 +46,7 @@ export function AlertsManager() {
   const [alerts, setAlerts] = useState<InAppAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { fetchAlerts: syncGlobalAlerts } = useBlackSheepStore();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -96,6 +98,7 @@ export function AlertsManager() {
         setTitle("");
         setContent("");
         fetchAlerts();
+        syncGlobalAlerts();
       } else {
         throw new Error("Failed to create alert");
       }
@@ -116,6 +119,7 @@ export function AlertsManager() {
 
       if (resp.ok) {
         fetchAlerts();
+        syncGlobalAlerts();
       } else {
         throw new Error("Failed to delete alert");
       }

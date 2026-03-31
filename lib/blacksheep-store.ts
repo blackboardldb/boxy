@@ -1379,8 +1379,8 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
 
       // Alert actions
       fetchAlerts: async () => {
-        const { alertsLoading, alerts } = get();
-        if (alertsLoading || alerts.length > 0) return;
+        const { alertsLoading } = get();
+        if (alertsLoading) return;
 
         try {
           set({ alertsLoading: true });
@@ -1388,8 +1388,11 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           if (!response.ok) throw new Error("Error al obtener alertas");
 
           const result = await response.json();
-          if (result.success && result.data) {
+          if (result && result.success && Array.isArray(result.data)) {
             set({ alerts: result.data });
+          } else {
+            console.warn("fetchAlerts: Formato inesperado", result);
+            set({ alerts: [] });
           }
         } catch (error) {
           console.error("Error fetching alerts:", error);
