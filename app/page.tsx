@@ -5,12 +5,12 @@ import Link from "next/link";
 export default function Page() {
   return (
     <main className="h-dvh bg-black flex flex-col md:grid md:grid-cols-2 gap-4 overflow-hidden p-4">
-      <div className="text-white p-4 flex items-center justify-center">
+      <div className="flex-none md:flex-1 text-white p-4 flex items-center justify-center">
          <Logo size={240} />
       </div>
-      <div className=" relative p-8 flex-1  sm:m-6 rounded-xl bg-[#54549f]  text-white space-y-3 flex flex-col content-around items-stretch sm:justify-end">
+      <div className="relative p-6 sm:p-8 flex-1 min-h-0 sm:m-6 rounded-xl bg-[#54549f] text-white flex flex-col overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-noise z-0"></div>
-       <div className="w-full z-10">
+       <div className="relative z-10 flex-1 overflow-y-auto flex flex-col justify-center items-center min-h-0">
        <svg  width="792.519" height="658.895" className="w-full max-w-sm md:max-w-lg" viewBox="0 0 792.519 658.895">
   <defs>
     <clipPath id="clip-path">
@@ -23,6 +23,8 @@ export default function Page() {
 </svg>
 
         </div>
+
+        <div className="relative z-10 flex-none pt-4 space-y-6">
         <Link href="/login" className="w-full z-10 text-center bg-lime-400 hover:bg-lime-500 text-black font-bold py-4 rounded-xl text-lg transition-all">
           <span>Ir a mi cuenta</span>
         </Link>
@@ -71,7 +73,6 @@ export default function Page() {
             </svg>
           </Link>
         </footer>
-        <div>
           
         </div>
        </div>
