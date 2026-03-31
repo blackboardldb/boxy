@@ -14,7 +14,7 @@ export default function Page() {
        <div className="w-full mb-16">
         <Dumbbell className="size-12 sm:size-20"/>
       
- <p className="text-5xl uppercase font-bold text-balance mt-4">Que entrenar sea tu <span className="fancy text-lime-400 text-balance">mejor momento</span>  del día!</p>
+ <p className="text-5xl uppercase font-bold text-balance mt-4">Que entrenar sea tu <span className="fancy bg-gradient-to-r from-lime-400 to-green-400 bg-clip-text text-transparent text-balance">mejor momento</span>  del día!</p>
         
         </div>
         <Link href="/login" className="w-full text-center bg-lime-400 hover:bg-lime-500 text-black font-bold py-4 rounded-xl text-lg transition-all">
