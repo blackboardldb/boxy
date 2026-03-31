@@ -136,7 +136,7 @@ export default function AlumnosPage() {
   const endIndex = Math.min(startIndex + (users?.length || 0), totalItems);
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="md:p-8 space-y-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Gestión de Alumnos</h1>
         <AddStudentModal
@@ -158,8 +158,8 @@ export default function AlumnosPage() {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-4 w-full">
+        <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nombre..."

@@ -25,7 +25,7 @@ export default function Page() {
         </div>
 
         <div className="relative z-10 flex-none pt-4 space-y-6">
-        <Link href="/login" className="w-full z-10 text-center bg-lime-400 hover:bg-lime-500 text-black font-bold py-4 rounded-xl text-lg transition-all">
+        <Link href="/login" className="w-full block z-10 text-center bg-lime-400 hover:bg-lime-500 text-black font-bold py-4 rounded-xl text-lg transition-all">
           <span>Ir a mi cuenta</span>
         </Link>
 

@@ -211,7 +211,7 @@ export default function AdminClasesPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
+    <div className="py-8 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Gestión de Clases</h1>
         <div className="text-sm text-muted-foreground flex items-center gap-4">

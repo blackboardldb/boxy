@@ -306,7 +306,7 @@ export default function PlansManager() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 py-8">
       {/* Header con gestión de planes */}
       <div className="flex items-center justify-between">
         <div>
@@ -354,7 +354,7 @@ export default function PlansManager() {
       </div>
 
       {/* Lista de planes */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {isLoading ? (
           // Skeleton simplificado para cards de planes
           Array.from({ length: 3 }).map((_, i) => (
