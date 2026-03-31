@@ -1,12 +1,10 @@
 import Logo from "@/components/Logo";
-import { Button } from "@/components/ui/button";
-import { Dumbbell } from "lucide-react";
 import Link from "next/link";
 
 
 export default function Page() {
   return (
-    <main className="h-dvh bg-black grid grid-cols-1 md:grid-cols-2 gap-4 ">
+    <main className="h-dvh bg-black flex flex-col md:grid md:grid-cols-2 gap-4 overflow-hidden p-4">
       <div className="text-white p-4 flex items-center justify-center">
          <Logo size={240} />
       </div>
