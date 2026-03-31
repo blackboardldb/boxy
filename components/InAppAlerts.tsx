@@ -10,28 +10,28 @@ interface InAppAlert {
   type: string;
 }
 
+import { useBlackSheepStore } from "@/lib/blacksheep-store";
+
 export function InAppAlerts() {
-  const [alerts, setAlerts] = useState<InAppAlert[]>([]);
-  const [hiddenAlerts, setHiddenAlerts] = useState<string[]>([]);
+  const { alerts, fetchAlerts } = useBlackSheepStore();
+  const [hiddenAlertIds, setHiddenAlertIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        const resp = await fetch("/api/alerts");
-        if (!resp.ok) throw new Error("Failed to fetch");
-        const data = await resp.json();
-        if (Array.isArray(data)) {
-          setAlerts(data);
-        }
-      } catch (error) {
-        console.error("Error fetching alerts:", error);
-      }
-    };
-
     fetchAlerts();
-  }, []);
+    
+    if (typeof window !== "undefined") {
+      const saved = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("alert_closed_")) {
+          saved.push(key.replace("alert_closed_", ""));
+        }
+      }
+      setHiddenAlertIds(saved);
+    }
+  }, [fetchAlerts]);
 
-  const visibleAlerts = alerts.filter(a => !hiddenAlerts.includes(a.id));
+  const visibleAlerts = (alerts || []).filter(a => !hiddenAlertIds.includes(a.id));
 
   if (visibleAlerts.length === 0) return null;
 
@@ -61,7 +61,10 @@ export function InAppAlerts() {
   };
 
   const hideAlert = (id: string) => {
-    setHiddenAlerts(prev => [...prev, id]);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`alert_closed_${id}`, "true");
+    }
+    setHiddenAlertIds(prev => [...prev, id]);
   };
 
   return (

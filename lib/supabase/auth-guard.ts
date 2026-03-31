@@ -3,6 +3,7 @@ import { createClient } from "./server";
 interface AuthSuccess {
   user: any;
   role: string;
+  organizationId: string;
 }
 
 interface AuthError {
@@ -27,8 +28,9 @@ export async function requireAuth(): Promise<AuthResult> {
     return { error: "No autenticado", status: 401 };
   }
 
-  // 1. Intentar obtener el rol de los metadatos (rápido y evita RLS)
+  // 1. Intentar obtener el rol y la organización de los metadatos (rápido y evita RLS)
   let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
+  let organizationId = (user.app_metadata?.organizationId as string) || (user.user_metadata?.organizationId as string);
 
   // 2. Si no hay el rol en metadatos, fallback a la tabla profiles
   if (!role) {
@@ -40,7 +42,12 @@ export async function requireAuth(): Promise<AuthResult> {
     role = profile?.role;
   }
 
-  return { user, role: role || "alumno" };
+  // Default organization if none found (fallback to BlackSheep)
+  if (!organizationId) {
+    organizationId = "org_blacksheep_001";
+  }
+
+  return { user, role: role || "alumno", organizationId };
 }
 
 /**

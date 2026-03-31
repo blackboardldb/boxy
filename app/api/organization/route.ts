@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { OrganizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/supabase/auth-guard";
+
 const organizationService = new OrganizationService();
 
 export async function GET() {
   try {
-    const response = await organizationService.getOrganization();
-    return NextResponse.json(response);
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const { organizationId } = auth;
+    console.log("[DEBUG] Executing direct prisma.organization.findUnique for ID:", organizationId);
+
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+
+    return NextResponse.json({ success: true, data: organization });
   } catch (error) {
     return ErrorHandler.createResponse(error, {
       operation: "getOrganization",

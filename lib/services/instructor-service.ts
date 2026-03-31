@@ -54,6 +54,13 @@ export class InstructorService extends BaseService<Instructor> {
       findParams.where = where;
     }
 
+    // Punto 2: Selección mínima de campos para /api/instructors
+    findParams.select = {
+      id: true,
+      firstName: true,
+      lastName: true
+    };
+
     return this.findMany(findParams);
   }
 

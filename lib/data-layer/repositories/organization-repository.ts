@@ -43,6 +43,9 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   }
 
   async findUnique(params: FindUniqueParams): Promise<Organization | null> {
+    if (!params.where || Object.keys(params.where).length === 0) {
+      return null;
+    }
     const organization = await this.prisma.organization.findUnique({
       where: params.where as any,
       select: {
@@ -52,6 +55,18 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
       }
     });
     return organization ? this.mapToEntity(organization) : null;
+  }
+
+  async findFirst(): Promise<Organization | null> {
+    const result = await this.prisma.organization.findFirst({
+      take: 1,
+      select: {
+        id: true,
+        name: true,
+        settings: true,
+      }
+    });
+    return result ? this.mapToEntity(result) : null;
   }
 
   async create(data: CreateData<Organization>): Promise<Organization> {
@@ -115,11 +130,6 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     return organizations
       .map((o: any) => this.mapToEntity(o))
       .filter(o => o.type === type);
-  }
-
-  async findFirst(): Promise<Organization | null> {
-    const result = await this.prisma.organization.findFirst();
-    return result ? this.mapToEntity(result) : null;
   }
 
   // Mapper

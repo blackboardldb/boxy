@@ -10,6 +10,7 @@ export interface BaseEntity {
 // Query parameter types
 export interface FindManyParams {
   where?: Record<string, any>;
+  select?: Record<string, any>;
   orderBy?: Record<string, "asc" | "desc">;
   skip?: number;
   take?: number;

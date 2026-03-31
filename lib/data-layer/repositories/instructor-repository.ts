@@ -19,6 +19,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
         orderBy: params?.orderBy,
         take: limit,
         skip,
+        select: params?.select as any,
       }),
       this.prisma.instructor.count({ where: params?.where })
     ]);

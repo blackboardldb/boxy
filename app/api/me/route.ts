@@ -21,13 +21,7 @@ export async function GET() {
         firstName: true,
         lastName: true,
         email: true,
-        role: true,
         membership: true,
-        phone: true,
-        gender: true,
-        dateOfBirth: true,
-        emergencyContact: true,
-        formaDePago: true,
       }
     });
 
@@ -35,6 +29,12 @@ export async function GET() {
     if (!dbUser) {
       const instructor = await prisma.instructor.findFirst({
         where: { email: { equals: user.email!, mode: "insensitive" } },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
       });
       
       if (instructor) {
@@ -43,10 +43,7 @@ export async function GET() {
           firstName: instructor.firstName,
           lastName: instructor.lastName,
           email: instructor.email,
-          phone: instructor.phone,
-          role: instructor.role || "coach",
-          createdAt: instructor.createdAt,
-          updatedAt: instructor.updatedAt,
+          role: (instructor as any).role || "coach",
           membership: null,
         };
       }

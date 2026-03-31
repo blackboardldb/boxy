@@ -54,6 +54,9 @@ interface BlackSheepStore {
   currentUser: User | null;
   isUserLoading: boolean;
   isLoading: boolean;
+  organizationLoading: boolean;
+  alerts: any[];
+  alertsLoading: boolean;
   error: string | null;
 
   egresos: Egreso[];
@@ -174,6 +177,9 @@ interface BlackSheepStore {
   addEgreso: (egreso: Omit<Egreso, "id">) => Promise<void>;
   deleteEgreso: (id: string) => Promise<void>;
 
+  // Alert actions
+  fetchAlerts: () => Promise<void>;
+
   // Provider management actions
   getProviderHealth: () => Promise<any>;
 }
@@ -200,6 +206,9 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       currentUser: null,
       isUserLoading: false,
       isLoading: false,
+      organizationLoading: false,
+      alerts: [],
+      alertsLoading: false,
       error: null,
 
       egresos: [],
@@ -1153,8 +1162,11 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         }
       },
       fetchOrganization: async () => {
+        const { organizationLoading, initialOrganization } = get();
+        if (organizationLoading || initialOrganization) return;
+
         try {
-          set({ isLoading: true });
+          set({ organizationLoading: true });
           const response = await fetch("/api/organization");
           if (!response.ok) throw new Error("Error al obtener organización");
 
@@ -1166,7 +1178,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
           console.error("Error fetching organization:", error);
           set({ initialOrganization: null });
         } finally {
-          set({ isLoading: false });
+          set({ organizationLoading: false });
         }
       },
 
@@ -1362,6 +1374,28 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         } catch (error) {
           console.error("Error al eliminar egreso de la API:", error);
           throw error;
+        }
+      },
+
+      // Alert actions
+      fetchAlerts: async () => {
+        const { alertsLoading, alerts } = get();
+        if (alertsLoading || alerts.length > 0) return;
+
+        try {
+          set({ alertsLoading: true });
+          const response = await fetch("/api/alerts");
+          if (!response.ok) throw new Error("Error al obtener alertas");
+
+          const result = await response.json();
+          if (result.success && result.data) {
+            set({ alerts: result.data });
+          }
+        } catch (error) {
+          console.error("Error fetching alerts:", error);
+          set({ alerts: [] });
+        } finally {
+          set({ alertsLoading: false });
         }
       },
     }),

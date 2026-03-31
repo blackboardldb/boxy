@@ -8,140 +8,108 @@ import {
   Users,
   DollarSign,
   AlertTriangle,
-  Zap,
-  Heart,
-  MinusCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import type { FitCenterUserProfile } from "@/lib/types";
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getPlanStatus } from "@/lib/utils";
+
+interface DashboardStats {
+  totalMembers: number;
+  activeMembers: number;
+  scheduledMembers: number;
+  pendingMembers: number;
+  inactiveMembers: number;
+  newThisMonth: number;
+  retentionRate: number;
+  monthlyRevenue: number;
+}
+
+interface MemberListItem {
+  id: string;
+  firstName: string;
+  lastName: string;
+  membershipType: string | null;
+  currentPeriodEnd: string | null;
+}
 
 export function AdminDashboard() {
-  const { users = [], fetchUsers, egresos = [], fetchEgresos } = useBlackSheepStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
+  const { egresos = [], fetchEgresos } = useBlackSheepStore();
 
-  // Cargar datos al montar el componente
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [listsLoading, setListsLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalMembers: 0,
+    activeMembers: 0,
+    scheduledMembers: 0,
+    pendingMembers: 0,
+    inactiveMembers: 0,
+    newThisMonth: 0,
+    retentionRate: 0,
+    monthlyRevenue: 0,
+  });
+  const [expiringData, setExpiringData] = useState<MemberListItem[]>([]);
+  const [expiredData, setExpiredData] = useState<MemberListItem[]>([]);
+
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
       try {
         const { createClient } = await import("@/lib/supabase/client");
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
-        // Obtener rol (preferir app_metadata o user_metadata)
         const userRole = (user?.app_metadata?.role as string) || (user?.user_metadata?.role as string);
         setRole(userRole);
 
-        // Promesas de carga (Egresos solo para admin)
-        const fetchPromises = [fetchUsers(1, 1000)];
-        if (userRole === "admin") {
-          fetchPromises.push(fetchEgresos());
-        }
+        // Métricas: rápido, independiente
+        const statsPromise = fetch("/api/admin/stats")
+          .then((r) => r.json())
+          .then((data) => { if (data.success) setDashboardStats(data.data); })
+          .catch((e) => console.error("[AdminDashboard] stats fetch failed:", e))
+          .finally(() => setStatsLoading(false));
 
-        await Promise.all(fetchPromises);
+        // Listas: 3 fetches en paralelo, todos limitados en el backend
+        const listsPromise = (async () => {
+          try {
+            const requests: Promise<any>[] = [
+              fetch("/api/admin/members/expiring?take=10").then((r) => r.json()),
+              fetch("/api/admin/members/expired?take=10").then((r) => r.json()),
+            ];
+            if (userRole === "admin") requests.push(fetchEgresos() as any);
+
+            const [expiring, expired] = await Promise.all(requests);
+            if (expiring?.success) setExpiringData(expiring.data);
+            if (expired?.success) setExpiredData(expired.data);
+          } catch (error) {
+            console.error("[AdminDashboard] lists fetch failed:", error);
+          } finally {
+            setListsLoading(false);
+          }
+        })();
+
+        await Promise.all([statsPromise, listsPromise]);
       } catch (error) {
-        console.error("Error loading dashboard data:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("[AdminDashboard] Error loading dashboard:", error);
+        setStatsLoading(false);
+        setListsLoading(false);
       }
     };
 
     loadData();
-  }, [fetchUsers, fetchEgresos]);
+  }, [fetchEgresos]);
 
-  // Memoizar estadísticas principales
-  const stats = useMemo(() => {
-    // Al filtrar para el dashboard, solo consideramos alumnos (sin rol o rol user)
-    const students = users.filter((u) => !u.role || u.role === "user");
-    const totalMembers = students.length;
-
-    // Calcular estados reales usando getPlanStatus
-    const statusCounts = students.reduce(
-      (acc, s) => {
-        const status = getPlanStatus(s);
-        acc[status] = (acc[status] || 0) + 1;
-        return acc;
-      },
-      { active: 0, scheduled: 0, pending: 0, inactive: 0 } as Record<
-        string,
-        number
-      >
-    );
-
-    // Para el usuario: activos + programados suelen considerarse "vigentes" en el counter principal
-    const activeMembers = statusCounts.active;
-    const scheduledMembers = statusCounts.scheduled;
-    const inactiveMembers = statusCounts.inactive;
-    const pendingMembers = statusCounts.pending;
-
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    const newMembersThisMonth =
-      students.filter((s: FitCenterUserProfile) => {
-        if (!s.membership?.startDate) return false;
-        // Parsear fecha de forma segura
-        const [year, month] = s.membership.startDate.split("-");
-        return (
-          Number.parseInt(month) - 1 === currentMonth &&
-          Number.parseInt(year) === currentYear
-        );
-      }).length || 0;
-
-    return {
-      totalMembers,
-      activeMembers,
-      scheduledMembers,
-      inactiveMembers,
-      pendingMembers,
-      newMembersThisMonth,
-    };
-  }, [users]);
-
+  // Métricas vienen del endpoint /api/admin/stats — ya calculadas en el servidor
   const {
     totalMembers,
     activeMembers,
     scheduledMembers,
-    inactiveMembers,
     pendingMembers,
-    newMembersThisMonth,
-  } = stats;
+    inactiveMembers,
+    newThisMonth: newMembersThisMonth,
+    retentionRate,
+    monthlyRevenue,
+  } = dashboardStats;
 
-  // Calcular ingresos del mes en curso real
-  const revenueMetrics = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    const monthlyRevenue = users
-      .filter((s: FitCenterUserProfile) => {
-        if (s.membership?.status !== "active") return false;
-        
-        // Verificar si la fecha de pago (currentPeriodStart o startDate) es del mes actual
-        const paymentDateStr = s.membership.currentPeriodStart || s.membership.startDate;
-        if (!paymentDateStr) return false;
-        
-        const paymentDate = new Date(paymentDateStr);
-        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-      })
-      .reduce((sum: number, student: FitCenterUserProfile) => {
-        return sum + (student.membership?.monthlyPrice || 0);
-      }, 0);
-
-    return {
-      monthlyRevenue,
-    };
-  }, [users]);
-
-  const { monthlyRevenue } = revenueMetrics;
-
-  // Calcular egresos del mes actual
+  // Egresos del mes actual (se mantiene el cálculo local porque depende de fetchEgresos)
   const now = new Date();
   const egresosMes = egresos.filter((e) => {
     const d = new Date(e.fecha);
@@ -151,42 +119,9 @@ export function AdminDashboard() {
   });
   const totalEgresosMes = egresosMes.reduce((sum, e) => sum + e.monto, 0);
 
-  // Tasa de retención (miembros activos vs total)
-  const retentionRate =
-    totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : "0";
-
-  // Alumnos próximos a vencer (Top 10 activos con fecha más cercana)
-  const upcomingExpirations = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return users
-      .filter((u) => {
-        return getPlanStatus(u) === "active" && u.membership?.currentPeriodEnd;
-      })
-      .sort((a, b) => {
-        return (
-          new Date(a.membership!.currentPeriodEnd).getTime() -
-          new Date(b.membership!.currentPeriodEnd).getTime()
-        );
-      })
-      .slice(0, 10);
-  }, [users]);
-
-  // Alumnos recientemente inactivos (Top 10 vencidos/inactivos, de más reciente a más antiguo)
-  const recentlyInactive = useMemo(() => {
-    return users
-      .filter((u) => {
-        return getPlanStatus(u) === "inactive" && u.membership?.currentPeriodEnd;
-      })
-      .sort((a, b) => {
-        return (
-          new Date(b.membership!.currentPeriodEnd).getTime() -
-          new Date(a.membership!.currentPeriodEnd).getTime()
-        );
-      })
-      .slice(0, 10);
-  }, [users]);
+  // Listas vienen directo del estado local — ya filtradas, ordenadas y limitadas en el backend
+  const upcomingExpirations = expiringData;
+  const recentlyInactive = expiredData;
 
   const MetricCard = ({
     title,
@@ -259,7 +194,7 @@ export function AdminDashboard() {
             </>
           }
           icon={Users}
-          isLoading={isLoading}
+          isLoading={statsLoading}
           linkTo="/admin/alumnos"
         />
 
@@ -275,7 +210,7 @@ export function AdminDashboard() {
               </>
             }
             icon={DollarSign}
-            isLoading={isLoading}
+            isLoading={statsLoading}
             linkTo="/admin/finanzas"
           />
         )}
@@ -285,7 +220,7 @@ export function AdminDashboard() {
           value={pendingMembers}
           subtitle="Pendientes de validación"
           icon={AlertTriangle}
-          isLoading={isLoading}
+          isLoading={statsLoading}
           linkTo="/admin/alumnos?status=pending"
         />
       </div>
@@ -375,7 +310,7 @@ export function AdminDashboard() {
             <CardTitle className="text-base">Próximos a vencer</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {listsLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
@@ -385,15 +320,14 @@ export function AdminDashboard() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos próximos a vencer.</p>
             ) : (
               <div className="space-y-3">
-                {upcomingExpirations.map((u: FitCenterUserProfile) => (
+                {upcomingExpirations.map((u) => (
                   <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
-                       <span className="text-xs font-semibold ml-2">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
+                       <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-4">
-                     
                       <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
                     </div>
                   </div>
@@ -408,7 +342,7 @@ export function AdminDashboard() {
             <CardTitle className="text-base text-red-600">Recientemente inactivos</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {listsLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
@@ -418,15 +352,14 @@ export function AdminDashboard() {
               <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos inactivos recientemente.</p>
             ) : (
               <div className="space-y-3">
-                {recentlyInactive.map((u: FitCenterUserProfile) => (
+                {recentlyInactive.map((u) => (
                   <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membership?.membershipType}</span>
-                        <span className="text-xs text-red-600 font-medium ml-2">{new Date(u.membership!.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
+                        <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-4">
-                    
                       <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
                     </div>
                   </div>
