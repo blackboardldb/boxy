@@ -114,17 +114,18 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleStartDateChange = (newDate: string) => {
-    setEditStartDate(newDate);
-    const selectedPlan = plans.find(p => p.id === editPlanId);
-    if (selectedPlan && newDate) {
-      const d = new Date(newDate);
-      if (!isNaN(d.getTime())) {
-        d.setMonth(d.getMonth() + selectedPlan.durationInMonths);
-        setEditEndDate(d.toISOString().substring(0, 10));
-      }
+const handleStartDateChange = (newDate: string) => {
+  setEditStartDate(newDate);
+  const selectedPlan = plans.find(p => p.id === editPlanId)
+    || plans.find(p => p.name === student?.membership?.membershipType);
+  if (selectedPlan && newDate) {
+    const d = new Date(newDate.replace(/-/g, "/"));
+    if (!isNaN(d.getTime())) {
+      d.setMonth(d.getMonth() + selectedPlan.durationInMonths);
+      setEditEndDate(d.toISOString().substring(0, 10));
     }
-  };
+  }
+};
 
   const savePersonalInfo = async () => {
     if (!student) return;

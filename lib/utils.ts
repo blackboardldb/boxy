@@ -317,21 +317,23 @@ export function calcularFechaTerminoMembresia(
   startDate: string,
   durationInMonths: number
 ): string {
-  const start = new Date(startDate);
-  const end = new Date(start);
+  // Fix timezone: usar / en vez de - para que se interprete como local
+  const start = new Date(startDate.replace(/-/g, "/"));
+  
+  const startDay = start.getDate();
+  const targetMonth = start.getMonth() + durationInMonths;
+  const targetYear = start.getFullYear();
 
-  // Para duraciones en meses: usar meses
-  end.setMonth(end.getMonth() + durationInMonths);
+  // Calcular último día del mes destino para evitar overflow
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const finalDay = Math.min(startDay, lastDayOfTargetMonth);
 
-  // Ajustar al último día del mes si es necesario
-  if (
-    start.getDate() ===
-    new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
-  ) {
-    end.setDate(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate());
-  }
-
-  return end.toISOString().split("T")[0];
+  const end = new Date(targetYear, targetMonth, finalDay);
+  
+  const y = end.getFullYear();
+  const m = String(end.getMonth() + 1).padStart(2, "0");
+  const d = String(end.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export function calcularClasesSegunDuracion(

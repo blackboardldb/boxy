@@ -5,7 +5,7 @@ import { BaseService } from "./base-service";
 import { MembershipPlan } from "../types";
 import { PlanRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
-import { generatedSchemas, validateWithSchema } from "../types/generator";
+import { generatedSchemas, createSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError } from "../errors/types";
 
 export class PlanService extends BaseService<MembershipPlan> {
@@ -109,8 +109,8 @@ export class PlanService extends BaseService<MembershipPlan> {
   // Validation hooks
 
   protected async validateCreateData(data: any): Promise<void> {
-    // Validate using generated schema (as is)
-    const createSchema = generatedSchemas.membershipPlan;
+    // Validate using create schema (id is removed for creation)
+    const createSchema = createSchemas.membershipPlan;
     validateWithSchema(createSchema, data);
 
     // Additional business validation
