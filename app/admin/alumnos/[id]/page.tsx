@@ -192,10 +192,10 @@ const handleStartDateChange = (newDate: string) => {
     try {
       const selectedPlan = plans.find(p => p.id === editPlanId);
       
-      const newStartStr = new Date(editStartDate + "T00:00:00").toISOString();
-      const newEndStr = new Date(editEndDate + "T23:59:59").toISOString();
-      const newStart = new Date(newStartStr);
-      const newEnd = new Date(newEndStr);
+      const newStartStr = editStartDate; // "2026-03-01"
+      const newEndStr = editEndDate;     // "2026-03-31"
+      const newStart = new Date(newStartStr + "T00:00:00");
+      const newEnd = new Date(newEndStr + "T23:59:59");
       
       const newEnrolledClasses = (classSessions || []).filter(s => {
         const sessionDate = new Date(s.dateTime);

@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     const skip = parseInt(request.nextUrl.searchParams.get("skip") || "0");
 
     const { organizationId } = auth;
-    const today = new Date().toISOString().split("T")[0];
+    // DESPUÉS — usa la fecha real en Santiago
+    const today = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Santiago",
+}).format(new Date());
 
     // SQL optimizado: evitamos casts redundantes (::date).
     // PostgreSQL puede hacer comparación de strings 'YYYY-MM-DD' de forma eficiente.

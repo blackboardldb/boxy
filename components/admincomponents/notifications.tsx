@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { calcularFechaTerminoMembresia } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -105,12 +106,11 @@ export function Notifications() {
 
   const handleApproveRenewal = async (user: any, renewal: any) => {
     try {
-      const startDate = customStartDate || new Date().toISOString().split("T")[0];
-      const selectedPlan = plans.find((p: any) => p.id === renewal.requestedPlanId);
-      const planDuration = selectedPlan?.durationInMonths || 1;
+     const startDate = customStartDate || new Date().toISOString().split("T")[0];
+const selectedPlan = plans.find((p: any) => p.id === renewal.requestedPlanId);
+const planDuration = selectedPlan?.durationInMonths || 1;
       
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + planDuration);
+      const endDateStr = calcularFechaTerminoMembresia(startDate, planDuration);
 
       const updatedUserData = {
         membership: {
@@ -120,7 +120,7 @@ export function Notifications() {
           membershipType: selectedPlan?.name || renewal.requestedPlanName,
           monthlyPrice: selectedPlan?.price || user.membership.monthlyPrice,
           currentPeriodStart: startDate,
-          currentPeriodEnd: endDate.toISOString().split("T")[0],
+currentPeriodEnd: endDateStr,
           pendingRenewal: {
             ...renewal,
             status: "approved" as const,
@@ -249,7 +249,7 @@ export function Notifications() {
                       </p>
                       <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 rounded-xl" onClick={() => {
                         setSelectedRenewal(r);
-                        setCustomStartDate(new Date().toISOString().split("T")[0]);
+                       setCustomStartDate(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()));
                         setShowRenewalModal(true);
                       }}>Gestionar</Button>
                     </CardContent>

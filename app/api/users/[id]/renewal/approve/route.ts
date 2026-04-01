@@ -32,8 +32,8 @@ export async function POST(
     const updatedMembership = {
       ...user.membership,
       status: "active",
-      startDate: new Date().toISOString().split("T")[0],
-      currentPeriodStart: new Date().toISOString().split("T")[0],
+     startDate: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()),
+currentPeriodStart: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()),
     };
 
     // (Opcional) Actualizar currentPeriodEnd según lógica de tu app

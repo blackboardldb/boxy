@@ -102,10 +102,10 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     e.preventDefault();
     if (!student || !selectedPlan) return;
 
-    const newStartStr = new Date(formData.startDate + "T00:00:00").toISOString();
-    const newEndStr = new Date(formData.endDate + "T23:59:59").toISOString();
-    const newStart = new Date(newStartStr);
-    const newEnd = new Date(newEndStr);
+    const newStartStr = formData.startDate; // "2026-03-01"
+    const newEndStr = formData.endDate;     // "2026-03-31"
+    const newStart = new Date(newStartStr + "T00:00:00");
+    const newEnd = new Date(newEndStr + "T23:59:59");
 
     const newEnrolledClasses = (classSessions || []).filter(s => {
       const sessionDate = new Date(s.dateTime);
