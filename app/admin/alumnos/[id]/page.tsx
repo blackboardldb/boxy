@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, KeyRound } from "lucide-react";
+import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, KeyRound, Trash2 } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { getPlanStatus, getStudentClassesInPeriod } from "@/lib/utils";
+import { getPlanStatus, getStudentClassesInPeriod, calcularFechaTerminoMembresia } from "@/lib/utils";
 import { PhoneInputCL } from "@/components/PhoneInputCL";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 
@@ -91,8 +91,8 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
         setEditPlanId(m.planId || "");
         setEditClassLimit(m.planConfig?.classLimit ?? 0);
         setEditPrice(m.monthlyPrice ?? 0);
-        setEditStartDate(m.currentPeriodStart ? format(new Date(m.currentPeriodStart), 'yyyy-MM-dd') : "");
-        setEditEndDate(m.currentPeriodEnd ? format(new Date(m.currentPeriodEnd), 'yyyy-MM-dd') : "");
+        setEditStartDate(m.currentPeriodStart ? m.currentPeriodStart.substring(0, 10) : "");
+        setEditEndDate(m.currentPeriodEnd ? m.currentPeriodEnd.substring(0, 10) : "");
         setEditPaymentMethod(student.formaDePago || "transferencia");
         setEditPaymentMethod(student.formaDePago || "transferencia");
       }
@@ -107,11 +107,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       setEditPrice(selectedPlan.price);
       
       if (editStartDate) {
-        const d = new Date(editStartDate);
-        if (!isNaN(d.getTime())) {
-          d.setMonth(d.getMonth() + selectedPlan.durationInMonths);
-          setEditEndDate(d.toISOString().substring(0, 10));
-        }
+        setEditEndDate(calcularFechaTerminoMembresia(editStartDate, selectedPlan.durationInMonths));
       }
     }
   };
@@ -121,11 +117,7 @@ const handleStartDateChange = (newDate: string) => {
   const selectedPlan = plans.find(p => p.id === editPlanId)
     || plans.find(p => p.name === student?.membership?.membershipType);
   if (selectedPlan && newDate) {
-    const d = new Date(newDate.replace(/-/g, "/"));
-    if (!isNaN(d.getTime())) {
-      d.setMonth(d.getMonth() + selectedPlan.durationInMonths);
-      setEditEndDate(d.toISOString().substring(0, 10));
-    }
+    setEditEndDate(calcularFechaTerminoMembresia(newDate, selectedPlan.durationInMonths));
   }
 };
 
@@ -252,6 +244,38 @@ const handleStartDateChange = (newDate: string) => {
     } finally {
       setIsSaving(false);
       setEditingSection(null);
+    }
+  };
+
+  const deletePlanFromHistory = async (historyIndex: number) => {
+    if (!window.confirm("¿Seguro que deseas eliminar este plan del historial? Esta acción no se puede deshacer.")) return;
+    if (!student?.membership?.history) return;
+    if (!student.membership.history[historyIndex]) return;
+
+    setIsSaving(true);
+    try {
+      const newHistory = student.membership.history.filter((_, i) => i !== historyIndex);
+      const updatedMembership = { ...student.membership, history: newHistory };
+
+      const response = await fetch(`/api/users/${student.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ membership: updatedMembership }),
+      });
+
+      if (!response.ok) throw new Error("Error en la API al eliminar el plan");
+
+      const updated = { ...student, membership: updatedMembership } as FitCenterUserProfile;
+      
+      setStudent(updated);
+      updateUser(updated);
+
+      toast({ title: "Plan eliminado", description: "El plan fue eliminado del historial." });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "No se pudo eliminar el plan.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -714,15 +738,28 @@ const handleStartDateChange = (newDate: string) => {
                       const consumed = !isPastUnlimited ? Math.max(0, classesContracted - remainingClasses) : (pastMem.centerStats?.currentMonth?.classesAttended ?? 0);
                       
                       return (
-                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-100 space-y-1.5 py-4">
-                              <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
-                              <p className="text-sm font-medium text-zinc-500">
-                                {pastMem.membershipType} | {pastMem.currentPeriodStart 
-                                  ? format(new Date(pastMem.currentPeriodStart), "d/M/yyyy") 
-                                  : "-"} hasta {pastMem.currentPeriodEnd 
-                                  ? format(new Date(pastMem.currentPeriodEnd), "d/M/yyyy") 
-                                  : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted}
-                              </p>
+                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-100 py-4 flex items-start justify-between gap-2">
+                              <div className="space-y-1.5 flex-1">
+                                  <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
+                                  <p className="text-sm font-medium text-zinc-500">
+                                    {pastMem.membershipType} | {pastMem.currentPeriodStart 
+                                      ? format(new Date(pastMem.currentPeriodStart), "d/M/yyyy") 
+                                      : "-"} hasta {pastMem.currentPeriodEnd 
+                                      ? format(new Date(pastMem.currentPeriodEnd), "d/M/yyyy") 
+                                      : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted}
+                                  </p>
+                              </div>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deletePlanFromHistory(idx)}
+                                disabled={isSaving}
+                                className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl shrink-0"
+                                title="Eliminar del historial"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                           </div>
                       );
                   })}
