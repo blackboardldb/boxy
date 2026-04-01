@@ -385,7 +385,7 @@ export function getPlanStatus(
 
     // Si es ISO (YYYY-MM-DD)
     if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-      return new Date(dateStr.substring(0, 10) + "T12:00:00");
+      return new Date(dateStr.substring(0, 10) + "T12:00:00Z");
     }
 
     // Si es formato latino (DD/MM/YYYY)
@@ -405,9 +405,8 @@ export function getPlanStatus(
 
   // Ajustar horas para comparaciones justas
   const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  startDate.setHours(0, 0, 0, 0);
-  endDate.setHours(23, 59, 59, 999);
+ today.setUTCHours(12, 0, 0, 0);
+
 
   const remainingClasses =
     user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
