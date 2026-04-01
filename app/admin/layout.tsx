@@ -25,7 +25,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-zinc-50 flex ">
       {/* ── Sidebar Desktop ── */}
-      <aside className="hidden lg:flex flex-col w-72 h-screen border-r border-zinc-100 bg-white shrink-0">
+      <aside className="hidden lg:flex flex-col w-72 h-screen  border-r border-zinc-100 bg-white shrink-0 sticky top-0">
         <div className="p-8 border-b border-zinc-50 text-black">
           <Link href="/admin" className="text-black">
             <Logo size={160} />

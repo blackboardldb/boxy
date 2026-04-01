@@ -21,6 +21,10 @@ export async function GET() {
         firstName: true,
         lastName: true,
         email: true,
+        phone: true,
+        gender: true,
+        dateOfBirth: true,
+        emergencyContact: true,
         membership: true,
       }
     });

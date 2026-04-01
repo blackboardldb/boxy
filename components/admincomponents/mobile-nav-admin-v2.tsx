@@ -102,9 +102,9 @@ export function MobileAdminNav() {
       <nav
         className="lg:hidden fixed bottom-2 inset-x-0 mx-auto z-30 flex flex-row items-center justify-around
                    w-[92dvw] sm:w-[60dvw]
-                   bg-white/85 backdrop-blur-xl
+                   bg-white/20 backdrop-blur-xl
                    border border-zinc-200
-                   rounded-full px-2 py-1.5"
+                   rounded-full px-2 py-1.5 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)]"
         style={{ marginBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {visiblePrimary.map((item) => {

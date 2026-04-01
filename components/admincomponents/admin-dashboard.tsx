@@ -12,6 +12,7 @@ import {
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { WhatsAppLink } from "../WhatsAppLink";
 
 interface DashboardStats {
   totalMembers: number;
@@ -28,6 +29,7 @@ interface MemberListItem {
   id: string;
   firstName: string;
   lastName: string;
+  phone: string | null;
   membershipType: string | null;
   currentPeriodEnd: string | null;
 }
@@ -246,7 +248,7 @@ export function AdminDashboard() {
       {/* Estadísticas Principales */}
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
-          title="Total Miembros"
+          title="Total alumnos"
           value={totalMembers}
           subtitle={
             <>
@@ -393,8 +395,11 @@ export function AdminDashboard() {
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
                        <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
+                    <div className="flex items-center space-x-2">
+                      <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
+                        Ver Perfil
+                      </Link>
                     </div>
                   </div>
                 ))}
@@ -435,8 +440,11 @@ export function AdminDashboard() {
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
                         <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold  transition-colors p-2 rounded-xl hover:bg-zinc-100">Ver Perfil</Link>
+                    <div className="flex items-center space-x-2">
+                      <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
+                      <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
+                        Ver Perfil
+                      </Link>
                     </div>
                   </div>
                 ))}

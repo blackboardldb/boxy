@@ -17,8 +17,10 @@ import { Edit3, ChevronRight, Lock, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
-import type { FitCenterUserProfile } from "@/lib/types";
+import { FitCenterUserProfile } from "@/lib/types";
 import { SkeletonUserProfile } from "@/components/ui/skeleton";
+import { PhoneInputCL } from "./PhoneInputCL";
+import { WhatsAppLink } from "./WhatsAppLink";
 import {
   MEMBERSHIP_STATUS_LABELS,
   MEMBERSHIP_STATUS_COLORS,
@@ -337,6 +339,10 @@ export function UserProfile() {
                 </div>
               )}
             </div>
+                <div className="flex justify-between items-center mt-4 ">
+                  <p className="text-zinc-400 text-sm"> ¿Dudas? Escríbenos </p>
+                     <WhatsAppLink phone="56987522551" label="Chatear en Whatsapp" />
+                </div>
           </div>
         )}
    {/* Notificaciones App */}
@@ -426,7 +432,12 @@ export function UserProfile() {
               <div>
                 <h3 className="text-lg font-semibold text-white">Información de Contacto</h3>
                 <p className="text-zinc-400">{userData.email}</p>
-                {userData.phone && <p className="text-zinc-400">{userData.phone}</p>}
+                {userData.phone && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <p className="text-zinc-400">{userData.phone}</p>
+                
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -454,12 +465,11 @@ export function UserProfile() {
                 </div>
                 <div>
                   <Label htmlFor="phone" className="text-white">Teléfono</Label>
-                  <Input
+                  <PhoneInputCL
                     id="phone"
-                    type="tel"
                     value={editablePhone}
-                    onChange={(e) => setEditablePhone(e.target.value)}
-                    className="mt-1 bg-white border-zinc-800 text-black"
+                    onChange={setEditablePhone}
+                    className="mt-1"
                   />
                 </div>
                 <div className="flex gap-2">

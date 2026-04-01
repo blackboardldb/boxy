@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
     // SQL optimizado: evitamos casts redundantes (::date).
     // PostgreSQL puede hacer comparación de strings 'YYYY-MM-DD' de forma eficiente.
     const rows = await prisma.$queryRaw<
-      { id: string; firstName: string; lastName: string; membership: Prisma.JsonValue }[]
+      { id: string; firstName: string; lastName: string; phone: string | null; membership: Prisma.JsonValue }[]
     >`
-      SELECT id, "firstName", "lastName", membership
+      SELECT id, "firstName", "lastName", phone, membership
       FROM public.users
       WHERE
         (role IS NULL OR role = 'user')
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         id: u.id,
         firstName: u.firstName,
         lastName: u.lastName,
+        phone: u.phone,
         membershipType: m?.membershipType ?? null,
         currentPeriodEnd: m?.currentPeriodEnd ?? null,
       };

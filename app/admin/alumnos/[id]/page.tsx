@@ -16,6 +16,8 @@ import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { getPlanStatus, getStudentClassesInPeriod } from "@/lib/utils";
+import { PhoneInputCL } from "@/components/PhoneInputCL";
+import { WhatsAppLink } from "@/components/WhatsAppLink";
 
 export default function StudentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -332,7 +334,10 @@ const handleStartDateChange = (newDate: string) => {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Teléfono</p>
-                    <p className="font-medium text-zinc-900">{student.phone || "-"}</p>
+                    <div className="flex items-center gap-3">
+                      <p className="font-medium text-zinc-900">{student.phone || "-"}</p>
+                      <WhatsAppLink phone={student.phone} />
+                    </div>
                   </div>
                   {student.gender && (
                     <div>
@@ -378,7 +383,7 @@ const handleStartDateChange = (newDate: string) => {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-zinc-700 font-medium">Teléfono</Label>
-                    <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="rounded-xl" />
+                    <PhoneInputCL value={editPhone} onChange={setEditPhone} />
                   </div>
                   {student.gender && (
                     <div className="space-y-2">
