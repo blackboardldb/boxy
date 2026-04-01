@@ -25,7 +25,9 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-zinc-50 flex ">
       {/* ── Sidebar Desktop ── */}
-      <aside className="hidden lg:flex flex-col w-72 h-screen  border-r border-zinc-100 bg-white shrink-0 sticky top-0">
+     <div className="hidden lg:block w-72 h-screen p-4  sticky top-0">
+       <aside className="lg:flex flex-col w-full h-full bg-white shrink-0 rounded-xl 
+        overflow-hidden border border-zinc-100">
         <div className="p-8 border-b border-zinc-50 text-black">
           <Link href="/admin" className="text-black">
             <Logo size={160} />
@@ -35,6 +37,7 @@ export default function AdminLayout({
           <Navigation />
         </div>
       </aside>
+     </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col overflow-x-hidden">
