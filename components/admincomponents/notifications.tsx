@@ -13,7 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { calcularFechaTerminoMembresia } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,7 +79,7 @@ export function Notifications() {
     .filter((u: any) => u.membership?.pendingRenewal?.status === "pending")
     .map((user: any) => {
       const renewal = user.membership!.pendingRenewal!;
-      const expirationDate = new Date(user.membership!.currentPeriodEnd);
+      const expirationDate = parseISO(user.membership!.currentPeriodEnd.substring(0, 10));
       const daysUntilExpiration = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return {
         id: `renewal-${user.id}`,

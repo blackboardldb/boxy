@@ -526,7 +526,7 @@ const handleStartDateChange = (newDate: string) => {
                       
                             {student.membership?.currentPeriodStart
                               ? format(
-                                  new Date(student.membership?.currentPeriodStart),
+                                  parseISO(student.membership.currentPeriodStart.substring(0, 10)),
                                   "dd MMM",
                                   { locale: es }
                                 )
@@ -534,7 +534,7 @@ const handleStartDateChange = (newDate: string) => {
                             -{" "}
                             {student.membership?.currentPeriodEnd
                               ? format(
-                                  new Date(student.membership?.currentPeriodEnd),
+                                  parseISO(student.membership.currentPeriodEnd.substring(0, 10)),
                                   "dd MMM",
                                   { locale: es }
                                 )
@@ -717,9 +717,9 @@ const handleStartDateChange = (newDate: string) => {
                         }`}
                       >
                         {student.membership.membershipType} | {student.membership.currentPeriodStart
-                          ? format(new Date(student.membership.currentPeriodStart), "d/M/yyyy")
+                          ? format(parseISO(student.membership.currentPeriodStart.substring(0, 10)), "d/M/yyyy")
                           : "-"} hasta {student.membership.currentPeriodEnd
-                          ? format(new Date(student.membership.currentPeriodEnd), "d/M/yyyy")
+                          ? format(parseISO(student.membership.currentPeriodEnd.substring(0, 10)), "d/M/yyyy")
                           : "-"} | {classesConsumed}/{isUnlimited ? "∞" : planClassLimit}
                       </p>
                     </div>
@@ -743,9 +743,9 @@ const handleStartDateChange = (newDate: string) => {
                                   <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
                                   <p className="text-sm font-medium text-zinc-500">
                                     {pastMem.membershipType} | {pastMem.currentPeriodStart 
-                                      ? format(new Date(pastMem.currentPeriodStart), "d/M/yyyy") 
+                                      ? format(parseISO(pastMem.currentPeriodStart.substring(0, 10)), "d/M/yyyy") 
                                       : "-"} hasta {pastMem.currentPeriodEnd 
-                                      ? format(new Date(pastMem.currentPeriodEnd), "d/M/yyyy") 
+                                      ? format(parseISO(pastMem.currentPeriodEnd.substring(0, 10)), "d/M/yyyy") 
                                       : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted}
                                   </p>
                               </div>

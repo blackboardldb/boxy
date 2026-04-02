@@ -32,10 +32,12 @@ import type { FitCenterUserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateShort, getPlanStatus } from "@/lib/utils";
 
+import { parseISO, format } from "date-fns";
+
 // Función helper para formatear fechas
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return "-";
-  return formatDateShort(dateString);
+  return format(parseISO(dateString.substring(0, 10)), "dd/MM/yyyy");
 };
 import { useRouter } from "next/navigation";
 

@@ -25,7 +25,7 @@ import {
   MEMBERSHIP_STATUS_LABELS,
   MEMBERSHIP_STATUS_COLORS,
 } from "@/lib/types";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 export function UserProfile() {
@@ -322,9 +322,9 @@ export function UserProfile() {
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
                   <span className="text-white">
-                    {format(new Date(userData.membership.currentPeriodStart), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(userData.membership.currentPeriodStart.substring(0, 10)), "dd/MM/yy", { locale: es })}
                     {" - "}
-                    {format(new Date(userData.membership.currentPeriodEnd), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(userData.membership.currentPeriodEnd.substring(0, 10)), "dd/MM/yy", { locale: es })}
                   </span>
                 </div>
               )}

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { ExpensesManager } from "@/components/admincomponents/expenses-manager";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { parseISO } from "date-fns";
 
 export default function FinanzasPage() {
   const users = useBlackSheepStore((s) => s.users);
@@ -47,9 +48,9 @@ export default function FinanzasPage() {
         u.membership &&
         u.membership.status === "active" &&
         u.membership.currentPeriodStart &&
-        new Date(u.membership.currentPeriodStart).getFullYear() ===
+        parseISO(u.membership.currentPeriodStart.substring(0, 10)).getFullYear() ===
           selectedYear &&
-        new Date(u.membership.currentPeriodStart).getMonth() ===
+        parseISO(u.membership.currentPeriodStart.substring(0, 10)).getMonth() ===
           selectedMonthIndex
     )
     .map((u) => ({
@@ -201,7 +202,7 @@ export default function FinanzasPage() {
                       <div className="font-medium text-sm">{i.nombre}</div>
                       <div className="text-xs text-muted-foreground">
                         {i.plan} |{" "}
-                        {i.fecha && new Date(i.fecha).toLocaleDateString()}
+                        {i.fecha && parseISO(i.fecha.substring(0, 10)).toLocaleDateString()}
                       </div>
                     </div>
                     <span className="font-semibold">

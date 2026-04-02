@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowLeft, Save } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/lib/utils";
+import { parseISO } from "date-fns";
 
 export default function NuevoPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -55,7 +56,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         let suggestedStartDate = new Date();
         if (found.membership?.currentPeriodEnd && found.membership.status === 'active') {
           // Si tiene plan activo, sugerir el día después del término
-          const end = new Date(found.membership.currentPeriodEnd);
+          const end = parseISO(found.membership.currentPeriodEnd.substring(0, 10));
           if (end >= suggestedStartDate) { // If it's today or in the future
             suggestedStartDate = new Date(end);
             suggestedStartDate.setDate(suggestedStartDate.getDate() + 1);
@@ -203,7 +204,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
           <CardTitle>Configuración de Membresía</CardTitle>
           <CardDescription className="pt-2">
             {student.membership?.status === 'active' && student.membership?.currentPeriodEnd 
-              ? `El plan actual de ${student.firstName} vence el ${new Date(student.membership.currentPeriodEnd).toLocaleDateString()}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`
+              ? `El plan actual de ${student.firstName} vence el ${parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString()}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`
               : 'Selecciona el plan, la forma de pago y confirma las fechas de vigencia para activar una nueva membresía.'}
           </CardDescription>
         </CardHeader>
@@ -213,7 +214,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                <h3 className="text-sm font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
                <div className="space-y-1 text-sm">
                  <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
-                 <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? new Date(student.membership.currentPeriodEnd).toLocaleString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}</span></p>
+                 <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}</span></p>
                </div>
              </div>
           )}

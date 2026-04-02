@@ -29,6 +29,7 @@ import {
   calcularClasesSegunDuracion,
 } from "@/lib/utils";
 import { MembershipDatePicker } from "./membership-date-picker";
+import { format } from "date-fns";
 
 interface AddStudentModalProps {
   onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => Promise<boolean>;
@@ -140,10 +141,10 @@ export function AddStudentModal({
     status: student?.membership?.status || "active",
     joinDate:
       student?.membership?.currentPeriodStart ||
-      new Date().toISOString().split("T")[0],
+      format(new Date(), "yyyy-MM-dd"),
     lastPayment:
       student?.membership?.currentPeriodStart ||
-      new Date().toISOString().split("T")[0],
+      format(new Date(), "yyyy-MM-dd"),
     nextPayment: student?.membership?.currentPeriodEnd || "",
     planId: student?.membership?.planId || "",
     formaDePago: student?.formaDePago || "contado",

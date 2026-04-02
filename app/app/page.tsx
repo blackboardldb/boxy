@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatTimeLocal, formatWeekday, getStudentClassesInPeriod } from "@/lib/utils";
 import { SkeletonHomePage } from "@/components/ui/skeleton";
@@ -122,7 +122,7 @@ const progressPercentage =
 
   const formattedPeriodStart = currentUser.membership?.currentPeriodStart
     ? format(
-        new Date(currentUser.membership.currentPeriodStart),
+        parseISO(currentUser.membership.currentPeriodStart.substring(0, 10)),
         "dd 'de' MMMM",
         { locale: es }
       )
@@ -130,7 +130,7 @@ const progressPercentage =
 
   const formattedPeriodEnd = currentUser.membership?.currentPeriodEnd
     ? format(
-        new Date(currentUser.membership.currentPeriodEnd),
+        parseISO(currentUser.membership.currentPeriodEnd.substring(0, 10)),
         "dd 'de' MMMM",
         { locale: es }
       )

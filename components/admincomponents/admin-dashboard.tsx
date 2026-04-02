@@ -13,6 +13,7 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WhatsAppLink } from "../WhatsAppLink";
+import { parseISO } from "date-fns";
 
 interface DashboardStats {
   totalMembers: number;
@@ -393,7 +394,7 @@ export function AdminDashboard() {
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                       <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
+                       <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
@@ -438,7 +439,7 @@ export function AdminDashboard() {
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                        <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
+                        <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
