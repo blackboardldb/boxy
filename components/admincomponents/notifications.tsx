@@ -168,45 +168,8 @@ currentPeriodEnd: endDateStr,
 
   return (
     <div className="space-y-6">
-      {/* Header con estadísticas resumidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Alertas</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingRenewals.length + cancelledClasses.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Renovaciones</CardTitle>
-            <RefreshCw className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-500">{pendingRenewals.length}</div>
-             <p className="text-xs text-muted-foreground">{pendingRenewals.filter((r: any) => r.daysUntilExpiration <= 7).length} expiran pronto</p>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cancelaciones</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-500">{cancelledClasses.length}</div>
-            <p className="text-xs text-muted-foreground">Clases hoy / futuro</p>
-          </CardContent>
-        </Card>
-
-
-      </div>
-
-      {/* Filtros */}
-      <div className="flex items-center justify-end gap-4 p-4 bg-muted/50 rounded-xl">
+       {/* Filtros */}
+      <div className="flex items-center justify-end gap-4">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={notificationFilter} onValueChange={setNotificationFilter}>
           <SelectTrigger className="w-48 rounded-xl">
@@ -219,6 +182,38 @@ currentPeriodEnd: endDateStr,
           </SelectContent>
         </Select>
       </div>
+
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Notificaciones</h1>
+      
+      </div>
+      {/* Header con estadísticas resumidas */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+
+        <Card className="rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Renovaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-500 flex items-center gap-2">{pendingRenewals.length} <RefreshCw className="h-4 w-4 text-orange-500" /></div>
+             <p className="text-xs text-muted-foreground">{pendingRenewals.filter((r: any) => r.daysUntilExpiration <= 7).length} expiran pronto</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Cancelado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500 flex items-center gap-2">{cancelledClasses.length} <XCircle className="h-4 w-4 text-red-500" /></div>
+            <p className="text-xs text-muted-foreground">Clases hoy / futuro</p>
+          </CardContent>
+        </Card>
+
+
+      </div>
+
+     
 
       {/* --- SECCIONES DE NOTIFICACIONES --- */}
       <div className="space-y-8">

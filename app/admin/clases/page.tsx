@@ -211,13 +211,7 @@ export default function AdminClasesPage() {
   };
 
   return (
-    <div className="py-8 md:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold">Gestión de Clases</h1>
-        <div className="text-sm text-muted-foreground flex items-center gap-4">
-          <span>Herramienta operativa para instructores</span>
-        </div>
-      </div>
+    <div className="pb-8 space-y-6">
 
       {/* Selector de fecha semanal */}
       <AdminWeeklyDatePicker
@@ -226,7 +220,7 @@ export default function AdminClasesPage() {
       />
 
       {/* Información de resultados */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center md:px-8">
         <p className="text-sm text-muted-foreground">
           {isLoading
             ? "Cargando clases..."

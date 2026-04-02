@@ -86,24 +86,20 @@ export default function ConfiguracionesPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Configuraciones</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestión de identidad visual y parámetros generales del centro.
-          </p>
+         
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 max-w-5xl">
+      <div className="grid grid-cols-1 gap-2">
         {/* Información del Centro - Airbnb Style */}
-        <Card className="rounded-xl border border-zinc-100 bg-white">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 bg-zinc-50/50 px-6 py-4">
+        <Card className="rounded-xl border border-zinc-200 bg-white">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 bg-zinc100 px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <Building2 className="w-5 h-5" />
-              </div>
+              
               <div>
                 <CardTitle className="text-lg font-bold">Información del Centro</CardTitle>
                 <CardDescription className="text-xs">Nombre y logotipos principales</CardDescription>
@@ -114,7 +110,7 @@ export default function ConfiguracionesPage() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setEditingSection("identity")}
-                className="rounded-xl px-4 border-zinc-100 hover:bg-zinc-50 transition-all font-semibold text-xs"
+                className="rounded-xl px-4 border-zinc-200 hover:bg-zinc-50 transition-all font-semibold text-xs"
               >
                 <Edit className="w-3.5 h-3.5 mr-2" /> Editar
               </Button>
@@ -132,13 +128,13 @@ export default function ConfiguracionesPage() {
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Horizontal</p>
-                    <div className="h-12 flex items-center bg-zinc-50/50 rounded-xl px-4 border border-zinc-100 overflow-hidden">
+                    <div className="h-12 flex items-center bg-zinc-50/50 rounded-xl px-4 border border-zinc-200 overflow-hidden">
                       {logoHorizontalSvg ? <Logo size={120} /> : <span className="text-xs text-zinc-400 italic">Sin configurar</span>}
                     </div>
                   </div>
                   <div className="space-y-3">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Cuadrado</p>
-                    <div className="h-12 w-12 flex items-center justify-center bg-zinc-50/50 rounded-xl border border-zinc-100 overflow-hidden">
+                    <div className="h-12 w-12 flex items-center justify-center bg-zinc-50/50 rounded-xl border border-zinc-200 overflow-hidden">
                       {logoSquareSvg ? <SquareLogo size={32} /> : <span className="text-[10px] text-zinc-400 italic">N/A</span>}
                     </div>
                   </div>
@@ -159,7 +155,7 @@ export default function ConfiguracionesPage() {
                     value={centerName}
                     onChange={(e) => setCenterName(e.target.value)}
                     placeholder="Ej. BlackSheep CrossFit"
-                    className="w-full p-4 text-sm font-medium border border-zinc-100 rounded-xl bg-white focus:ring-2 focus:ring-primary outline-none transition-all"
+                    className="w-full p-4 text-sm font-medium border border-zinc-200 rounded-xl bg-white focus:ring-2 focus:ring-primary outline-none transition-all"
                   />
                 </div>
 
@@ -172,12 +168,12 @@ export default function ConfiguracionesPage() {
                     </div>
                     <textarea
                       rows={6}
-                      className="w-full p-4 font-mono text-xs border border-zinc-100 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
+                      className="w-full p-4 font-mono text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
                       placeholder="<svg ...> ... </svg>"
                       value={logoHorizontalSvg}
                       onChange={(e) => setLogoHorizontalSvg(e.target.value)}
                     />
-                    <div className="p-4 border border-dashed border-zinc-100 rounded-xl bg-white">
+                    <div className="p-4 border border-dashed border-zinc-200 rounded-xl bg-white">
                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Navbar</p>
                        <div className="h-10 flex items-center"><Logo size={100} /></div>
                     </div>
@@ -191,12 +187,12 @@ export default function ConfiguracionesPage() {
                     </div>
                     <textarea
                       rows={6}
-                      className="w-full p-4 font-mono text-xs border border-zinc-100 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
+                      className="w-full p-4 font-mono text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
                       placeholder="<svg ...> ... </svg>"
                       value={logoSquareSvg}
                       onChange={(e) => setLogoSquareSvg(e.target.value)}
                     />
-                    <div className="p-4 border border-dashed border-zinc-100 rounded-xl bg-white">
+                    <div className="p-4 border border-dashed border-zinc-200 rounded-xl bg-white">
                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Login</p>
                        <div className="h-10 flex items-center"><SquareLogo size={40} /></div>
                     </div>

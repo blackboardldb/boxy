@@ -335,7 +335,7 @@ export default function AdminClassDetailDrawer({
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 min-h-full">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -521,24 +521,7 @@ export default function AdminClassDetailDrawer({
                 </TabsContent>
               </Tabs>
 
-              {/* Información de la disciplina */}
-              {discipline && (
-                <div className="border border-zinc-300 rounded-xl p-4">
-                  <h3 className="font-medium mb-2">
-                    Información de la Disciplina
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {discipline.description}
-                  </p>
-                  {applicableCancellationRule && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      💡 Política de cancelación: Se puede cancelar hasta{" "}
-                      {applicableCancellationRule.hoursBefore} horas antes
-                    </p>
-                  )}
-                </div>
-              )}
-
+             
               {/* Acciones */}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={onClose} className="w-full rounded-xl">

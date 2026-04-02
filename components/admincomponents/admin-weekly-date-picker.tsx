@@ -159,9 +159,9 @@ export default function AdminWeeklyDatePicker({
   };
 
   return (
-    <div className={`bg-white p-4 rounded-xl ${className}`}>
+    <div className={` border-b-2 border-zinc-200 bg-zinc-50  p-3 ${className}`}>
       {/* Header */}
-      <div className="pb-4 border-b border-zinc-100">
+      <div className="pb-2 border-b border-zinc-100">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-lg text-zinc-800 font-semibold">{getMonthYear()}</p>

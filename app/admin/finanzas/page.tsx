@@ -101,9 +101,9 @@ export default function FinanzasPage() {
   });
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Finanzas</h1>
+        <h1 className="text-3xl font-bold">Finanzas</h1>
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
           <SelectTrigger className="w-48 rounded-xl">
             <SelectValue placeholder="Seleccionar mes" />
@@ -119,7 +119,7 @@ export default function FinanzasPage() {
       </div>
 
       {/* Cards de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-8">
         <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -179,7 +179,7 @@ export default function FinanzasPage() {
       </div>
 
       {/* Detalle de ingresos y egresos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Ingresos */}
         <Card className="h-full rounded-xl">
           <CardHeader>

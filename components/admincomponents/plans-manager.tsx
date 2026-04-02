@@ -306,18 +306,18 @@ export default function PlansManager() {
   };
 
   return (
-    <div className="space-y-6 py-8">
+    <div className="space-y-6 py-8 max-w-7xl mx-auto">
       {/* Header con gestión de planes */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Planes de Membresía</h2>
-          <p className="text-muted-foreground">
-            Administra los planes de membresía disponibles para los usuarios
-          </p>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-8 sm:gap-4">
+        <div className="order-2 sm:order-1 text-left w-full sm:w-auto">
+          <h2 className="text-3xl font-bold">Planes disponibles</h2>
+         
         </div>
-        <Button onClick={handleNewPlan} className="rounded-xl">
+        <div className="order-1 sm:order-2 flex justify-end w-full sm:w-auto">
+          <Button onClick={handleNewPlan} className="rounded-xl">
           <Plus className="w-4 h-4 mr-2" /> Nuevo Plan
         </Button>
+        </div>
       </div>
 
       {/* Filtros de búsqueda */}
@@ -456,33 +456,22 @@ export default function PlansManager() {
                 </CardHeader>
 
                 <CardContent className="pt-0">
-                  {plan.description && (
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {plan.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-start gap-4">
+                  <div className="flex items-center justify-start gap-3">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
 
                       <p className="text-sm text-muted-foreground">
                         {plan.durationInMonths === 1
-                          ? "1 mes"
+                          ? "1 mes | "
                           : `${plan.durationInMonths} meses`}
                       </p>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <CalendarCheck className="w-4 h-4 text-muted-foreground" />
-
-                      <p className="text-sm text-muted-foreground">
+                       <p className="text-sm text-muted-foreground">
                         {plan.classLimit === 0
                           ? "Ilimitadas"
                           : `${calcularClasesSegunDuracion(
                               plan.classLimit,
                               plan.durationInMonths
-                            )} clases totales`}
+                            )} clases`}
                       </p>
                     </div>
 
@@ -495,24 +484,20 @@ export default function PlansManager() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-xs rounded-xl">
+                  <div className="mt-4 pt-2 border-t">
+                    <div className="space-y-2 flex flex-row justify-between items-center">
+                      <div className="">
+                        <span className="text-xs rounded-xl">
                           {plan.disciplineAccess === "all"
                             ? "Todas las disciplinas"
                             : "Disciplinas limitadas"}
-                        </Badge>
+                        </span>
                       </div>
 
                       {plan.disciplineAccess === "limited" &&
                         plan.allowedDisciplines &&
-                        plan.allowedDisciplines.length > 0 && (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground">
-                              Disciplinas incluidas:
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
+                        plan.allowedDisciplines.length > 0 && (         
+                            <div className="flex flex-wrap gap-1">
                               {plan.allowedDisciplines.map((disciplineId) => {
                                 const discipline = disciplines?.find(
                                   (d) => d.id === disciplineId
@@ -520,23 +505,24 @@ export default function PlansManager() {
                                 if (!discipline) return null;
 
                                 return (
-                                  <Badge
+                                  <div
                                     key={disciplineId}
-                                    variant="outline"
-                                    className="text-xs rounded-xl"
+                                    className="text-xs rounded-xl flex gap-1 items-center"
                                   >
-                                    <span
-                                      className="w-2 h-2 rounded-full mr-1"
+                                    <div
+                                      className="w-2 h-2 rounded-full"
                                       style={{
                                         background: discipline.color || "#ccc",
                                       }}
                                     />
-                                    {discipline.name}
-                                  </Badge>
+                                    <span>
+                                       {discipline.name}
+                                    </span>
+                                  </div>
                                 );
                               })}
                             </div>
-                          </div>
+                        
                         )}
                     </div>
                   </div>

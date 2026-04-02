@@ -23,11 +23,11 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex ">
+    <div className="min-h-screen bg-white flex ">
       {/* ── Sidebar Desktop ── */}
      <div className="hidden lg:block w-72 h-screen p-4  sticky top-0">
        <aside className="lg:flex flex-col w-full h-full bg-white shrink-0 rounded-xl 
-        overflow-hidden border border-zinc-100">
+        overflow-hidden border border-zinc-100 shadow-xl">
         <div className="p-8 border-b border-zinc-50 text-black">
           <Link href="/admin" className="text-black">
             <Logo size={160} />
@@ -73,7 +73,7 @@ export default function AdminLayout({
           </Drawer>
         </header> */}
         {/* Content — extra bottom padding so the floating nav never covers content */}
-        <main className="flex-1 overflow-y-auto bg-zinc-50/50 custom-scrollbar p-4 pb-24 lg:pb-0">
+        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-24 lg:pb-0">
           {children}
         </main>
       </div>

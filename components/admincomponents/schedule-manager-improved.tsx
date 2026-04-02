@@ -281,16 +281,18 @@ export default function ScheduleManagerImproved() {
     .sort();
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto p-4 md:p-8">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto py-4 md:p-8">
       {/* Header con gestión de disciplinas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 ">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8 sm:gap-4 ">
+        <div className="order-2 sm:order-1">
           <h2 className="text-2xl font-bold tracking-tight">Configuración de Horarios</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestiona tus disciplinas, horarios semanales y reglas de cupos.</p>
         </div>
+        <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
         <Button onClick={handleNewDiscipline} size="lg" className="rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95">
           <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
         </Button>
+        </div>
       </div>
 
       {/* Lista de disciplinas */}
@@ -326,8 +328,8 @@ export default function ScheduleManagerImproved() {
                 !d.isActive && "grayscale opacity-80"
               )}>
 
-                <CardHeader className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <CardHeader className="p-3">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 divide-y divide-zinc-100">
                     <div className="flex items-center gap-4">
                       <Switch 
                         checked={d.isActive} 
@@ -345,7 +347,7 @@ export default function ScheduleManagerImproved() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 justify-between pt-3">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -373,7 +375,7 @@ export default function ScheduleManagerImproved() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="px-6 pb-6 empty:hidden">
+                <CardContent className="px-3 pb-3 empty:hidden">
                   {expandedDisciplines.has(d.id) && (
                     <div className="space-y-4 pt-2 border-t border-zinc-50 animate-in slide-in-from-top-2 duration-300">
                       {d.schedule.length === 0 ? (

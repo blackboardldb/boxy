@@ -422,8 +422,9 @@ export function InstructorsManager() {
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold">Gestión de Instructores</h2>
-        <Dialog open={isAddingInstructor} onOpenChange={setIsAddingInstructor}>
+        <h2 className="text-3xl font-bold order-2 sm:order-1">Instructores</h2>
+       <div className="order-1 sm:order-2 w-full sm:w-auto text-right">
+         <Dialog open={isAddingInstructor} onOpenChange={setIsAddingInstructor}>
           <DialogTrigger asChild>
             <Button className="rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
@@ -443,6 +444,7 @@ export function InstructorsManager() {
             />
           </DialogContent>
         </Dialog>
+       </div>
       </div>
 
       {/* Filtros de búsqueda */}

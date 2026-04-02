@@ -139,8 +139,9 @@ export default function AlumnosPage() {
 
   return (
     <div className="md:p-8 space-y-6 w-full">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold">Gestión de Alumnos</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
+        <h1 className="text-3xl font-bold order-2 sm:order-1 ">Gestión de Alumnos</h1>
+        <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
         <AddStudentModal
           onAddStudent={async (studentData) => {
             const result = await createUser(studentData);
@@ -158,6 +159,7 @@ export default function AlumnosPage() {
             );
           }}
         />
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 w-full">

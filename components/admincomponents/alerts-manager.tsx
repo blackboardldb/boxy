@@ -156,12 +156,12 @@ export function AlertsManager() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto mt-4">
       {/* Columna Izquierda: Crear Alerta */}
-      <Card className="rounded-xl border shadow-sm border-zinc-100 bg-white">
+      <Card className="rounded-xl border shadow-sm border-zinc-200 bg-white">
         <CardHeader className="border-b border-zinc-50 bg-zinc-50/30 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+          <div className="flex items-center gap-2">
+            <div className="rounded-xl text-primary">
               <Bell className="w-5 h-5" />
             </div>
             <div>
@@ -279,10 +279,9 @@ export function AlertsManager() {
       </Card>
 
       {/* Columna Derecha: Historial */}
-      <Card className="rounded-xl border shadow-sm border-zinc-100 bg-white">
+      <Card className="rounded-xl border shadow-sm border-zinc-200 bg-white">
         <CardHeader className="border-b border-zinc-50 bg-zinc-50/30 px-6 py-4">
-          <CardTitle className="text-lg font-bold">Historial de Alertas</CardTitle>
-          <CardDescription className="text-xs">Alertas publicadas y programadas</CardDescription>
+          <CardTitle className="text-lg font-bold">Alertas publicadas y programadas</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="max-h-[500px] overflow-y-auto">
