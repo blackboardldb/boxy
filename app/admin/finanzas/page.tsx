@@ -101,7 +101,7 @@ export default function FinanzasPage() {
   });
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
+    <div className="p-4 pt-8 md:p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Finanzas</h1>
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>

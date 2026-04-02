@@ -138,7 +138,7 @@ export default function AlumnosPage() {
   const endIndex = Math.min(startIndex + (users?.length || 0), totalItems);
 
   return (
-    <div className="md:p-8 space-y-6 w-full">
+    <div className="p-4 pt-8 md:p-8 space-y-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
         <h1 className="text-3xl font-bold order-2 sm:order-1 ">Gestión de Alumnos</h1>
         <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">

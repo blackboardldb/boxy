@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -13,17 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
-import type { FitCenterUserProfile, ClassListItem } from "@/lib/types";
+import type { ClassListItem } from "@/lib/types";
 import { parseISO, format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Users, Plus, Search, Save, Loader2 } from "lucide-react";
 import {
   formatTimeLocal,
   formatWeekday,
   formatDayMonth,
-  isClassPast,
 } from "@/lib/utils";
 
 interface AdminClassDetailDrawerProps {
@@ -39,9 +35,7 @@ export default function AdminClassDetailDrawer({
   classItem,
   onCancelClass,
 }: AdminClassDetailDrawerProps) {
-  const { users, disciplines } = useBlackSheepStore();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [activeTab, setActiveTab] = useState("inscritos");
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,27 +43,30 @@ export default function AdminClassDetailDrawer({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
 
-  // Estado local para la clase actualizada
   const [currentClassItem, setCurrentClassItem] = useState(classItem);
   const [participants, setParticipants] = useState<any[]>([]);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
 
-  // Cargar participantes bajo demanda al abrir el drawer
+  // Búsqueda server-side de usuarios disponibles
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+
+  // Cargar participantes al abrir el drawer
   useEffect(() => {
     async function fetchParticipants() {
       if (!isOpen || !classItem?.id) return;
-      
+
       setIsLoadingParticipants(true);
       try {
         const response = await fetch(`/api/classes/${classItem.id}/participants`);
         const result = await response.json();
         if (result.success) {
           setParticipants(result.data);
-          // Actualizar los IDs locales para que la lógica de búsqueda funcione
-          setCurrentClassItem(prev => prev ? ({
-            ...prev,
-            registeredParticipantsIds: result.data.map((p: any) => p.userId)
-          }) : null);
+          setCurrentClassItem((prev) =>
+            prev
+              ? { ...prev, registeredParticipantsIds: result.data.map((p: any) => p.userId) }
+              : null
+          );
         }
       } catch (error) {
         console.error("Error fetching participants:", error);
@@ -81,95 +78,69 @@ export default function AdminClassDetailDrawer({
     fetchParticipants();
   }, [isOpen, classItem?.id]);
 
-  // Optimizar búsqueda con useMemo para evitar re-cálculos innecesarios
-  const availableUsers = useMemo(() => {
-    if (!users || !currentClassItem) return [];
-
-    return users.filter((user: FitCenterUserProfile) => {
-      const isEnrolled = currentClassItem.registeredParticipantsIds?.includes(
-        user.id
-      );
-      const isInWaitlist = currentClassItem.waitlistParticipantsIds?.includes(
-        user.id
-      );
-
-      // Solo filtrar por búsqueda si hay término de búsqueda
-      if (searchTerm.trim()) {
-        const matchesSearch =
-          user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        return !isEnrolled && !isInWaitlist && matchesSearch;
-      }
-
-      return !isEnrolled && !isInWaitlist;
-    });
-  }, [users, currentClassItem, searchTerm]);
-
-  // Inicializar notas cuando se abre el drawer
+  // Búsqueda de usuarios disponibles con debounce (solo cuando el tab está activo)
   useEffect(() => {
-    if (classItem && classItem.notes) {
-      setNotes(classItem.notes);
-    } else {
-      setNotes("");
-    }
+    if (activeTab !== "agregar" || !currentClassItem) return;
+
+    const timeout = setTimeout(async () => {
+      setIsSearchingUsers(true);
+      try {
+        const params = new URLSearchParams({ limit: "20" });
+        if (searchTerm.trim()) params.set("search", searchTerm.trim());
+
+        const res = await fetch(`/api/users?${params}`);
+        const result = await res.json();
+
+        const enrolled = new Set(currentClassItem.registeredParticipantsIds || []);
+        const waitlisted = new Set(currentClassItem.waitlistParticipantsIds || []);
+
+        setAvailableUsers(
+          (result.data || []).filter(
+            (u: any) => !enrolled.has(u.id) && !waitlisted.has(u.id)
+          )
+        );
+      } catch (e) {
+        console.error("Error buscando usuarios:", e);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [searchTerm, activeTab, currentClassItem?.registeredParticipantsIds]);
+
+  // Inicializar estado al abrir/cerrar el drawer
+  useEffect(() => {
+    setNotes(classItem?.notes || "");
     setNotesSaved(false);
-    setIsAddingStudent(false); // Reset del estado de agregar estudiante
-    setCurrentClassItem(classItem); // Sincronizar con la prop
-    if (!isOpen) setParticipants([]); // Limpiar al cerrar
+    setIsAddingStudent(false);
+    setCurrentClassItem(classItem);
+    setSearchTerm("");
+    if (!isOpen) {
+      setParticipants([]);
+      setAvailableUsers([]);
+    }
   }, [classItem, isOpen]);
 
   if (!currentClassItem) return null;
 
   const classDateTime = parseISO(currentClassItem.dateTime);
   const formattedDate =
-    formatWeekday(currentClassItem.dateTime) +
-    " " +
-    formatDayMonth(currentClassItem.dateTime);
+    formatWeekday(currentClassItem.dateTime) + " " + formatDayMonth(currentClassItem.dateTime);
   const formattedTime = formatTimeLocal(currentClassItem.dateTime);
 
-  // CONTEXTO: Buscar la disciplina y su regla de cancelación aplicable
-  const discipline = disciplines?.find(
-    (d) => d.id === currentClassItem.disciplineId
-  );
-  const applicableCancellationRule = discipline?.cancellationRules?.find(
-    (rule) => {
-      const ruleTime = rule.time;
-      const classTime = format(classDateTime, "HH:mm");
-      return ruleTime === classTime;
-    }
-  );
-
   const enrolledStudents = participants;
-
-  const waitlistStudents =
-    users?.filter((user: FitCenterUserProfile) =>
-      currentClassItem.waitlistParticipantsIds?.includes(user.id)
-    ) || [];
 
   const handleSaveNotes = async () => {
     setIsSavingNotes(true);
     try {
-      // Llamada a la API para guardar notas
-      const response = await fetch(
-        `/api/classes/${currentClassItem.id}/notes`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notes }),
-        }
-      );
+      const response = await fetch(`/api/classes/${currentClassItem.id}/notes`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
 
       if (response.ok) {
-        // Actualizar el store localmente
-        const updatedClassItem = {
-          ...currentClassItem,
-          notes: notes,
-        };
-
-        // Aquí normalmente actualizarías el store global
-        console.log("Notas guardadas para la clase:", currentClassItem.id);
-
         setNotesSaved(true);
         setTimeout(() => setNotesSaved(false), 2000);
       } else {
@@ -183,13 +154,12 @@ export default function AdminClassDetailDrawer({
   };
 
   const handleAddStudent = async (userId: string) => {
-    if (isAddingStudent) return; // Evitar doble click
+    if (isAddingStudent) return;
 
     setIsAddingStudent(true);
     try {
       const classId = currentClassItem.id;
 
-      // Llamada a la API para agregar estudiante
       const response = await fetch(`/api/classes/${classId}/admin/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -197,32 +167,26 @@ export default function AdminClassDetailDrawer({
       });
 
       if (response.ok) {
-        // Actualizar el estado local para reflejar el cambio inmediatamente
-        const updatedClassItem = {
-          ...currentClassItem,
-          id: classId,
-          registeredParticipantsIds: [
-            ...(currentClassItem.registeredParticipantsIds || []),
-            userId,
-          ],
-          enrolledCount: (currentClassItem.enrolledCount || 0) + 1,
-          alumnRegistred: `${(currentClassItem.enrolledCount || 0) + 1}/${
-            currentClassItem.capacity || 15
-          }`,
-        };
+        // Actualizar IDs locales optimistamente
+        setCurrentClassItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                registeredParticipantsIds: [
+                  ...(prev.registeredParticipantsIds || []),
+                  userId,
+                ],
+                enrolledCount: (prev.enrolledCount || 0) + 1,
+              }
+            : null
+        );
 
-        // Actualizar el estado local
-        setCurrentClassItem(updatedClassItem);
-        // Recargar participantes para asegurar consistencia
-        const pResponse = await fetch(`/api/classes/${classId}/participants`);
-        const pResult = await pResponse.json();
+        // Recargar participantes y limpiar búsqueda
+        const pResult = await fetch(`/api/classes/${classId}/participants`).then((r) => r.json());
         if (pResult.success) setParticipants(pResult.data);
-
-        // Limpiar el término de búsqueda para mostrar el cambio
         setSearchTerm("");
 
-        // Mostrar toast de éxito
-        const addedUser = users?.find((u) => u.id === userId);
+        const addedUser = availableUsers.find((u) => u.id === userId);
         toast({
           title: "Alumno agregado",
           description: `${addedUser?.firstName} ${addedUser?.lastName} ha sido agregado a la clase`,
@@ -231,16 +195,14 @@ export default function AdminClassDetailDrawer({
         const errorData = await response.json();
         toast({
           title: "Error al agregar alumno",
-          description:
-            errorData.error || errorData.message || "Error desconocido",
+          description: errorData.error || errorData.message || "Error desconocido",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Error inesperado",
-        description:
-          error instanceof Error ? error.message : "Error desconocido",
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     } finally {
@@ -249,63 +211,51 @@ export default function AdminClassDetailDrawer({
   };
 
   const handleRemoveStudent = async (userId: string) => {
-    if (isAddingStudent) return; // Reutilizar el estado para evitar operaciones simultáneas
+    if (isAddingStudent) return;
 
     setIsAddingStudent(true);
     try {
-      // Llamada a la API para remover estudiante
-      const response = await fetch(
-        `/api/classes/${currentClassItem.id}/cancel`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        }
-      );
+      const response = await fetch(`/api/classes/${currentClassItem.id}/admin/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
 
       if (response.ok) {
-        // Actualizar el estado local para reflejar el cambio inmediatamente
-        const updatedRegisteredIds = (
-          currentClassItem.registeredParticipantsIds || []
-        ).filter((id) => id !== userId);
+        setCurrentClassItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                registeredParticipantsIds: (prev.registeredParticipantsIds || []).filter(
+                  (id) => id !== userId
+                ),
+                enrolledCount: Math.max(0, (prev.enrolledCount || 0) - 1),
+              }
+            : null
+        );
 
-        const updatedClassItem = {
-          ...currentClassItem,
-          registeredParticipantsIds: updatedRegisteredIds,
-          enrolledCount: Math.max(0, (currentClassItem.enrolledCount || 0) - 1),
-          alumnRegistred: `${Math.max(
-            0,
-            (currentClassItem.enrolledCount || 0) - 1
-          )}/${currentClassItem.capacity || 15}`,
-        };
-
-        // Actualizar el estado local
-        setCurrentClassItem(updatedClassItem);
-        // Recargar participantes para asegurar consistencia
-        const pResponse = await fetch(`/api/classes/${currentClassItem.id}/participants`);
-        const pResult = await pResponse.json();
+        const pResult = await fetch(`/api/classes/${currentClassItem.id}/participants`).then((r) =>
+          r.json()
+        );
         if (pResult.success) setParticipants(pResult.data);
 
-        // Mostrar toast de éxito
-        const removedUser = users?.find((u) => u.id === userId);
+        const removedStudent = enrolledStudents.find((s) => s.userId === userId);
         toast({
           title: "Alumno removido",
-          description: `${removedUser?.firstName} ${removedUser?.lastName} ha sido removido de la clase`,
+          description: `${removedStudent?.firstName} ${removedStudent?.lastName} ha sido removido de la clase`,
         });
       } else {
         const errorData = await response.json();
         toast({
           title: "Error al remover alumno",
-          description:
-            errorData.error || errorData.message || "Error desconocido",
+          description: errorData.error || errorData.message || "Error desconocido",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Error inesperado",
-        description:
-          error instanceof Error ? error.message : "Error desconocido",
+        description: error instanceof Error ? error.message : "Error desconocido",
         variant: "destructive",
       });
     } finally {
@@ -328,25 +278,25 @@ export default function AdminClassDetailDrawer({
               <span>•</span>
               <Users className="w-4 h-4" />
               <span>
-                {currentClassItem.enrolledCount ?? enrolledStudents.length}/{currentClassItem.capacity || "∞"}{" "}
-                inscritos
+                {currentClassItem.enrolledCount ?? enrolledStudents.length}/
+                {currentClassItem.capacity || "∞"} inscritos
               </span>
             </div>
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto">
             <div className="p-6 space-y-6 min-h-full">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="w-full"
-              >
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1">
                   <TabsTrigger value="inscritos" className="rounded-xl">
                     Inscritos ({currentClassItem.enrolledCount ?? enrolledStudents.length})
                   </TabsTrigger>
-                  <TabsTrigger value="agregar" className="rounded-xl">Agregar Alumnos</TabsTrigger>
-                  <TabsTrigger value="notes" className="rounded-xl">Notas</TabsTrigger>
+                  <TabsTrigger value="agregar" className="rounded-xl">
+                    Agregar Alumnos
+                  </TabsTrigger>
+                  <TabsTrigger value="notes" className="rounded-xl">
+                    Notas
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Tab: Inscritos */}
@@ -369,14 +319,12 @@ export default function AdminClassDetailDrawer({
                             <p className="font-medium">
                               {student.firstName} {student.lastName}
                             </p>
-                            <p className="text-sm text-muted-foreground">
-                              {student.email}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{student.email}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                             <Badge variant="outline" className="rounded-xl">
-                               {student.membershipType || "Sin estado"}
-                             </Badge>
+                            <Badge variant="outline" className="rounded-xl">
+                              {student.membershipType || "Sin estado"}
+                            </Badge>
                             <Button
                               variant="outline"
                               size="sm"
@@ -414,71 +362,76 @@ export default function AdminClassDetailDrawer({
                   </div>
 
                   <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {availableUsers.slice(0, 15).map((user) => {
-                      const membershipStatus =
-                        user.membership?.status || "Sin estado";
-                      const isPending = membershipStatus === "pending";
-                      const isExpired = membershipStatus === "expired";
+                    {isSearchingUsers ? (
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+                      </div>
+                    ) : (
+                      <>
+                        {availableUsers.map((user) => {
+                          const membershipStatus = user.membership?.status || "Sin estado";
+                          const isPending = membershipStatus === "pending";
+                          const isExpired = membershipStatus === "expired";
 
-                      return (
-                        <div
-                          key={user.id}
-                          className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">
-                                {user.firstName} {user.lastName}
-                              </p>
-                              {isPending && (
-                                <Badge variant="secondary" className="text-xs rounded-xl">
-                                  Pendiente
-                                </Badge>
-                              )}
-                              {isExpired && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs text-orange-600 rounded-xl"
-                                >
-                                  Expirado
-                                </Badge>
-                              )}
+                          return (
+                            <div
+                              key={user.id}
+                              className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">
+                                    {user.firstName} {user.lastName}
+                                  </p>
+                                  {isPending && (
+                                    <Badge variant="secondary" className="text-xs rounded-xl">
+                                      Pendiente
+                                    </Badge>
+                                  )}
+                                  {isExpired && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs text-orange-600 rounded-xl"
+                                    >
+                                      Expirado
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                                {isPending && (
+                                  <p className="text-xs text-amber-600 mt-1">
+                                    ⚠️ Usuario pendiente de aprobación
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddStudent(user.id)}
+                                className="h-8 w-8 p-0 rounded-xl"
+                                disabled={isPending || isAddingStudent}
+                              >
+                                {isAddingStudent ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Plus className="h-4 w-4" />
+                                )}
+                              </Button>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {user.email}
-                            </p>
-                            {isPending && (
-                              <p className="text-xs text-amber-600 mt-1">
-                                ⚠️ Usuario pendiente de aprobación
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddStudent(user.id)}
-                            className="h-8 w-8 p-0 rounded-xl"
-                            disabled={isPending || isAddingStudent}
-                          >
-                            {isAddingStudent ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Plus className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
 
-                    {availableUsers.length === 0 && searchTerm && (
-                      <p className="text-muted-foreground text-center py-4">
-                        No se encontraron alumnos
-                      </p>
-                    )}
+                        {availableUsers.length === 0 && searchTerm && (
+                          <p className="text-muted-foreground text-center py-4">
+                            No se encontraron alumnos
+                          </p>
+                        )}
 
-                    {availableUsers.length === 0 && !searchTerm && (
-                      <p className="text-muted-foreground text-center py-4">
-                        Todos los alumnos están inscritos
-                      </p>
+                        {availableUsers.length === 0 && !searchTerm && !isSearchingUsers && (
+                          <p className="text-muted-foreground text-center py-4">
+                            Todos los alumnos están inscritos
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </TabsContent>
@@ -497,15 +450,11 @@ export default function AdminClassDetailDrawer({
                       {isSavingNotes && (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm text-muted-foreground">
-                            Guardando...
-                          </span>
+                          <span className="text-sm text-muted-foreground">Guardando...</span>
                         </>
                       )}
                       {notesSaved && (
-                        <span className="text-sm text-green-600">
-                          ✓ Guardado
-                        </span>
+                        <span className="text-sm text-green-600">✓ Guardado</span>
                       )}
                     </div>
 
@@ -521,7 +470,6 @@ export default function AdminClassDetailDrawer({
                 </TabsContent>
               </Tabs>
 
-             
               {/* Acciones */}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={onClose} className="w-full rounded-xl">

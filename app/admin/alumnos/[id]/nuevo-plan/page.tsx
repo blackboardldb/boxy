@@ -183,42 +183,34 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   if (!student) return <div className="p-8">Alumno no encontrado.</div>;
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-3xl mx-auto flex flex-col min-h-screen">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 hidden sm:flex rounded-xl">
-          <ArrowLeft className="h-5 w-5" />
+    <div className="p-4 md:p-8 space-y-4 max-w-4xl mx-auto flex flex-col min-h-screen">
+      <div className=" space-y-4">
+        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 bg-zinc-100 rounded-full">
+          <ArrowLeft className="h-7 w-7" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 sm:hidden rounded-xl">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-             <h1 className="text-2xl font-bold truncate">Asignar Nuevo Plan</h1>
-             <p className="text-muted-foreground text-sm truncate">Renovación para {student.firstName} {student.lastName}</p>
+          <div className=" space-y-4">
+             <h1 className="text-3xl font-bold">Asignar Nuevo Plan</h1>
+              <p className="pb-2 text-base text-zinc-500">
+            {student.membership?.status === 'active' && student.membership?.currentPeriodEnd 
+              ? `El plan actual de ${student.firstName} ${student.lastName} vence el ${parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString()}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`
+              : 'Selecciona el plan, la forma de pago y confirma las fechas de vigencia para activar una nueva membresía.'}
+          </p>
           </div>
         </div>
       </div>
 
-      <Card className="shadow-sm border-zinc-100 rounded-xl">
-        <CardHeader className="border-b border-zinc-100 pb-5">
-          <CardTitle>Configuración de Membresía</CardTitle>
-          <CardDescription className="pt-2">
-            {student.membership?.status === 'active' && student.membership?.currentPeriodEnd 
-              ? `El plan actual de ${student.firstName} vence el ${parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString()}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`
-              : 'Selecciona el plan, la forma de pago y confirma las fechas de vigencia para activar una nueva membresía.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
+        <div>        
           {student.membership && (
-             <div className="mb-6 bg-zinc-50 rounded-xl p-4 border border-zinc-100">
-               <h3 className="text-sm font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
+             <div className="mb-6 bg-zinc-100/70 rounded-xl p-4 border border-zinc-100">
+               <h3 className="text-md font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
                <div className="space-y-1 text-sm">
                  <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
                  <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}</span></p>
                </div>
              </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-8 mt-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-zinc-800">Plan a Contratar <span className="text-red-500">*</span></Label>
@@ -302,7 +294,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                       required
-                      className="h-11 rounded-xl"
+                      className="h-11 rounded-xl max-w-full"
                     />
                   </div>
                   <div className="space-y-2 relative">
@@ -331,8 +323,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+  
     </div>
   );
 }

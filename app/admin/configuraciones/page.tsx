@@ -94,7 +94,7 @@ export default function ConfiguracionesPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 gap-2 max-w-7xl mx-auto">
         {/* Información del Centro - Airbnb Style */}
         <Card className="rounded-xl border border-zinc-200 bg-white">
           <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 bg-zinc100 px-6 py-4">

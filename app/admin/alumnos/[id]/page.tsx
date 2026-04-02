@@ -316,15 +316,13 @@ const handleStartDateChange = (newDate: string) => {
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto flex flex-col min-h-screen">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 hidden sm:flex">
-          <ArrowLeft className="h-5 w-5" />
+      <div className=" space-y-4">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 bg-zinc-100 rounded-full">
+          <ArrowLeft className="h-7 w-7" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 sm:hidden rounded-xl">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold truncate">
+       
+          <h1 className="text-3xl font-bold">
             Perfil de {student.firstName} {student.lastName}
           </h1>
         </div>

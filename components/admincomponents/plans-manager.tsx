@@ -306,7 +306,7 @@ export default function PlansManager() {
   };
 
   return (
-    <div className="space-y-6 py-8 max-w-7xl mx-auto">
+    <div className="space-y-6 py-8 max-w-7xl mx-auto px-4 sm:px-8">
       {/* Header con gestión de planes */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-8 sm:gap-4">
         <div className="order-2 sm:order-1 text-left w-full sm:w-auto">

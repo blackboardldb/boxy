@@ -1,115 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDataProvider } from "@/lib/data-layer/provider-factory";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const { userId } = await request.json();
     const { id: classId } = await params;
 
-    const provider = getDataProvider();
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    }
 
-    // Get the class session via repository
-    const classSession = await provider.classes.findUnique({
-      where: { id: classId },
-    });
-
+    const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
     if (!classSession) {
-      return NextResponse.json({ error: "Class not found" }, { status: 404 });
+      return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
     }
 
-    // Check if class is already cancelled
-    if (classSession.status === "cancelled") {
-      return NextResponse.json(
-        { error: "La clase ya está cancelada" },
-        { status: 400 }
-      );
-    }
+    await prisma.$transaction(async (tx) => {
+      await tx.classRegistration.update({
+        where: { userId_classId: { userId, classId } },
+        data: { status: "cancelled", cancelledAt: new Date() },
+      });
 
-    // Use transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx: any) => {
-      // 1. Cancel the class
-      const updatedClassSession = await tx.classSession.update({
+      await tx.classSession.update({
         where: { id: classId },
-        data: { status: "cancelled" },
+        data: {
+          registeredParticipantsIds: classSession.registeredParticipantsIds.filter(id => id !== userId),
+          waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(id => id !== userId),
+        },
       });
-
-      // 2. Refund classes to all registered participants
-      const affectedUsers: string[] = [];
-
-      for (const userId of classSession.registeredParticipantsIds) {
-        const user = await tx.user.findUnique({
-          where: { id: userId },
-        });
-
-        const memberData = user.membership as any;
-        if (user && memberData?.planConfig?.classLimit > 0) {
-          await tx.user.update({
-            where: { id: userId },
-            data: {
-              membership: {
-                ...memberData,
-                centerStats: {
-                  ...memberData.centerStats,
-                  currentMonth: {
-                    ...memberData.centerStats?.currentMonth,
-                    remainingClasses: (memberData.centerStats?.currentMonth?.remainingClasses || 0) + 1,
-                  },
-                },
-              },
-            },
-          });
-          affectedUsers.push(userId);
-        }
-      }
-
-      return { updatedClassSession, affectedUsers };
     });
 
-    // =============================
-    // EMITIR EVENTO DE WEBSOCKET
-    // =============================
-
-    try {
-      // Usar la nueva API route para emitir eventos
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
-      await fetch(`${baseUrl}/api/emit-event`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room: `org_${classSession.organizationId}`,
-          event: "class-cancelled",
-          data: {
-            classId: classId,
-            classSession: result.updatedClassSession,
-            affectedUsers: result.affectedUsers,
-            cancelledAt: new Date().toISOString(),
-          },
-        }),
-      });
-
-      console.log(
-        `WebSocket event emitted: class-cancelled for class ${classId}`
-      );
-    } catch (wsError) {
-      // No fallar la operación si el WebSocket falla
-      console.error("Error emitting WebSocket event:", wsError);
-    }
-
-    return NextResponse.json({
-      message: `Clase cancelada. Se devolvieron clases a ${result.affectedUsers.length} usuarios.`,
-      class: result.updatedClassSession,
-      affectedUsers: result.affectedUsers,
-    });
-  } catch (error) {
-    console.error("Error cancelling class:", error);
-    return NextResponse.json(
-      { error: "Error al cancelar la clase" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error removing student (admin):", error);
+    return NextResponse.json({ error: error?.message || "Error al remover alumno" }, { status: 500 });
   }
 }

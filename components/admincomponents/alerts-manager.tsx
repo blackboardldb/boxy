@@ -156,7 +156,7 @@ export function AlertsManager() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mx-auto mt-4">
       {/* Columna Izquierda: Crear Alerta */}
       <Card className="rounded-xl border shadow-sm border-zinc-200 bg-white">
         <CardHeader className="border-b border-zinc-50 bg-zinc-50/30 px-6 py-4">

@@ -8,15 +8,9 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { startOfDay, format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ClassSession, ClassListItem, Discipline, Instructor } from "@/lib/types";
-import { toDateString, toTimeString, createLocalDate, formatDateChile, formatTimeChile } from "@/lib/utils";
+import type { ClassSession, ClassListItem, Instructor } from "@/lib/types";
+import { formatDateChile, formatTimeChile } from "@/lib/utils";
 import {
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  getDay,
-  getYear,
-  getMonth,
   startOfWeek,
   endOfWeek,
 } from "date-fns";
@@ -221,7 +215,7 @@ export default function AdminClasesPage() {
       />
 
       {/* Información de resultados */}
-      <div className="flex justify-between items-center md:px-8">
+      <div className="flex justify-between items-center px-4 md:px-8">
         <p className="text-sm text-muted-foreground">
           {isLoading
             ? "Cargando clases..."
@@ -268,6 +262,7 @@ export default function AdminClasesPage() {
           classes={paginatedClasses}
           onViewClass={handleViewClass}
           onCancelClass={handleCancelClass}
+          className="px-4"
         />
       )}
 

@@ -4,16 +4,8 @@ import { useState } from "react";
 import { Navigation } from "../../components/admincomponents/navigation";
 import { MobileAdminNav } from "../../components/admincomponents/mobile-nav-admin-v2";
 import Logo from "@/components/Logo";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
 import Link from "next/link";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+
 
 export default function AdminLayout({
   children,
@@ -73,7 +65,7 @@ export default function AdminLayout({
           </Drawer>
         </header> */}
         {/* Content — extra bottom padding so the floating nav never covers content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-24 lg:pb-0">
+        <main className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {children}
         </main>
       </div>
