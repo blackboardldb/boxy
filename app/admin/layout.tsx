@@ -23,7 +23,7 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white flex ">
+    <div className="min-h-screen bg-white flex rounded-t-2xl sm-rounded-none">
       {/* ── Sidebar Desktop ── */}
      <div className="hidden lg:block w-72 h-screen p-4  sticky top-0">
        <aside className="lg:flex flex-col w-full h-full bg-white shrink-0 rounded-xl 
