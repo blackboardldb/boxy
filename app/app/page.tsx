@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { HomePage } from "@/components/HomePage";
 import Logo from "@/components/Logo";
 
@@ -14,9 +14,8 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { myBookings, fetchMyBookings, fetchInstructorsMinimal, isLoading: statsLoading } =
+  const { myBookings, fetchMyBookings, isLoading: statsLoading } =
     useBlackSheepStore();
-  const [instructors, setInstructors] = useState<any[]>([]);
 
   // Cargar clases e instructores una sola vez al montar si no hay datos
   useEffect(() => {
@@ -28,12 +27,9 @@ export default function Page() {
           currentUser.membership?.currentPeriodStart
         );
       }
-      if (!instructors || instructors.length === 0) {
-        fetchInstructorsMinimal().then(setInstructors);
-      }
     }
     // Solo dependemos de currentUser y las funciones de fetch. 
-  }, [currentUser, fetchMyBookings, fetchInstructorsMinimal]);
+  }, [currentUser, fetchMyBookings]);
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {
@@ -54,18 +50,11 @@ export default function Page() {
           new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
       )
       .map((session) => {
-        const instructor = instructors?.find(
-          (inst) => inst.id === session.instructorId
-        );
-        const instructorName = instructor
-          ? `${instructor.firstName} ${instructor.lastName}`
-          : "Instructor";
-
         return {
           id: session.id,
           dateTime: session.dateTime,
           name: session.name,
-          instructor: instructorName,
+          instructor: "Instructor",
           duration: "60 min",
           alumnRegistred: `${session.enrolledCount ?? session.registeredParticipantsIds.length}/${
             session.capacity || 15
@@ -77,7 +66,7 @@ export default function Page() {
           formattedTime: formatTimeLocal(session.dateTime),
         };
       });
-  }, [myBookings, instructors, currentUser]);
+  }, [myBookings, currentUser]);
 
   // Membresía y stats
   const studentAllEnrolledClasses = useMemo(() => {
