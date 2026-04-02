@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HomePage } from "@/components/HomePage";
 import Logo from "@/components/Logo";
 
@@ -14,8 +14,9 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { myBookings, instructors, fetchMyBookings, fetchInstructors, isLoading: statsLoading } =
+  const { myBookings, fetchMyBookings, fetchInstructorsMinimal, isLoading: statsLoading } =
     useBlackSheepStore();
+  const [instructors, setInstructors] = useState<any[]>([]);
 
   // Cargar clases e instructores una sola vez al montar si no hay datos
   useEffect(() => {
@@ -28,11 +29,11 @@ export default function Page() {
         );
       }
       if (!instructors || instructors.length === 0) {
-        fetchInstructors();
+        fetchInstructorsMinimal().then(setInstructors);
       }
     }
     // Solo dependemos de currentUser y las funciones de fetch. 
-  }, [currentUser, fetchMyBookings, fetchInstructors]);
+  }, [currentUser, fetchMyBookings, fetchInstructorsMinimal]);
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {

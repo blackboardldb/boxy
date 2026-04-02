@@ -46,9 +46,8 @@ interface FormattedClassItem {
 export default function CalendarPage() {
   const {
     classSessions,
-    instructors,
     disciplines,
-    fetchInstructors,
+    fetchInstructorsMinimal,
     fetchDisciplines,
     fetchClassSessions,
     fetchMyBookings,
@@ -61,6 +60,7 @@ export default function CalendarPage() {
 
   // Inicializar la fecha seleccionada: usar hoy por defecto
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
+  const [instructors, setInstructors] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(
     null
   );
@@ -142,7 +142,10 @@ export default function CalendarPage() {
   const loadClassesForWeek = useCallback(async (dateInWeek: Date) => {
     try {
       setIsLoading(true);
-      if (!instructors || instructors.length === 0) await fetchInstructors();
+      if (instructors.length === 0) {
+        const data = await fetchInstructorsMinimal();
+        setInstructors(data);
+      }
       if (!disciplines || disciplines.length === 0) await fetchDisciplines();
       
       const start = startOfWeek(dateInWeek, { weekStartsOn: 1 });
@@ -159,9 +162,9 @@ export default function CalendarPage() {
       setIsLoading(false);
     }
   }, [
-    instructors?.length,
+    instructors.length,
     disciplines?.length,
-    fetchInstructors,
+    fetchInstructorsMinimal,
     fetchDisciplines,
     fetchClassSessions,
   ]);

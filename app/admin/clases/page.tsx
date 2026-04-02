@@ -8,7 +8,7 @@ import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { startOfDay, format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ClassSession, ClassListItem, Discipline } from "@/lib/types";
+import type { ClassSession, ClassListItem, Discipline, Instructor } from "@/lib/types";
 import { toDateString, toTimeString, createLocalDate, formatDateChile, formatTimeChile } from "@/lib/utils";
 import {
   startOfMonth,
@@ -39,12 +39,11 @@ export default function AdminClasesPage() {
   const {
     classSessions,
     disciplines,
-    instructors,
     users,
     fetchClassSessions,
     fetchUsers,
     fetchDisciplines,
-    fetchInstructors,
+    fetchInstructorsMinimal,
   } = useBlackSheepStore();
 
   // const { toast } = useToast(); // Deprecated and causing infinite loops
@@ -53,6 +52,8 @@ export default function AdminClasesPage() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const limit = 10;
+  
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
 
   const today = startOfDay(new Date());
 
@@ -124,7 +125,7 @@ export default function AdminClasesPage() {
       await Promise.all([
         users.length === 0 ? fetchUsers(1, 1000) : Promise.resolve(),
         disciplines.length === 0 ? fetchDisciplines() : Promise.resolve(),
-        instructors.length === 0 ? fetchInstructors() : Promise.resolve(),
+        instructors.length === 0 ? fetchInstructorsMinimal().then(setInstructors) : Promise.resolve(),
       ]);
     } catch (error) {
       console.error("Error loading classes:", error);
@@ -135,7 +136,7 @@ export default function AdminClasesPage() {
     fetchClassSessions,
     fetchUsers,
     fetchDisciplines,
-    fetchInstructors,
+    fetchInstructorsMinimal,
     users.length,
     disciplines.length,
     instructors.length,

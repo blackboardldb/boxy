@@ -134,6 +134,7 @@ interface BlackSheepStore {
     role?: string,
     isActive?: string
   ) => Promise<void>;
+  fetchInstructorsMinimal: () => Promise<Instructor[]>;
 
   // Plan actions
   addPlan: (plan: Plan) => void;
@@ -829,6 +830,17 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         } catch (error) {
           console.error("Error fetching instructors:", error);
           set({ instructors: [], instructorsPagination: null });
+        }
+      },
+      fetchInstructorsMinimal: async () => {
+        try {
+          const response = await fetch(`/api/instructors?minimal=true&limit=100`);
+          if (!response.ok) throw new Error("Failed to fetch instructors");
+          const data = await response.json();
+          return (data.data as Instructor[]) || [];
+        } catch (error) {
+          console.error("Error fetching minimal instructors:", error);
+          return [];
         }
       },
 

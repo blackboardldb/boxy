@@ -25,6 +25,7 @@ export class InstructorService extends BaseService<Instructor> {
     search?: string;
     role?: string;
     isActive?: boolean;
+    minimal?: boolean;
   }): Promise<PaginatedApiResponse<Instructor>> {
     const findParams: any = {
       page: params?.page || 1,
@@ -54,12 +55,25 @@ export class InstructorService extends BaseService<Instructor> {
       findParams.where = where;
     }
 
-    // Punto 2: Selección mínima de campos para /api/instructors
-    findParams.select = {
-      id: true,
-      firstName: true,
-      lastName: true
-    };
+    // Selección condicional de campos según el parámetro
+    if (params?.minimal) {
+      findParams.select = {
+        id: true,
+        firstName: true,
+        lastName: true,
+      };
+    } else {
+      findParams.select = {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        profile: true,
+      };
+    }
 
     return this.findMany(findParams);
   }
