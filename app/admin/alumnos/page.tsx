@@ -26,6 +26,7 @@ import {
   useBlackSheepStore,
   STUDENT_STATES,
   STATE_COLORS,
+  statusStyles,
 } from "@/lib/blacksheep-store";
 import type { FitCenterUserProfile } from "@/lib/types";
 // Removed unused pagination imports
@@ -37,7 +38,7 @@ import { parseISO, format } from "date-fns";
 // Función helper para formatear fechas
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return "-";
-  return format(parseISO(dateString.substring(0, 10)), "dd/MM/yyyy");
+  return format(parseISO(dateString.substring(0, 10)), "dd/MM/yy");
 };
 import { useRouter } from "next/navigation";
 
@@ -110,7 +111,7 @@ export default function AlumnosPage() {
 
   const getStatusBadge = (status: string) => {
     const color =
-      STATE_COLORS[status as keyof typeof STATE_COLORS] || "#6b7280";
+      statusStyles[status as keyof typeof statusStyles] || "#6b7280";
     
     const labels: Record<string, string> = {
       active: "Activo",
@@ -120,9 +121,9 @@ export default function AlumnosPage() {
     };
 
     return (
-      <Badge className="text-white border-0 rounded-xl" style={{ backgroundColor: color }}>
+      <div className={`rounded-xl px-1.5 py-0.5 text-[0.7rem] font-medium border inline-block ${color}`}>
         {labels[status] || status}
-      </Badge>
+      </div>
     );
   };
 
@@ -190,11 +191,124 @@ export default function AlumnosPage() {
         </Select>
       </div>
 
-      {/* Información de resultados */}
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
+    <div>
+       <p className="text-sm text-muted-foreground">
           Mostrando {startIndex + 1}-{endIndex} de {totalItems} alumnos
         </p>
+    </div>
+      <Card className="rounded-xl overflow-hidden border-zinc-200">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Plan</TableHead>
+              
+                <TableHead className="hidden sm:table-cell">Validez</TableHead>
+                <TableHead>Editar</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && users.length === 0 ? (
+                // Skeleton para tabla
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24 rounded-xl" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32 rounded-xl" />
+                    </TableCell>
+                   
+                    <TableCell>
+                      <Skeleton className="h-4 w-20 rounded-xl" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-8 w-8 rounded-xl" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : studentsOnly.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-6 text-muted-foreground"
+                  >
+                    {totalItems === 0
+                      ? "No se encontraron alumnos"
+                      : "No hay alumnos en esta página"}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                studentsOnly.map((student: FitCenterUserProfile) => {
+                  const currentPlanStatus = getPlanStatus(student);
+                  return (
+                    <TableRow
+                      key={student.id}
+                      className={
+                        currentPlanStatus === "pending"
+                          ? " border-l-4 border-l-yellow-400"
+                          : currentPlanStatus === "inactive"
+                          ? " border-l-4 border-l-zinc-300"
+                          : currentPlanStatus === "scheduled"
+                          ? " border-l-4 border-l-blue-400"
+                          : ""
+                      }
+                    >
+                    <TableCell className="font-medium">
+                      {student.firstName} {student.lastName}
+                    </TableCell>
+                    <TableCell className="text-left flex flex-col gap-2">
+                     <div className="flex items-center gap-2">
+                       <p className="font-medium">
+                        {student.membership?.membershipType || "Sin plan"} 
+                      </p>
+                      {getStatusBadge(currentPlanStatus)}
+                     </div>
+                     <div className="space-y-1 sm:hidden">
+                        <div className="text-xs">
+                          {formatDate(student.membership?.currentPeriodStart)} -{" "}
+                          {formatDate(student.membership?.currentPeriodEnd)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                         
+                          {student.formaDePago || "Sin especificar"}
+                        </div>
+                      </div>
+                    </TableCell>
+                  
+                    <TableCell className="hidden sm:table-cell ">
+                      <div className="space-y-1">
+                        <div className="text-sm">
+                          {formatDate(student.membership?.currentPeriodStart)} -{" "}
+                          {formatDate(student.membership?.currentPeriodEnd)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                         
+                          {student.formaDePago || "Sin especificar"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-20">
+                      <Button
+                        onClick={() => handleEditStudent(student)}
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
+                      >
+                        <Edit />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+        {/* Información de resultados */}
+      <div className="flex justify-end items-center">
+       
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <Button
@@ -222,106 +336,6 @@ export default function AlumnosPage() {
         )}
       </div>
 
-      <Card className="rounded-xl overflow-hidden border-zinc-100">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Validez</TableHead>
-                <TableHead>Editar</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && users.length === 0 ? (
-                // Skeleton para tabla
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Skeleton className="h-4 w-24 rounded-xl" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-32 rounded-xl" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-16 rounded-xl" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-20 rounded-xl" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-8 w-8 rounded-xl" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : studentsOnly.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-8 text-muted-foreground"
-                  >
-                    {totalItems === 0
-                      ? "No se encontraron alumnos"
-                      : "No hay alumnos en esta página"}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                studentsOnly.map((student: FitCenterUserProfile) => {
-                  const currentPlanStatus = getPlanStatus(student);
-                  return (
-                    <TableRow
-                      key={student.id}
-                      className={
-                        currentPlanStatus === "pending"
-                          ? "bg-yellow-50 border-l-4 border-yellow-400"
-                          : currentPlanStatus === "inactive"
-                          ? "bg-zinc-50 border-l-4 border-zinc-300"
-                          : currentPlanStatus === "scheduled"
-                          ? "bg-blue-50 border-l-4 border-blue-400"
-                          : ""
-                      }
-                    >
-                    <TableCell className="font-medium">
-                      {student.firstName} {student.lastName}
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">
-                        {student.membership?.membershipType || "Sin plan"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(currentPlanStatus)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="text-sm">
-                          {formatDate(student.membership?.currentPeriodStart)} -{" "}
-                          {formatDate(student.membership?.currentPeriodEnd)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Forma de pago:{" "}
-                          {student.formaDePago || "Sin especificar"}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={() => handleEditStudent(student)}
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
-                      >
-                        <Edit />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
     </div>
   );
 }
