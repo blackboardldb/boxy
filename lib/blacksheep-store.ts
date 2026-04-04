@@ -357,6 +357,10 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
                 state.selectedUser?.id === id
                   ? { ...state.selectedUser, ...result.data }
                   : state.selectedUser,
+              currentUser:
+                state.currentUser?.id === id
+                  ? { ...state.currentUser, ...result.data }
+                  : state.currentUser,
             }));
             return result.data;
           } else {
