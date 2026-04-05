@@ -56,6 +56,7 @@ export default function AdminClasesPage() {
   const [selectedClass, setSelectedClass] = useState<ClassListItem | null>(
     null
   );
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
 
   // CONTEXTO: Función de conversión enriquecida. Busca el instructor en la lista
@@ -144,7 +145,8 @@ export default function AdminClasesPage() {
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
-    setPage(1); // Resetear a la primera página al cambiar fecha
+    setPage(Page => 1); // Resetear a la primera página al cambiar fecha
+    setSelectedDisciplineId("all");
   }, []);
 
   // CONTEXTO: Filtrado inteligente para optimizar performance y UX
@@ -166,14 +168,29 @@ export default function AdminClasesPage() {
       .map(convertClassSessionToClassItem);
   }, [classSessions, selectedDate, convertClassSessionToClassItem]);
 
+  const disciplinesInDay = useMemo(() => {
+    const seen = new Set<string>();
+    return activeClasses.filter(c => {
+      if (seen.has(c.disciplineId)) return false;
+      seen.add(c.disciplineId);
+      return true;
+    }).map(c => ({ id: c.disciplineId, name: c.discipline || c.name }));
+  }, [activeClasses]);
+
+  const filteredClasses = useMemo(() =>
+    selectedDisciplineId === "all"
+      ? activeClasses
+      : activeClasses.filter(c => c.disciplineId === selectedDisciplineId)
+  , [activeClasses, selectedDisciplineId]);
+
   // Implementar paginación correctamente
   const paginatedClasses = useMemo(() => {
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    return activeClasses.slice(startIndex, endIndex);
-  }, [activeClasses, page, limit]);
+    return filteredClasses.slice(startIndex, endIndex);
+  }, [filteredClasses, page, limit]);
 
-  const totalPages = Math.ceil(activeClasses.length / limit);
+  const totalPages = Math.ceil(filteredClasses.length / limit);
 
   const handleViewClass = (classItem: ClassListItem) => {
     setSelectedClass(classItem);
@@ -207,12 +224,41 @@ export default function AdminClasesPage() {
 
   return (
     <div className="pb-8 space-y-6">
-
-      {/* Selector de fecha semanal */}
       <AdminWeeklyDatePicker
         selectedDate={selectedDate}
         onDateSelect={handleDateSelect}
       />
+
+      {/* Chips de filtro — solo si hay más de una disciplina */}
+      {disciplinesInDay.length > 1 && (
+        <div className="px-4 md:px-8">
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+            <button
+              onClick={() => setSelectedDisciplineId("all")}
+              className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                ${selectedDisciplineId === "all"
+                  ? "bg-lime-500 text-black"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                }`}
+            >
+              Todo
+            </button>
+            {disciplinesInDay.map(d => (
+              <button
+                key={d.id}
+                onClick={() => setSelectedDisciplineId(d.id)}
+                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                  ${selectedDisciplineId === d.id
+                    ? "bg-lime-500 text-black"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  }`}
+              >
+                {d.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Información de resultados */}
       <div className="flex justify-between items-center px-4 md:px-8">
@@ -220,7 +266,7 @@ export default function AdminClasesPage() {
           {isLoading
             ? "Cargando clases..."
             : `Mostrando ${paginatedClasses.length} de ${
-                activeClasses.length
+                filteredClasses.length
               } clases para ${format(selectedDate, "dd/MM/yyyy")}`}
         </p>
         {totalPages > 1 && (

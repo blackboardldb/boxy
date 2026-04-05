@@ -33,6 +33,7 @@ interface FormattedClassItem {
   id: string;
   dateTime: string;
   name: string;
+  disciplineId: string;
   instructor: string;
   duration: string;
   alumnRegistred: string;
@@ -60,6 +61,7 @@ export default function CalendarPage() {
 
   // Inicializar la fecha seleccionada: usar hoy por defecto
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [instructors, setInstructors] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(
     null
@@ -120,6 +122,7 @@ export default function CalendarPage() {
       return {
         id: session.id,
         dateTime: session.dateTime,
+        disciplineId: session.disciplineId,
         name: discipline?.name || session.name,
         instructor: instructorName,
         duration: "60 min",
@@ -177,6 +180,7 @@ export default function CalendarPage() {
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
+    setSelectedDisciplineId("all");
   }, []);
 
   // Transformar clases para la fecha seleccionada
@@ -232,9 +236,27 @@ export default function CalendarPage() {
   );
 
   const currentClasses = getClassesForDate(selectedDate);
-  const bookedClassesCount = useMemo(() => {
-    return currentClasses.filter((c) => c.isRegistered).length;
+
+  // Disciplinas únicas presentes en el día (para los chips)
+  const disciplinesInDay = useMemo(() => {
+    const seen = new Set<string>();
+    return currentClasses.filter(c => {
+      if (seen.has(c.disciplineId)) return false;
+      seen.add(c.disciplineId);
+      return true;
+    }).map(c => ({ id: c.disciplineId, name: c.name }));
   }, [currentClasses]);
+
+  // Clases a renderizar según filtro activo
+  const filteredClasses = useMemo(() =>
+    selectedDisciplineId === "all"
+      ? currentClasses
+      : currentClasses.filter(c => c.disciplineId === selectedDisciplineId)
+  , [currentClasses, selectedDisciplineId]);
+
+  const bookedClassesCount = useMemo(() => {
+    return filteredClasses.filter((c) => c.isRegistered).length;
+  }, [filteredClasses]);
 
   const handleRegister = (classItem: FormattedClassItem) => {
     if (!currentUser) {
@@ -370,6 +392,38 @@ export default function CalendarPage() {
           </div>
 
       <div className="bg-black min-h-screen pb-28">
+        
+        {/* Chips de filtro — solo si hay más de una disciplina */}
+        {disciplinesInDay.length > 1 && (
+          <div className="max-w-4xl mx-auto px-4 pt-4 md:px-6">
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              <button
+                onClick={() => setSelectedDisciplineId("all")}
+                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                  ${selectedDisciplineId === "all"
+                    ? "bg-lime-500 text-black"
+                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+              >
+                Todo
+              </button>
+              {disciplinesInDay.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDisciplineId(d.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                    ${selectedDisciplineId === d.id
+                      ? "bg-lime-500 text-black"
+                      : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    }`}
+                >
+                  {d.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Plan Status Banner - Only show if not loading user data */}
         {!userLoading && planStatus !== "active" && (
           <div className="max-w-4xl mx-auto px-4 py-3 md:px-6">
@@ -410,7 +464,7 @@ export default function CalendarPage() {
         {(planStatus === "active" || planStatus === "scheduled") && (
           <ClassList
             selectedDate={selectedDate}
-            classes={currentClasses}
+            classes={filteredClasses}
             onRegister={handleRegister}
             onCancel={handleCancel}
             className="max-w-4xl mx-auto min-h-svh pb-20 px-4 py-6 md:px-6 md:py-8"
