@@ -57,6 +57,7 @@ export function createMembershipSchema() {
       "expired",
       "frozen",
       "pending",
+      "scheduled",
     ]),
     membershipType: z.string(),
     planId: z.string().optional(),

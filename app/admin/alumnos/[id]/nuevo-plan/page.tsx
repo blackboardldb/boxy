@@ -123,12 +123,13 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     const initialRemaining = Math.max(0, classesContractedCount - classesAttendedCount);
 
     const newMembership = {
-      ...student.membership,
+      ...student.membership, // Preserve existing fields like organizationId, centerConfig, etc.
       id: `mem_${Date.now()}`,
       status: "active" as any,
       planId: selectedPlan.id,
       membershipType: selectedPlan.name,
       monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
+      startDate: student.membership?.startDate || newStartStr, // Keep original join date if exists
       currentPeriodStart: newStartStr,
       currentPeriodEnd: newEndStr,
       planConfig: {
@@ -147,26 +148,82 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
           remainingClasses: initialRemaining,
           noShows: 0,
           lastMinuteCancellations: 0,
+        },
+        totalMonthsActive: student.membership?.centerStats?.totalMonthsActive ?? 0,
+        memberSince: student.membership?.centerStats?.memberSince ?? newStartStr,
+        lifetimeStats: student.membership?.centerStats?.lifetimeStats ?? {
+          totalClasses: 0,
+          totalNoShows: 0,
+          averageMonthlyAttendance: 0,
+          bestMonth: { month: "enero", year: 2024, count: 0 }
         }
+      },
+      // Ensure specific mandatory fields for schema validation
+      organizationId: student.membership?.organizationId || "org_default",
+      organizationName: student.membership?.organizationName || "Blacksheep",
+      centerConfig: student.membership?.centerConfig || {
+        allowCancellation: true,
+        cancellationHours: 2,
+        maxBookingsPerDay: 1,
+        autoWaitlist: true,
       }
     };
 
-    const history = student.membership?.history ? [...student.membership.history] : [];
-    if (student.membership) {
-        // Marcamos la antigua como inactiva si está activa
-        const pastMembership = { ...student.membership };
-        if (pastMembership.status === 'active') {
-            pastMembership.status = 'inactive';
-        }
-        delete pastMembership.history;
-        history.unshift(pastMembership);
+    // Determinamos si el plan actual todavía está vigente para decidir 
+    // si el nuevo plan reemplaza al principal o se guarda en el historial
+    let pastEnd = new Date(0);
+    if (student.membership?.currentPeriodEnd) {
+      const endStr = student.membership.currentPeriodEnd;
+      const endDateOnly = typeof endStr === "string" ? endStr.substring(0, 10) : new Date(endStr).toISOString().substring(0, 10);
+      pastEnd = new Date(endDateOnly + "T23:59:59");
     }
+
+    const isCurrentlyActive = pastEnd > new Date();
     
-    newMembership.history = history;
+    // Objeto del nuevo plan (como base)
+    const newMembershipBase = {
+      ...newMembership,
+      id: `mem_${Date.now()}`,
+      history: undefined // El objeto individual no lleva su historial dentro
+    };
+
+    let updatedMembership: any;
+
+    if (isCurrentlyActive && student.membership) {
+      // CASO SOLAPAMIENTO: Mantener el principal ACTIVO y agregar el nuevo al HISTORIAL
+      const currentHistory = Array.isArray(student.membership.history) ? [...student.membership.history] : [];
+      
+      // El nuevo plan se guarda en el historial como 'scheduled'
+      const scheduledPlan = {
+        ...newMembershipBase,
+        status: 'scheduled'
+      };
+
+      updatedMembership = {
+        ...student.membership,
+        history: [scheduledPlan, ...currentHistory] // El plan futuro va al inicio del historial
+      };
+      
+      // Nota: No reemplazamos datos del plan principal (clases, fechas, etc)
+    } else {
+      // CASO NORMAL (Sin plan previo o plan ya vencido)
+      // El nuevo plan pasa a ser el principal (ACTIVE)
+      const currentHistory = Array.isArray(student.membership?.history) ? [...student.membership.history] : [];
+      
+      // Si el plan anterior estaba 'active' pero ya venció, lo pasamos a 'inactive' antes de guardarlo en history
+      const pastToHistory = student.membership ? { ...student.membership, status: 'inactive' as any } : null;
+      if (pastToHistory) delete (pastToHistory as any).history;
+
+      updatedMembership = {
+        ...newMembershipBase,
+        status: 'active',
+        history: pastToHistory ? [pastToHistory, ...currentHistory] : currentHistory
+      };
+    }
 
     const updateData: Partial<FitCenterUserProfile> = {
       formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],
-      membership: newMembership as any
+      membership: updatedMembership
     };
 
     const result = await updateUserById(student.id, updateData);
