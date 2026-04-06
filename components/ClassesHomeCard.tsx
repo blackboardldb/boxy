@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import type { FormattedClassItem } from "@/components/HomePage";
+import type { FormattedClassItem } from "@/lib/types";
 
 interface ClassesHomeCardProps {
   classes: FormattedClassItem[];

@@ -14,19 +14,7 @@ import {
 } from "@/components/ui/drawer";
 import { User, Clock3, Users } from "lucide-react";
 import { formatTimeLocal } from "@/lib/utils";
-
-interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-}
+import type { FormattedClassItem } from "@/lib/types";
 
 interface RegistrationModalProps {
   isOpen: boolean;

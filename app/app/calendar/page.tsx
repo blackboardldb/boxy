@@ -19,7 +19,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClassSession } from "@/lib/types";
+import { ClassSession, FormattedClassItem } from "@/lib/types";
 import {
   formatWeekday,
   getPlanStatus,
@@ -28,21 +28,6 @@ import {
   formatDateChile,
   formatTimeChile,
 } from "@/lib/utils";
-
-interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-  status?: string;
-  isWithinPlanDates: boolean;
-}
 
 export default function CalendarPage() {
   const {

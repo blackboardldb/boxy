@@ -6,21 +6,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar } from "lucide-react";
-
-interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-  status?: string;
-  isWithinPlanDates: boolean;
-}
+import type { FormattedClassItem } from "@/lib/types";
 
 interface ClassListProps {
   selectedDate: Date;

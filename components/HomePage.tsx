@@ -8,21 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Ticket, AlertCircle, Clock } from "lucide-react";
 import { InAppAlerts } from "@/components/InAppAlerts";
 import Link from "next/link";
-import type { FitCenterUserProfile } from "@/lib/types";
+import type { FitCenterUserProfile, FormattedClassItem } from "@/lib/types";
 import { getPlanStatus } from "@/lib/utils";
-
-export interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-}
 
 interface HomePageProps {
   userProfile: FitCenterUserProfile;

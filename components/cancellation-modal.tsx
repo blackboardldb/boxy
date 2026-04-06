@@ -16,19 +16,7 @@ import { Clock, User, Clock3, Users } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatTimeLocal } from "@/lib/utils";
-
-interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-}
+import type { FormattedClassItem } from "@/lib/types";
 
 interface CancellationModalProps {
   isOpen: boolean;

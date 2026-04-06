@@ -5,21 +5,7 @@ import { useState } from "react";
 import { parseISO, isToday } from "date-fns";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
 import { Clock, User, Users } from "lucide-react";
-
-interface FormattedClassItem {
-  id: string;
-  dateTime: string;
-  name: string;
-  disciplineId: string;
-  instructor: string;
-  duration: string;
-  alumnRegistred: string;
-  isRegistered: boolean;
-  formattedDayLabel: string;
-  formattedTime: string;
-  status?: string;
-  isWithinPlanDates?: boolean;
-}
+import type { FormattedClassItem } from "@/lib/types";
 
 interface ClassCardProps {
   classItem: FormattedClassItem;
