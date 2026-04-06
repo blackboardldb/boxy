@@ -53,6 +53,7 @@ export default function Page() {
         return {
           id: session.id,
           dateTime: session.dateTime,
+          disciplineId: session.disciplineId,
           name: session.name,
           instructor: "Instructor",
           duration: "60 min",

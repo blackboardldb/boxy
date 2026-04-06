@@ -15,6 +15,7 @@ export interface FormattedClassItem {
   id: string;
   dateTime: string;
   name: string;
+  disciplineId: string;
   instructor: string;
   duration: string;
   alumnRegistred: string;

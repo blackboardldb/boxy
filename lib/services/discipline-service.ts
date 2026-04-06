@@ -203,6 +203,7 @@ export class DisciplineService extends BaseService<Discipline> {
 
     // Significant flags
     const deactivated = previousRecord.isActive && !updatedRecord.isActive;
+    const activated = !previousRecord.isActive && updatedRecord.isActive;
     const scheduleChanged = JSON.stringify(previousRecord.schedule) !== JSON.stringify(updatedRecord.schedule);
 
     // 1. Log status Change
@@ -215,8 +216,10 @@ export class DisciplineService extends BaseService<Discipline> {
     }
 
     // 2. Automatic Synchronization & Cleanup
-    if (scheduleChanged || deactivated) {
-      const triggerReason = deactivated ? "DESACTIVACIÓN" : "CAMBIO DE HORARIO";
+    if (scheduleChanged || deactivated || activated) {
+      let triggerReason = deactivated ? "DESACTIVACIÓN" : "CAMBIO DE HORARIO";
+      if (activated && !scheduleChanged) triggerReason = "ACTIVACIÓN";
+
       console.log(
         `[DisciplineService] Iniciando limpieza por ${triggerReason} para: ${updatedRecord.name}.`
       );
@@ -234,8 +237,8 @@ export class DisciplineService extends BaseService<Discipline> {
 
         console.log(`[DisciplineService] Limpieza completada: se eliminaron ${deleteResult.count} clases futuras sin alumnos.`);
 
-        // 3. Re-generar clases solo SI está activa y cambió el horario
-        if (scheduleChanged && updatedRecord.isActive) {
+        // 3. Re-generar clases solo SI está activa y cambió el horario O se reactivó
+        if ((scheduleChanged || activated) && updatedRecord.isActive) {
           console.log("[DisciplineService] Re-generando clases con el nuevo patrón (Ventana 15 días)...");
           // Llamamos sin fechas para que use el default de 15 días (Hoy + 14)
           await generateClassesFromSchedules(undefined, undefined, updatedRecord.id);

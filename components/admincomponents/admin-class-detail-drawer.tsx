@@ -316,26 +316,29 @@ export default function AdminClassDetailDrawer({
                           className="flex items-center justify-between p-3 border rounded-xl"
                         >
                           <div className="flex-1">
-                            <p className="font-medium">
+                           <div className=" flex item-center gap-2 ">
+                             <p className="font-medium">
                               {student.firstName} {student.lastName}
                             </p>
+                              <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium">
+                              {student.membershipType || "Sin estado"}
+                            </span>
+                           </div>
                             <p className="text-sm text-muted-foreground">{student.email}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="rounded-xl">
-                              {student.membershipType || "Sin estado"}
-                            </Badge>
+                          
                             <Button
-                              variant="outline"
+                            variant="destructive"
                               size="sm"
                               onClick={() => handleRemoveStudent(student.userId)}
                               disabled={isAddingStudent}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+                              className="h-8 w-8 p-0 text-red-50 font-bold hover:bg-red-700 rounded-xl"
                             >
                               {isAddingStudent ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                "×"
+                                "X"
                               )}
                             </Button>
                           </div>

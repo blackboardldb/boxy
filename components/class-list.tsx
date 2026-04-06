@@ -11,12 +11,14 @@ interface FormattedClassItem {
   id: string;
   dateTime: string;
   name: string;
+  disciplineId: string;
   instructor: string;
   duration: string;
   alumnRegistred: string;
   isRegistered: boolean;
   formattedDayLabel: string;
   formattedTime: string;
+  status?: string;
   isWithinPlanDates: boolean;
 }
 
