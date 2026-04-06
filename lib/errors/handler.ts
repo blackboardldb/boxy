@@ -74,42 +74,36 @@ export class ErrorHandler {
 
   // Handle Prisma errors (for future database integration)
   private static handlePrismaError(error: any): ApiError {
+    const isDev = process.env.NODE_ENV === "development";
+
     // Common Prisma error codes
     switch (error.code) {
       case "P2002": // Unique constraint violation
         return {
           code: ApiErrorCode.CONFLICT,
           message: "A record with this information already exists",
-          details: {
-            constraint: error.meta?.target,
-          },
+          details: isDev ? { constraint: error.meta?.target } : undefined,
         };
 
       case "P2025": // Record not found
         return {
           code: ApiErrorCode.NOT_FOUND,
           message: "Record not found",
-          details: {
-            cause: error.meta?.cause,
-          },
+          details: isDev ? { cause: error.meta?.cause } : undefined,
         };
 
       case "P2003": // Foreign key constraint violation
         return {
           code: ApiErrorCode.BAD_REQUEST,
           message: "Invalid reference to related record",
-          details: {
-            field: error.meta?.field_name,
-          },
+          details: isDev ? { field: error.meta?.field_name } : undefined,
         };
 
       default:
         return {
           code: ApiErrorCode.INTERNAL_ERROR,
           message: "Database operation failed",
-          details: {
-            prismaCode: error.code,
-          },
+          details: isDev ? { prismaCode: error.code } : undefined,
         };
     }
   }
