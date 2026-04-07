@@ -32,9 +32,9 @@ export function createAdminClient() {
  * - Coach / Admin: BsC04Ch@
  */
 const DEFAULT_PASSWORDS: Record<"alumno" | "coach" | "admin", string> = {
-  alumno: "blacksheep26",
-  coach: "BsC04Ch@",
-  admin: "BsC04Ch@",
+  alumno: process.env.DEFAULT_PASSWORD_ALUMNO ?? "blacksheep26",
+  coach:  process.env.DEFAULT_PASSWORD_COACH  ?? "BsC04Ch@",
+  admin:  process.env.DEFAULT_PASSWORD_ADMIN  ?? "BsC04Ch@",
 };
 
 /**
