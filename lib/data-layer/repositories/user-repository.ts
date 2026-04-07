@@ -112,7 +112,11 @@ export class PrismaUserRepository implements IUserRepository {
 
   async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
-      where: { role: "user" },
+      where: {
+        role: "user",
+        organizationId: "org_blacksheep_001",
+        membership: { path: ["status"], equals: status },
+      },
       select: {
         id: true,
         firstName: true,
@@ -124,10 +128,7 @@ export class PrismaUserRepository implements IUserRepository {
         organizationId: true,
       },
     } as any);
-    const filtered = users.filter(
-      (u: any) => u.membership && (u.membership as any).status === status
-    );
-    return filtered.map((u: any) => this.mapToEntity(u));
+    return users.map((u: any) => this.mapToEntity(u));
   }
 
   async getUserStats(): Promise<{
@@ -137,11 +138,12 @@ export class PrismaUserRepository implements IUserRepository {
     expired: number;
     inactive: number;
   }> {
+    const orgFilter = { role: "user", organizationId: "org_blacksheep_001" };
     const [total, active, pending, expired] = await Promise.all([
-      this.prisma.user.count({ where: { role: "user" } }),
-      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "active" } } as any }),
-      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "pending" } } as any }),
-      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "expired" } } as any }),
+      this.prisma.user.count({ where: orgFilter }),
+      this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "active" } } as any }),
+      this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "pending" } } as any }),
+      this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "expired" } } as any }),
     ]);
     const inactive = total - active - pending - expired;
     return { total, active, pending, expired, inactive };
