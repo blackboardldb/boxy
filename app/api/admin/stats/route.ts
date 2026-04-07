@@ -18,20 +18,17 @@ export async function GET() {
 
     // Revertimos el filtro de DB por JSON (que causaba Full Table Scan) a filtrado en Node.js.
     // Traemos solo alumnos con su campo membership.
-    const allStudents = await (prisma as any).user.findMany({
-      where: {
-        role: "user",
-      },
-      select: {
-        membership: true,
-      },
-    });
+  
 
-    // Filtramos por organización en memoria para recuperar la velocidad de la Fase 1.
-    const students = allStudents.filter((s: any) => {
-      const m = s.membership as any;
-      return m?.organizationId === organizationId;
-    });
+    const students = await (prisma as any).user.findMany({
+  where: {
+    role: "user",
+    organizationId,
+  },
+  select: {
+    membership: true,
+  },
+});
 
     const totalMembers = students.length;
     let activeMembers = 0;

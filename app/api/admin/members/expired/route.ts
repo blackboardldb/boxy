@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       WHERE
         (role IS NULL OR role = 'user')
         AND membership IS NOT NULL
-        AND membership->>'organizationId' = ${organizationId}
+        AND "organizationId" = ${organizationId}
         AND membership->>'currentPeriodEnd' IS NOT NULL
         AND membership->>'currentPeriodEnd' < ${today}
       ORDER BY membership->>'currentPeriodEnd' DESC

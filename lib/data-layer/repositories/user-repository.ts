@@ -53,6 +53,7 @@ export class PrismaUserRepository implements IUserRepository {
         email: data.email,
         phone: data.phone,
         role: data.role || "user",
+        organizationId: (data as any).organizationId ?? "org_blacksheep_001",
         gender: (data as any).gender ?? undefined,
         dateOfBirth: (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
         emergencyContact: (data as any).emergencyContact ?? undefined,
@@ -109,11 +110,21 @@ export class PrismaUserRepository implements IUserRepository {
     return users.map((u: any) => this.mapToEntity(u));
   }
 
-  async findByMembershipStatus(
-    status: string
-  ): Promise<FitCenterUserProfile[]> {
-    const allUsers = await this.prisma.user.findMany();
-    const filtered = allUsers.filter(
+  async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
+    const users = await this.prisma.user.findMany({
+      where: { role: "user" },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        membership: true,
+        organizationId: true,
+      },
+    } as any);
+    const filtered = users.filter(
       (u: any) => u.membership && (u.membership as any).status === status
     );
     return filtered.map((u: any) => this.mapToEntity(u));
@@ -126,43 +137,35 @@ export class PrismaUserRepository implements IUserRepository {
     expired: number;
     inactive: number;
   }> {
-    const users = await this.prisma.user.findMany();
-    let total = users.length;
-    let active = 0, pending = 0, expired = 0, inactive = 0;
-    
-    users.forEach((u: any) => {
-      const status = (u.membership as any)?.status;
-      if (status === "active") active++;
-      else if (status === "pending") pending++;
-      else if (status === "expired") expired++;
-      else if (status === "inactive") inactive++;
-    });
-
+    const [total, active, pending, expired] = await Promise.all([
+      this.prisma.user.count({ where: { role: "user" } }),
+      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "active" } } as any }),
+      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "pending" } } as any }),
+      this.prisma.user.count({ where: { role: "user", membership: { path: ["status"], equals: "expired" } } as any }),
+    ]);
+    const inactive = total - active - pending - expired;
     return { total, active, pending, expired, inactive };
   }
 
   async updateMembershipStatus(userId: string, status: string): Promise<FitCenterUserProfile> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error("User not found");
-    
+
     let currentMembership = user.membership as any;
     if (!currentMembership) throw new Error("User has no membership to update");
-    
+
     currentMembership.status = status;
-    
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { membership: currentMembership }
     });
-    
+
     return this.mapToEntity(updatedUser);
   }
 
   private mapToEntity(prismaUser: any): FitCenterUserProfile {
     const membership = prismaUser.membership ? { ...(prismaUser.membership as any) } : undefined;
-    
-    // Tarea 2: El historial se mantiene para permitir ver planes expirados.
-    // Solo se excluirá explícitamente en consultas de listado masivo si es necesario.
 
     return {
       id: prismaUser.id,
@@ -171,6 +174,7 @@ export class PrismaUserRepository implements IUserRepository {
       email: prismaUser.email,
       phone: prismaUser.phone,
       role: prismaUser.role,
+      organizationId: prismaUser.organizationId,
       gender: prismaUser.gender ?? undefined,
       dateOfBirth: prismaUser.dateOfBirth
         ? new Date(prismaUser.dateOfBirth).toISOString().split("T")[0]

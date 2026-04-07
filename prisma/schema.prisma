@@ -17,9 +17,10 @@ model User {
   email              String              @unique
   phone              String?
   role               String              @default("user")
+  organizationId     String              @default("org_blacksheep_001")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  /// @deprecated Los contadores internos (remainingClasses, classesAttended) están obsoletos. 
+  /// @deprecated Los contadores internos (remainingClasses, classesAttended) están obsoletos.
   /// Usar historial de inscripciones para cálculos en tiempo real.
   membership         Json?
   dateOfBirth        DateTime?
@@ -31,6 +32,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([organizationId])
   @@map("users")
   @@schema("public")
 }
