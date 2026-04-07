@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ClassService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 // Initialize services
@@ -96,6 +97,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await request.json();
 
     // Use ClassService to create class with validation
