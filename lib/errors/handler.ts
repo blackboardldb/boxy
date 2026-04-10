@@ -15,6 +15,7 @@ import {
   ErrorContext,
 } from "./types";
 import { ApiError, ApiErrorCode, createErrorResponse } from "../api/types";
+import { captureToSentry } from "../monitoring/sentry";
 
 // Main error handler class
 export class ErrorHandler {
@@ -115,6 +116,7 @@ export class ErrorHandler {
   ): ApiError {
     // Log the error for debugging
     console.error("Unhandled error:", error, context);
+    captureToSentry(error, context);
 
     return {
       code: ApiErrorCode.INTERNAL_ERROR,
@@ -132,6 +134,7 @@ export class ErrorHandler {
     context?: ErrorContext
   ): ApiError {
     console.error("Unknown error type:", error, context);
+    captureToSentry(error, context);
 
     return {
       code: ApiErrorCode.INTERNAL_ERROR,
@@ -164,9 +167,11 @@ export class ErrorHandler {
       switch (error.severity) {
         case ErrorSeverity.CRITICAL:
           console.error("[CRITICAL ERROR]", logData);
+          captureToSentry(error, context);
           break;
         case ErrorSeverity.HIGH:
           console.error("[HIGH ERROR]", logData);
+          captureToSentry(error, context);
           break;
         case ErrorSeverity.MEDIUM:
           console.warn("[MEDIUM ERROR]", logData);
@@ -177,6 +182,7 @@ export class ErrorHandler {
       }
     } else if (error.statusCode >= 500) {
       console.error("[SERVER ERROR]", logData);
+      captureToSentry(error, context);
     } else if (error.statusCode >= 400) {
       console.warn("[CLIENT ERROR]", logData);
     } else {
