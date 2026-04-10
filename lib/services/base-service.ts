@@ -522,6 +522,9 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   }
 
   // Caching support (basic implementation)
+  // NOTA: Las keys de caché no incluyen organizationId.
+  // En single-tenant (actual) esto es seguro. Con múltiples tenants,
+  // agregar organizationId a cada key antes de activar el segundo tenant.
   private cache = new Map<
     string,
     { data: any; timestamp: number; ttl: number }

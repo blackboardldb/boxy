@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PlanService } from "@/lib/services/plan-service";
+import { planService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 
-// Initialize services
-const planService = new PlanService();
 
 export async function GET(
   request: NextRequest,

@@ -274,3 +274,5 @@ export class DisciplineService extends BaseService<Discipline> {
     };
   }
 }
+
+export const disciplineService = new DisciplineService();

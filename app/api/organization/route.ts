@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OrganizationService } from "@/lib/services/organization-service";
+import { organizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/supabase/auth-guard";
 
-const organizationService = new OrganizationService();
 
 export async function GET() {
   try {

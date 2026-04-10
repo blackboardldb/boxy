@@ -307,3 +307,5 @@ export class InstructorService extends BaseService<Instructor> {
     };
   }
 }
+
+export const instructorService = new InstructorService();

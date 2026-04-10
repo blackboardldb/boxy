@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ClassService } from "@/lib/services/class-service";
+import { classService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
-// Initialize services
-const classService = new ClassService();
 
 export async function GET(request: NextRequest) {
   try {

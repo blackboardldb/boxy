@@ -304,3 +304,5 @@ export class ClassService extends BaseService<ClassSession> {
     // validation...
   }
 }
+
+export const classService = new ClassService();

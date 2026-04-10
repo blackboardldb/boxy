@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { UserService } from "@/lib/services/user-service";
+import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
-
-// Initialize services
-const userService = new UserService();
 
 export async function GET(request: NextRequest) {
   try {

@@ -27,3 +27,5 @@ export class OrganizationService extends BaseService<Organization> {
     );
   }
 }
+
+export const organizationService = new OrganizationService();

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DisciplineService } from "@/lib/services/discipline-service";
+import { disciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
-// Initialize services
-const disciplineService = new DisciplineService();
 
 export async function GET(request: NextRequest) {
   try {

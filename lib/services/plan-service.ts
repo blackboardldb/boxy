@@ -239,3 +239,5 @@ export class PlanService extends BaseService<MembershipPlan> {
     };
   }
 }
+
+export const planService = new PlanService();

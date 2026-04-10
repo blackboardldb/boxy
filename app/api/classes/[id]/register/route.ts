@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ClassService } from "@/lib/services/class-service";
+import { classService } from "@/lib/services/class-service";
+
 
 export async function POST(
   request: NextRequest,
@@ -16,7 +17,6 @@ export async function POST(
       );
     }
 
-    const classService = new ClassService();
     const result = await classService.registerStudent(classId, userId);
 
     if (!result.success) {
