@@ -64,6 +64,11 @@ export const createUserSchema = z.object({
       relationship: z.string(),
     })
     .optional(),
+  gender: z.enum(["masculino", "femenino", "otro", "prefiero_no_decir"]).optional(),
+  formaDePago: z.enum(["contado", "transferencia", "debito", "credito"]).optional(),
+  organizationId: z.string().optional(),
+  role: z.enum(["user", "admin", "coach"]).default("user"),
+  membership: z.unknown().optional(),
 });
 
 export const updateUserSchema = createUserSchema.partial();
@@ -136,9 +141,12 @@ export const createInstructorSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().optional(),
-  specialties: z.array(z.string()),
+  specialties: z.array(z.string()).default([]),
   bio: z.string().optional(),
   avatar: z.string().optional(),
+  role: z.enum(["coach", "admin"]).default("coach"),
+  userId: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const updateInstructorSchema = createInstructorSchema.partial();
@@ -306,4 +314,11 @@ export type CreateMembershipRenewal = z.infer<
   typeof createMembershipRenewalSchema
 >;
 
+// Password change schema
+export const changePasswordSchema = z.object({
+  newPassword: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
 
+export type ChangePassword = z.infer<typeof changePasswordSchema>;

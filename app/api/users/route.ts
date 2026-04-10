@@ -3,6 +3,7 @@ import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { createUserSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +49,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
+    const parsed = createUserSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const body = parsed.data;
 
     try {
       console.log("[POST /api/users] Creando usuario en Supabase Auth:", body.email);

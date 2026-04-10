@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
+import { createInstructorSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
@@ -47,7 +48,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const parsed = createInstructorSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const body = parsed.data;
 
     // Determinar el rol en Supabase Auth según el rol del instructor
     // "admin" → admin en profiles, "coach" → coach en profiles

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { changePasswordSchema } from "@/lib/schemas";
 
 /**
  * POST /api/me/change-password
@@ -11,14 +12,14 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { newPassword } = await request.json();
-
-    if (!newPassword || newPassword.length < 6) {
+    const parsed = changePasswordSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "La contraseña debe tener al menos 6 caracteres." },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { newPassword } = parsed.data;
 
     const supabase = await createClient();
 
