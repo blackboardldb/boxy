@@ -137,16 +137,18 @@ export class PrismaUserRepository implements IUserRepository {
     pending: number;
     expired: number;
     inactive: number;
+    frozen: number;
   }> {
     const orgFilter = { role: "user", organizationId: "org_blacksheep_001" };
-    const [total, active, pending, expired] = await Promise.all([
+    const [total, active, pending, expired, frozen] = await Promise.all([
       this.prisma.user.count({ where: orgFilter }),
       this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "active" } } as any }),
       this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "pending" } } as any }),
       this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "expired" } } as any }),
+      this.prisma.user.count({ where: { ...orgFilter, membership: { path: ["status"], equals: "frozen" } } as any }),
     ]);
-    const inactive = total - active - pending - expired;
-    return { total, active, pending, expired, inactive };
+    const inactive = total - active - pending - expired - frozen;
+    return { total, active, pending, expired, inactive, frozen };
   }
 
   async updateMembershipStatus(userId: string, status: string): Promise<FitCenterUserProfile> {

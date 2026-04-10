@@ -390,23 +390,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     return this.withCache(
       "user_stats",
       async () => {
-        const users = await this.userRepository.findMany();
-
-        const stats = {
-          total: users.items.length,
-          active: users.items.filter((u) => u.membership?.status === "active")
-            .length,
-          pending: users.items.filter((u) => u.membership?.status === "pending")
-            .length,
-          expired: users.items.filter((u) => u.membership?.status === "expired")
-            .length,
-          inactive: users.items.filter(
-            (u) => u.membership?.status === "inactive"
-          ).length,
-          frozen: users.items.filter((u) => u.membership?.status === "frozen")
-            .length,
-        };
-
+        const stats = await this.userRepository.getUserStats();
         return this.createSuccessResponse(stats);
       },
       2 * 60 * 1000 // Cache for 2 minutes
