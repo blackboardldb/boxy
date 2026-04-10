@@ -75,6 +75,7 @@ export interface UserRepository
     pending: number;
     expired: number;
     inactive: number;
+    frozen: number;
   }>;
   updateMembershipStatus(userId: string, status: string): Promise<import("../types").FitCenterUserProfile>;
 }
