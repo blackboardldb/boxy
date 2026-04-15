@@ -36,7 +36,7 @@ function mapUserMembershipRow(um: any): FitCenterMembership | undefined {
       currentMonth: {
         classesAttended: 0,
         classesContracted: um.classLimit,
-        remainingClasses: 0,
+        remainingClasses: um.classLimit,  // valor contratado — HAL-09 calculará el real desde ClassRegistration
         noShows: 0,
         lastMinuteCancellations: 0,
       },
