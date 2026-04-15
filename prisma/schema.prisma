@@ -22,6 +22,7 @@ model User {
   updatedAt          DateTime            @updatedAt
   /// @deprecated Los contadores internos (remainingClasses, classesAttended) están obsoletos.
   /// Usar historial de inscripciones para cálculos en tiempo real.
+  /// @deprecated HAL-01: Este campo JSONB será eliminado cuando UserMembership esté poblado y validado.
   membership         Json?
   dateOfBirth        DateTime?
   emergencyContact   String?
@@ -29,6 +30,7 @@ model User {
   formaDePago        String?
   classRegistrations ClassRegistration[]
   membershipRenewals MembershipRenewal[]
+  userMembership     UserMembership?
 
   @@index([email])
   @@index([role])
@@ -107,20 +109,66 @@ model Instructor {
 }
 
 model MembershipPlan {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  price       Float
-  duration    Int
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  features    Json?
-  config      Json?
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  price           Float
+  duration        Int
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  features        Json?
+  config          Json?
+  userMemberships UserMembership[]
 
   @@index([isActive])
   @@index([price])
   @@map("membership_plans")
+  @@schema("public")
+}
+
+/// HAL-01 — Reemplaza el JSONB User.membership con columnas relacionales.
+/// Fase de migración: tabla creada en Fase 1, poblada en Fase 2,
+/// capa de datos actualizada en Fase 3. JSONB eliminado en Fase 4.
+model UserMembership {
+  id                 String          @id @default(cuid())
+  userId             String          @unique
+  organizationId     String
+  planId             String?
+
+  // Estado operativo
+  status             String          @default("pending")
+  startDate          DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  monthlyPrice       Float?
+  membershipType     String?
+
+  // Config del plan (copiada en el momento de asignación)
+  classLimit         Int             @default(0)
+  disciplineAccess   String          @default("all")
+  allowedDisciplines String[]        @default([])
+  canFreeze          Boolean         @default(false)
+  freezeDurationDays Int             @default(0)
+  autoRenews         Boolean         @default(false)
+
+  // Config del centro aplicada a esta membresía
+  allowCancellation  Boolean         @default(true)
+  cancellationHours  Int             @default(6)
+  maxBookingsPerDay  Int             @default(3)
+  autoWaitlist       Boolean         @default(true)
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan               MembershipPlan? @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@map("user_memberships")
   @@schema("public")
 }
 

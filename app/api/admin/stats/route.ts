@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
-import { getPlanStatus } from "@/lib/utils";
+
+// HAL-01 Phase 3C — Eliminado el Full Table Scan + filtrado Node.js.
+// Todos los conteos usan queries indexadas en user_memberships.
+// Lógica replicada desde getPlanStatus:
+//   pending   → status = 'pending'
+//   scheduled → status = 'active' AND currentPeriodStart > today
+//   active    → status = 'active' AND currentPeriodStart <= today AND currentPeriodEnd >= today
+//   inactive  → todo lo demás (expired, frozen, suspended, o fechas vencidas)
 
 export async function GET() {
   try {
@@ -11,62 +18,73 @@ export async function GET() {
     }
     const { organizationId } = auth;
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const todayStr = today.toISOString().split("T")[0];
-    const firstOfMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`;
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // Revertimos el filtro de DB por JSON (que causaba Full Table Scan) a filtrado en Node.js.
-    // Traemos solo alumnos con su campo membership.
-  
+    const baseWhere = { organizationId };
 
-    const students = await (prisma as any).user.findMany({
-  where: {
-    role: "user",
-    organizationId,
-  },
-  select: {
-    membership: true,
-  },
-});
+    // ── Conteos paralelos — todos usan índice btree (sin Full Table Scan) ──
+    const [
+      totalMembers,
+      pendingMembers,
+      scheduledMembers,
+      activeMembers,
+      newThisMonth,
+      revenueResult,
+    ] = await Promise.all([
+      // Total alumnos con membresía
+      prisma.userMembership.count({
+        where: baseWhere,
+      }),
 
-    const totalMembers = students.length;
-    let activeMembers = 0;
-    let scheduledMembers = 0;
-    let pendingMembers = 0;
-    let inactiveMembers = 0;
-    let newThisMonth = 0;
-    let monthlyRevenue = 0;
+      // Pendientes: usuarios nuevos sin plan aprobado
+      prisma.userMembership.count({
+        where: { ...baseWhere, status: "pending" },
+      }),
 
-    for (const student of students) {
-      const m = student.membership as any;
-      if (!m) {
-        inactiveMembers++;
-        continue;
-      }
-      
-      const status = getPlanStatus(student);
+      // Programados: plan futuro (aún no inició)
+      prisma.userMembership.count({
+        where: {
+          ...baseWhere,
+          status: "active",
+          currentPeriodStart: { gt: today },
+        },
+      }),
 
-      if (status === "active") activeMembers++;
-      else if (status === "scheduled") scheduledMembers++;
-      else if (status === "pending") pendingMembers++;
-      else if (status === "inactive") inactiveMembers++;
+      // Activos: plan vigente hoy
+      prisma.userMembership.count({
+        where: {
+          ...baseWhere,
+          status: "active",
+          currentPeriodStart: { lte: today },
+          currentPeriodEnd:   { gte: today },
+        },
+      }),
 
       // Nuevos este mes: startDate dentro del mes actual
-      if (m.startDate && m.startDate >= firstOfMonth) {
-        newThisMonth++;
-      }
+      prisma.userMembership.count({
+        where: {
+          ...baseWhere,
+          startDate: { gte: firstOfMonth },
+        },
+      }),
 
-      // Ingresos del mes: activos cuyo periodo inició este mes
-      if (status === "active" && (m.currentPeriodStart || m.startDate) >= firstOfMonth) {
-        monthlyRevenue += Number(m.monthlyPrice || 0);
-      }
-    }
+      // Ingresos del mes: activos cuyo currentPeriodStart es este mes
+      prisma.userMembership.aggregate({
+        where: {
+          ...baseWhere,
+          status: "active",
+          currentPeriodStart: { gte: firstOfMonth, lte: today },
+        },
+        _sum: { monthlyPrice: true },
+      }),
+    ]);
 
-    const retentionRate =
-      totalMembers > 0
-        ? parseFloat(((activeMembers / totalMembers) * 100).toFixed(1))
-        : 0;
+    // Inactivos = total − activos − programados − pendientes
+    const inactiveMembers = totalMembers - activeMembers - scheduledMembers - pendingMembers;
+    const monthlyRevenue  = revenueResult._sum.monthlyPrice ?? 0;
+    const retentionRate   = totalMembers > 0
+      ? parseFloat(((activeMembers / totalMembers) * 100).toFixed(1))
+      : 0;
 
     return NextResponse.json({
       success: true,

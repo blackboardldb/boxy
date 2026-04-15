@@ -284,6 +284,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   }
 
   // Approve pending user
+  // HAL-01 Phase 3B: status es ciudadano de primera clase — sin spread del JSONB
   async approveUser(
     userId: string
   ): Promise<ApiResponse<FitCenterUserProfile>> {
@@ -299,12 +300,8 @@ export class UserService extends BaseService<FitCenterUserProfile> {
         throw new ValidationError("User is not pending approval");
       }
 
-      const updatedUser = await this.userRepository.update(userId, {
-        membership: {
-          ...user.membership,
-          status: "active",
-        },
-      });
+      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
+      const updatedUser = await this.userRepository.updateMembershipStatus(userId, "active");
 
       await this.afterUserApproval(updatedUser);
 
@@ -313,6 +310,8 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   }
 
   // Reject pending user
+  // HAL-01 Phase 3B: status es ciudadano de primera clase — sin spread del JSONB.
+  // rejectionInfo eliminado: no tenía columna en Prisma y nunca se persistía realmente.
   async rejectUser(
     userId: string,
     reason: string,
@@ -330,17 +329,8 @@ export class UserService extends BaseService<FitCenterUserProfile> {
         throw new ValidationError("User is not pending approval");
       }
 
-      const updatedUser = await this.userRepository.update(userId, {
-        membership: {
-          ...user.membership,
-          status: "inactive",
-        },
-        rejectionInfo: {
-          rejectedAt: new Date().toISOString(),
-          reason,
-          rejectedBy,
-        },
-      });
+      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
+      const updatedUser = await this.userRepository.updateMembershipStatus(userId, "inactive");
 
       await this.afterUserRejection(updatedUser, reason);
 
@@ -349,6 +339,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   }
 
   // Update membership status
+  // HAL-01 Phase 3B: delega directamente al repositorio — sin spread del JSONB
   async updateMembershipStatus(
     userId: string,
     status: string
@@ -365,12 +356,8 @@ export class UserService extends BaseService<FitCenterUserProfile> {
         throw new ValidationError("User has no membership to update");
       }
 
-      const updatedUser = await this.userRepository.update(userId, {
-        membership: {
-          ...user.membership,
-          status: status as any,
-        },
-      });
+      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
+      const updatedUser = await this.userRepository.updateMembershipStatus(userId, status);
 
       return this.createSuccessResponse(updatedUser);
     });
