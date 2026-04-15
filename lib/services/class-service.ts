@@ -145,8 +145,34 @@ export class ClassService extends BaseService<ClassSession> {
             include: { class: true }
           });
 
+          // HAL-09b: inyectar remainingClasses real desde ClassRegistration.
+          // El mapper devuelve um.classLimit como referencia — aquí calculamos el real.
+          let userForValidation: any = user;
+          const classLimit = (user.membership as any)?.planConfig?.classLimit || 0;
+          if (classLimit > 0) {
+            const periodStart = (user.membership as any)?.currentPeriodStart
+              ? new Date((user.membership as any).currentPeriodStart)
+              : new Date(0);
+            const classesUsed = await prisma.classRegistration.count({
+              where: { userId, status: 'registered', class: { dateTime: { gte: periodStart } } }
+            });
+            userForValidation = {
+              ...user,
+              membership: {
+                ...(user.membership as any),
+                centerStats: {
+                  ...(user.membership as any).centerStats,
+                  currentMonth: {
+                    ...(user.membership as any).centerStats?.currentMonth,
+                    remainingClasses: Math.max(0, classLimit - classesUsed)
+                  }
+                }
+              }
+            };
+          }
+
           const validation = await ValidationService.canUserRegisterToClass(
-            user as any,
+            userForValidation,
             classSession as any,
             dayRegistrations.map(r => r.class) as any
           );
@@ -157,6 +183,8 @@ export class ClassService extends BaseService<ClassSession> {
         }
 
         // 3. TRANSACTION
+        // HAL-09b: eliminado tx.user.update membership JSONB — ya no es necesario.
+        // remainingClasses se calcula desde ClassRegistration en la validación.
         const updatedRecord = await prisma.$transaction(async (tx) => {
           await tx.classRegistration.upsert({
             where: { userId_classId: { userId, classId } },
@@ -173,26 +201,6 @@ export class ClassService extends BaseService<ClassSession> {
               ]
             }
           });
-
-          const memberData = user.membership as any;
-          if ((memberData?.planConfig?.classLimit || 0) > 0) {
-            const remaining = memberData?.centerStats?.currentMonth?.remainingClasses;
-            await tx.user.update({
-              where: { id: userId },
-              data: {
-                membership: {
-                  ...memberData,
-                  centerStats: {
-                    ...memberData.centerStats,
-                    currentMonth: {
-                      ...memberData.centerStats?.currentMonth,
-                      remainingClasses: Math.max(0, (remaining || 1) - 1)
-                    }
-                  }
-                }
-              }
-            });
-          }
           
           return updatedClass;
         });
@@ -233,6 +241,8 @@ export class ClassService extends BaseService<ClassSession> {
           throw new ValidationError(validation.reason || "No se puede cancelar");
         }
 
+        // HAL-09b: eliminado tx.user.update membership JSONB — ya no es necesario.
+        // remainingClasses se recalcula desde ClassRegistration en cada validación.
         const updatedRecord = await prisma.$transaction(async (tx) => {
           await tx.classRegistration.update({
             where: { userId_classId: { userId, classId } },
@@ -246,26 +256,6 @@ export class ClassService extends BaseService<ClassSession> {
               waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(id => id !== userId)
             }
           });
-
-          const memberData = user.membership as any;
-          if ((memberData?.planConfig?.classLimit || 0) > 0) {
-            const remaining = memberData?.centerStats?.currentMonth?.remainingClasses;
-            await tx.user.update({
-              where: { id: userId },
-              data: {
-                membership: {
-                  ...memberData,
-                  centerStats: {
-                    ...memberData.centerStats,
-                    currentMonth: {
-                      ...memberData.centerStats?.currentMonth,
-                      remainingClasses: (remaining || 0) + 1
-                    }
-                  }
-                }
-              }
-            });
-          }
 
           return updatedClass;
         });
