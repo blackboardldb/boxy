@@ -1,43 +1,45 @@
-import { useMemo } from "react";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 
+// HAL-01 Fase 4 Sprint 3.1: Ya no lee pendingRenewal del JSONB.
+// El conteo de renovaciones se obtiene desde /api/admin/renewals (tabla MembershipRenewal).
+// El conteo de clases canceladas sigue desde el store (classSessions).
+
+const POLL_INTERVAL_MS = 60_000; // Refrescar cada 60 segundos
+
 export function useNotificationCount() {
-  const { classSessions, users } = useBlackSheepStore();
+  const { classSessions } = useBlackSheepStore();
+  const [renewalCount, setRenewalCount] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const notificationCount = useMemo(() => {
-    // Collect stats from currently loaded users
-    const allUsers = users || [];
+  useEffect(() => {
+    const fetchRenewalCount = async () => {
+      try {
+        const res = await fetch("/api/admin/renewals?status=pending");
+        if (!res.ok) return;
+        const data = await res.json();
+        setRenewalCount(data.data?.length ?? 0);
+      } catch {
+        // Silencioso — no interrumpir la UI por un fallo en el conteo
+      }
+    };
 
-    if (!allUsers || allUsers.length === 0) {
-      return 0;
-    }
+    fetchRenewalCount();
+    intervalRef.current = setInterval(fetchRenewalCount, POLL_INTERVAL_MS);
 
-    let count = 0;
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
-    // Usuarios pendientes de aprobación (nuevos registros)
-    const pendingUsers = allUsers.filter(
-      (user) => user.membership?.status === "pending"
-    );
-    count += pendingUsers.length;
+  // Clases canceladas (sigue del store — no usa JSONB)
+  const cancelledClassCount =
+    classSessions?.filter((cls) => cls.status === "cancelled").slice(0, 3)
+      .length > 0
+      ? 1
+      : 0;
 
-    // Usuarios con renovaciones pendientes
-    const renewalUsers = allUsers.filter(
-      (user) =>
-        user.membership?.pendingRenewal &&
-        user.membership.pendingRenewal.status === "pending"
-    );
-    count += renewalUsers.length;
-
-    // Clases canceladas recientes (últimas 3)
-    const cancelledClasses =
-      classSessions?.filter((cls) => cls.status === "cancelled").slice(0, 3) ||
-      [];
-    if (cancelledClasses.length > 0) {
-      count += 1; // Contamos las clases canceladas como 1 notificación grupal
-    }
-
-    return count;
-  }, [classSessions, users]);
-
-  return notificationCount;
+  return renewalCount + cancelledClassCount;
 }

@@ -293,9 +293,12 @@ export function UserProfile() {
               <h2 className="text-2xl font-bold text-white">
                 {userData.firstName} {userData.lastName}
               </h2>
-              {userData.membership?.centerStats?.memberSince && (
+              {/* HAL-01 Fase 4 Sprint 3.2: startDate de UserMembership reemplaza centerStats.memberSince del JSONB */}
+              {(userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince) && (
                 <p className="text-zinc-400">
-                  Miembro desde {formatMemberSince(userData.membership.centerStats.memberSince)}
+                  Miembro desde {formatMemberSince(
+                    (userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince) as string
+                  )}
                 </p>
               )}
             </div>
