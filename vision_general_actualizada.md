@@ -9,7 +9,7 @@
 
 | HAL | Título | Estado | Commit/Ref |
 |---|---|---|---|
-| HAL-01 | JSONB `membership` → `UserMembership` | 🟡 Fase 4 en etapa de observación (código completo pre-DROP). | Pre-Drop: `3fb45ac` |
+| HAL-01 | JSONB `membership` → `UserMembership` | 🟡 Fase 4 en etapa de observación. Se cambiará a ✅ Completo junto con el commit del DROP. | Pre-Drop: `3fb45ac` |
 | HAL-02 | Índices GIN/btree sobre JSONB | ✅ Completo | Supabase SQL directo |
 | HAL-03 | Arrays denormalizados `ClassSession` | ❌ Pendiente | — |
 | HAL-04 | `organizationId` como columna relacional | ✅ Completo | `7af0177` |
@@ -125,7 +125,7 @@ El mapper de Fase 3 construye un objeto que replica esa forma, por lo que **la C
 **Script de respaldo ejecutado en SQL Editor (pre-DROP):**
 ```sql
 CREATE TABLE public._backup_membership_jsonb AS
-SELECT id, membership, updated_at
+SELECT id, membership, "updatedAt"
 FROM public.users
 WHERE membership IS NOT NULL;
 ```
@@ -133,7 +133,7 @@ WHERE membership IS NOT NULL;
 ---
 
 ### Estado de Eliminación Efectivo de Referencias (Check de Seguridad)
-El escrutinio mediante *grep test* entregó resultados nominales. Todas las dependencias residuales consisten en lecturas pasivas desde la variable mapeada que proveen los `findUnique()` e interceptan los Typescript Interfaces a nivel UI; el "Dual Write" original ha sido exterminado.
+> Grep ejecutado post-Sprint 4 pre-DROP. Referencias residuales son lecturas pasivas del objeto mapeado en memoria (Categoría A) — no bloquean el DROP. Dual-write eliminado en `user-repository.ts`. Cero writes directos al JSONB en routes confirmado.
 
 > NOTA de Emergencia Post-Migrante: Si el Sprint 4 falla dramáticamente al intentar bootear la app o una vista suelta explota luego de 1 semana en producción, **el único remedio aceptable es hacer un `Hot-Fix`** en el route o server-component afecto que omitiste parchar durante Sprint 1-3. Los datos de la membresía **están vivos y salvos** en la nueva tabla externa `user_memberships`. 
 
@@ -175,3 +175,322 @@ graph TD
 ```
 
 **Total de Horas Asignadas / Restantes Globalmente:** ~28-30 horas.
+
+---
+
+## Orden de Ejecución Restante (Post HAL-01)
+
+Basándome en el documento maestro, aquí están las tareas en orden de ejecución:
+
+---
+
+## HAL-15 — Fix 84 errores TypeScript
+**Estimación: 2h · 1 sesión · Independiente**
+
+> Prerrequisito: HAL-01 DROP ejecutado. Los 8 errores de `membership null` se auto-resuelven solos con el DROP.
+
+### Pre-trabajo
+Correr el compilador y capturar el estado base:
+```bash
+cd /tu-proyecto && npx tsc --noEmit 2>&1 | tee tsc-errors-baseline.txt
+npx tsc --noEmit 2>&1 | grep "error TS" | wc -l
+```
+Debería mostrar ≤76 errores (84 menos los 8 de `membership null` ya resueltos).
+
+---
+
+### Bloque 1 — 39 errores `TS2554: Expected 0 arguments` (~45min)
+
+Causa: Next.js 15 cambió `params` a Promise asíncrona. Todos los route handlers y pages dinámicas están tipados con la sintaxis vieja.
+
+**Patrón de fix — aplicar en cada archivo afectado:**
+```typescript
+// ❌ ANTES
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params
+```
+```typescript
+// ✅ DESPUÉS
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+```
+
+**Cómo encontrar todos los archivos afectados:**
+```bash
+grep -rn "{ params }: { params: {" app/ --include="*.ts" --include="*.tsx"
+```
+
+Ejecutar el fix archivo por archivo. Son route handlers en `app/api/` y pages en `app/admin/` — no hay lógica compleja, es cambio mecánico de tipo + `await`.
+
+### Bloque 2 — 8 errores `TS2339: Property X not on JsonValue` (~20min)
+
+Causa: Accesos a propiedades del JSONB sin cast. **Estos deberían estar resueltos automáticamente por el DROP de HAL-01.** Si persisten después del DROP, significa que hay un archivo que aún referencia `membership` como `Json` — localizarlo con:
+
+```bash
+npx tsc --noEmit 2>&1 | grep "TS2339" 
+```
+
+Fix si persisten: eliminar la referencia residual o castear al tipo correcto si es otro campo JSONB.
+
+### Bloque 3 — 8 errores `TS2353: Unknown LogContext props` (~15min)
+
+Causa: El Logger de HAL-13 tiene props mal tipadas. Son residuales de la integración parcial de Sentry.
+
+```bash
+npx tsc --noEmit 2>&1 | grep "TS2353"
+```
+
+Fix: localizar la interfaz `LogContext` en `lib/monitoring/logger.ts` y agregar las props faltantes que el código usa, o usar `[key: string]: unknown` si son dinámicas.
+
+### Bloque 4 — 21 errores restantes (~30min)
+
+Provider types, spread, service worker. Atacar uno por uno según output de `tsc`:
+
+```bash
+npx tsc --noEmit 2>&1 | grep -v "TS2554\|TS2339\|TS2353"
+```
+
+### Verificación final
+```bash
+npx tsc --noEmit 2>&1 | grep "error TS" | wc -l
+```
+**Resultado esperado: `0`**
+
+---
+
+## HAL-12b — Eliminar fallback de contraseñas
+**Estimación: 15min · Inline · Independiente**
+
+Archivo: `lib/supabase/admin.ts`
+
+**Fix:**
+```typescript
+// ❌ ANTES
+const DEFAULT_PASSWORDS = {
+  alumno: process.env.DEFAULT_PASSWORD_ALUMNO ?? "blacksheep26",
+  coach: process.env.DEFAULT_PASSWORD_COACH ?? "BsC04Ch@",
+  admin: process.env.DEFAULT_PASSWORD_ADMIN ?? "BsC04Ch@",
+}
+```
+```typescript
+// ✅ DESPUÉS
+const alumnoPassword = process.env.DEFAULT_PASSWORD_ALUMNO
+const coachPassword = process.env.DEFAULT_PASSWORD_COACH
+const adminPassword = process.env.DEFAULT_PASSWORD_ADMIN
+
+if (!alumnoPassword || !coachPassword || !adminPassword) {
+  throw new Error(
+    "Missing required env vars: DEFAULT_PASSWORD_ALUMNO, DEFAULT_PASSWORD_COACH, DEFAULT_PASSWORD_ADMIN"
+  )
+}
+
+const DEFAULT_PASSWORDS = {
+  alumno: alumnoPassword,
+  coach: coachPassword,
+  admin: adminPassword,
+}
+```
+
+**Antes de hacer el fix:** confirmar que las tres variables están definidas en tu `.env` de producción en Vercel/donde deployeas. Si no están, agregarlas primero o el servidor no bootea.
+
+```bash
+# Verificar localmente
+grep "DEFAULT_PASSWORD" .env .env.local .env.production 2>/dev/null
+```
+
+**Verificación:** Crear un usuario de prueba desde el panel admin. Si funciona sin errores, el fix está bien. Si el servidor no bootea, falta una env var.
+
+---
+
+## HAL-06b — Validación Zod en 26 routes
+**Estimación: 4h · 2 sesiones**
+
+> Hacer **después** de HAL-01 DROP confirmado. Las routes de `renewal/approve` y `renewal/reject` ya fueron reescritas en Sprint 1 — revisarlas primero antes de agregar Zod para no duplicar validaciones.
+
+### Prioridad 1 — Escritura Crítica (sesión 1, ~2h)
+
+Estos routes aceptan body sin ninguna validación. Un input malformado puede corromper datos:
+
+| Route | Qué validar |
+|---|---|
+| `PUT /api/users/[id]` | Campos editables del usuario, tipos correctos |
+| `POST /api/classes` | Campos requeridos de clase, fechas válidas |
+| `POST /api/plans` | Precio positivo, classLimit entero |
+| `PUT /api/plans/[id]` | Idem |
+| `POST /api/expenses` | Monto positivo, categoría válida |
+| `PUT /api/expenses/[id]` | Idem |
+| `POST /api/users/[id]/renewal/approve` | Ya reescrita — revisar si necesita Zod adicional |
+| `POST /api/users/[id]/renewal/reject` | Idem |
+
+**Patrón a seguir** (ya implementado en las 3 routes existentes — tomar como referencia):
+```typescript
+import { z } from "zod"
+
+const updateUserSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  // ... campos del modelo
+})
+
+export async function PUT(request: Request, { params }) {
+  const body = await request.json()
+  const parsed = updateUserSchema.safeParse(body)
+  
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation error", details: parsed.error.flatten() },
+      { status: 400 }
+    )
+  }
+  
+  // usar parsed.data en vez de body directamente
+}
+```
+
+### Prioridad 2 — Escritura Operacional (sesión 2, ~1.5h)
+
+| Route | Qué validar |
+|---|---|
+| `POST /api/classes/register` | userId, classId requeridos |
+| `POST /api/classes/cancel` | Idem |
+| `POST /api/classes/admin/cancel` | classId requerido |
+| `POST /api/classes/admin/cancel-bulk` | Array de classIds no vacío |
+| `POST /api/classes/persist-generated` | Shape del objeto generado |
+| `PUT /api/users/[id]/notes` | Texto no vacío |
+
+### Prioridad 3 — Configuración (~30min)
+
+Routes de configuración del sistema — validación básica de shape:
+
+`disciplines`, `instructors`, `organization`, `reset-password`, `emit-event`
+
+### Verificación por route
+Después de cada route, testear con un body inválido:
+```bash
+curl -X PUT https://tu-dominio/api/users/123 \
+  -H "Content-Type: application/json" \
+  -d '{"email": "no-es-un-email"}' 
+# Debe retornar 400 con detalles del error
+```
+
+---
+
+## HAL-03 — Arrays denormalizados en `ClassSession`
+**Estimación: 6h · 2-3 sesiones · Bloqueado hasta HAL-01 ✅**
+
+> No iniciar hasta confirmar HAL-01 completamente estable en producción (1 semana post-DROP sin incidentes).
+
+### Contexto
+`ClassSession` tiene `registeredParticipantsIds String[]` y `waitlistParticipantsIds String[]` que se sincronizan manualmente con `ClassRegistration`. Son 62 referencias en 23 archivos. Causa race conditions y desincronización.
+
+### Pre-trabajo
+Anotar conteos de control antes de tocar nada:
+```bash
+# En Supabase SQL Editor
+SELECT 
+  cs.id,
+  array_length(cs."registeredParticipantsIds", 1) as array_count,
+  COUNT(cr.id) as registration_count
+FROM class_sessions cs
+LEFT JOIN class_registrations cr 
+  ON cr."classSessionId" = cs.id 
+  AND cr.status = 'registered'
+GROUP BY cs.id
+HAVING array_length(cs."registeredParticipantsIds", 1) != COUNT(cr.id)::int
+LIMIT 20;
+```
+Si retorna filas, hay desincronización actual — documentarla antes de migrar.
+
+### Sprint A — Mapper (~1.5h)
+
+En `class-repository.ts`, modificar `mapToEntity()` para calcular los arrays desde `ClassRegistration` en vez de leerlos de la columna:
+
+```typescript
+// ❌ ANTES — lee columna
+registeredParticipantsIds: prismaSession.registeredParticipantsIds,
+waitlistParticipantsIds: prismaSession.waitlistParticipantsIds,
+
+// ✅ DESPUÉS — calcula desde relación
+registeredParticipantsIds: prismaSession.registrations
+  ?.filter(r => r.status === 'registered')
+  .map(r => r.userId) ?? [],
+waitlistParticipantsIds: prismaSession.registrations
+  ?.filter(r => r.status === 'waitlist')
+  .map(r => r.userId) ?? [],
+```
+
+Asegurarse de incluir `registrations` en todos los `findMany` / `findUnique` que devuelven `ClassSession`:
+```typescript
+include: {
+  registrations: {
+    select: { userId: true, status: true }
+  }
+}
+```
+
+⏸ Validar que inscripción y cancelación siguen funcionando correctamente.
+
+### Sprint B — Eliminar writes a los arrays (~1.5h)
+
+Buscar todos los lugares que escriben en los arrays:
+```bash
+grep -rn "registeredParticipantsIds\|waitlistParticipantsIds" \
+  app/ lib/ --include="*.ts" | grep -v "select\|include\|//"
+```
+
+En `registerStudent` y `cancelRegistration` dentro de `class-service.ts` — eliminar los bloques que hacen push/filter sobre los arrays. La fuente de verdad es `ClassRegistration`.
+
+⏸ Validar flujo completo: inscribir alumno → ver en lista → cancelar → verificar que sale de lista.
+
+### Sprint C — DROP de columnas (~1h)
+
+Una vez validado que nadie escribe ni lee las columnas directamente:
+
+```bash
+# Check previo
+grep -rn "registeredParticipantsIds\|waitlistParticipantsIds" \
+  app/ lib/ components/ --include="*.ts" --include="*.tsx" \
+  | grep -v "select\|include\|//\|node_modules" \
+  | wc -l
+# Esperado: 0
+```
+
+```prisma
+// Eliminar de schema.prisma en ClassSession:
+registeredParticipantsIds  String[]
+waitlistParticipantsIds    String[]
+```
+
+```bash
+npx prisma migrate deploy
+```
+
+Verificar en Supabase:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'class_sessions'
+  AND column_name IN ('registeredParticipantsIds', 'waitlistParticipantsIds');
+-- Esperado: sin filas
+```
+
+---
+
+## Orden de confirmación entre tareas
+
+```
+HAL-01 DROP confirmado
+    ↓
+HAL-15 + HAL-12b  ← pueden ir en paralelo, son independientes
+    ↓
+HAL-06b Prioridad 1
+    ↓
+HAL-06b Prioridad 2 + 3
+    ↓
+HAL-03 Sprint A → B → C   ← solo cuando HAL-01 lleve 1 semana estable
+```
