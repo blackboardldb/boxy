@@ -350,50 +350,38 @@ export function calcularClasesSegunDuracion(
 /**
  * Determina el estado real del plan del usuario
  * @param user - Usuario con membresía
- * @returns Estado del plan: 'active', 'expired', 'pending', 'exhausted'
+ * @returns Estado del plan: 'active', 'pending', 'inactive', 'scheduled'
  */
 export function getPlanStatus(
   user: any
 ): "active" | "pending" | "inactive" | "scheduled" {
-  // Si no hay usuario o membresía, es inactivo
   if (!user?.membership) return "inactive";
 
-  // 0. Verificar si es una renovación pendiente de validación (prioridad alta)
-  if (
-    user.membership.pendingRenewal &&
-    user.membership.pendingRenewal.status === "pending"
-  ) {
-    return "pending";
-  }
+  // HAL-01 Fase 4 Sprint 4 pre-DROP:
+  // pendingRenewal era JSONB — eliminado. El estado pending viene de UserMembership.status.
+  // La verificación de MembershipRenewal pendiente es responsabilidad del componente UI
+  // via /api/admin/renewals (tabla relacional).
 
-  // Si el estado de la membresía es explícitamente pending (usuarios nuevos)
   if (user.membership.status === "pending") {
     return "pending";
   }
 
-  // --- LÓGICA DE CÁLCULO DE FECHAS Y CLASES ---
   const startDateStr =
     user.membership.currentPeriodStart || user.membership.startDate;
   const endDateStr = user.membership.currentPeriodEnd;
 
   if (!startDateStr || !endDateStr) return "inactive";
 
-  // Función interna para parsear fechas de forma robusta
   const parseDate = (dateStr: string | Date): Date | null => {
     if (!dateStr) return null;
     if (dateStr instanceof Date) return dateStr;
-
-    // Si es ISO (YYYY-MM-DD)
     if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
       return new Date(dateStr.substring(0, 10) + "T12:00:00Z");
     }
-
-    // Si es formato latino (DD/MM/YYYY)
     if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
       const [day, month, year] = dateStr.substring(0, 10).split("/");
       return new Date(`${year}-${month}-${day}T12:00:00`);
     }
-
     const d = new Date(dateStr);
     return isNaN(d.getTime()) ? null : d;
   };
@@ -403,37 +391,18 @@ export function getPlanStatus(
 
   if (!startDate || !endDate) return "inactive";
 
-  // Ajustar horas para comparaciones justas
   const today = new Date();
- today.setUTCHours(12, 0, 0, 0);
+  today.setUTCHours(12, 0, 0, 0);
 
+  // classLimit ya es campo directo de UserMembership (no planConfig del JSONB)
+  const classLimit = user.membership.planConfig?.classLimit ?? user.membership.classLimit ?? 0;
+  const remainingClasses = user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
+  const isLimitedPlan = classLimit > 0;
 
-  const remainingClasses =
-    user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
-  const isLimitedPlan = (user.membership.planConfig?.classLimit || 0) > 0;
-  // --------------------------------------------
+  if (today < startDate) return "scheduled";
+  if (today > endDate) return "inactive";
+  if (isLimitedPlan && remainingClasses <= 0) return "inactive";
 
-  // 1. Verificar si el plan es futuro (aún no empieza)
-  // IMPORTANTE: Ponemos esto antes que el chequeo de "inactive" manual 
-  // para que alumnos como Camila que tienen un plan futuro pero 
-  // su estado dice "inactivo" por error, se vean como Programados.
-  if (today < startDate) {
-    return "scheduled";
-  }
-
-  // 2. Verificar si expiró por fecha (es inactivo ahora)
-  if (today > endDate) {
-    return "inactive";
-  }
-
-  // 3. Verificar si expiró por clases agotadas (es inactivo ahora)
-  if (isLimitedPlan && remainingClasses <= 0) {
-    return "inactive";
-  }
-
-  // 4. El "Freno de Mano": Chequeo manual del administrador (Override)
-  // Si el plan está vigente por fecha y clases, pero el admin 
-  // puso "inactivo" o "suspendido" manualmente, lo respetamos.
   if (
     user.membership.status === "inactive" ||
     user.membership.status === "expired" ||
@@ -442,7 +411,6 @@ export function getPlanStatus(
     return "inactive";
   }
 
-  // Si pasó todos los checks, está activo
   return "active";
 }
 

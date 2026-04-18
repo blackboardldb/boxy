@@ -147,11 +147,11 @@ export class PrismaUserRepository implements IUserRepository {
         dateOfBirth:      (data as any).dateOfBirth      ? new Date((data as any).dateOfBirth) : undefined,
         emergencyContact: (data as any).emergencyContact ?? undefined,
         formaDePago:      (data as any).formaDePago      ?? undefined,
-        membership:       (data.membership as any)       || undefined,  // JSONB backward-compat
+        // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del create
       } as any,
     });
 
-    // Dual-write → UserMembership
+    // Si viene membership en el payload, persistir en UserMembership (tabla relacional)
     if (data.membership) {
       await this.prisma.userMembership.upsert({
         where:  { userId: created.id },
@@ -190,12 +190,11 @@ export class PrismaUserRepository implements IUserRepository {
         dateOfBirth:      (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
         emergencyContact: (data as any).emergencyContact,
         formaDePago:      (data as any).formaDePago,
-        // JSONB backward-compat: se elimina en Phase 4
-        ...(data.membership ? { membership: (data.membership as any) } : {}),
+        // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del update
       } as any,
     });
 
-    // Dual-write → UserMembership
+    // Si viene membership en el payload, actualizar UserMembership (tabla relacional)
     if (data.membership) {
       const upsertData = membershipToUpsertData(data.membership, orgId);
       await this.prisma.userMembership.upsert({
@@ -294,20 +293,12 @@ export class PrismaUserRepository implements IUserRepository {
     if (!user) throw new Error("User not found");
     if (!user.userMembership) throw new Error("UserMembership not found for user");
 
-    // Escribir en UserMembership (nueva tabla)
+    // HAL-01 Fase 4 Sprint 4: Dual-write JSONB eliminado.
+    // Solo se actualiza UserMembership (tabla relacional).
     await this.prisma.userMembership.update({
       where: { userId },
       data:  { status },
     });
-
-    // Dual-write: mantener JSONB sincronizado durante Phase 3
-    if (user.membership) {
-      const currentMembership = { ...(user.membership as any), status };
-      await this.prisma.user.update({
-        where: { id: userId },
-        data:  { membership: currentMembership } as any,
-      });
-    }
 
     const updated = await this.prisma.user.findUnique({
       where:   { id: userId },
@@ -317,15 +308,12 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   // ── mapToEntity ───────────────────────────────────────────────────────────
-  // HAL-01 Fase 3A: Lee desde userMembership (tabla relacional).
-  // Fallback al JSONB si userMembership es null (protección ante edge cases).
+  // HAL-01 Fase 4 Sprint 4: Lee exclusivamente desde userMembership (tabla relacional).
+  // El fallback JSONB fue eliminado — la columna membership se dropeará en Sprint 4.
   private mapToEntity(prismaUser: any): FitCenterUserProfile {
-    // Fuente de verdad: tabla user_memberships
     const membership = prismaUser.userMembership
       ? mapUserMembershipRow(prismaUser.userMembership)
-      : prismaUser.membership                             // fallback JSONB (edge case)
-        ? ({ ...(prismaUser.membership as any) } as any)
-        : undefined;
+      : undefined;
 
     return {
       id:               prismaUser.id,

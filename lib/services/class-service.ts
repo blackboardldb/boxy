@@ -145,13 +145,19 @@ export class ClassService extends BaseService<ClassSession> {
             include: { class: true }
           });
 
-          // HAL-09b: inyectar remainingClasses real desde ClassRegistration.
-          // El mapper devuelve um.classLimit como referencia — aquí calculamos el real.
+          // HAL-01 Fase 4 Sprint 4 pre-DROP: inyectar remainingClasses desde ClassRegistration.
+          // Lee classLimit y currentPeriodStart desde UserMembership (tabla relacional).
           let userForValidation: any = user;
-          const classLimit = (user.membership as any)?.planConfig?.classLimit || 0;
+
+          const userMembership = await prisma.userMembership.findUnique({
+            where: { userId },
+            select: { classLimit: true, currentPeriodStart: true },
+          });
+
+          const classLimit = userMembership?.classLimit ?? 0;
           if (classLimit > 0) {
-            const periodStart = (user.membership as any)?.currentPeriodStart
-              ? new Date((user.membership as any).currentPeriodStart)
+            const periodStart = userMembership?.currentPeriodStart
+              ? new Date(userMembership.currentPeriodStart)
               : new Date(0);
             const classesUsed = await prisma.classRegistration.count({
               where: { userId, status: 'registered', class: { dateTime: { gte: periodStart } } }
@@ -161,9 +167,9 @@ export class ClassService extends BaseService<ClassSession> {
               membership: {
                 ...(user.membership as any),
                 centerStats: {
-                  ...(user.membership as any).centerStats,
+                  ...(user.membership as any)?.centerStats,
                   currentMonth: {
-                    ...(user.membership as any).centerStats?.currentMonth,
+                    ...(user.membership as any)?.centerStats?.currentMonth,
                     remainingClasses: Math.max(0, classLimit - classesUsed)
                   }
                 }
