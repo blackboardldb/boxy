@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
+// HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
+// Ya no escribe en el JSONB membership.pendingRenewal.
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id: userId } = await params;  // Next.js 15: params es una Promise
     const body = await request.json();
-    const { planId, paymentMethod } = body;
+    const { planId, paymentMethod, notes } = body;
 
     if (!planId || !paymentMethod) {
       return NextResponse.json(
@@ -16,29 +19,74 @@ export async function POST(
       );
     }
 
-    // In a real app, you would:
-    // 1. Validate the user exists
-    // 2. Validate the plan exists and is active
-    // 3. Create a renewal request
-    // 4. Process payment if needed
+    // Validar que el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, userMembership: { select: { planId: true } } },
+    });
 
-    const renewalRequest = {
-      id: `renewal_${Date.now()}`,
-      userId: id,
-      planId,
-      requestedPaymentMethod: paymentMethod,
-      status: "pending",
-      requestedAt: new Date().toISOString(),
-    };
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verificar que el plan existe y está activo
+    const plan = await prisma.membershipPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, name: true, price: true, duration: true, config: true },
+    });
+
+    if (!plan) {
+      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
+
+    // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
+    await prisma.membershipRenewal.updateMany({
+      where: { userId, status: "pending" },
+      data: { status: "cancelled" },
+    });
+
+    // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
+    // (puede ser un ID legado del JSONB que no exista en la tabla relacional)
+    const currentPlanIdRaw = user.userMembership?.planId ?? null;
+    let currentPlanId: string | null = null;
+    if (currentPlanIdRaw) {
+      const exists = await prisma.membershipPlan.findUnique({
+        where: { id: currentPlanIdRaw },
+        select: { id: true },
+      });
+      currentPlanId = exists ? currentPlanIdRaw : null;
+    }
+
+    // Crear la solicitud de renovación en la tabla relacional
+    const renewal = await prisma.membershipRenewal.create({
+      data: {
+        userId,
+        currentPlanId,
+        requestedPlanId: planId,
+        paymentMethod,
+        status: "pending",
+        notes: notes ?? null,
+        renewalDetails: {
+          requestedPlanName: plan.name,
+          requestedPlanPrice: plan.price,
+          requestedPlanClassLimit: (plan.config as any)?.classLimit ?? 0,
+          requestedPlanDuration: plan.duration,
+          paymentMethod,
+        },
+      },
+    });
 
     return NextResponse.json({
       message: "Renewal request created successfully",
-      renewal: renewalRequest,
+      renewal,
     });
-  } catch (error) {
-    console.error("Error creating renewal request:", error);
+  } catch (error: any) {
+    // Log detallado para diagnóstico — incluye mensaje de Prisma
+    const errMsg = error?.message ?? String(error);
+    const errCode = error?.code ?? "unknown";
+    console.error("Error creating renewal request:", { message: errMsg, code: errCode, meta: error?.meta });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: errMsg, code: errCode },
       { status: 500 }
     );
   }

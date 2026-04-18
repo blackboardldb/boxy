@@ -1,79 +1,181 @@
 import { NextRequest, NextResponse } from "next/server";
-import { userService } from "@/lib/services/user-service";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
+// HAL-01 Fase 4 Sprint 1.3 (revisado): Aprueba una renovación pendiente.
+// Actualiza tanto la tabla UserMembership (plan + status + fechas) como
+// la tabla MembershipRenewal (status → approved).
+// Ya no lee ni escribe en el JSONB membership.
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id: userId } = params;
-    const body = await request.json();
-    // body contains renewalId if needed, but the current logic just toggles membership status
+    const { id: userId } = await params;  // Next.js 15: params es una Promise
+    const body = await request.json().catch(() => ({}));
 
-    // Buscar usuario usando el servicio real
-    const userResponse = await userService.getUserById(userId);
-    const user = userResponse.data;
+    // startDate: la fecha de inicio del nuevo período (la envía el admin desde el modal)
+    const startDate: string | undefined = body?.startDate;
+
+    // 1. Verificar que el usuario existe y tiene una UserMembership
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { userMembership: true },
+    });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Usuario no encontrado" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
-    
-    if (!user.membership || user.membership.status !== "pending") {
+
+    // 2. Buscar la renovación pendiente más reciente
+    const pendingRenewal = await prisma.membershipRenewal.findFirst({
+      where: { userId, status: "pending" },
+      orderBy: { requestedAt: "desc" },
+    });
+
+    if (!pendingRenewal) {
       return NextResponse.json(
-        { error: "El usuario no está pendiente de aprobación" },
+        { error: "No hay renovación pendiente para este usuario" },
         { status: 400 }
       );
     }
 
-    // Actualizar el estado de la membresía a 'active' y la fecha de inicio
-    const updatedMembership = {
-      ...user.membership,
-      status: "active",
-     startDate: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()),
-currentPeriodStart: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()),
-    };
+    // 3. Obtener información del plan solicitado
+    let planData: {
+      id: string;
+      name: string | null;
+      price: number | null;
+      classLimit: number;
+      durationInMonths: number;
+      disciplineAccess?: string;
+      allowedDisciplines?: string[];
+      canFreeze?: boolean;
+      freezeDurationDays?: number;
+      autoRenews?: boolean;
+      allowCancellation?: boolean;
+      cancellationHours?: number;
+      maxBookingsPerDay?: number;
+      autoWaitlist?: boolean;
+    } | null = null;
 
-    // (Opcional) Actualizar currentPeriodEnd según lógica de tu app
-
-    const updateResponse = await userService.updateUser(userId, {
-      membership: updatedMembership
-    } as any);
-
-    if (!updateResponse.success) {
-      throw new Error(updateResponse.error?.message || "Failed to update user");
+    if (pendingRenewal.requestedPlanId) {
+      // MembershipPlan usa `duration` (no `durationInMonths`) y classLimit vive en config JSON
+      const raw = await prisma.membershipPlan.findUnique({
+        where: { id: pendingRenewal.requestedPlanId },
+        select: { id: true, name: true, price: true, duration: true, config: true },
+      });
+      if (raw) {
+        planData = {
+          id: raw.id,
+          name: raw.name,
+          price: raw.price,
+          classLimit: (raw.config as any)?.classLimit ?? 0,
+          durationInMonths: raw.duration,
+        };
+      }
     }
 
-    const updatedUser = updateResponse.data;
+    if (!planData) {
+      // Fallback: usar los detalles guardados en renewalDetails
+      const details = pendingRenewal.renewalDetails as any;
+      planData = {
+        id: pendingRenewal.requestedPlanId ?? "",
+        name: details?.requestedPlanName ?? null,
+        price: details?.requestedPlanPrice ?? null,
+        classLimit: details?.requestedPlanClassLimit ?? 0,
+        durationInMonths: details?.requestedPlanDuration ?? 1,
+      };
+    }
 
-    // Emitir evento de WebSocket (simulado)
+    // 4. Calcular fechas del nuevo período
+    const now = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(new Date());
+
+    const periodStart = startDate || now;
+
+    // Calcular fecha fin basada en durationInMonths
+    const startDateObj = new Date(periodStart + "T00:00:00");
+    const endDateObj = new Date(startDateObj);
+    endDateObj.setMonth(endDateObj.getMonth() + (planData.durationInMonths || 1));
+    // Restar 1 día para que sea el último día del período
+    endDateObj.setDate(endDateObj.getDate() - 1);
+    const periodEnd = endDateObj.toISOString().split("T")[0];
+
+    // 5. Actualizar UserMembership con el nuevo plan (en transacción)
+    const [updatedMembership] = await prisma.$transaction([
+      // 5a. Actualizar la membresía del usuario
+      prisma.userMembership.upsert({
+        where: { userId },
+        update: {
+          status: "active",
+          planId: planData.id || null,
+          membershipType: planData.name,
+          monthlyPrice: planData.price,
+          currentPeriodStart: new Date(periodStart + "T00:00:00"),
+          currentPeriodEnd: new Date(periodEnd + "T23:59:59"),
+          classLimit: planData.classLimit ?? 0,
+          ...(planData.disciplineAccess ? { disciplineAccess: planData.disciplineAccess } : {}),
+          ...(planData.allowedDisciplines ? { allowedDisciplines: planData.allowedDisciplines } : {}),
+          ...(typeof planData.canFreeze === "boolean" ? { canFreeze: planData.canFreeze } : {}),
+          ...(typeof planData.freezeDurationDays === "number" ? { freezeDurationDays: planData.freezeDurationDays } : {}),
+          ...(typeof planData.autoRenews === "boolean" ? { autoRenews: planData.autoRenews } : {}),
+          ...(typeof planData.allowCancellation === "boolean" ? { allowCancellation: planData.allowCancellation } : {}),
+          ...(typeof planData.cancellationHours === "number" ? { cancellationHours: planData.cancellationHours } : {}),
+          ...(typeof planData.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planData.maxBookingsPerDay } : {}),
+          ...(typeof planData.autoWaitlist === "boolean" ? { autoWaitlist: planData.autoWaitlist } : {}),
+        },
+        create: {
+          userId,
+          organizationId: user.organizationId ?? "org_blacksheep_001",
+          status: "active",
+          planId: planData.id || null,
+          membershipType: planData.name,
+          monthlyPrice: planData.price,
+          currentPeriodStart: new Date(periodStart + "T00:00:00"),
+          currentPeriodEnd: new Date(periodEnd + "T23:59:59"),
+          classLimit: planData.classLimit ?? 0,
+        },
+      }),
+      // 5b. Marcar la renovación como aprobada
+      prisma.membershipRenewal.update({
+        where: { id: pendingRenewal.id },
+        data: {
+          status: "approved",
+          processedAt: new Date(),
+          notes: `Aprobado. Período: ${periodStart} → ${periodEnd}`,
+        },
+      }),
+    ]);
+
+    // 6. Emitir evento WebSocket
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     try {
       await fetch(`${baseUrl}/api/emit-event`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          room: `org_${updatedUser.membership?.organizationId}`,
+          room: `org_${user.organizationId}`,
           event: "membership-status-changed",
           data: {
-            userId: updatedUser.id,
+            userId,
             newStatus: "active",
-            user: updatedUser,
+            planName: planData.name,
+            periodEnd,
           },
         }),
       });
-    } catch (fetchError) {
-      console.warn("Failed to emit event:", fetchError);
-      // Don't fail the whole request if event emission fails
+    } catch (wsError) {
+      console.warn("[renewal/approve] WebSocket event failed:", wsError);
     }
 
     return NextResponse.json({
       message: "Usuario aprobado exitosamente",
-      user: updatedUser,
+      membership: updatedMembership,
+      periodStart,
+      periodEnd,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al aprobar usuario:", error);
     return NextResponse.json(
       { error: "Error interno del servidor" },

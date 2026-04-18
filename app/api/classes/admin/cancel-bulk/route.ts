@@ -63,32 +63,10 @@ export async function POST(request: NextRequest) {
 
       cancelledClasses.push(classSession.id);
 
-      // Refund classes to registered participants
+      // Registrar usuarios afectados (HAL-09b calcula remainingClasses en tiempo real
+      // desde ClassRegistration — el write al JSONB fue eliminado en HAL-01 Fase 4 Sprint 1.2)
       for (const userId of classSession.registeredParticipantsIds) {
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-        });
-
-        if (user && user.membership.planConfig.classLimit > 0) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              membership: {
-                ...user.membership,
-                centerStats: {
-                  ...user.membership.centerStats,
-                  currentMonth: {
-                    ...user.membership.centerStats.currentMonth,
-                    remainingClasses:
-                      user.membership.centerStats.currentMonth
-                        .remainingClasses + 1,
-                  },
-                },
-              },
-            },
-          });
-          affectedUsers.push(userId);
-        }
+        affectedUsers.push(userId);
       }
     }
 

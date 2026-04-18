@@ -122,35 +122,9 @@ export async function POST(request: NextRequest) {
           data: { status: "cancelled" },
         });
 
-        // 2. Refund classes to all registered participants
-        const affectedUsers: string[] = [];
-
-        for (const userId of classSession.registeredParticipantsIds) {
-          const user = await tx.user.findUnique({
-            where: { id: userId },
-          });
-
-          if (user && user.membership.planConfig.classLimit > 0) {
-            await tx.user.update({
-              where: { id: userId },
-              data: {
-                membership: {
-                  ...user.membership,
-                  centerStats: {
-                    ...user.membership.centerStats,
-                    currentMonth: {
-                      ...user.membership.centerStats.currentMonth,
-                      remainingClasses:
-                        user.membership.centerStats.currentMonth
-                          .remainingClasses + 1,
-                    },
-                  },
-                },
-              },
-            });
-            affectedUsers.push(userId);
-          }
-        }
+        // 2. Registrar usuarios afectados (HAL-09b calcula remainingClasses en tiempo real
+        //    desde ClassRegistration — el write al JSONB fue eliminado en HAL-01 Fase 4 Sprint 1.1)
+        const affectedUsers: string[] = classSession.registeredParticipantsIds.slice();
 
         return { updatedClassSession, affectedUsers };
       });

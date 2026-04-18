@@ -1,48 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
+import { prisma } from "@/lib/prisma";
 
+// HAL-01 Fase 4 Sprint 1.4: Rechaza la renovación pendiente actualizando directamente
+// la tabla MembershipRenewal. Ya no lee ni escribe en el JSONB membership.
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = params.id;
+    const userId = (await params).id;  // Next.js 15: params es una Promise
+    const body = await request.json().catch(() => ({}));
+    const reason: string = body?.reason ?? "Rechazado por administrador";
 
-    // Obtener usuario usando el servicio real
+    // Verificar que el usuario existe
     const userResponse = await userService.getUserById(userId);
-    const user = userResponse.data;
-
-    if (!user) {
+    if (!userResponse.data) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!user.membership?.pendingRenewal) {
+    // Buscar la renovación pendiente más reciente en la tabla relacional
+    const pendingRenewal = await prisma.membershipRenewal.findFirst({
+      where: {
+        userId,
+        status: "pending",
+      },
+      orderBy: { requestedAt: "desc" },
+    });
+
+    if (!pendingRenewal) {
       return NextResponse.json(
         { error: "No pending renewal found" },
         { status: 400 }
       );
     }
 
-    // Rechazar renovación
-    const updatedMembership = {
-      ...user.membership,
-      pendingRenewal: {
-        ...user.membership.pendingRenewal,
+    // Actualizar estado en tabla MembershipRenewal — fuente de verdad relacional
+    await prisma.membershipRenewal.update({
+      where: { id: pendingRenewal.id },
+      data: {
         status: "rejected",
-        rejectedAt: new Date().toISOString(),
+        processedAt: new Date(),
+        notes: reason,
       },
-    };
+    });
 
-    const updateResponse = await userService.updateUser(userId, { 
-      membership: updatedMembership 
-    } as any);
-
-    if (!updateResponse.success) {
-      throw new Error(updateResponse.error?.message || "Failed to update user");
-    }
+    // Re-fetch usuario actualizado para la respuesta
+    const updatedUserResponse = await userService.getUserById(userId);
 
     return NextResponse.json({
-      user: updateResponse.data,
+      user: updatedUserResponse.data,
       message: "Plan renewal rejected successfully",
     });
   } catch (error) {

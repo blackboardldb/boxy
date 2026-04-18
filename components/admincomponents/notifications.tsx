@@ -13,9 +13,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { calcularFechaTerminoMembresia } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -31,68 +30,79 @@ import {
   Filter,
 } from "lucide-react";
 
+// HAL-01 Fase 4: Notifications lee desde la tabla MembershipRenewal (API relacional).
+// Ya no depende de users[].membership.pendingRenewal del JSONB.
+
+type RenewalItem = {
+  id: string;
+  status: string;
+  requestedAt: string;
+  paymentMethod: string | null;
+  notes: string | null;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    membership: {
+      status: string;
+      membershipType: string | null;
+      currentPeriodEnd: string | null;
+    } | null;
+    daysUntilExpiration: number | null;
+  };
+  requestedPlan: {
+    id: string | null;
+    name: string | null;
+    price: number | null;
+    classLimit: number | null;
+    durationInMonths: number;
+  };
+};
+
 export function Notifications() {
-  const { 
-    users, 
-    classSessions, 
-    plans, 
-    fetchPlans, 
-    fetchUsers, 
-    fetchClassSessions, 
-    updateUserById, 
-    isLoading: storeLoading 
-  } = useBlackSheepStore() as any;
-  
+  const { classSessions, fetchClassSessions } = useBlackSheepStore() as any;
+
   const [mounted, setMounted] = useState(false);
-  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
+  const [pendingRenewals, setPendingRenewals] = useState<RenewalItem[]>([]);
+  const [renewalsLoading, setRenewalsLoading] = useState(true);
+  const [selectedRenewal, setSelectedRenewal] = useState<RenewalItem | null>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [notificationFilter, setNotificationFilter] = useState("todos");
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // EFECTO DE MONTAJE Y CARGA INICIAL
+  // Función para cargar renovaciones desde la tabla relacional
+  const fetchPendingRenewals = async () => {
+    setRenewalsLoading(true);
+    try {
+      const res = await fetch("/api/admin/renewals?status=pending");
+      if (!res.ok) throw new Error("Error al cargar renovaciones");
+      const data = await res.json();
+      setPendingRenewals(data.data ?? []);
+    } catch (err) {
+      console.error("[Notifications] Error cargando renovaciones:", err);
+      setPendingRenewals([]);
+    } finally {
+      setRenewalsLoading(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
-    
-    // Carga de datos específica para alertas
-    const loadData = async () => {
-      // 1. Usuarios y Planes (Normal)
-      if (users.length === 0) fetchUsers(1, 100);
-      if (plans.length === 0) fetchPlans(1, 100);
+    fetchPendingRenewals();
 
-      // 2. Clases: Traemos específicamente las canceladas de hoy en adelante para que "funcione bien" al refrescar
-      const today = new Date().toISOString().split("T")[0];
-      fetchClassSessions(today, undefined, 1, 50, { status: "cancelled" });
-    };
-
-    loadData();
+    // Clases canceladas de hoy en adelante
+    const today = new Date().toISOString().split("T")[0];
+    fetchClassSessions(today, undefined, 1, 50, { status: "cancelled" });
   }, []);
 
   if (!mounted) return null;
 
-  // --- DERIVACIÓN DE DATOS (Notificaciones calculadas al vuelo) ---
-  const now = new Date();
-
-  // 1. Renovaciones Pendientes (Priorizado por urgencia)
-  const pendingRenewals = (users || [])
-    .filter((u: any) => u.membership?.pendingRenewal?.status === "pending")
-    .map((user: any) => {
-      const renewal = user.membership!.pendingRenewal!;
-      const expirationDate = parseISO(user.membership!.currentPeriodEnd.substring(0, 10));
-      const daysUntilExpiration = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return {
-        id: `renewal-${user.id}`,
-        type: "pending_renewal",
-        user,
-        renewal,
-        daysUntilExpiration,
-        timestamp: new Date(renewal.requestDate || now)
-      };
-    })
-    .sort((a: any, b: any) => a.daysUntilExpiration - b.daysUntilExpiration);
-
-  // 2. Clases Canceladas (Últimas 5 de hoy en adelante)
+  // Clases canceladas (hoy en adelante)
   const cancelledClasses = (classSessions || [])
     .filter((cls: any) => {
       if (cls.status !== "cancelled") return false;
@@ -104,71 +114,69 @@ export function Notifications() {
     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
     .slice(0, 5);
 
-  const handleApproveRenewal = async (user: any, renewal: any) => {
+  // Aprobar renovación: llama al route de approve que actualiza UserMembership + MembershipRenewal
+  const handleApproveRenewal = async (renewal: RenewalItem) => {
+    setActionLoading(true);
     try {
-     const startDate = customStartDate || new Date().toISOString().split("T")[0];
-const selectedPlan = plans.find((p: any) => p.id === renewal.requestedPlanId);
-const planDuration = selectedPlan?.durationInMonths || 1;
-      
-      const endDateStr = calcularFechaTerminoMembresia(startDate, planDuration);
+      const startDate = customStartDate || new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santiago",
+      }).format(new Date());
 
-      const updatedUserData = {
-        membership: {
-          ...user.membership!,
-          status: "active" as const,
-          planId: renewal.requestedPlanId,
-          membershipType: selectedPlan?.name || renewal.requestedPlanName,
-          monthlyPrice: selectedPlan?.price || user.membership.monthlyPrice,
-          currentPeriodStart: startDate,
-currentPeriodEnd: endDateStr,
-          pendingRenewal: {
-            ...renewal,
-            status: "approved" as const,
-            processedBy: "admin",
-            processedDate: new Date().toISOString(),
-          },
-        },
-      };
+      const res = await fetch(`/api/users/${renewal.user.id}/renewal/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate }),
+      });
 
-      const result = await updateUserById(user.id, updatedUserData);
-      if (result) {
-        setShowRenewalModal(false);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "Error al aprobar la renovación");
       }
+
+      setShowRenewalModal(false);
+      setSelectedRenewal(null);
+      // Refrescar la lista de pendientes
+      await fetchPendingRenewals();
     } catch (error) {
-      console.error("Error al procesar la renovación:", error);
+      console.error("Error al aprobar la renovación:", error);
+      alert("Error al aprobar la renovación: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleRejectRenewal = async (user: any, renewal: any) => {
+  // Rechazar renovación: llama al route de reject que actualiza MembershipRenewal
+  const handleRejectRenewal = async (renewal: RenewalItem) => {
+    setActionLoading(true);
     try {
-      const updatedUserData = {
-        membership: {
-          ...user.membership!,
-          pendingRenewal: {
-            ...renewal,
-            status: "rejected" as const,
-            processedBy: "admin",
-            processedDate: new Date().toISOString(),
-            notes: rejectReason,
-          },
-        },
-        notes: (user.notes || "") + ` - Renewal rejected on ${new Date().toLocaleDateString()}: ${rejectReason}`,
-      };
+      const res = await fetch(`/api/users/${renewal.user.id}/renewal/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: rejectReason }),
+      });
 
-      const result = await updateUserById(user.id, updatedUserData);
-      if (result) {
-        setShowRejectModal(false);
-        setRejectReason("");
-        setShowRenewalModal(false);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || "Error al rechazar la renovación");
       }
+
+      setShowRejectModal(false);
+      setRejectReason("");
+      setShowRenewalModal(false);
+      setSelectedRenewal(null);
+      // Refrescar la lista de pendientes
+      await fetchPendingRenewals();
     } catch (error) {
-      console.error("Error al procesar el rechazo:", error);
+      console.error("Error al rechazar la renovación:", error);
+      alert("Error al rechazar: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setActionLoading(false);
     }
   };
 
   return (
     <div className="space-y-6">
-       {/* Filtros */}
+      {/* Filtros */}
       <div className="flex items-center justify-end gap-4">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={notificationFilter} onValueChange={setNotificationFilter}>
@@ -185,18 +193,22 @@ currentPeriodEnd: endDateStr,
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Notificaciones</h1>
-      
       </div>
-      {/* Header con estadísticas resumidas */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4">
 
+      {/* Estadísticas resumidas */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Renovaciones</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500 flex items-center gap-2">{pendingRenewals.length} <RefreshCw className="h-4 w-4 text-orange-500" /></div>
-             <p className="text-xs text-muted-foreground">{pendingRenewals.filter((r: any) => r.daysUntilExpiration <= 7).length} expiran pronto</p>
+            <div className="text-2xl font-bold text-orange-500 flex items-center gap-2">
+              {renewalsLoading ? "—" : pendingRenewals.length}
+              <RefreshCw className="h-4 w-4 text-orange-500" />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {pendingRenewals.filter((r) => (r.user.daysUntilExpiration ?? Infinity) <= 7).length} expiran pronto
+            </p>
           </CardContent>
         </Card>
 
@@ -205,141 +217,213 @@ currentPeriodEnd: endDateStr,
             <CardTitle className="text-sm font-medium">Cancelado</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500 flex items-center gap-2">{cancelledClasses.length} <XCircle className="h-4 w-4 text-red-500" /></div>
+            <div className="text-2xl font-bold text-red-500 flex items-center gap-2">
+              {cancelledClasses.length} <XCircle className="h-4 w-4 text-red-500" />
+            </div>
             <p className="text-xs text-muted-foreground">Clases hoy / futuro</p>
           </CardContent>
         </Card>
-
-
       </div>
 
-     
-
-      {/* --- SECCIONES DE NOTIFICACIONES --- */}
+      {/* Secciones de Notificaciones */}
       <div className="space-y-8">
-        
+
         {/* 1. RENOVACIONES */}
         {(notificationFilter === "todos" || notificationFilter === "renovaciones") && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <RefreshCw className="h-5 w-5 text-orange-500" /> Renovaciones de Plan
             </h2>
-            
-            {(storeLoading && pendingRenewals.length === 0) ? (
+
+            {renewalsLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => <Card key={i} className="h-40 animate-pulse bg-zinc-50 rounded-xl" />)}
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-40 animate-pulse bg-zinc-50 rounded-xl" />
+                ))}
               </div>
             ) : pendingRenewals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                 {pendingRenewals.map((r: any) => (
-                  <Card key={r.id} className="border-l-4 border-orange-500 hover:shadow-md transition-shadow rounded-xl">
+                {pendingRenewals.map((r) => (
+                  <Card
+                    key={r.id}
+                    className="border-l-4 border-orange-500 hover:shadow-md transition-shadow rounded-xl"
+                  >
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 rounded-xl">RENOVACIÓN</Badge>
-                        {r.daysUntilExpiration <= 7 && <Badge variant="destructive" className="rounded-xl">URGENTE</Badge>}
+                        <Badge
+                          variant="secondary"
+                          className="bg-orange-100 text-orange-700 rounded-xl"
+                        >
+                          RENOVACIÓN
+                        </Badge>
+                        {(r.user.daysUntilExpiration ?? Infinity) <= 7 && (
+                          <Badge variant="destructive" className="rounded-xl">
+                            URGENTE
+                          </Badge>
+                        )}
                       </div>
-                      <h3 className="font-bold text-lg">{r.user.firstName} {r.user.lastName}</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {r.daysUntilExpiration < 0 ? "Vencido" : `Vence en ${r.daysUntilExpiration} días`}
+                      <h3 className="font-bold text-lg">
+                        {r.user.firstName} {r.user.lastName}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Solicita: <span className="font-medium text-zinc-800">{r.requestedPlan?.name ?? "Plan desconocido"}</span>
                       </p>
-                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700 rounded-xl" onClick={() => {
-                        setSelectedRenewal(r);
-                       setCustomStartDate(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(new Date()));
-                        setShowRenewalModal(true);
-                      }}>Gestionar</Button>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {r.user.daysUntilExpiration === null
+                          ? "Sin plan activo"
+                          : r.user.daysUntilExpiration < 0
+                          ? "Plan vencido"
+                          : `Plan vence en ${r.user.daysUntilExpiration} días`}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="w-full bg-orange-600 hover:bg-orange-700 rounded-xl"
+                        onClick={() => {
+                          setSelectedRenewal(r);
+                          setCustomStartDate(
+                            new Intl.DateTimeFormat("en-CA", {
+                              timeZone: "America/Santiago",
+                            }).format(new Date())
+                          );
+                          setShowRenewalModal(true);
+                        }}
+                      >
+                        Gestionar
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">No hay renovaciones pendientes.</div>
+              <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">
+                No hay renovaciones pendientes.
+              </div>
             )}
           </div>
         )}
 
-        {/* 2. CANCELACIONES (Simplificado, sin botón entendido) */}
+        {/* 2. CANCELACIONES */}
         {(notificationFilter === "todos" || notificationFilter === "cancelaciones") && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <XCircle className="h-5 w-5 text-red-500" /> Clases Canceladas
             </h2>
-            
-           <div className="bg-red-50 p-4 rounded-xl">
-             {(storeLoading && cancelledClasses.length === 0) ? (
-              <div className="space-y-3 ">
-                {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
-              </div>
-            ) : cancelledClasses.length > 0 ? (
-              <div className="space-y-4">
-                 {cancelledClasses.map((cls: any) => (
-                  <div key={cls.id} className="">
-                    <div className=" flex items-center gap-2">
-                     
+
+            <div className="bg-red-50 p-4 rounded-xl">
+              {cancelledClasses.length > 0 ? (
+                <div className="space-y-4">
+                  {cancelledClasses.map((cls: any) => (
+                    <div key={cls.id}>
+                      <div className="flex items-center gap-2">
                         <p className="font-bold text-red-900">{cls.name}</p>
                         <p className="text-sm text-red-700">
                           {format(new Date(cls.dateTime), "EEE dd MMMM, HH:mm", { locale: es })}
                         </p>
-                     
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">No hay clases canceladas recientemente.</div>
-            )}
-           </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-zinc-50 rounded-xl border border-dashed text-muted-foreground">
+                  No hay clases canceladas recientemente.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-
-
+      {/* Modal: Gestionar Renovación */}
       <Dialog open={showRenewalModal} onOpenChange={setShowRenewalModal}>
         <DialogContent className="max-w-2xl rounded-xl">
-          <DialogHeader><DialogTitle>Gestionar Renovación</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Gestionar Renovación</DialogTitle>
+          </DialogHeader>
           {selectedRenewal && (
             <div className="space-y-6 pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-zinc-50 rounded-xl border">
                   <Label className="text-[10px] uppercase font-bold text-muted-foreground">Alumno</Label>
-                  <p className="font-bold">{selectedRenewal.user.firstName} {selectedRenewal.user.lastName}</p>
+                  <p className="font-bold">
+                    {selectedRenewal.user.firstName} {selectedRenewal.user.lastName}
+                  </p>
+                  <p className="text-xs text-zinc-500">{selectedRenewal.user.email}</p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
                   <Label className="text-[10px] uppercase font-bold text-orange-600">Plan Solicitado</Label>
                   <p className="font-bold text-orange-700">
-                    {plans.find((p: any) => p.id === selectedRenewal.renewal.requestedPlanId)?.name || selectedRenewal.renewal.requestedPlanName}
+                    {selectedRenewal.requestedPlan?.name ?? "—"}
                   </p>
+                  {selectedRenewal.requestedPlan?.price && (
+                    <p className="text-sm text-orange-600">
+                      ${selectedRenewal.requestedPlan.price.toLocaleString("es-CL")}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="font-bold">Fecha de Inicio</Label>
-                <input 
-                  type="date" 
-                  className="w-full p-2 border rounded-xl" 
-                  value={customStartDate} 
-                  onChange={e => setCustomStartDate(e.target.value)} 
+                <Label className="font-bold">Fecha de Inicio del Nuevo Período</Label>
+                <input
+                  type="date"
+                  className="w-full p-2 border rounded-xl"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
                 />
               </div>
 
               <div className="flex gap-3">
-                <Button className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl" onClick={() => handleApproveRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Pago y Activar</Button>
-                <Button variant="destructive" className="flex-1 rounded-xl" onClick={() => setShowRejectModal(true)}>Rechazar</Button>
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
+                  disabled={actionLoading}
+                  onClick={() => handleApproveRenewal(selectedRenewal)}
+                >
+                  {actionLoading ? "Procesando..." : "Confirmar Pago y Activar"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 rounded-xl"
+                  disabled={actionLoading}
+                  onClick={() => setShowRejectModal(true)}
+                >
+                  Rechazar
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Modal: Confirmar Rechazo */}
       <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
         <DialogContent className="rounded-xl">
-          <DialogHeader><DialogTitle>Confirmar Rechazo</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Confirmar Rechazo</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 pt-4">
             <Label>Motivo del rechazo</Label>
-            <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Ej: No se confirma transferencia..." className="rounded-xl" />
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Ej: No se confirma transferencia..."
+              className="rounded-xl"
+            />
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1 rounded-xl" onClick={() => handleRejectRenewal(selectedRenewal.user, selectedRenewal.renewal)}>Confirmar Rechazo</Button>
-              <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
+              <Button
+                variant="destructive"
+                className="flex-1 rounded-xl"
+                disabled={actionLoading}
+                onClick={() => selectedRenewal && handleRejectRenewal(selectedRenewal)}
+              >
+                {actionLoading ? "Procesando..." : "Confirmar Rechazo"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setShowRejectModal(false)}
+              >
+                Cancelar
+              </Button>
             </div>
           </div>
         </DialogContent>
