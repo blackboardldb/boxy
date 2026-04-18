@@ -19,6 +19,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   // Enhanced methods using new architecture
 
   // Get users with pagination and filtering
+  // HAL-01 Fase 4 Sprint 2.4: Todas las condiciones JSONB migradas a userMembership relacional.
   async getUsers(params?: {
     page?: number;
     limit?: number;
@@ -39,103 +40,47 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     }
 
     if (params?.status) {
-      const today = new Date().toISOString().substring(0, 10);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       if (params.status === "active") {
-        // Active today: today is between start and end AND classes remain
+        // Activo: tiene UserMembership, currentPeriodEnd >= hoy, status no bloqueado
         conditions.push({
-          membership: { path: ["currentPeriodEnd"], gte: today },
-        });
-        conditions.push({
-          OR: [
-            { membership: { path: ["currentPeriodStart"], lte: today } },
-            {
-              AND: [
-                { membership: { path: ["currentPeriodStart"], equals: null } },
-                { membership: { path: ["startDate"], lte: today } },
-              ],
-            },
-          ],
-        });
-        // Check for classes remaining (if limited)
-        conditions.push({
-          OR: [
-            {
-              membership: {
-                path: ["planConfig", "classLimit"],
-                equals: 0,
-              },
-            },
-            {
-              membership: {
-                path: ["centerStats", "currentMonth", "remainingClasses"],
-                gt: 0,
-              },
-            },
-          ],
-        });
-        // Respect manual overrides (if exists)
-        conditions.push({
-          OR: [
-            { membership: { path: ["status"], not: "inactive" } },
-            { membership: { path: ["status"], equals: null } },
-          ],
+          userMembership: {
+            currentPeriodEnd: { gte: today },
+            status: { notIn: ["inactive", "suspended", "expired"] },
+          },
         });
       } else if (params.status === "scheduled") {
-        // Scheduled: has a plan but starts in the future
-        // We already handled this above (no status restriction)
+        // Scheduled: UserMembership existe con currentPeriodStart > hoy
         conditions.push({
-          OR: [
-            { membership: { path: ["currentPeriodStart"], gt: today } },
-            {
-              AND: [
-                { membership: { path: ["currentPeriodStart"], equals: null } },
-                { membership: { path: ["startDate"], gt: today } },
-              ],
-            },
-          ],
+          userMembership: {
+            currentPeriodStart: { gt: today },
+          },
         });
       } else if (params.status === "pending") {
+        // Pending: UserMembership con status=pending
         conditions.push({
-          OR: [
-            { membership: { path: ["status"], equals: "pending" } },
-            {
-              membership: {
-                path: ["pendingRenewal", "status"],
-                equals: "pending",
-              },
-            },
-          ],
+          userMembership: { status: "pending" },
         });
       } else if (params.status === "inactive") {
-        // Inactive: manual block OR expired OR exhausted
+        // Inactive: sin UserMembership, o status=inactive/suspended, o período vencido
         conditions.push({
           OR: [
-            { membership: { path: ["status"], equals: "inactive" } },
-            { membership: { path: ["status"], equals: "suspended" } },
-            { membership: { path: ["currentPeriodEnd"], lt: today } },
+            { userMembership: null },
+            { userMembership: { status: { in: ["inactive", "suspended", "expired"] } } },
             {
-              AND: [
-                {
-                  membership: {
-                    path: ["planConfig", "classLimit"],
-                    gt: 0,
-                  },
-                },
-                {
-                  membership: {
-                    path: ["centerStats", "currentMonth", "remainingClasses"],
-                    lte: 0,
-                  },
-                },
-              ],
+              userMembership: {
+                currentPeriodEnd: { lt: today },
+                status: { notIn: ["pending", "scheduled"] },
+              },
             },
           ],
         });
       } else {
-        // General fallback for any other status field
+        // Fallback: cualquier otro status field directo
         conditions.push({
-          membership: { path: ["status"], equals: params.status },
+          userMembership: { status: params.status },
         });
       }
     }
@@ -197,38 +142,38 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   // User-specific methods
 
   // Get users with membership
+  // ANTES: membership: { NOT: null } → Full Table Scan JSONB
+  // AHORA: userMembership: { isNot: null } → índice btree
   async getUsersWithMembership(): Promise<
     PaginatedApiResponse<FitCenterUserProfile>
   > {
     return this.findMany({
       where: {
-        membership: {
-          NOT: null,
-        },
+        userMembership: { isNot: null },
       },
     });
   }
 
   // Get active users
+  // ANTES: membership: { status: "active" } → JSONB path scan
+  // AHORA: userMembership: { status: "active" } → índice btree
   async getActiveUsers(): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     return this.findMany({
       where: {
-        membership: {
-          status: "active",
-        },
+        userMembership: { status: "active" },
       },
     });
   }
 
   // Get users by membership status
+  // ANTES: membership: { status } → JSONB path scan
+  // AHORA: userMembership: { status } → índice btree
   async getUsersByMembershipStatus(
     status: string
   ): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     return this.findMany({
       where: {
-        membership: {
-          status,
-        },
+        userMembership: { status },
       },
     });
   }
@@ -241,23 +186,23 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   }
 
   // Get pending users (for admin approval)
+  // ANTES: membership: { status: "pending" } → JSONB path scan
+  // AHORA: userMembership: { status: "pending" } → índice btree
   async getPendingUsers(): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     return this.findMany({
       where: {
-        membership: {
-          status: "pending",
-        },
+        userMembership: { status: "pending" },
       },
     });
   }
 
   // Get expired users
+  // ANTES: membership: { status: "expired" } → JSONB path scan
+  // AHORA: userMembership: { status: "expired" } → índice btree
   async getExpiredUsers(): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     return this.findMany({
       where: {
-        membership: {
-          status: "expired",
-        },
+        userMembership: { status: "expired" },
       },
     });
   }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
+// HAL-01 Fase 4 Sprint 2.2: Migrado de $queryRaw JSONB a query Prisma sobre UserMembership.
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin();
@@ -12,45 +12,47 @@ export async function GET(request: NextRequest) {
 
     const take = Math.min(
       parseInt(request.nextUrl.searchParams.get("take") || "10"),
-      50 // tope de seguridad
+      50
     );
     const skip = parseInt(request.nextUrl.searchParams.get("skip") || "0");
 
     const { organizationId } = auth;
-    // DESPUÉS — usa la fecha real en Santiago
-    const today = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "America/Santiago",
-}).format(new Date());
 
-    // SQL optimizado: evitamos casts redundantes (::date).
-    // PostgreSQL puede hacer comparación de strings 'YYYY-MM-DD' de forma eficiente.
-    const rows = await prisma.$queryRaw<
-      { id: string; firstName: string; lastName: string; phone: string | null; membership: Prisma.JsonValue }[]
-    >`
-      SELECT id, "firstName", "lastName", phone, membership
-      FROM public.users
-      WHERE
-        (role IS NULL OR role = 'user')
-        AND membership IS NOT NULL
-        AND "organizationId" = ${organizationId}
-        AND membership->>'currentPeriodEnd' IS NOT NULL
-        AND membership->>'currentPeriodEnd' < ${today}
-      ORDER BY membership->>'currentPeriodEnd' DESC
-      LIMIT ${take}
-      OFFSET ${skip}
-    `;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const data = rows.map((u) => {
-      const m = u.membership as any;
-      return {
-        id: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        phone: u.phone,
-        membershipType: m?.membershipType ?? null,
-        currentPeriodEnd: m?.currentPeriodEnd ?? null,
-      };
+    // ANTES: $queryRaw con membership->>'currentPeriodEnd' < today
+    // AHORA: query relacional sobre UserMembership
+    const memberships = await prisma.userMembership.findMany({
+      where: {
+        organizationId,
+        currentPeriodEnd: { lt: today },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: { currentPeriodEnd: "desc" },
+      take,
+      skip,
     });
+
+    const data = memberships.map((um) => ({
+      id: um.user.id,
+      firstName: um.user.firstName,
+      lastName: um.user.lastName,
+      phone: um.user.phone,
+      membershipType: um.membershipType,
+      currentPeriodEnd: um.currentPeriodEnd
+        ? um.currentPeriodEnd.toISOString().split("T")[0]
+        : null,
+    }));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
