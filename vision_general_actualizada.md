@@ -117,9 +117,18 @@ El mapper de Fase 3 construye un objeto que replica esa forma, por lo que **la C
 | Remover chequeo `pendingRenewal` en `utils.ts` | ✅ Hecho |
 | Eliminar dual-write JSONB en `user-repository.ts` | ✅ Hecho |
 | Eliminar *fallback loader* en `user-repository.ts` (`mapToEntity`) | ✅ Hecho |
+| **Respaldo de Seguridad:** Crear tabla `_backup_membership_jsonb` en Supabase (80 rows) | ✅ Hecho |
 | Completar 24-48 horas de observación sin errores o crasheos | ⏳ Observación en curso |
 | **PUNTO DE NO RETORNO:** `ALTER TABLE users DROP COLUMN membership;` directa en BD | 🔒 Esperando finalización de periodo |
 | Eliminar columna `membership Json?` de schema.prisma + `prisma generate` | 🔒 Esperando finalización de periodo |
+
+**Script de respaldo ejecutado en SQL Editor (pre-DROP):**
+```sql
+CREATE TABLE public._backup_membership_jsonb AS
+SELECT id, membership, updated_at
+FROM public.users
+WHERE membership IS NOT NULL;
+```
 
 ---
 
