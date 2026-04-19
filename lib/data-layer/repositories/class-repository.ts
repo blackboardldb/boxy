@@ -21,7 +21,11 @@ export class PrismaClassRepository implements IClassRepository {
       status: true,
       notes: true,
       isGenerated: true,
-      registeredParticipantsIds: true,
+      // HAL-03 Sprint A: registeredParticipantsIds ya no se lee de la columna array.
+      // Se calcula en mapToEntity() desde la relación ClassRegistration.
+      registrations: {
+        select: { userId: true, status: true }
+      },
       _count: {
         select: {
           registrations: {
@@ -197,9 +201,13 @@ export class PrismaClassRepository implements IClassRepository {
       durationMinutes: prismaClass.durationMinutes || 60,
       instructorId: prismaClass.instructorId || "",
       capacity: prismaClass.capacity || 15,
-      // Tarea 2: Eliminar de listados. Devolvemos vacío para evitar romper UI types.
-      registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
-      waitlistParticipantsIds: [], 
+      // HAL-03 Sprint A: calculado desde ClassRegistration (fuente de verdad).
+      registeredParticipantsIds: prismaClass.registrations
+        ?.filter((r: any) => r.status === 'registered')
+        .map((r: any) => r.userId) ?? [],
+      waitlistParticipantsIds: prismaClass.registrations
+        ?.filter((r: any) => r.status === 'waitlist')
+        .map((r: any) => r.userId) ?? [],
       status: (prismaClass.status as any) || "scheduled",
       notes: prismaClass.notes || undefined,
       isGenerated: !!prismaClass.isGenerated,
