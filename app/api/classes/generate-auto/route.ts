@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateClassesFromSchedules } from "@/lib/utils/class-generator";
+import { z } from "zod";
+
+const generateAutoSchema = z.object({
+  startDate: z.string().min(1, "startDate es requerido"),
+  endDate:   z.string().min(1, "endDate es requerido"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { startDate, endDate } = await request.json();
-
-    if (!startDate || !endDate) {
+    const parsed = generateAutoSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Missing required fields: startDate, endDate" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { startDate, endDate } = parsed.data;
 
     const generatedClasses = await generateClassesFromSchedules(startDate, endDate);
 

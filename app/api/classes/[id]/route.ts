@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { updateClassSessionSchema } from "@/lib/schemas";
 
 
 export async function GET(
@@ -46,7 +47,6 @@ export async function PUT(
   let id = "unknown";
   try {
     id = (await params).id;
-    const body = await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -55,8 +55,16 @@ export async function PUT(
       );
     }
 
+    const parsed = updateClassSessionSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     // Use ClassService to update class with validation
-    const response = await classService.updateClass(id, body);
+    const response = await classService.updateClass(id, parsed.data);
 
     // Return standardized response
     return NextResponse.json(response, {

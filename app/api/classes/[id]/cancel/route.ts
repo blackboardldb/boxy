@@ -1,21 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
+import { z } from "zod";
 
+
+const cancelRegistrationSchema = z.object({
+  userId: z.string().min(1, "userId es requerido"),
+});
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await request.json();
     const { id: classId } = await params;
 
-    if (!userId) {
+    const parsed = cancelRegistrationSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "User ID is required" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { userId } = parsed.data;
 
     const result = await classService.cancelRegistration(classId, userId);
 

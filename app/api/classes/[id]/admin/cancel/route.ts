@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { z } from "zod";
+
+const adminCancelSchema = z.object({
+  userId: z.string().min(1, "userId es requerido"),
+});
 
 export async function POST(
   request: NextRequest,
@@ -12,12 +17,16 @@ export async function POST(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { userId } = await request.json();
     const { id: classId } = await params;
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    const parsed = adminCancelSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
     }
+    const { userId } = parsed.data;
 
     const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
     if (!classSession) {

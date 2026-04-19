@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const cancelClassSchema = z.object({
+  classId:   z.string().min(1, "classId es requerido"),
+  classData: z.unknown().optional(),
+});
 
 /**
  * API unificada para cancelar clases.
@@ -7,15 +13,14 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { classId, classData } = body;
-
-    if (!classId) {
+    const parsed = cancelClassSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "classId is required" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { classId, classData } = parsed.data;
 
     // Determinar si es una clase generada o real
     const isGeneratedClass = classId.startsWith("gen_");

@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const cancelBulkSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido. Se espera YYYY-MM-DD"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { date } = body;
-
-    console.log("🔍 API cancel-bulk recibió fecha:", date);
-    console.log("🔍 Tipo de fecha:", typeof date);
-
-    if (!date) {
-      return NextResponse.json({ error: "date is required" }, { status: 400 });
-    }
-
-    // Validar formato de fecha (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(date)) {
-      console.error("❌ Formato de fecha inválido:", date);
+    const parsed = cancelBulkSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid date format. Expected YYYY-MM-DD" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { date } = parsed.data;
 
+    console.log("🔍 API cancel-bulk recibió fecha:", date);
+    console.log("🔍 Tipo de fecha:", typeof date);
     console.log("✅ Formato de fecha válido:", date);
 
     // Get all classes for the specified date

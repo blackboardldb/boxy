@@ -1,28 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
 import { localToUTC } from "@/lib/utils";
+import { z } from "zod";
+
+const generateClassesSchema = z.object({
+  startDate:   z.string().min(1, "startDate es requerido"),
+  endDate:     z.string().min(1, "endDate es requerido"),
+  disciplineId: z.string().min(1, "disciplineId es requerido"),
+  instructorId: z.string().min(1, "instructorId es requerido"),
+  time:        z.string().min(1, "time es requerido"),
+  maxCapacity: z.number().positive().default(15),
+  notes:       z.string().default("Clase generada"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      startDate,
-      endDate,
-      disciplineId,
-      instructorId,
-      time,
-      maxCapacity = 15,
-      notes = "Clase generada",
-    } = await request.json();
-
-    console.log("=== API: Generando clases ===", { startDate, endDate, disciplineId, instructorId, time });
-
-    if (!startDate || !endDate || !disciplineId || !instructorId || !time) {
+    const parsed = generateClassesSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { startDate, endDate, disciplineId, instructorId, time, maxCapacity, notes } = parsed.data;
+
+    console.log("=== API: Generando clases ===", { startDate, endDate, disciplineId, instructorId, time });
 
     const start = new Date(startDate);
     const end = new Date(endDate);

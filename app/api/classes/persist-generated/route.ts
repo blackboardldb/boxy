@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ClassSession } from "@/lib/types";
+import { z } from "zod";
+
+const persistGeneratedSchema = z.object({
+  classData: z.record(z.unknown()),
+  action:    z.string().min(1, "action es requerido"),
+});
 
 /**
  * Persiste una clase generada en la base de datos.
@@ -8,15 +14,14 @@ import { ClassSession } from "@/lib/types";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { classData, action } = body;
-
-    if (!classData || !action) {
+    const parsed = persistGeneratedSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "classData and action are required" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { classData, action } = parsed.data;
 
     // Validar que es una clase generada
     if (!classData.id.startsWith("gen_")) {

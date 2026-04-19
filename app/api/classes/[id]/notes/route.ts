@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDataProvider } from "@/lib/data-layer/provider-factory";
+import { z } from "zod";
+
+const notesSchema = z.object({
+  notes: z.string(),
+});
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { notes } = await request.json();
     const { id: classId } = await params;
 
-    if (notes === undefined) {
+    const parsed = notesSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Notes field is required" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { notes } = parsed.data;
 
     const provider = getDataProvider();
 

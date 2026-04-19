@@ -4,6 +4,7 @@ import { ErrorHandler } from "@/lib/errors/handler";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { createClassSessionSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
@@ -100,10 +101,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
+    const parsed = createClassSessionSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
 
     // Use ClassService to create class with validation
-    const response = await classService.createClass(body);
+    const response = await classService.createClass(parsed.data);
 
     // Return standardized response
     return NextResponse.json(response, {
