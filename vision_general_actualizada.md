@@ -14,7 +14,8 @@
 | HAL-03 | Arrays denormalizados `ClassSession` | ❌ Pendiente | — |
 | HAL-04 | `organizationId` como columna relacional | ✅ Completo | `7af0177` |
 | HAL-05 | Singleton de servicios en routes | ✅ Completo (16 routes, 6 singletons) | — |
-| HAL-06 | `as any` + validación Zod | 🟡 Parcial — 3 routes con Zod | — |
+| HAL-06 | `as any` + validación Zod | 🟡 En progreso — HAL-06b iniciado | — |
+| | | _Auditoría: 47 archivos relevantes. 90% schemas ya existen en `lib/schemas.ts`. Pendiente crear `createExpenseSchema` y `createInAppAlertSchema`. GET-only excluidos. Orden: users/renewal → classes → disciplines/plans → expenses/admin-alerts._ | |
 | HAL-07 | `POST /api/classes` sin auth | ✅ Completo | `cb9413a` |
 | HAL-08 | Filtrado de tenant en memoria Node.js | ✅ Completo | `b06c550` |
 | HAL-09 | `getUserStats` SELECT * | ✅ Completo (5 COUNT paralelos + 09b conteo real) | `b1cc016` |

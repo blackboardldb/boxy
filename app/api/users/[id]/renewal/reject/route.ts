@@ -12,7 +12,7 @@ const rejectRenewalSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = (await params).id;  // Next.js 15: params es una Promise

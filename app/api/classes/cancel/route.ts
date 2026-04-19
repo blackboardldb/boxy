@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const { classId, classData } = parsed.data;
+    const classDataAny = classData as any;
 
     // Determinar si es una clase generada o real
     const isGeneratedClass = classId.startsWith("gen_");
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              room: `org_${classData.organizationId}`,
+              room: `org_${classDataAny.organizationId}`,
               event: "class-cancelled",
               data: {
                 classId: classId,

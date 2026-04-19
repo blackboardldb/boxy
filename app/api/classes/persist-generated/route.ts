@@ -4,8 +4,21 @@ import { ClassSession } from "@/lib/types";
 import { z } from "zod";
 
 const persistGeneratedSchema = z.object({
-  classData: z.record(z.unknown()),
-  action:    z.string().min(1, "action es requerido"),
+  classData: z.object({
+    id:                       z.string(),
+    organizationId:           z.string(),
+    disciplineId:             z.string(),
+    name:                     z.string(),
+    dateTime:                 z.string(),
+    durationMinutes:          z.number(),
+    instructorId:             z.string().optional(),
+    capacity:                 z.number(),
+    registeredParticipantsIds: z.array(z.string()).optional(),
+    waitlistParticipantsIds:  z.array(z.string()).optional(),
+    status:                   z.string().optional(),
+    notes:                    z.string().optional(),
+  }),
+  action: z.string().min(1, "action es requerido"),
 });
 
 /**
@@ -44,11 +57,11 @@ export async function POST(request: NextRequest) {
       name: classData.name,
       dateTime: classData.dateTime,
       durationMinutes: classData.durationMinutes,
-      instructorId: classData.instructorId,
+      instructorId: classData.instructorId ?? "",
       capacity: classData.capacity,
       registeredParticipantsIds: classData.registeredParticipantsIds || [],
       waitlistParticipantsIds: classData.waitlistParticipantsIds || [],
-      status: action === "cancel" ? "cancelled" : classData.status,
+      status: (action === "cancel" ? "cancelled" : classData.status ?? "scheduled") as ClassSession["status"],
       notes: classData.notes,
       // No incluir isGenerated ya que ahora es una clase real
     };
