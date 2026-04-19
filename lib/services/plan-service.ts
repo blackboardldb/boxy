@@ -168,9 +168,10 @@ export class PlanService extends BaseService<MembershipPlan> {
     existingRecord: MembershipPlan
   ): Promise<void> {
     // Check if plan is being used by users
+    // HAL-01 COMPLETO: membership JSONB eliminado → userMembership relacional
     const usersWithPlan = await this.dataProvider.users.findMany({
       where: {
-        membership: {
+        userMembership: {
           membershipType: existingRecord.name,
         },
       },
