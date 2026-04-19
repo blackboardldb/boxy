@@ -20,10 +20,10 @@
 | HAL-09 | `getUserStats` SELECT * | ✅ Completo (5 COUNT paralelos + 09b conteo real) | `b1cc016` |
 | HAL-10 | Zustand sin React Query | ❌ Pendiente | — |
 | HAL-11 | Sin RLS en tablas public | ✅ Completo (ya estaba activo) | Confirmado |
-| HAL-12 | Contraseñas hardcodeadas | 🟠 Parcial — env vars con fallback | `be256f9` |
+| HAL-12 | Contraseñas hardcodeadas | ✅ Completo — env vars sin fallback (HAL-12b) | `df3d03a` |
 | HAL-13 | Logger sin persistencia | 🟡 Parcial — Sentry activo (beforeSend, 0.1 traces) | — |
 | HAL-14 | Constraint names expuestos | 🟠 Parcial — `isDev` condicionado | `567283a` |
-| **HAL-15** | **84 errores TSC** | **❌ Pendiente** | — |
+| **HAL-15** | **84 errores TSC** | **✅ Completo — 63 → 0 errores** | **`df3d03a`** |
 | **HAL-16** | **141 `as any` castings** | **❌ Pendiente** | — |
 
 ---
