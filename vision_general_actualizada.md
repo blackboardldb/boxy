@@ -258,11 +258,11 @@ id, userId, classId, status, registeredAt, cancelledAt, notes
 
 ```
 Sesión 1: Auditoría ✅ COMPLETA
-Sesión 2: Backup + verificación de datos
-Sesión 3: Sprint A — Mapper dual-read (ClassRegistration como fuente, arrays como fallback)
-Sesión 4: Sprint B — Eliminar writes a los arrays
-          Observación 24-48h en producción
-Sesión 5: Sprint C — DROP de columnas (punto de no retorno)
+Sesión 2: Backup + verificación de datos ✅ COMPLETA
+Sesión 3: Sprint A — Mapper dual-read (ClassRegistration como fuente, arrays como fallback) ✅ COMPLETA
+Sesión 4: Sprint B — Eliminar writes a los arrays ✅ COMPLETA
+          ⏳ Observación 24-48h en producción (EN CURSO)
+Sesión 5: Sprint C — DROP de columnas en Prisma (siguiente paso post-cuarentena)
 ```
 
 ---
@@ -391,7 +391,10 @@ WHERE table_name = 'class_sessions'
 ✅ HAL-15 + HAL-12b
 ✅ HAL-06b
     ↓
-HAL-03 Sesión 2 → Sprint A → B → C  ← AHORA
+✅ HAL-03 Sesión 1, 2, Sprint A y Sprint B
+    ⏳ Esperando 24-48h de validación de B sin crasheos
+    ↓
+HAL-03 Sprint C (DROP Arrays en Prisma schema) ← PRÓXIMO PASO
     ↓
 HAL-16
     ↓

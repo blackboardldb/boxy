@@ -179,16 +179,16 @@ id, userId, classId, status, registeredAt, cancelledAt, notes
 
 ```
 Sesión 1: Auditoría ✅ COMPLETA
-Sesión 2: Backup + verificación de datos
-Sesión 3: Sprint A — Mapper dual-read (ClassRegistration como fuente, arrays como fallback)
-Sesión 4: Sprint B — Eliminar writes a los arrays
-          Observación 24-48h en producción
-Sesión 5: Sprint C — DROP de columnas (punto de no retorno)
+Sesión 2: Backup + verificación de datos ✅ COMPLETA
+Sesión 3: Sprint A — Mapper dual-read (ClassRegistration como fuente, arrays como fallback) ✅ COMPLETA
+Sesión 4: Sprint B — Eliminar writes a los arrays ✅ COMPLETA
+          ⏳ Observación 24-48h en producción (EN CURSO)
+Sesión 5: Sprint C — DROP de columnas en Prisma (próximo paso post-cuarentena)
 ```
 
 ---
 
-### Sesión 2 — Backup y verificación (próximo paso)
+### Sesión 2 — Backup y verificación ✅ COMPLETA
 
 **Paso 1 — Backup en Supabase SQL Editor:**
 ```sql
@@ -216,7 +216,7 @@ Estos números son el comparador post-migración.
 
 ---
 
-### Sesión 3 — Sprint A: Mapper dual-read
+### Sesión 3 — Sprint A: Mapper dual-read ✅ COMPLETA
 
 **Objetivo:** `mapToEntity()` en `class-repository.ts` calcula los arrays desde `ClassRegistration` en vez de leer las columnas. Las columnas siguen existiendo pero dejan de ser la fuente.
 
@@ -247,7 +247,7 @@ include: {
 
 ---
 
-### Sesión 4 — Sprint B: Eliminar writes + observación
+### Sesión 4 — Sprint B: Eliminar writes + observación ✅ COMPLETA
 
 **Objetivo:** Ningún route ni service escribe en los arrays. Solo `ClassRegistration` recibe writes.
 
@@ -267,7 +267,7 @@ En `api/classes/generate`, `persist-generated`, `route.ts` — eliminar hardcode
 
 ---
 
-### Sesión 5 — Sprint C: DROP de columnas (punto de no retorno)
+### Sesión 5 — Sprint C: DROP de columnas (PRÓXIMO PASO)
 
 **Check de seguridad final:**
 ```bash
