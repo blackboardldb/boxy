@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 // HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
 // Ya no escribe en el JSONB membership.pendingRenewal.
+
+const renewalRequestSchema = z.object({
+  planId:        z.string().min(1, "planId es requerido"),
+  paymentMethod: z.string().min(1, "paymentMethod es requerido"),
+  notes:         z.string().optional(),
+});
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id: userId } = await params;  // Next.js 15: params es una Promise
-    const body = await request.json();
-    const { planId, paymentMethod, notes } = body;
 
-    if (!planId || !paymentMethod) {
+    const parsed = renewalRequestSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "planId and paymentMethod are required" },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { planId, paymentMethod, notes } = parsed.data;
 
     // Validar que el usuario existe
     const user = await prisma.user.findUnique({

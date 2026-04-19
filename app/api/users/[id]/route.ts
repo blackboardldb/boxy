@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { updateUserSchema } from "@/lib/schemas";
 
 
 export async function GET(
@@ -35,7 +36,15 @@ export async function PUT(
   let id = "unknown";
   try {
     id = (await params).id;
-    const body = await request.json();
+
+    const parsed = updateUserSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const body = parsed.data;
 
     // Use UserService to update user with validation
     const response = await userService.updateUser(id, body);

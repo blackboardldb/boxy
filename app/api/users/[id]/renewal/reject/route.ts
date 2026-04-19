@@ -1,17 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 
 // HAL-01 Fase 4 Sprint 1.4: Rechaza la renovación pendiente actualizando directamente
 // la tabla MembershipRenewal. Ya no lee ni escribe en el JSONB membership.
+
+const rejectRenewalSchema = z.object({
+  reason: z.string().optional(),
+});
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const userId = (await params).id;  // Next.js 15: params es una Promise
-    const body = await request.json().catch(() => ({}));
-    const reason: string = body?.reason ?? "Rechazado por administrador";
+
+    const parsed = rejectRenewalSchema.safeParse(
+      await request.json().catch(() => ({}))
+    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const reason: string = parsed.data?.reason ?? "Rechazado por administrador";
 
     // Verificar que el usuario existe
     const userResponse = await userService.getUserById(userId);

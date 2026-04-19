@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod";
 
 /**
  * POST /api/users/[id]/reset-password
@@ -8,20 +9,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Recibe el email del usuario para buscar su auth_id.
  * Body: { email: string }
  */
+
+const resetPasswordSchema = z.object({
+  email: z.string().email("Email inválido"),
+});
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const { email } = await request.json();
 
-    if (!email) {
+    const parsed = resetPasswordSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Email requerido." },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { email } = parsed.data;
 
     const supabase = createAdminClient();
 

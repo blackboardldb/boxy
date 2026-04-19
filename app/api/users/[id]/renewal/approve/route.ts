@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { z } from "zod";
 
 // HAL-01 Fase 4 Sprint 1.3 (revisado): Aprueba una renovación pendiente.
 // Actualiza tanto la tabla UserMembership (plan + status + fechas) como
 // la tabla MembershipRenewal (status → approved).
 // Ya no lee ni escribe en el JSONB membership.
+
+const approveRenewalSchema = z.object({
+  startDate: z.string().datetime({ offset: true }).optional(),
+});
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id: userId } = await params;  // Next.js 15: params es una Promise
-    const body = await request.json().catch(() => ({}));
+
+    const parsed = approveRenewalSchema.safeParse(
+      await request.json().catch(() => ({}))
+    );
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
 
     // startDate: la fecha de inicio del nuevo período (la envía el admin desde el modal)
-    const startDate: string | undefined = body?.startDate;
+    const startDate: string | undefined = parsed.data?.startDate;
 
     // 1. Verificar que el usuario existe y tiene una UserMembership
     const user = await prisma.user.findUnique({
