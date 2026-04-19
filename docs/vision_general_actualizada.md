@@ -22,8 +22,8 @@
 | HAL-10 | Zustand sin React Query | ❌ Pendiente | — |
 | HAL-11 | Sin RLS en tablas public | ✅ Completo (ya estaba activo) | Confirmado |
 | HAL-12 | Contraseñas hardcodeadas | ✅ Completo — env vars sin fallback (HAL-12b) | `df3d03a` |
-| HAL-13 | Logger sin persistencia | 🟡 Parcial — Sentry activo (beforeSend, 0.1 traces) | — |
-| HAL-14 | Constraint names expuestos | 🟠 Parcial — `isDev` condicionado | `567283a` |
+| HAL-13 | Logger sin persistencia | ✅ Cerrado (tracesSampleRate 0.1 y errors 1.0 es correct best practice) | — |
+| HAL-14 | Constraint names expuestos | 🟠 Pendiente post HAL-16 | `567283a` |
 | **HAL-15** | **84 errores TSC** | **✅ Completo — 63 → 0 errores** | **`df3d03a`** |
 | **HAL-16** | **141 `as any` castings** | **❌ Pendiente** | — |
 
@@ -150,6 +150,7 @@ WHERE membership IS NOT NULL;
 | **HAL-06b** | **Zod en 26 rutas API PENDIENTES**. Implementado. Bugs críticos de alineación frontend-backend (datetime vs min, nombres reales de schemas, validaciones inline) totalmente resueltos. | 🟢 Refactor | Listo | ✅ Completado |
 | **HAL-03** | **Arrays denormalizados `ClassSession`** (`registeredParticipantsIds`, `waitlistParticipantsIds`). Remover y armar de manera puramente relacional basandose en query a su tabla respectiva `ClassRegistration`. Riesgo de overhead en fetch general: emplear siempre sub-selección base o mitigador `_count` con id. | 🔴 Alto | 6h | 🟡 En progreso — Sesión 2 pendiente |
 | **HAL-16** | **141 casteos de escape tipado (`as any`)**. No es inminente arreglar puesto que una porción notable de las rutas van a limpiar casteo iterativamente después del sprint 4 dentro de repos y mappers. | 🟢 Bajo | 6h | **Desbloqueado (HAL-15 listo)** |
+| **HAL-14** | **Constraint names expuestos**. Filtrar `PrismaClientKnownRequestError` en `lib/errors/handler.ts` para ocultarlos en producción con msj genérico. | 🟢 Bajo | 0.5h | **🟠 Pendiente post HAL-16** |
 | **HAL-10** | **Zustand → React Query (TanStack)**. Traspaso final a manejo async de frontend global. Es una tarea backlogged sin deadline pero recomendada iterar posteriormente con el sistema puramente relacional optimizado y la query JSONB bloqueante fuera. | 🟢 Bajo | 12h | **Bloqueado por HAL-01 y HAL-03** |
 
 ### Flujo de Ejecución Acumulativo de HALs (Cronograma)
