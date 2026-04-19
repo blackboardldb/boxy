@@ -61,10 +61,13 @@ export async function POST(request: NextRequest) {
 
       cancelledClasses.push(classSession.id);
 
-      // Registrar usuarios afectados (HAL-09b calcula remainingClasses en tiempo real
-      // desde ClassRegistration — el write al JSONB fue eliminado en HAL-01 Fase 4 Sprint 1.2)
-      for (const userId of classSession.registeredParticipantsIds) {
-        affectedUsers.push(userId);
+      // Registrar usuarios afectados verificando la fuente de verdad relacional (HAL-03)
+      const registrations = await prisma.classRegistration.findMany({
+        where: { classId: classSession.id, status: 'registered' },
+        select: { userId: true }
+      });
+      for (const reg of registrations) {
+        affectedUsers.push(reg.userId);
       }
     }
 

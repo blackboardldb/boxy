@@ -51,6 +51,7 @@ export async function GET(
         status: { not: 'cancelled' as any },
         ...(start || end ? {
           class: {
+            status: { not: 'cancelled' },
             dateTime: {
               ...(start ? { gte: start } : {}),
               ...(end ? { 
@@ -79,7 +80,7 @@ export async function GET(
             capacity: true,
             status: true,
             _count: {
-              select: { registrations: true }
+              select: { registrations: { where: { status: 'registered' } } }
             }
           }
         }

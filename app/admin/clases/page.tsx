@@ -199,10 +199,11 @@ export default function AdminClasesPage() {
 
   const handleCancelClass = async (classId: string) => {
     try {
-      // Para clases reales, usar la API
-      const response = await fetch(`/api/classes/${classId}/admin/cancel`, {
+      // Para cancelar clase completa usamos la ruta unificada global
+      const response = await fetch(`/api/classes/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classId }),
       });
 
       if (!response.ok) {

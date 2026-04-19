@@ -128,9 +128,12 @@ export async function POST(request: NextRequest) {
           data: { status: "cancelled" },
         });
 
-        // 2. Registrar usuarios afectados (HAL-09b calcula remainingClasses en tiempo real
-        //    desde ClassRegistration — el write al JSONB fue eliminado en HAL-01 Fase 4 Sprint 1.1)
-        const affectedUsers: string[] = classSession.registeredParticipantsIds.slice();
+        // 2. Registrar usuarios afectados verificando la fuente de verdad (ClassRegistration)
+        const registrations = await tx.classRegistration.findMany({
+          where: { classId: classId, status: 'registered' },
+          select: { userId: true }
+        });
+        const affectedUsers: string[] = registrations.map((reg: { userId: string }) => reg.userId);
 
         return { updatedClassSession, affectedUsers };
       });

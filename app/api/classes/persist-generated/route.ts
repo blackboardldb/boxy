@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       .substr(2, 9)}`;
 
     // Preparar los datos de la clase para persistir
-    const classToPersist: Omit<ClassSession, "id"> & { id: string } = {
+    const classToPersist = {
       id: realId,
       organizationId: classData.organizationId,
       disciplineId: classData.disciplineId,
@@ -59,8 +59,6 @@ export async function POST(request: NextRequest) {
       durationMinutes: classData.durationMinutes,
       instructorId: classData.instructorId ?? "",
       capacity: classData.capacity,
-      registeredParticipantsIds: classData.registeredParticipantsIds || [],
-      waitlistParticipantsIds: classData.waitlistParticipantsIds || [],
       status: (action === "cancel" ? "cancelled" : classData.status ?? "scheduled") as ClassSession["status"],
       notes: classData.notes,
       // No incluir isGenerated ya que ahora es una clase real

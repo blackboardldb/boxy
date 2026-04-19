@@ -198,17 +198,12 @@ export class ClassService extends BaseService<ClassSession> {
             create: { userId, classId, status: 'registered' }
           });
 
-          const updatedClass = await tx.classSession.update({
+          // HAL-03 Sprint B: ya no escribimos en la columna array.
+          // Solo devolvemos la sesión fresca con sus registros para el mapper.
+          return await tx.classSession.findUnique({
             where: { id: classId },
-            data: {
-              registeredParticipantsIds: [
-                ...classSession.registeredParticipantsIds.filter(id => id !== userId),
-                userId
-              ]
-            }
+            include: { registrations: { select: { userId: true, status: true } } }
           });
-          
-          return updatedClass;
         });
 
         return createSuccessResponse(this.mapToEntity(updatedRecord));
@@ -255,15 +250,11 @@ export class ClassService extends BaseService<ClassSession> {
             data: { status: 'cancelled', cancelledAt: new Date() }
           });
 
-          const updatedClass = await tx.classSession.update({
+          // HAL-03 Sprint B: ya no escribimos en la columna array.
+          return await tx.classSession.findUnique({
             where: { id: classId },
-            data: {
-              registeredParticipantsIds: classSession.registeredParticipantsIds.filter(id => id !== userId),
-              waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(id => id !== userId)
-            }
+            include: { registrations: { select: { userId: true, status: true } } }
           });
-
-          return updatedClass;
         });
 
         return createSuccessResponse(this.mapToEntity(updatedRecord));
@@ -282,8 +273,12 @@ export class ClassService extends BaseService<ClassSession> {
       durationMinutes: prismaClass.durationMinutes,
       instructorId: prismaClass.instructorId,
       capacity: prismaClass.capacity,
-      registeredParticipantsIds: prismaClass.registeredParticipantsIds || [],
-      waitlistParticipantsIds: prismaClass.waitlistParticipantsIds || [],
+      registeredParticipantsIds: prismaClass.registrations
+        ?.filter((r: any) => r.status === 'registered')
+        .map((r: any) => r.userId) ?? [],
+      waitlistParticipantsIds: prismaClass.registrations
+        ?.filter((r: any) => r.status === 'waitlist')
+        .map((r: any) => r.userId) ?? [],
       status: prismaClass.status as any,
       notes: prismaClass.notes || undefined,
       isGenerated: prismaClass.isGenerated,

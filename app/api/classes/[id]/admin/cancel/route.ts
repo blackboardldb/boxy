@@ -39,12 +39,10 @@ export async function POST(
         data: { status: "cancelled", cancelledAt: new Date() },
       });
 
-      await tx.classSession.update({
+      // HAL-03 Sprint B: ya no escribimos en la columna array.
+      await tx.classSession.findUnique({
         where: { id: classId },
-        data: {
-          registeredParticipantsIds: classSession.registeredParticipantsIds.filter(id => id !== userId),
-          waitlistParticipantsIds: classSession.waitlistParticipantsIds.filter(id => id !== userId),
-        },
+        include: { registrations: { select: { userId: true, status: true } } },
       });
     });
 
