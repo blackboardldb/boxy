@@ -114,9 +114,25 @@ export const disciplineSchema = z.object({
 });
 
 export const createDisciplineSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  color: z.string().optional(),
+  name:              z.string().min(1),
+  description:       z.string().optional(),
+  color:             z.string().optional(),
+  isActive:          z.boolean().optional(),
+  schedule: z.array(
+    z.object({
+      day:   z.string(),           // DayOfWeek: "lun"|"mar"|...
+      times: z.array(z.string()),  // ["08:00", "10:00"]
+    })
+  ).optional(),
+  cancellationRules: z.array(
+    z.object({
+      id:          z.string().optional(),
+      time:        z.string(),
+      hoursBefore: z.number(),
+      priority:    z.number().optional(),
+      description: z.string().optional(),
+    })
+  ).optional(),
 });
 
 export const updateDisciplineSchema = createDisciplineSchema.partial();
@@ -166,12 +182,18 @@ export const planSchema = z.object({
 });
 
 export const createPlanSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  monthlyPrice: z.number().min(0),
-  maxClassesPerMonth: z.number().min(1),
-  maxBookingsPerDay: z.number().min(1),
-  cancellationHours: z.number().min(0),
+  name:               z.string().min(1),
+  description:        z.string().optional(),
+  price:              z.number().min(0),
+  durationInMonths:   z.number().min(1),
+  classLimit:         z.number().min(0),
+  disciplineAccess:   z.string().optional(),
+  allowedDisciplines: z.array(z.string()).optional(),
+  canFreeze:          z.boolean().optional(),
+  freezeDurationDays: z.number().optional(),
+  autoRenews:         z.boolean().optional(),
+  isActive:           z.boolean().optional(),
+  organizationId:     z.string().optional(),
 });
 
 export const updatePlanSchema = createPlanSchema.partial();
@@ -317,7 +339,7 @@ export type CreateMembershipRenewal = z.infer<
 // Expense schemas
 export const createExpenseSchema = z.object({
   motivo: z.string().min(1, "El motivo es requerido"),
-  fecha:  z.string().datetime({ message: "Fecha inválida" }),
+  fecha:  z.string().min(1, "Fecha inválida"),
   monto:  z.number().positive("El monto debe ser positivo"),
 });
 export const updateExpenseSchema = createExpenseSchema.partial();

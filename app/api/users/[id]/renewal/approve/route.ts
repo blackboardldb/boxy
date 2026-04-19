@@ -9,7 +9,7 @@ import { z } from "zod";
 // Ya no lee ni escribe en el JSONB membership.
 
 const approveRenewalSchema = z.object({
-  startDate: z.string().datetime({ offset: true }).optional(),
+  startDate: z.string().min(1).optional(),
 });
 
 export async function POST(
