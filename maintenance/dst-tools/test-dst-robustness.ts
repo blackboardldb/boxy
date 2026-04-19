@@ -1,4 +1,4 @@
-import { getChileOffset, localToUTC, formatDateChile, formatTimeChile } from "../lib/utils";
+import { getChileOffset, localToUTC, formatDateChile, formatTimeChile } from "../../lib/utils"; // HAL-15: path corregido (era ../lib/utils)
 
 // Lista de fechas críticas para probar transiciones de DST en Chile 2026
 const testDates = [

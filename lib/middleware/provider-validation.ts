@@ -19,7 +19,7 @@ export class ProviderValidator {
   static async validateCurrentProvider(): Promise<ProviderValidationResult> {
     const result: ProviderValidationResult = {
       isValid: true,
-      provider: "mock",
+      provider: "prisma", // HAL-15: ProviderType solo acepta "prisma"
       errors: [],
       warnings: [],
     };
@@ -29,9 +29,9 @@ export class ProviderValidator {
       const envProvider = process.env.DATA_PROVIDER as ProviderType;
 
       if (!envProvider) {
-        result.warnings.push("DATA_PROVIDER not set, defaulting to mock");
-        result.provider = "mock";
-      } else if (!["mock", "prisma"].includes(envProvider)) {
+        result.warnings.push("DATA_PROVIDER not set, defaulting to prisma");
+        result.provider = "prisma"; // HAL-15: "mock" ya no es ProviderType válido
+      } else if (!["prisma"].includes(envProvider)) {
         result.errors.push(
           `Invalid DATA_PROVIDER value: ${envProvider}. Must be 'mock' or 'prisma'`
         );
@@ -66,9 +66,7 @@ export class ProviderValidator {
       case "prisma":
         await this.validatePrismaConfig(result);
         break;
-      case "mock":
-        await this.validateMockConfig(result);
-        break;
+      // case "mock" eliminado — ProviderType ya solo acepta "prisma" (HAL-15)
     }
   }
 

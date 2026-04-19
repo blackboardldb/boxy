@@ -18,6 +18,9 @@ export interface LogContext {
   requestId?: string;
   duration?: number;
   metadata?: Record<string, any>;
+  // HAL-15: index signature para permitir props dinámicas de logging
+  // sin tener que declarar cada campo individualmente en la interfaz
+  [key: string]: unknown;
 }
 
 export interface LogEntry {

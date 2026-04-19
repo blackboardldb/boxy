@@ -32,7 +32,9 @@ export async function POST(request: NextRequest) {
     const classes = await prisma.classSession.findMany({
       where: {
         dateTime: {
-          contains: date, // Buscar clases que contengan la fecha en el string
+          // HAL-15: DateTime no soporta contains — usar rango gte/lt del día
+          gte: new Date(`${date}T00:00:00.000Z`),
+          lt:  new Date(`${date}T23:59:59.999Z`),
         },
         status: { not: "cancelled" },
       },

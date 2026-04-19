@@ -99,7 +99,7 @@ export class HealthChecker {
 
     const report: SystemHealthReport = {
       overall,
-      provider: DataProviderFactory.getCurrentProviderType() || "mock",
+      provider: DataProviderFactory.getCurrentProviderType() || "prisma", // HAL-15: fallback era "mock"
       checks,
       summary,
       generatedAt: new Date().toISOString(),

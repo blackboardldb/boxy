@@ -5,10 +5,10 @@ import * as React from "react";
 
 export function useToast() {
   return {
-    toast: () => ({ id: "", dismiss: () => {}, update: () => {} }),
+    toast: (_opts?: unknown) => ({ id: "", dismiss: () => {}, update: () => {} }),
     dismiss: () => {},
     toasts: [],
   };
 }
 
-export const toast = () => ({ id: "", dismiss: () => {}, update: () => {} });
+export const toast = (_opts?: unknown) => ({ id: "", dismiss: () => {}, update: () => {} });

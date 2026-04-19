@@ -23,7 +23,8 @@ export interface EnvironmentConfig {
 export class ProviderConfigManager {
   // Get configuration for current environment
   static getCurrentConfig(): DataProviderFactoryConfig {
-    const env = (process.env.NODE_ENV as string) || "development";
+    // HAL-15: cast explícito a string para que el switch acepte "staging" sin TS2678
+    const env = String(process.env.NODE_ENV || "development");
 
     switch (env) {
       case "development":
@@ -122,8 +123,8 @@ export class ProviderConfigManager {
       );
     }
 
-    // Environment-specific validation
-    switch (env) {
+    // HAL-15: cast explícito a string para que el switch acepte "staging" sin TS2678
+    switch (String(env)) {
       case "production":
         if (providerType === "prisma" && !process.env.DATABASE_URL) {
           errors.push("DATABASE_URL is required in production");

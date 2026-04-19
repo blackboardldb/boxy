@@ -375,7 +375,7 @@ export class PerformanceMonitor {
   exportMetrics(): {
     metrics: PerformanceMetric[];
     alerts: PerformanceAlert[];
-    summary: ReturnType<typeof this.getPerformanceSummary>;
+    summary: ReturnType<PerformanceMonitor["getPerformanceSummary"]>; // HAL-15: evita TS2683 con typeof this
     exportedAt: string;
   } {
     return {
@@ -410,7 +410,7 @@ export function monitorPerformance(operation?: string, resource?: string) {
     const resourceName =
       resource || target.repositoryName || target.entityName || "unknown";
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]) {
       const start = Date.now();
       let success = true;
       let recordCount: number | undefined;
@@ -445,7 +445,7 @@ export function monitorPerformance(operation?: string, resource?: string) {
         performanceMonitor.recordMetric({
           operation: operationName,
           resource: resourceName,
-          provider: this.providerType || "unknown",
+          provider: (this as any).providerType || "unknown",
           duration,
           success,
           recordCount,

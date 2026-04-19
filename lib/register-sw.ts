@@ -132,7 +132,7 @@ function showInstallButton() {
       window.deferredPrompt.prompt();
       const { outcome } = await window.deferredPrompt.userChoice;
       console.log("[PWA] Resultado de instalación:", outcome);
-      window.deferredPrompt = null;
+      window.deferredPrompt = undefined; // HAL-15: undefined en vez de null (tipo no acepta null)
       hideInstallButton();
     }
   });
@@ -227,7 +227,13 @@ export async function initializePWA() {
 // ========================================================================================
 
 declare global {
+  // HAL-15: tipo para BeforeInstallPromptEvent (aún no está en TypeScript DOM lib)
+  interface BeforeInstallPromptEvent extends Event {
+    prompt(): Promise<void>;
+    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+  }
+
   interface Window {
-    deferredPrompt?: unknown;
+    deferredPrompt?: BeforeInstallPromptEvent;
   }
 }

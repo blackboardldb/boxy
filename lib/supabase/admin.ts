@@ -27,14 +27,34 @@ export function createAdminClient() {
 }
 
 /**
- * Contraseñas por defecto según rol.
- * - Alumnos:       blacksheep26
- * - Coach / Admin: BsC04Ch@
+ * HAL-12b: Contraseñas por defecto según rol — leídas de env vars sin fallback.
+ * Si alguna variable falta, el servidor falla en boot con un error claro
+ * en vez de correr con credenciales expuestas en el código fuente.
+ *
+ * Variables requeridas:
+ *   DEFAULT_PASSWORD_ALUMNO   (ej: ddd)
+ *   DEFAULT_PASSWORD_COACH    (ej: ddd)
+ *   DEFAULT_PASSWORD_ADMIN    (ej: ddd)
  */
+const alumnoPassword = process.env.DEFAULT_PASSWORD_ALUMNO;
+const coachPassword  = process.env.DEFAULT_PASSWORD_COACH;
+const adminPassword  = process.env.DEFAULT_PASSWORD_ADMIN;
+
+if (!alumnoPassword || !coachPassword || !adminPassword) {
+  const missing = [
+    !alumnoPassword && "DEFAULT_PASSWORD_ALUMNO",
+    !coachPassword  && "DEFAULT_PASSWORD_COACH",
+    !adminPassword  && "DEFAULT_PASSWORD_ADMIN",
+  ].filter(Boolean);
+  throw new Error(
+    `[admin.ts] Faltan variables de entorno requeridas: ${missing.join(", ")}. Configúralas en Vercel y en .env local.`
+  );
+}
+
 const DEFAULT_PASSWORDS: Record<"alumno" | "coach" | "admin", string> = {
-  alumno: process.env.DEFAULT_PASSWORD_ALUMNO ?? "blacksheep26",
-  coach:  process.env.DEFAULT_PASSWORD_COACH  ?? "BsC04Ch@",
-  admin:  process.env.DEFAULT_PASSWORD_ADMIN  ?? "BsC04Ch@",
+  alumno: alumnoPassword,
+  coach:  coachPassword,
+  admin:  adminPassword,
 };
 
 /**
