@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
-import { createClassRegistrationSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 
 export async function POST(
@@ -10,7 +10,8 @@ export async function POST(
   try {
     const { id: classId } = await params;
 
-    const parsed = createClassRegistrationSchema.safeParse(await request.json());
+    const bodySchema = z.object({ userId: z.string().min(1) });
+    const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: parsed.error.errors[0].message },
