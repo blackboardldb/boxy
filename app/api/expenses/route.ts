@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { createExpenseSchema } from "@/lib/schemas";
 
 // Tipo para el egreso
 export type Expense = {
@@ -106,35 +107,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
-    const { motivo, fecha, monto } = body;
-
-    // Validación básica
-    if (!motivo || !fecha || !monto) {
+    const parsed = createExpenseSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Faltan campos requeridos",
-            details: "motivo, fecha y monto son requeridos",
-          },
-        },
+        { success: false, error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
-
-    if (typeof monto !== "number" || monto <= 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            message: "Monto inválido",
-            details: "El monto debe ser un número positivo",
-          },
-        },
-        { status: 400 }
-      );
-    }
+    const { motivo, fecha, monto } = parsed.data;
 
     try {
       // Intentar usar Prisma primero

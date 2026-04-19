@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import webpush from "web-push";
+import { createInAppAlertSchema } from "@/lib/schemas";
 
 // Configurar web-push
 webpush.setVapidDetails(
@@ -36,8 +37,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await req.json();
-    const { title, content, type, startDate, endDate, sendPush } = body;
+    const parsed = createInAppAlertSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const { title, content, type, startDate, endDate, sendPush } = parsed.data;
 
     const alert = await prisma.inAppAlert.create({
       data: {

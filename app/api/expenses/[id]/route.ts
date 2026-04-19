@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateExpenseSchema } from "@/lib/schemas";
 
 export async function DELETE(
   request: NextRequest,
@@ -69,8 +70,6 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { motivo, fecha, monto } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -84,6 +83,15 @@ export async function PUT(
         { status: 400 }
       );
     }
+
+    const parsed = updateExpenseSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+    const { motivo, fecha, monto } = parsed.data;
 
     // Actualizar en DB
     try {

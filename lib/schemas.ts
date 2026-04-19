@@ -314,6 +314,31 @@ export type CreateMembershipRenewal = z.infer<
   typeof createMembershipRenewalSchema
 >;
 
+// Expense schemas
+export const createExpenseSchema = z.object({
+  motivo: z.string().min(1, "El motivo es requerido"),
+  fecha:  z.string().datetime({ message: "Fecha inválida" }),
+  monto:  z.number().positive("El monto debe ser positivo"),
+});
+export const updateExpenseSchema = createExpenseSchema.partial();
+export type CreateExpense = z.infer<typeof createExpenseSchema>;
+export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
+
+// InAppAlert schemas
+// NOTA: type usa z.string().min(1) — no z.enum — para compatibilidad con
+// valores existentes en BD como "noticia", "cancelacion", etc.
+export const createInAppAlertSchema = z.object({
+  title:     z.string().min(1, "El título es requerido"),
+  content:   z.string().min(1, "El contenido es requerido"),
+  type:      z.string().min(1, "El tipo es requerido"),
+  startDate: z.string().datetime({ message: "Fecha de inicio inválida" }),
+  endDate:   z.string().datetime({ message: "Fecha de fin inválida" }),
+  sendPush:  z.boolean().optional(),
+});
+export const updateInAppAlertSchema = createInAppAlertSchema.partial();
+export type CreateInAppAlert = z.infer<typeof createInAppAlertSchema>;
+export type UpdateInAppAlert = z.infer<typeof updateInAppAlertSchema>;
+
 // Password change schema
 export const changePasswordSchema = z.object({
   newPassword: z
