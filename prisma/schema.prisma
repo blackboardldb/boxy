@@ -20,10 +20,7 @@ model User {
   organizationId     String              @default("org_blacksheep_001")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  /// @deprecated Los contadores internos (remainingClasses, classesAttended) están obsoletos.
-  /// Usar historial de inscripciones para cálculos en tiempo real.
-  /// @deprecated HAL-01: Este campo JSONB será eliminado cuando UserMembership esté poblado y validado.
-  membership         Json?
+  // HAL-01 COMPLETO: membership Json? eliminado. Fuente de verdad → UserMembership (user_memberships).
   dateOfBirth        DateTime?
   emergencyContact   String?
   gender             String?

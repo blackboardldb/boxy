@@ -29,7 +29,10 @@ export async function GET(
             lastName: true,
             email: true,
             phone: true,
-            membership: true,
+            // HAL-01 COMPLETO: membership JSONB eliminado → userMembership relacional
+            userMembership: {
+              select: { membershipType: true },
+            },
           },
         },
       },
@@ -43,7 +46,7 @@ export async function GET(
       lastName: reg.user.lastName,
       email: reg.user.email,
       phone: reg.user.phone,
-      membershipType: (reg.user.membership as any)?.membershipType || "Sin plan",
+      membershipType: reg.user.userMembership?.membershipType ?? "Sin plan",
       bookedAt: reg.registeredAt.toISOString(),
     }));
 
