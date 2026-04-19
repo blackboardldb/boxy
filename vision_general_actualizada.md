@@ -9,7 +9,7 @@
 
 | HAL | Título | Estado | Commit/Ref |
 |---|---|---|---|
-| HAL-01 | JSONB `membership` → `UserMembership` | 🟡 Fase 4 en etapa de observación. Se cambiará a ✅ Completo junto con el commit del DROP. | Pre-Drop: `3fb45ac` |
+| HAL-01 | JSONB `membership` → `UserMembership` | ✅ Completo | DROP: `862eace` |
 | HAL-02 | Índices GIN/btree sobre JSONB | ✅ Completo | Supabase SQL directo |
 | HAL-03 | Arrays denormalizados `ClassSession` | ❌ Pendiente | — |
 | HAL-04 | `organizationId` como columna relacional | ✅ Completo | `7af0177` |
@@ -118,9 +118,10 @@ El mapper de Fase 3 construye un objeto que replica esa forma, por lo que **la C
 | Eliminar dual-write JSONB en `user-repository.ts` | ✅ Hecho |
 | Eliminar *fallback loader* en `user-repository.ts` (`mapToEntity`) | ✅ Hecho |
 | **Respaldo de Seguridad:** Crear tabla `_backup_membership_jsonb` en Supabase (80 rows) | ✅ Hecho |
-| Completar 24-48 horas de observación sin errores o crasheos | ⏳ Observación en curso |
-| **PUNTO DE NO RETORNO:** `ALTER TABLE users DROP COLUMN membership;` directa en BD | 🔒 Esperando finalización de periodo |
-| Eliminar columna `membership Json?` de schema.prisma + `prisma generate` | 🔒 Esperando finalización de periodo |
+| Completar 24-48 horas de observación sin errores o crasheos | ✅ Hecho |
+| **PUNTO DE NO RETORNO:** `ALTER TABLE users DROP COLUMN membership;` directa en BD | ✅ Hecho |
+| Eliminar columna `membership Json?` de schema.prisma + `prisma generate` | ✅ Hecho |
+| Corregir referencias residuales post-DROP (`participants/route.ts`, `me/history/route.ts`) | ✅ Hecho |
 
 **Script de respaldo ejecutado en SQL Editor (pre-DROP):**
 ```sql
