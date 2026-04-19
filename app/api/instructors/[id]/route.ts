@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { updateInstructorSchema } from "@/lib/schemas";
 
 
 export async function GET(
@@ -38,10 +39,17 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
+
+    const parsed = updateInstructorSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
 
     // Use InstructorService to update instructor with validation
-    const response = await instructorService.updateInstructor(id, body);
+    const response = await instructorService.updateInstructor(id, parsed.data);
 
     if (!response.success) {
       return NextResponse.json(response, {

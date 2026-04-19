@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { planService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { createPlanSchema, updatePlanSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
@@ -55,10 +56,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
+    const parsed = createPlanSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
 
     // Use PlanService to create plan with validation
-    const response = await planService.createPlan(body);
+    const response = await planService.createPlan(parsed.data);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -81,15 +88,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const body = await request.json();
-    const { id, ...updateData } = body;
+    const rawBody = await request.json();
+    const { id, ...updateData } = rawBody;
 
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
+    const parsed = updatePlanSchema.safeParse(updateData);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     // Use PlanService to update plan with validation
-    const response = await planService.updatePlan(id, updateData);
+    const response = await planService.updatePlan(id, parsed.data);
 
     // Return standardized response
     return NextResponse.json(response, {

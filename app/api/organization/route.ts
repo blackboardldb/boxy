@@ -3,6 +3,7 @@ import { organizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/supabase/auth-guard";
+import { updateOrganizationSchema } from "@/lib/schemas";
 
 
 export async function GET() {
@@ -29,8 +30,8 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id, ...data } = body;
+    const rawBody = await request.json();
+    const { id, ...data } = rawBody;
 
     if (!id) {
       return NextResponse.json(
@@ -39,7 +40,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const response = await organizationService.update(id, data);
+    const parsed = updateOrganizationSchema.safeParse(data);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    const response = await organizationService.update(id, parsed.data);
     return NextResponse.json(response);
   } catch (error) {
     return ErrorHandler.createResponse(error, {

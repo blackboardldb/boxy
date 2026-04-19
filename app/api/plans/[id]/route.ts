@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { planService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { updatePlanSchema } from "@/lib/schemas";
 
 
 export async function GET(
@@ -44,7 +45,6 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -53,8 +53,16 @@ export async function PUT(
       );
     }
 
+    const parsed = updatePlanSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     // Use PlanService to update plan with validation
-    const response = await planService.updatePlan(id, body);
+    const response = await planService.updatePlan(id, parsed.data);
 
     // Return standardized response
     return NextResponse.json(response, {
