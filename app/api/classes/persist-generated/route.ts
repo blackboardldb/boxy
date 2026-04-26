@@ -5,18 +5,16 @@ import { z } from "zod";
 
 const persistGeneratedSchema = z.object({
   classData: z.object({
-    id:                       z.string(),
-    organizationId:           z.string(),
-    disciplineId:             z.string(),
-    name:                     z.string(),
-    dateTime:                 z.string(),
-    durationMinutes:          z.number(),
-    instructorId:             z.string().optional(),
-    capacity:                 z.number(),
-    registeredParticipantsIds: z.array(z.string()).optional(),
-    waitlistParticipantsIds:  z.array(z.string()).optional(),
-    status:                   z.string().optional(),
-    notes:                    z.string().optional(),
+    id:              z.string(),
+    organizationId:  z.string(),
+    disciplineId:    z.string(),
+    name:            z.string(),
+    dateTime:        z.string(),
+    durationMinutes: z.number(),
+    instructorId:    z.string().optional(),
+    capacity:        z.number(),
+    status:          z.string().optional(),
+    notes:           z.string().optional(),
   }),
   action: z.string().min(1, "action es requerido"),
 });

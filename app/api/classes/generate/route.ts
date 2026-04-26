@@ -75,8 +75,6 @@ export async function POST(request: NextRequest) {
             durationMinutes: 60,
             instructorId,
             capacity: maxCapacity,
-            registeredParticipantsIds: [],
-            waitlistParticipantsIds: [],
             status: "scheduled",
             notes,
           },

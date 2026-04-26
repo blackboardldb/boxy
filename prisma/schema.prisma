@@ -36,25 +36,25 @@ model User {
   @@schema("public")
 }
 
+// HAL-03 COMPLETO: registeredParticipantsIds y waitlistParticipantsIds eliminados.
+// Fuente de verdad → ClassRegistration (class_registrations). DROP ejecutado 2026-04-26.
 model ClassSession {
-  id                        String              @id @default(cuid())
-  organizationId            String
-  disciplineId              String
-  name                      String
-  dateTime                  DateTime
-  durationMinutes           Int
-  instructorId              String
-  capacity                  Int
-  registeredParticipantsIds String[]
-  waitlistParticipantsIds   String[]
-  status                    String              @default("scheduled")
-  notes                     String?
-  isGenerated               Boolean             @default(false)
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  registrations             ClassRegistration[]
-  discipline                Discipline          @relation(fields: [disciplineId], references: [id])
-  instructor                Instructor          @relation(fields: [instructorId], references: [id])
+  id             String              @id @default(cuid())
+  organizationId String
+  disciplineId   String
+  name           String
+  dateTime       DateTime
+  durationMinutes Int
+  instructorId   String
+  capacity       Int
+  status         String              @default("scheduled")
+  notes          String?
+  isGenerated    Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  registrations  ClassRegistration[]
+  discipline     Discipline          @relation(fields: [disciplineId], references: [id])
+  instructor     Instructor          @relation(fields: [instructorId], references: [id])
 
   @@index([dateTime])
   @@index([disciplineId])

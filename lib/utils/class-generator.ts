@@ -94,8 +94,6 @@ export async function generateClassesFromSchedules(
               durationMinutes: 60,
               instructorId: instructor.id,
               capacity: 15,
-              registeredParticipantsIds: [],
-              waitlistParticipantsIds: [],
               status: "scheduled",
               notes: "Autogenerada",
               isGenerated: true,

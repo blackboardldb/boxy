@@ -231,7 +231,9 @@ export class DisciplineService extends BaseService<Discipline> {
           where: {
             disciplineId: updatedRecord.id,
             dateTime: { gte: now },
-            registeredParticipantsIds: { equals: [] }
+            registrations: {
+              none: { status: 'registered' }
+            }
           }
         });
 

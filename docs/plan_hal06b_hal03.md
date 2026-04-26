@@ -1,8 +1,8 @@
 # Plan de Trabajo — Evolución de HAL-06b a HAL-03
 
-> Estado: **HAL-06b Completado ✅ | HAL-03 Siguiente en cola**
+> Estado: **HAL-06b ✅ | HAL-03 ✅ COMPLETO — HAL-16 siguiente**
 > Documento maestro: `vision_general_actualizada.md`
-> Última actualización: 2026-04-19
+> Última actualización: 2026-04-26
 
 ---
 
@@ -182,8 +182,8 @@ Sesión 1: Auditoría ✅ COMPLETA
 Sesión 2: Backup + verificación de datos ✅ COMPLETA
 Sesión 3: Sprint A — Mapper dual-read (ClassRegistration como fuente, arrays como fallback) ✅ COMPLETA
 Sesión 4: Sprint B — Eliminar writes a los arrays ✅ COMPLETA
-          ⏳ Observación 24-48h en producción (EN CURSO)
-Sesión 5: Sprint C — DROP de columnas en Prisma (próximo paso post-cuarentena)
+          ✅ Observación 24-48h sin incidentes — CUARENTENA SUPERADA
+Sesión 5: Sprint C — DROP de columnas en Prisma ← PRÓXIMO PASO
 ```
 
 ---
@@ -251,23 +251,23 @@ include: {
 
 **Objetivo:** Ningún route ni service escribe en los arrays. Solo `ClassRegistration` recibe writes.
 
-Buscar todos los writes activos:
-```bash
-grep -rn "registeredParticipantsIds\|waitlistParticipantsIds" \
-  app/ lib/ --include="*.ts" \
-  | grep -v "select\|include\|//" \
-  | grep -v "node_modules"
+En `class-service.ts` — eliminados los bloques push/filter sobre arrays en `registerStudent` y `cancelRegistration`. ✅  
+En `api/classes/generate`, `persist-generated`, `route.ts` — eliminado hardcodeo de arrays vacíos al crear clases. ✅
+
+**✅ Fix adicional aplicado (2026-04-26):** `lib/services/discipline-service.ts` — reemplazado filtro Prisma sobre columna array:
+```typescript
+// ❌ ANTES — bloqueaba el DROP
+registeredParticipantsIds: { equals: [] }
+
+// ✅ DESPUÉS — Prisma relacional puro
+registrations: { none: { status: 'registered' } }
 ```
 
-En `class-service.ts` — eliminar los bloques que hacen push/filter sobre los arrays en `registerStudent` y `cancelRegistration`.
-
-En `api/classes/generate`, `persist-generated`, `route.ts` — eliminar hardcodeo de arrays vacíos al crear clases.
-
-⏸ **Observación 24-48h en producción sin errores antes de continuar al Sprint C.**
+**✅ Observación 24-48h sin incidentes — CUARENTENA SUPERADA. Sprint C desbloqueado.**
 
 ---
 
-### Sesión 5 — Sprint C: DROP de columnas (PRÓXIMO PASO)
+### Sesión 5 — Sprint C: DROP de columnas ✅ COMPLETO (2026-04-26)
 
 **Check de seguridad final:**
 ```bash
@@ -295,10 +295,15 @@ npx prisma migrate deploy
 SELECT column_name FROM information_schema.columns
 WHERE table_name = 'class_sessions'
   AND column_name IN ('registeredParticipantsIds', 'waitlistParticipantsIds');
--- Esperado: sin filas
+-- Resultado obtenido: 0 filas ✅
 ```
+
+**Verificaciones adicionales post-DROP (2026-04-26):**
+- `tsc --noEmit` → **0 errores** ✅
+- `generate-auto` para 2026-04-27/2026-05-11 → **clases generadas correctamente** ✅
+- `discipline-service.ts` — filtro Prisma migrado a `registrations: { none: { status: 'registered' } }` ✅
 
 ---
 
-### Regla
-> No se ejecuta Sprint C sin haber completado las 24-48h de observación del Sprint B sin incidentes.
+### HAL-03 — CERRADO ✅
+> HAL-16 es el siguiente paso según `vision_general_actualizada.md`.
