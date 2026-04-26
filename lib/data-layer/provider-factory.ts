@@ -97,10 +97,8 @@ export class DataProviderFactory {
   // Check if current provider supports transactions
   static supportsTransactions(): boolean {
     if (!this.instance) return false;
-    return (
-      "supportsTransactions" in this.instance &&
-      (this.instance as any).supportsTransactions === true
-    );
+    const providerWithTransactions = this.instance as DataProvider & { supportsTransactions?: boolean };
+    return providerWithTransactions.supportsTransactions === true;
   }
 
   // Validate configuration
@@ -185,11 +183,9 @@ export class DataProviderFactory {
 
     try {
       // Check if provider has health check method
-      if (
-        "healthCheck" in this.instance &&
-        typeof (this.instance as any).healthCheck === "function"
-      ) {
-        const health = await (this.instance as any).healthCheck();
+      const instanceWithHealth = this.instance as DataProvider & { healthCheck?: () => Promise<any> };
+      if (typeof instanceWithHealth.healthCheck === "function") {
+        const health = await instanceWithHealth.healthCheck();
         return {
           type: this.config.type,
           status: health.status,
@@ -229,12 +225,12 @@ export class DataProviderFactory {
     this.validateConfig(newConfig);
 
     // Close current provider if it supports cleanup
+    const instanceWithCleanup = this.instance as (DataProvider & { cleanup?: () => Promise<void> }) | null;
     if (
-      this.instance &&
-      "cleanup" in this.instance &&
-      typeof (this.instance as any).cleanup === "function"
+      instanceWithCleanup &&
+      typeof instanceWithCleanup.cleanup === "function"
     ) {
-      await (this.instance as any).cleanup();
+      await instanceWithCleanup.cleanup();
     }
 
     // Create new provider
@@ -326,7 +322,7 @@ export const EnvironmentConfig = {
 // Type guards
 export function isMockProvider(
   provider: DataProvider
-): provider is any {
+): provider is never {
   return false;
 }
 
@@ -343,11 +339,9 @@ export async function initializeProvider(
   const provider = DataProviderFactory.create(config);
 
   // Initialize provider if it has an init method
-  if (
-    "initialize" in provider &&
-    typeof (provider as any).initialize === "function"
-  ) {
-    await (provider as any).initialize();
+  const instanceWithInit = provider as DataProvider & { initialize?: () => Promise<void> };
+  if (typeof instanceWithInit.initialize === "function") {
+    await instanceWithInit.initialize();
   }
 
   return provider;
@@ -357,11 +351,9 @@ export async function initializeProvider(
 export async function cleanupProvider(): Promise<void> {
   const provider = DataProviderFactory.create();
 
-  if (
-    "cleanup" in provider &&
-    typeof (provider as any).cleanup === "function"
-  ) {
-    await (provider as any).cleanup();
+  const instanceWithCleanup = provider as DataProvider & { cleanup?: () => Promise<void> };
+  if (typeof instanceWithCleanup.cleanup === "function") {
+    await instanceWithCleanup.cleanup();
   }
 
   DataProviderFactory.reset();
