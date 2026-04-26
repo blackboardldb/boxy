@@ -189,10 +189,10 @@ Sesión 2 (2026-04-26):
   Conteo real post HAL-14: 92 → 89
 Sesión 3 (2026-04-26):
   ✅ Bloque 2 — provider-factory.ts (9), base-service.ts (6), class-service.ts (1 de 9)
-  ⚠️  Nota: 8 instancias de `as any` en class-service.ts alrededor de ValidationService quedan pendientes. Se abordarán en el Bloque 4 junto con la refactorización de ValidationService para inyectar queries relacionales (userId, classId) internamente y matar el bridging JSONB residual de HAL-01.
-  Conteo real post Bloque 2: 89 → 73 (16 eliminados)
-Sesión 4: Bloque 3 — user-approval.tsx (13), user-profile.tsx (9), pages (3+2+2)
-Sesión 5: Bloque 4 — ValidationService refactor (8 en class-service + 4 en validador), api routes, utils, blacksheep-store, monitoring
+  ⚠️  Nota: 8 instancias de `as any` en class-service.ts alrededor de ValidationService quedan pendientes para el Bloque 4.
+  ✅ Bloque 3 (Parcial) — user-approval.tsx (13), user-profile.tsx (9)
+  Conteo real post Sesión 3: 51
+Sesión 4: Bloque 3 restante (14 en UI pages/components) + Bloque 4 (ValidationService, api routes, utils, store)
           TSC final → 0 errores → HAL-16 cerrado → 131 → 0
 ```
 
