@@ -58,8 +58,9 @@ export class ErrorHandler {
   }
 
   // Handle Zod validation errors
-  private static handleZodError(error: any): ApiError {
-    const firstError = error.errors?.[0];
+  private static handleZodError(error: unknown): ApiError {
+    const zodErr = error as { errors?: { path?: string[]; message?: string }[] };
+    const firstError = zodErr.errors?.[0];
     const field = firstError?.path?.join(".") || undefined;
     const message = firstError?.message || "Validation failed";
 
@@ -68,43 +69,44 @@ export class ErrorHandler {
       message,
       field,
       details: {
-        validationErrors: error.errors,
+        validationErrors: zodErr.errors,
       },
     };
   }
 
   // Handle Prisma errors (for future database integration)
-  private static handlePrismaError(error: any): ApiError {
+  private static handlePrismaError(error: unknown): ApiError {
+    const prismaErr = error as { code?: string; meta?: Record<string, unknown> };
     const isDev = process.env.NODE_ENV === "development";
 
     // Common Prisma error codes
-    switch (error.code) {
+    switch (prismaErr.code) {
       case "P2002": // Unique constraint violation
         return {
           code: ApiErrorCode.CONFLICT,
           message: "A record with this information already exists",
-          details: isDev ? { constraint: error.meta?.target } : undefined,
+          details: isDev ? { constraint: prismaErr.meta?.target } : undefined,
         };
 
       case "P2025": // Record not found
         return {
           code: ApiErrorCode.NOT_FOUND,
           message: "Record not found",
-          details: isDev ? { cause: error.meta?.cause } : undefined,
+          details: isDev ? { cause: prismaErr.meta?.cause } : undefined,
         };
 
       case "P2003": // Foreign key constraint violation
         return {
           code: ApiErrorCode.BAD_REQUEST,
           message: "Invalid reference to related record",
-          details: isDev ? { field: error.meta?.field_name } : undefined,
+          details: isDev ? { field: prismaErr.meta?.field_name } : undefined,
         };
 
       default:
         return {
           code: ApiErrorCode.INTERNAL_ERROR,
           message: "Database operation failed",
-          details: isDev ? { prismaCode: error.code } : undefined,
+          details: isDev ? { prismaCode: prismaErr.code } : undefined,
         };
     }
   }
@@ -196,7 +198,7 @@ export class ErrorHandler {
       typeof error === "object" &&
       error !== null &&
       "name" in error &&
-      (error as any).name === "ZodError"
+      (error as { name: unknown }).name === "ZodError"
     );
   }
 
@@ -205,8 +207,8 @@ export class ErrorHandler {
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      typeof (error as any).code === "string" &&
-      (error as any).code.startsWith("P")
+      typeof (error as { code: unknown }).code === "string" &&
+      (error as { code: string }).code.startsWith("P")
     );
   }
 
