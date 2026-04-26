@@ -1,12 +1,17 @@
 import { UserRepository as IUserRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
 import { FitCenterUserProfile, FitCenterMembership, MembershipStatus } from "../../types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+// Tipo inferido de Prisma para un User con su UserMembership incluido.
+// Único tipo concreto que mapToEntity y mapUserMembershipRow reciben en runtime.
+type UserWithMembership = Prisma.UserGetPayload<{ include: { userMembership: true } }>;
 
 // ─── Helper: UserMembership row → FitCenterMembership shape ─────────────────
 // HAL-01 Fase 3A: La fuente de verdad es ahora la tabla user_memberships.
 // Los campos @deprecated de centerStats se devuelven como 0 — se calculan
 // en tiempo real desde ClassRegistration (HAL-09, sprint futuro).
-function mapUserMembershipRow(um: any): FitCenterMembership | undefined {
+function mapUserMembershipRow(um: NonNullable<UserWithMembership["userMembership"]>): FitCenterMembership | undefined {
   if (!um) return undefined;
 
   const toISODate = (d: Date | null | undefined): string =>
@@ -110,7 +115,7 @@ export class PrismaUserRepository implements IUserRepository {
 
     const totalPages = Math.ceil(total / limit);
     return {
-      items: users.map((u: any) => this.mapToEntity(u)),
+      items: users.map((u) => this.mapToEntity(u)),
       pagination: {
         page, limit, total, totalPages,
         hasNextPage: page < totalPages,
@@ -122,7 +127,7 @@ export class PrismaUserRepository implements IUserRepository {
   // ── findUnique ────────────────────────────────────────────────────────────
   async findUnique(params: FindUniqueParams): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
-      where:   params.where as any,
+      where:   params.where as Prisma.UserWhereUniqueInput,
       include: { userMembership: true },     // ← HAL-01
     });
     return user ? this.mapToEntity(user) : null;
@@ -132,7 +137,7 @@ export class PrismaUserRepository implements IUserRepository {
   // Dual-write Phase 3: escribe en JSONB (backward-compat) Y en UserMembership.
   // El JSONB se elimina en Phase 4.
   async create(data: CreateData<FitCenterUserProfile>): Promise<FitCenterUserProfile> {
-    const orgId = (data as any).organizationId ?? "org_blacksheep_001";
+    const orgId = data.organizationId ?? "org_blacksheep_001";
 
     const created = await this.prisma.user.create({
       data: {
@@ -140,15 +145,15 @@ export class PrismaUserRepository implements IUserRepository {
         firstName:        data.firstName,
         lastName:         data.lastName,
         email:            data.email,
-        phone:            data.phone,
+        phone:            data.phone ?? undefined,
         role:             data.role || "user",
         organizationId:   orgId,
-        gender:           (data as any).gender           ?? undefined,
-        dateOfBirth:      (data as any).dateOfBirth      ? new Date((data as any).dateOfBirth) : undefined,
-        emergencyContact: (data as any).emergencyContact ?? undefined,
-        formaDePago:      (data as any).formaDePago      ?? undefined,
+        gender:           data.gender           ?? undefined,
+        dateOfBirth:      data.dateOfBirth       ? new Date(data.dateOfBirth) : undefined,
+        emergencyContact: data.emergencyContact  ?? undefined,
+        formaDePago:      data.formaDePago       ?? undefined,
         // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del create
-      } as any,
+      },
     });
 
     // Si viene membership en el payload, persistir en UserMembership (tabla relacional)
@@ -184,14 +189,14 @@ export class PrismaUserRepository implements IUserRepository {
         firstName:        data.firstName,
         lastName:         data.lastName,
         email:            data.email,
-        phone:            data.phone,
+        phone:            data.phone       ?? undefined,
         role:             data.role,
-        gender:           (data as any).gender,
-        dateOfBirth:      (data as any).dateOfBirth ? new Date((data as any).dateOfBirth) : undefined,
-        emergencyContact: (data as any).emergencyContact,
-        formaDePago:      (data as any).formaDePago,
+        gender:           data.gender,
+        dateOfBirth:      data.dateOfBirth  ? new Date(data.dateOfBirth) : undefined,
+        emergencyContact: data.emergencyContact,
+        formaDePago:      data.formaDePago,
         // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del update
-      } as any,
+      },
     });
 
     // Si viene membership en el payload, actualizar UserMembership (tabla relacional)
@@ -246,7 +251,7 @@ export class PrismaUserRepository implements IUserRepository {
       where:   { role },
       include: { userMembership: true },    // ← HAL-01
     });
-    return users.map((u: any) => this.mapToEntity(u));
+    return users.map((u) => this.mapToEntity(u));
   }
 
   // ── findByMembershipStatus ────────────────────────────────────────────────
@@ -257,7 +262,7 @@ export class PrismaUserRepository implements IUserRepository {
       where:   { userMembership: { status } },
       include: { userMembership: true },
     });
-    return users.map((u: any) => this.mapToEntity(u));
+    return users.map((u) => this.mapToEntity(u));
   }
 
   // ── getUserStats ──────────────────────────────────────────────────────────
@@ -310,7 +315,7 @@ export class PrismaUserRepository implements IUserRepository {
   // ── mapToEntity ───────────────────────────────────────────────────────────
   // HAL-01 Fase 4 Sprint 4: Lee exclusivamente desde userMembership (tabla relacional).
   // El fallback JSONB fue eliminado — la columna membership se dropeará en Sprint 4.
-  private mapToEntity(prismaUser: any): FitCenterUserProfile {
+  private mapToEntity(prismaUser: UserWithMembership): FitCenterUserProfile {
     const membership = prismaUser.userMembership
       ? mapUserMembershipRow(prismaUser.userMembership)
       : undefined;
