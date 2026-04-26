@@ -192,9 +192,53 @@ Sesión 3 (2026-04-26):
   ⚠️  Nota: 8 instancias de `as any` en class-service.ts alrededor de ValidationService quedan pendientes para el Bloque 4.
   ✅ Bloque 3 (Parcial) — user-approval.tsx (13), user-profile.tsx (9)
   Conteo real post Sesión 3: 51
-Sesión 4: Bloque 3 restante (14 en UI pages/components) + Bloque 4 (ValidationService, api routes, utils, store)
-          TSC final → 0 errores → HAL-16 cerrado → 131 → 0
+Sesión 4: 
+  - Limpieza final UI (14 instancias)
+  - API Routes & JsonValue (10 instancias)
+  - Refactor ValidationService TDD (12 instancias)
+  - Store, Utils, Monitoring (15 instancias)
+  TSC final → 0 errores → HAL-16 cerrado → 131 → 0
 ```
+
+---
+
+## Plan de Ataque: Sesión 4 (El cierre)
+
+### Fase 1: Limpieza en Batch de la UI (14 instancias)
+*Remover casteos mecánicos en componentes y páginas.*
+- [ ] `app/admin/alumnos/[id]/nuevo-plan/page.tsx` (3)
+- [ ] `app/admin/alumnos/[id]/page.tsx` (2)
+- [ ] `app/admin/configuraciones/page.tsx` (2)
+- [ ] `app/app/calendar/page.tsx` (1)
+- [ ] `components/admincomponents/add-student-modal.tsx` (2)
+- [ ] `components/admincomponents/notifications.tsx` (1)
+- [ ] `components/admincomponents/admin-dashboard.tsx` (1)
+- [ ] `components/admincomponents/plans-manager.tsx` (1)
+- [ ] `components/ui/toaster.tsx` (1)
+
+### Fase 2: API Routes y JsonValue (10 instancias)
+*Aserciones seguras para JSON de Prisma y type guards en rutas.*
+- [ ] Rutas de `renewals` (6) — Aserción estricta `as PlanConfig` / `as RenewalDetails`.
+- [ ] Rutas `me`, `classes/cancel`, `classes`, `alerts` (4) — Type guards básicos para roles y estados.
+
+### Fase 3: Refactor Quirúrgico de `ValidationService` (12 instancias)
+*Migrar el validador a queries directas usando TDD.*
+- [ ] **1. Mapeo Global:** Correr `grep_search` de consumidores (incluyendo `lib/` para `blacksheep-store.ts`) antes de tocar nada.
+- [ ] **2. Chequeo de N+1:** Analizar en el código de los consumidores encontrados si la función es llamada dentro de loops. **Importante:** Si hay calls masivos (bulk operations), mantener el tercer argumento opcional `dayRegistrations` como optimización de performance para no degradarla.
+- [ ] **3. Estandarizar:** Cambiar llamadas internas directas de `prisma` a `this.getProvider()`.
+- [ ] **4. Cambiar Firmas:** Actualizar `canUserRegisterToClass` y `canUserCancelClassWithRules` a `(userId, classId, [opcional: dayRegistrations])`.
+- [ ] **5. Check TSC 1:** `tsc --noEmit`. Debe fallar SOLO en los call sites identificados.
+- [ ] **6. Actualizar Call Sites:** Alinear los consumidores identificados a la nueva firma.
+- [ ] **7. Check TSC 2:** `tsc --noEmit`. **Debe retornar 0**.
+- [ ] **8. Mover Lógica:** Pasar queries de `UserMembership` y `ClassRegistration` al validador y borrar el puente frankenstein de `class-service.ts`.
+- [ ] **9. Check TSC Final y Commit:** `tsc --noEmit` -> **0 errores**.
+
+### Fase 4: Store, Utils y Monitoring (15 instancias)
+*Limpieza del último remanente técnico.*
+- [ ] `lib/blacksheep-store.ts` (5) — Tipado en Zustand. **Importante:** Confirmar si los castings compensan tipos incorrectos que HAL-10 reescribirá. Si es server state (React Query), dejarlos para HAL-10. Si es client state puro, limpiarlos ahora.
+- [ ] `class-generator.ts` y `generator.ts` (4) — Usar `Prisma.ClassSessionCreateManyInput`.
+- [ ] `sentry.ts`, `performance-monitor.ts`, `logger.ts` (3) — Variables globales y type guards.
+- [x] `handler.ts` — ✅ 0 as any desde HAL-14 (commit `79c96d0`).
 
 ---
 
