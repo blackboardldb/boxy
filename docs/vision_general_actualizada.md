@@ -25,7 +25,7 @@
 | HAL-13 | Logger sin persistencia | ✅ Cerrado (tracesSampleRate 0.1 y errors 1.0 es correct best practice) | — |
 | HAL-14 | Constraint names expuestos | 🟠 Pendiente post HAL-16 | `567283a` |
 | **HAL-15** | **84 errores TSC** | **✅ Completo — 63 → 0 errores** | **`df3d03a`** |
-| **HAL-16** | **141 `as any` castings** | **❌ Pendiente** | — |
+| **HAL-16** | **141 `as any` castings** | **✅ Completo — 141 → 0** | `886f139` |
 
 ---
 
@@ -149,7 +149,7 @@ WHERE membership IS NOT NULL;
 | **HAL-12b** | **Contraseñas Locales (`blacksheep26`)**. Retirar y prohibir el fallback harcodeado de contraseñas de alumno de fallar su variable de ambiente correspondiente, emitiendo throw catch error general. | 🟢 Bajo | .25h | ✅ Completo |
 | **HAL-06b** | **Zod en 26 rutas API PENDIENTES**. Implementado. Bugs críticos de alineación frontend-backend (datetime vs min, nombres reales de schemas, validaciones inline) totalmente resueltos. | 🟢 Refactor | Listo | ✅ Completado |
 | **HAL-03** | **Arrays denormalizados `ClassSession`** (`registeredParticipantsIds`, `waitlistParticipantsIds`). Removidos. Fuente de verdad → `ClassRegistration`. Mapper dual-read → writes eliminados → DROP de columnas ejecutado 2026-04-26. TSC 0 errores. Generación de clases operativa. | ✅ Completo | DROP: `2026-04-26` |
-| **HAL-16** | **131 → 51 `as any` restantes** (conteo post Sesión 3 — 2026-04-26). Bloque 1 (data-layer) y Bloque 2 (services) listos. Bloque 3 parcial (user-approval, user-profile). Pendiente Fase final (UI batch, API, ValidationService, Store). | 🟢 Bajo | 6h | **🔄 EN PROGRESO — Bloques 1-2 ✅** |
+| **HAL-16** | **141 → 0 `as any` restantes**. Type Safety Audit completo. Front, backend, validadores, store y utilidades estrictamente tipados. TSC = 0 errores. | 🟢 Bajo | 6h | **✅ Completo — 2026-04-26** |
 | **HAL-14** | **Constraint names expuestos**. `handleZodError`/`handlePrismaError`: `error: any` → `error: unknown`. Type guards narrowed. P2002/P2025/P2003 ya protegíos con `isDev`. Commit `79c96d0`. | 🟢 Bajo | 0.5h | **✅ Completo — 2026-04-26** |
 | **HAL-10** | **Zustand → React Query (TanStack)**. Traspaso final a manejo async de frontend global. Es una tarea backlogged sin deadline pero recomendada iterar posteriormente con el sistema puramente relacional optimizado y la query JSONB bloqueante fuera. | 🟢 Bajo | 12h | **Bloqueado por HAL-01 y HAL-03** |
 
@@ -171,8 +171,7 @@ graph TD
     subgraph AHORA (En Progreso)
         HAL03
     end
-    subgraph FUTURO (18 horas est.)
-        HAL16
+    subgraph FUTURO (12 horas est.)
         HAL10
     end
 ```
@@ -396,13 +395,11 @@ WHERE table_name = 'class_sessions'
 ✅ HAL-06b
 ✅ HAL-03 — Sprint C completo (DROP 2026-04-26)
     ↓
-🔄 HAL-16 — Bloque 1 ✅ (131 → 89 as any, 2026-04-26)
-   Bloques 2-4 pendientes
+✅ HAL-16 — Type Safety Audit Completo (2026-04-26)
+   141 → 0 as any casts. Validación estricta y TSC 0.
     ↓
 ✅ HAL-14 — Completo (2026-04-26, commit 79c96d0)
    handler.ts: 0 as any, constraint names seguros en prod
     ↓
-HAL-16 Bloques 2-4 ← PRÓXIMO PASO
-    ↓
-HAL-10 (React Query)
+HAL-10 (TanStack/React Query) ← PRÓXIMO PASO
 ```
