@@ -10,6 +10,7 @@ export interface FitCenterUserProfile {
   lastName: string; // "García"
   email: string; // "ana@email.com"
   phone: string; // "+56 9 1234 5678"
+  organizationId: string; // HAL-04: columna relacional en User — fuente de verdad
   dateOfBirth?: string; // "1990-05-15" (ISO 8601)
   gender?: string; // "Femenino"
   avatarId?: string; // "avatar_1"

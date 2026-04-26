@@ -63,6 +63,7 @@ const createStudentData = (
     lastName: formData.lastName,
     email: formData.email,
     phone: formData.phone,
+    organizationId: initialStudent?.organizationId ?? "org_blacksheep_001",
     // Remover campos undefined para evitar problemas de validación
     ...(formData.formaDePago && { formaDePago: formData.formaDePago }),
     avatarId: "avatar_default",
