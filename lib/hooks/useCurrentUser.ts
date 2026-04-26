@@ -1,6 +1,7 @@
-import { useEffect } from "react";
 import type { FitCenterUserProfile } from "@/lib/types";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useMe } from "@/lib/react-query/hooks/useMe";
+import { useQueryClient } from "@tanstack/react-query";
+import { meKeys } from "@/lib/react-query/hooks/useMe";
 
 interface UseCurrentUserResult {
   currentUser: FitCenterUserProfile | null;
@@ -10,20 +11,14 @@ interface UseCurrentUserResult {
 }
 
 export function useCurrentUser(): UseCurrentUserResult {
-  const { currentUser, isUserLoading, error, fetchMe } = useBlackSheepStore();
+  const queryClient = useQueryClient();
+  const { data: currentUser = null, isLoading, error } = useMe();
 
-  useEffect(() => {
-    // Solo dispara el fetch si no existe el usuario y no está cargando actualmente.
-    // El store también tiene su propio chequeo interno, pero esto evita el efecto aquí.
-    if (!currentUser && !isUserLoading) {
-      fetchMe();
-    }
-  }, [currentUser, isUserLoading, fetchMe]);
-
-  return { 
-    currentUser, 
-    isLoading: isUserLoading, 
-    error, 
-    reload: () => fetchMe() 
+  return {
+    currentUser,
+    isLoading,
+    error: error?.message ?? null,
+    reload: () => queryClient.invalidateQueries({ queryKey: meKeys.me }),
   };
 }
+

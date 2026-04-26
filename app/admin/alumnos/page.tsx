@@ -23,13 +23,14 @@ import {
 } from "@/components/ui/select";
 import { AddStudentModal } from "../../../components/admincomponents/add-student-modal";
 import {
-  useBlackSheepStore,
   STUDENT_STATES,
   STATE_COLORS,
   statusStyles,
+  useBlackSheepStore,
 } from "@/lib/blacksheep-store";
+import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
+import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import type { FitCenterUserProfile } from "@/lib/types";
-// Removed unused pagination imports
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateShort, getPlanStatus } from "@/lib/utils";
 
@@ -44,33 +45,33 @@ import { useRouter } from "next/navigation";
 
 export default function AlumnosPage() {
   const router = useRouter();
-  const {
-    users = [],
-    fetchUsers,
-    pagination,
-    // updateUser, // Currently unused
-    // addUser, // Currently unused
-    createUser,
-    updateUserById,
-    plans = [],
-    fetchPlans,
-  } = useBlackSheepStore();
+  // createUser se mantiene en el store hasta Sprint B-mutations
+  const { createUser } = useBlackSheepStore();
 
-  // Filtrar usuarios para excluir staff (admin/coach) - solo mostrar alumnos
-  const studentsOnly = users.filter(
-    (user) => !user.role || user.role === "user" // Solo usuarios sin rol o con rol "user"
-  );
-
-  // const { toast } = useToast(); // Eliminado
-
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Estado de paginación y filtros
+  // Estado de filtros
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const limit = 10;
+
+  // React Query
+  const { data, isFetching } = usePaginatedUsers({
+    page,
+    limit,
+    search: debouncedSearch,
+    status: statusFilter !== "todos" ? statusFilter : undefined,
+  });
+  const { data: plansData } = usePlans({ limit: 100 });
+
+  const users = data?.users ?? [];
+  const pagination = data?.pagination ?? null;
+  const plans = plansData ?? [];
+
+  // Filtrar staff — solo alumnos
+  const studentsOnly = users.filter(
+    (user) => !user.role || user.role === "user"
+  );
 
   // Debounce search term
   useEffect(() => {
@@ -80,31 +81,7 @@ export default function AlumnosPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Cargar usuarios al montar el componente y cuando cambian filtros/página
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchUsers(
-          page,
-          limit,
-          debouncedSearch,
-          undefined, // No filtrar por rol específico (incluye usuarios sin rol = alumnos)
-          statusFilter !== "todos" ? statusFilter : undefined
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-    
-    // Solo cargar planes si no existen (optimización Punto 1 matizado)
-    if (plans.length === 0) {
-      fetchPlans(1, 100);
-    }
-  }, [page, debouncedSearch, statusFilter, fetchUsers, fetchPlans, plans.length]);
-
-  // Resetear página si cambia el filtro de búsqueda o estado
+  // Resetear a página 1 cuando cambia filtro o búsqueda
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, statusFilter]);
@@ -131,12 +108,12 @@ export default function AlumnosPage() {
     router.push(`/admin/alumnos/${student.id}`);
   };
 
-  // Paginación real desde el store
-  const totalItems = pagination?.total || 0;
-  const totalPages = pagination?.totalPages || 1;
-  const currentPage = pagination?.page || 1;
+  // Paginación desde React Query
+  const totalItems = pagination?.total ?? 0;
+  const totalPages = pagination?.totalPages ?? 1;
+  const currentPage = pagination?.page ?? 1;
   const startIndex = (currentPage - 1) * limit;
-  const endIndex = Math.min(startIndex + (users?.length || 0), totalItems);
+  const endIndex = Math.min(startIndex + users.length, totalItems);
 
   return (
     <div className="p-4 pt-8 md:p-8 space-y-6 w-full">
@@ -150,14 +127,9 @@ export default function AlumnosPage() {
           }}
           plans={plans}
           onSuccess={() => {
-            // Refrescar la lista después de agregar/editar
-            fetchUsers(
-              page,
-              limit,
-              searchTerm,
-              undefined, // No filtrar por rol específico (incluye usuarios sin rol = alumnos)
-              statusFilter !== "todos" ? statusFilter : undefined
-            );
+            // React Query refetch automático vía invalidateQueries en useCreateUser
+            // Por ahora createUser está en el store; cuando se migre en Sprint B-mutations
+            // se usará queryClient.invalidateQueries({ queryKey: userKeys.lists() })
           }}
         />
         </div>
@@ -209,7 +181,7 @@ export default function AlumnosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && users.length === 0 ? (
+              {isFetching && users.length === 0 ? (
                 // Skeleton para tabla
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>

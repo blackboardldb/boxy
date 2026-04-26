@@ -33,9 +33,7 @@ export default function AdminClasesPage() {
   const {
     classSessions,
     disciplines,
-    users,
     fetchClassSessions,
-    fetchUsers,
     fetchDisciplines,
     fetchInstructorsMinimal,
   } = useBlackSheepStore();
@@ -116,9 +114,7 @@ export default function AdminClasesPage() {
       // Pedimos a la API las clases de toda la semana
       await fetchClassSessions(startStr, endStr, 1, 150);
       
-      // Punto 1 matizado: Solo cargar si no existen en el store
       await Promise.all([
-        users.length === 0 ? fetchUsers(1, 1000) : Promise.resolve(),
         disciplines.length === 0 ? fetchDisciplines() : Promise.resolve(),
         instructors.length === 0 ? fetchInstructorsMinimal().then(setInstructors) : Promise.resolve(),
       ]);
@@ -129,10 +125,8 @@ export default function AdminClasesPage() {
     }
   }, [
     fetchClassSessions,
-    fetchUsers,
     fetchDisciplines,
     fetchInstructorsMinimal,
-    users.length,
     disciplines.length,
     instructors.length,
   ]);

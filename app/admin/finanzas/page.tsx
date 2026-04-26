@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
+import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -16,9 +17,6 @@ import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { parseISO } from "date-fns";
 
 export default function FinanzasPage() {
-  const users = useBlackSheepStore((s) => s.users);
-  const fetchUsers = useBlackSheepStore((s) => s.fetchUsers);
-
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
@@ -27,21 +25,16 @@ export default function FinanzasPage() {
     )}`;
   });
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    // Solo cargar usuarios si no existen (Punto 1 matizado)
-    if (users.length === 0) {
-      fetchUsers(1, 1000);
-    }
-    // fetchEgresos() redundante eliminado de aquí; lo gestiona ExpensesManager
-  }, [fetchUsers, users.length]);
-
   // Parsear mes seleccionado
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);
   const selectedMonthIndex = selectedMonthNum - 1; // JavaScript months are 0-indexed
 
   // Egresos del mes seleccionado — React Query filtra en el servidor por (year, month)
   const { data: egresos = [] } = useEgresos(selectedYear, selectedMonthIndex);
+
+  // Usuarios — React Query con limit grande para calcular ingresos del mes
+  const { data: usersData } = usePaginatedUsers({ limit: 1000 });
+  const users = usersData?.users ?? [];
 
   // Filtrar ingresos del mes seleccionado
   const ingresosMes = users
