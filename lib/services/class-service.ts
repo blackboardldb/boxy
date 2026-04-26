@@ -206,7 +206,7 @@ export class ClassService extends BaseService<ClassSession> {
           });
         });
 
-        return createSuccessResponse(this.mapToEntity(updatedRecord));
+        return createSuccessResponse(this.mapToEntity(updatedRecord!));
       },
       { operation: "registerStudent", resource: "classes", metadata: { classId, userId, isAdmin: options.isAdmin } }
     );
@@ -257,29 +257,42 @@ export class ClassService extends BaseService<ClassSession> {
           });
         });
 
-        return createSuccessResponse(this.mapToEntity(updatedRecord));
+        return createSuccessResponse(this.mapToEntity(updatedRecord!));
       },
       { operation: "cancelRegistration", resource: "classes", metadata: { classId, userId } }
     );
   }
 
-  private mapToEntity(prismaClass: any): ClassSession {
+  private mapToEntity(prismaClass: {
+    id: string;
+    organizationId: string;
+    disciplineId: string;
+    name: string;
+    dateTime: Date | string;
+    durationMinutes: number;
+    instructorId: string;
+    capacity: number;
+    status: string;
+    notes: string | null;
+    isGenerated: boolean;
+    registrations?: { userId: string; status: string }[];
+  }): ClassSession {
     return {
       id: prismaClass.id,
       organizationId: prismaClass.organizationId,
       disciplineId: prismaClass.disciplineId,
       name: prismaClass.name,
-      dateTime: prismaClass.dateTime.toISOString(),
+      dateTime: typeof prismaClass.dateTime === "string" ? prismaClass.dateTime : prismaClass.dateTime.toISOString(),
       durationMinutes: prismaClass.durationMinutes,
       instructorId: prismaClass.instructorId,
       capacity: prismaClass.capacity,
       registeredParticipantsIds: prismaClass.registrations
-        ?.filter((r: any) => r.status === 'registered')
-        .map((r: any) => r.userId) ?? [],
+        ?.filter((r) => r.status === 'registered')
+        .map((r) => r.userId) ?? [],
       waitlistParticipantsIds: prismaClass.registrations
-        ?.filter((r: any) => r.status === 'waitlist')
-        .map((r: any) => r.userId) ?? [],
-      status: prismaClass.status as any,
+        ?.filter((r) => r.status === 'waitlist')
+        .map((r) => r.userId) ?? [],
+      status: prismaClass.status as "scheduled" | "completed" | "cancelled",
       notes: prismaClass.notes || undefined,
       isGenerated: prismaClass.isGenerated,
     };
