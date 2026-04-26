@@ -1,6 +1,11 @@
 import { MembershipRenewalRepository as IMembershipRenewalRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
 import { PendingRenewalRequest } from "../../types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+type RenewalRow = Prisma.MembershipRenewalGetPayload<{ include: { user: true } }>
+               | Prisma.MembershipRenewalGetPayload<Record<string, never>>;
+type RenewalDetails = { planName?: string; planPrice?: number; classLimit?: number; duration?: number; previousPlanId?: string };
 
 export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepository {
   private get prisma() {
@@ -28,7 +33,7 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: renewals.map((r: any) => this.mapToEntity(r)),
+      items: renewals.map((r) => this.mapToEntity(r)),
       pagination: {
         page,
         limit,
@@ -42,7 +47,7 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
 
   async findUnique(params: FindUniqueParams): Promise<PendingRenewalRequest | null> {
     const renewal = await this.prisma.membershipRenewal.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.MembershipRenewalWhereUniqueInput,
       include: {
         user: true
       }
@@ -66,7 +71,7 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
           classLimit: data.requestedPlanClassLimit,
           duration: data.requestedPlanDuration,
           previousPlanId: data.previousPlanId
-        } as any,
+        } as Prisma.InputJsonValue,
       },
     });
     return this.mapToEntity(created);
@@ -115,8 +120,8 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
     return renewals.map(r => this.mapToEntity(r));
   }
 
-  private mapToEntity(r: any): PendingRenewalRequest {
-    const details = (r.renewalDetails as any) || {};
+  private mapToEntity(r: RenewalRow): PendingRenewalRequest {
+    const details = ((r.renewalDetails as unknown) as RenewalDetails) || {};
     return {
       id: r.id,
       requestedPlanId: r.requestedPlanId || "",
@@ -124,11 +129,11 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
       requestedPlanPrice: details.planPrice,
       requestedPlanClassLimit: details.classLimit,
       requestedPlanDuration: details.duration,
-      requestedPaymentMethod: (r.paymentMethod as any) || "transferencia",
+      requestedPaymentMethod: (r.paymentMethod as PendingRenewalRequest["requestedPaymentMethod"]) || "transferencia",
       requestDate: r.requestedAt?.toISOString(),
-      status: (r.status as any) || "pending",
+      status: (r.status as PendingRenewalRequest["status"]) || "pending",
       requestedBy: r.userId,
-      processedBy: undefined, // Add mapping if needed
+      processedBy: undefined,
       processedDate: r.processedAt?.toISOString(),
       notes: r.notes || "",
       previousPlanId: details.previousPlanId,

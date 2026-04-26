@@ -1,6 +1,9 @@
 import { DisciplineRepository as IDisciplineRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
 import { Discipline } from "../../types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+type DisciplineRow = Prisma.DisciplineGetPayload<Record<string, never>>;
 
 export class PrismaDisciplineRepository implements IDisciplineRepository {
   private get prisma() {
@@ -25,7 +28,7 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: disciplines.map((d: any) => this.mapToEntity(d)),
+      items: disciplines.map((d) => this.mapToEntity(d)),
       pagination: {
         page,
         limit,
@@ -39,7 +42,7 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
 
   async findUnique(params: FindUniqueParams): Promise<Discipline | null> {
     const discipline = await this.prisma.discipline.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.DisciplineWhereUniqueInput,
     });
     return discipline ? this.mapToEntity(discipline) : null;
   }
@@ -48,13 +51,13 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
     const created = await this.prisma.discipline.create({
       data: {
         id: data.id,
-        organizationId: (data as any).organizationId || "org_blacksheep_001",
+        organizationId: (data as { organizationId?: string }).organizationId || "org_blacksheep_001",
         name: data.name,
         description: data.description,
         color: data.color || "#3b82f6",
         isActive: data.isActive ?? true,
-        schedule: (data.schedule as any) || [],
-        cancellationRules: (data.cancellationRules as any) || [],
+        schedule: (data.schedule as unknown as Prisma.InputJsonValue) ?? [],
+        cancellationRules: (data.cancellationRules as unknown as Prisma.InputJsonValue) ?? [],
       },
     });
     return this.mapToEntity(created);
@@ -68,8 +71,8 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
         description: data.description,
         color: data.color,
         isActive: data.isActive,
-        schedule: data.schedule ? (data.schedule as any) : undefined,
-        cancellationRules: data.cancellationRules ? (data.cancellationRules as any) : undefined,
+        schedule: data.schedule ? (data.schedule as unknown as Prisma.InputJsonValue) : undefined,
+        cancellationRules: data.cancellationRules ? (data.cancellationRules as unknown as Prisma.InputJsonValue) : undefined,
       },
     });
     return this.mapToEntity(updated);
@@ -92,7 +95,7 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
     const active = await this.prisma.discipline.findMany({
       where: { isActive: true },
     });
-    return active.map((d: any) => this.mapToEntity(d));
+    return active.map((d) => this.mapToEntity(d));
   }
 
   async findByName(name: string): Promise<Discipline | null> {
@@ -103,15 +106,15 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
   }
 
   // Mapper
-  private mapToEntity(prismaDiscipline: any): Discipline {
+  private mapToEntity(d: DisciplineRow): Discipline {
     return {
-      id: prismaDiscipline.id,
-      name: prismaDiscipline.name,
-      description: prismaDiscipline.description || undefined,
-      color: prismaDiscipline.color,
-      isActive: prismaDiscipline.isActive,
-      schedule: Array.isArray(prismaDiscipline.schedule) ? prismaDiscipline.schedule : [],
-      cancellationRules: Array.isArray(prismaDiscipline.cancellationRules) ? prismaDiscipline.cancellationRules : [],
-    } as Discipline;
+      id: d.id,
+      name: d.name,
+      description: d.description || undefined,
+      color: d.color,
+      isActive: d.isActive,
+      schedule: Array.isArray(d.schedule) ? d.schedule as unknown as Discipline["schedule"] : [],
+      cancellationRules: Array.isArray(d.cancellationRules) ? d.cancellationRules as unknown as Discipline["cancellationRules"] : [],
+    };
   }
 }

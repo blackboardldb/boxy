@@ -2,6 +2,10 @@ import { InstructorRepository as IInstructorRepository, FindManyParams, FindUniq
 import { Instructor } from "../../types";
 import { ValidationError } from "../../errors/types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+type InstructorRow = Prisma.InstructorGetPayload<Record<string, never>>;
+type InstructorProfile = { specialties?: string[]; userId?: string };
 
 export class PrismaInstructorRepository implements IInstructorRepository {
   private get prisma() {
@@ -19,7 +23,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
         orderBy: params?.orderBy,
         take: limit,
         skip,
-        select: params?.select as any,
+        select: params?.select as Prisma.InstructorSelect | undefined,
       }),
       this.prisma.instructor.count({ where: params?.where })
     ]);
@@ -27,7 +31,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: instructors.map((i: any) => this.mapToEntity(i)),
+      items: instructors.map((i) => this.mapToEntity(i as InstructorRow)),
       pagination: {
         page,
         limit,
@@ -41,7 +45,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
 
   async findUnique(params: FindUniqueParams): Promise<Instructor | null> {
     const instructor = await this.prisma.instructor.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.InstructorWhereUniqueInput,
     });
     return instructor ? this.mapToEntity(instructor) : null;
   }
@@ -67,7 +71,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
 
   async update(id: string, data: UpdateData<Instructor>): Promise<Instructor> {
     const existing = await this.prisma.instructor.findUnique({ where: { id } });
-    const currentProfile = (existing?.profile as any) || {};
+    const currentProfile = (existing?.profile as InstructorProfile) || {};
 
     const updated = await this.prisma.instructor.update({
       where: { id },
@@ -147,18 +151,19 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     };
   }
 
-  private mapToEntity(prismaInstructor: any): Instructor {
-    const profile = (prismaInstructor.profile as any) || {};
+  private mapToEntity(prismaInstructor: InstructorRow): Instructor {
+    const profile = (prismaInstructor.profile as InstructorProfile) || {};
     return {
       id: prismaInstructor.id,
+      organizationId: (prismaInstructor as unknown as { organizationId?: string }).organizationId ?? "org_blacksheep_001",
       firstName: prismaInstructor.firstName,
       lastName: prismaInstructor.lastName,
       email: prismaInstructor.email,
       phone: prismaInstructor.phone || undefined,
-      role: prismaInstructor.role as any,
+      role: prismaInstructor.role as "admin" | "coach",
       isActive: prismaInstructor.isActive,
       specialties: profile.specialties || [],
       userId: profile.userId,
-    } as Instructor;
+    };
   }
 }

@@ -2,6 +2,10 @@ import { PlanRepository as IPlanRepository, FindManyParams, FindUniqueParams, Cr
 import { MembershipPlan } from "../../types";
 import { ValidationError } from "../../errors/types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+type PlanRow = Prisma.MembershipPlanGetPayload<Record<string, never>>;
+type PlanConfig = { organizationId?: string; classLimit?: number; disciplineAccess?: string; allowedDisciplines?: string[]; canFreeze?: boolean; freezeDurationDays?: number; autoRenews?: boolean };
 
 export class PrismaPlanRepository implements IPlanRepository {
   private get prisma() {
@@ -26,7 +30,7 @@ export class PrismaPlanRepository implements IPlanRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: plans.map((p: any) => this.mapToEntity(p)),
+      items: plans.map((p) => this.mapToEntity(p)),
       pagination: {
         page,
         limit,
@@ -40,7 +44,7 @@ export class PrismaPlanRepository implements IPlanRepository {
 
   async findUnique(params: FindUniqueParams): Promise<MembershipPlan | null> {
     const plan = await this.prisma.membershipPlan.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.MembershipPlanWhereUniqueInput,
     });
     return plan ? this.mapToEntity(plan) : null;
   }
@@ -70,7 +74,7 @@ export class PrismaPlanRepository implements IPlanRepository {
 
   async update(id: string, data: UpdateData<MembershipPlan>): Promise<MembershipPlan> {
     const existing = await this.prisma.membershipPlan.findUnique({ where: { id } });
-    const currentConfig = (existing?.config as any) || {};
+    const currentConfig = (existing?.config as PlanConfig) || {};
 
     const updated = await this.prisma.membershipPlan.update({
       where: { id },
@@ -155,8 +159,8 @@ export class PrismaPlanRepository implements IPlanRepository {
     };
   }
 
-  private mapToEntity(p: any): MembershipPlan {
-    const config = (p.config as any) || {};
+  private mapToEntity(p: PlanRow): MembershipPlan {
+    const config = (p.config as PlanConfig) || {};
     return {
       id: p.id,
       organizationId: config.organizationId || "org_blacksheep_001",
@@ -165,7 +169,7 @@ export class PrismaPlanRepository implements IPlanRepository {
       price: p.price,
       durationInMonths: p.duration,
       classLimit: config.classLimit || 0,
-      disciplineAccess: config.disciplineAccess || "all",
+      disciplineAccess: (config.disciplineAccess as "all" | "limited") || "all",
       allowedDisciplines: config.allowedDisciplines || [],
       canFreeze: config.canFreeze || false,
       freezeDurationDays: config.freezeDurationDays || 0,

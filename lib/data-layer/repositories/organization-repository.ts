@@ -1,6 +1,9 @@
 import { OrganizationRepository as IOrganizationRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
 import { Organization } from "../../types";
 import { prisma } from "../../prisma";
+import { Prisma } from "@prisma/client";
+
+type OrgRow = { id: string; name: string; settings: Prisma.JsonValue };
 
 export class PrismaOrganizationRepository implements IOrganizationRepository {
   private get prisma() {
@@ -30,7 +33,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: organizations.map((o: any) => this.mapToEntity(o)),
+      items: organizations.map((o) => this.mapToEntity(o)),
       pagination: {
         page,
         limit,
@@ -47,7 +50,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
       return null;
     }
     const organization = await this.prisma.organization.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.OrganizationWhereUniqueInput,
       select: {
         id: true,
         name: true,
@@ -76,7 +79,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         name: data.name,
         isActive: true,
         settings: {
-          ...(data.settings as any || {}),
+          ...(data.settings as Record<string, unknown> || {}),
           description: data.description,
           type: data.type,
           branding: data.branding,
@@ -88,7 +91,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
 
   async update(id: string, data: UpdateData<Organization>): Promise<Organization> {
     const existing = await this.prisma.organization.findUnique({ where: { id } });
-    const currentSettings = (existing?.settings as any) || {};
+    const currentSettings = (existing?.settings as Record<string, unknown>) || {};
 
     const updated = await this.prisma.organization.update({
       where: { id },
@@ -96,11 +99,11 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         name: data.name,
         settings: {
           ...currentSettings,
-          ...(data.settings as any || {}),
-          description: data.description !== undefined ? data.description : currentSettings.description,
-          type: data.type !== undefined ? data.type : currentSettings.type,
-          branding: data.branding !== undefined ? data.branding : currentSettings.branding,
-        },
+          ...(data.settings as Record<string, unknown> || {}),
+          ...(data.description !== undefined && { description: data.description }),
+          ...(data.type !== undefined && { type: data.type }),
+          ...(data.branding !== undefined && { branding: data.branding }),
+        } as Prisma.InputJsonValue,
       },
     });
     return this.mapToEntity(updated);
@@ -128,13 +131,13 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
       }
     });
     return organizations
-      .map((o: any) => this.mapToEntity(o))
+      .map((o) => this.mapToEntity(o))
       .filter(o => o.type === type);
   }
 
   // Mapper
-  private mapToEntity(prismaOrg: any): Organization {
-    const settings = (prismaOrg.settings as any) || {};
+  private mapToEntity(prismaOrg: OrgRow): Organization {
+    const settings = (prismaOrg.settings as Record<string, unknown>) || {};
 
     // Tarea 2: Mantener settings solo con timezone, operatingHours, defaultCancellationHours
     const filteredSettings = {
@@ -146,10 +149,10 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     return {
       id: prismaOrg.id,
       name: prismaOrg.name,
-      description: settings.description || "",
-      type: settings.type || "gym",
-      branding: settings.branding || { primaryColor: "#3b82f6", secondaryColor: "#10b981" },
-      settings: filteredSettings as any,
+      description: (settings.description as string) || "",
+      type: (settings.type as string) || "gym",
+      branding: (settings.branding as Organization["branding"]) || { primaryColor: "#3b82f6", secondaryColor: "#10b981" },
+      settings: filteredSettings as Organization["settings"],
     };
   }
 }
