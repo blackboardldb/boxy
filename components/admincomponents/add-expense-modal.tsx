@@ -9,29 +9,38 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useCreateEgreso } from "@/lib/react-query/hooks/useEgresos";
 
-export function AddExpenseModal({ onSuccess }: { onSuccess?: () => void }) {
+export function AddExpenseModal({
+  year,
+  month,
+}: {
+  year: number;
+  month: number;
+}) {
   const [open, setOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [fecha, setFecha] = useState(
     () => new Date().toISOString().split("T")[0]
   );
   const [monto, setMonto] = useState("");
-  const [loading, setLoading] = useState(false);
-  const addEgreso = useBlackSheepStore((s) => s.addEgreso);
+  const createEgreso = useCreateEgreso(year, month);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!motivo || !fecha || !monto || isNaN(Number(monto))) return;
-    setLoading(true);
-    await addEgreso({ motivo, fecha, monto: Number(monto) });
-    setLoading(false);
-    setMotivo("");
-    setFecha(new Date().toISOString().split("T")[0]);
-    setMonto("");
-    setOpen(false);
-    onSuccess?.();
+
+    createEgreso.mutate(
+      { motivo, fecha, monto: Number(monto) },
+      {
+        onSuccess: () => {
+          setMotivo("");
+          setFecha(new Date().toISOString().split("T")[0]);
+          setMonto("");
+          setOpen(false);
+        },
+      }
+    );
   };
 
   return (
@@ -75,10 +84,10 @@ export function AddExpenseModal({ onSuccess }: { onSuccess?: () => void }) {
             <Button
               type="submit"
               disabled={
-                loading || !motivo || !fecha || !monto || isNaN(Number(monto))
+                createEgreso.isPending || !motivo || !fecha || !monto || isNaN(Number(monto))
               }
             >
-              {loading ? "Guardando..." : "Guardar"}
+              {createEgreso.isPending ? "Guardando..." : "Guardar"}
             </Button>
           </div>
         </form>

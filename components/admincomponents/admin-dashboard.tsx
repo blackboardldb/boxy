@@ -9,7 +9,7 @@ import {
   DollarSign,
   AlertTriangle,
 } from "lucide-react";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WhatsAppLink } from "../WhatsAppLink";
@@ -36,7 +36,8 @@ interface MemberListItem {
 }
 
 export function AdminDashboard() {
-  const { egresos = [], fetchEgresos } = useBlackSheepStore();
+  const now = new Date();
+  const { data: egresos = [] } = useEgresos(now.getFullYear(), now.getMonth());
 
   const [statsLoading, setStatsLoading] = useState(true);
   const [listsLoading, setListsLoading] = useState(true);
@@ -81,7 +82,6 @@ export function AdminDashboard() {
               fetch("/api/admin/members/expiring?take=5").then((r) => r.json()),
               fetch("/api/admin/members/expired?take=5").then((r) => r.json()),
             ];
-            if (userRole === "admin") requests.push(fetchEgresos());
 
             const [expiring, expired] = await Promise.all(requests);
             if (expiring?.success) {
@@ -108,7 +108,7 @@ export function AdminDashboard() {
     };
 
     loadData();
-  }, [fetchEgresos]);
+  }, []);
 
   // Métricas vienen del endpoint /api/admin/stats — ya calculadas en el servidor
   const {
@@ -122,15 +122,8 @@ export function AdminDashboard() {
     monthlyRevenue,
   } = dashboardStats;
 
-  // Egresos del mes actual (se mantiene el cálculo local porque depende de fetchEgresos)
-  const now = new Date();
-  const egresosMes = egresos.filter((e) => {
-    const d = new Date(e.fecha);
-    return (
-      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-    );
-  });
-  const totalEgresosMes = egresosMes.reduce((sum, e) => sum + e.monto, 0);
+  // Egresos del mes actual — React Query los provee ya filtrados por (year, month)
+  const totalEgresosMes = egresos.reduce((sum, e) => sum + e.monto, 0);
 
   // Listas vienen directo del estado local — ya filtradas, ordenadas y limitadas en el backend
   const upcomingExpirations = expiringData;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -16,9 +17,7 @@ import { parseISO } from "date-fns";
 
 export default function FinanzasPage() {
   const users = useBlackSheepStore((s) => s.users);
-  const egresos = useBlackSheepStore((s) => s.egresos);
   const fetchUsers = useBlackSheepStore((s) => s.fetchUsers);
-  const fetchEgresos = useBlackSheepStore((s) => s.fetchEgresos);
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -41,6 +40,9 @@ export default function FinanzasPage() {
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);
   const selectedMonthIndex = selectedMonthNum - 1; // JavaScript months are 0-indexed
 
+  // Egresos del mes seleccionado — React Query filtra en el servidor por (year, month)
+  const { data: egresos = [] } = useEgresos(selectedYear, selectedMonthIndex);
+
   // Filtrar ingresos del mes seleccionado
   const ingresosMes = users
     .filter(
@@ -60,20 +62,12 @@ export default function FinanzasPage() {
       precio: u.membership?.monthlyPrice,
     }));
 
-  // Filtrar egresos del mes seleccionado
-  const egresosMes = egresos.filter((e) => {
-    const d = new Date(e.fecha);
-    return (
-      d.getFullYear() === selectedYear && d.getMonth() === selectedMonthIndex
-    );
-  });
-
   // Calcular totales
   const totalIngresos = ingresosMes.reduce(
     (sum, i) => sum + (i.precio || 0),
     0
   );
-  const totalEgresos = egresosMes.reduce((sum, e) => sum + e.monto, 0);
+  const totalEgresos = egresos.reduce((sum, e) => sum + e.monto, 0);
   const balance = totalIngresos - totalEgresos;
 
   // Generar opciones de meses (últimos 12 meses)
@@ -149,7 +143,7 @@ export default function FinanzasPage() {
               ${totalEgresos.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              {egresosMes.length} gastos registrados
+              {egresos.length} gastos registrados
             </p>
           </CardContent>
         </Card>
