@@ -267,9 +267,9 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
         // Update records one by one
         for (const record of matchingRecords.items) {
-          await this.validateUpdateData((record as any).id, data, record);
+          await this.validateUpdateData(record.id, data, record);
           const updatedRecord = await this.repository.update(
-            (record as any).id,
+            record.id,
             data
           );
           results.push(updatedRecord);
@@ -309,9 +309,9 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
         // Delete records one by one
         for (const record of matchingRecords.items) {
-          await this.validateDelete((record as any).id, record);
+          await this.validateDelete(record.id, record);
           const deletedRecord = await this.repository.delete(
-            (record as any).id
+            record.id
           );
           results.push(deletedRecord);
           await this.afterDelete(deletedRecord);
@@ -510,11 +510,9 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   protected async withTransaction<R>(
     operation: (provider: DataProvider) => Promise<R>
   ): Promise<R> {
-    if (
-      "$transaction" in this.dataProvider &&
-      typeof (this.dataProvider as any).$transaction === "function"
-    ) {
-      return await (this.dataProvider as any).$transaction(operation);
+    const providerWithTransaction = this.dataProvider as DataProvider & { $transaction?: (op: (provider: DataProvider) => Promise<R>) => Promise<R> };
+    if (typeof providerWithTransaction.$transaction === "function") {
+      return await providerWithTransaction.$transaction(operation);
     } else {
       // Fallback to regular operation if transactions not supported
       return await operation(this.dataProvider);
