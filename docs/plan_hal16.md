@@ -184,11 +184,14 @@ Sesión 1 (2026-04-26):
   ✅ organization, discipline, instructor, renewal, plan repos — ~25 eliminados
   ✅ class-repository.ts — ~8 eliminados (residuales post HAL-03 Sprint A)
   Conteo real post Bloque 1: 131 → 92 (39 eliminados)
-Sesión 2: HAL-14 ← SIGUIENTE (0.5h, handler.ts)
-Sesión 3: Bloque 2 — Services y provider-factory (~23 as any)
-Sesión 4: Bloque 3 — Components y Pages (~36 as any)
-Sesión 5: Bloque 4 — API routes, utils, monitoring + cierre de lib/errors/handler.ts
-          TSC final → 0 errores → HAL-16 cerrado
+Sesión 2 (2026-04-26):
+  ✅ HAL-14 — handler.ts: 3 as any eliminados (commit 79c96d0)
+  Conteo real post HAL-14: 92 → 89
+Sesión 3 (próxima): Bloque 2 — class-service.ts (9), provider-factory.ts (9), base-service.ts (6)
+  ⚠️  Leer antes de editar: factory pattern puede ocultar errores de tipo reales
+Sesión 4: Bloque 3 — user-approval.tsx (13), user-profile.tsx (9), pages (3+2+2)
+Sesión 5: Bloque 4 — api routes, utils, blacksheep-store, monitoring
+          TSC final → 0 errores → HAL-16 cerrado → 131 → 0
 ```
 
 ---
