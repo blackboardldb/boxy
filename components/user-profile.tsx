@@ -111,7 +111,7 @@ export function UserProfile() {
       } catch (err) {
         console.error("Error al desactivar:", err);
       }
-      setPermission("default" as any); // Resetear visualmente para que vuelva a pedir permiso al activar
+      setPermission("default"); // Resetear visualmente para que vuelva a pedir permiso al activar
     }
   };
 
@@ -122,9 +122,9 @@ export function UserProfile() {
       setEditableFirstName(currentUser.firstName || "");
       setEditableLastName(currentUser.lastName || "");
       setEditablePhone(currentUser.phone || "");
-      setEditableGender((currentUser as any).gender || "");
-      setEditableDateOfBirth((currentUser as any).dateOfBirth || "");
-      setEditableEmergencyContact((currentUser as any).emergencyContact || "");
+      setEditableGender(currentUser.gender || "");
+      setEditableDateOfBirth(currentUser.dateOfBirth || "");
+      setEditableEmergencyContact(currentUser.emergencyContact || "");
     }
   }, [currentUser]);
 
@@ -180,7 +180,7 @@ export function UserProfile() {
         body: JSON.stringify({ gender: editableGender, dateOfBirth: editableDateOfBirth }),
       });
       if (res.ok) {
-        const updated = { ...userData, gender: editableGender, dateOfBirth: editableDateOfBirth } as any;
+        const updated = { ...userData, gender: editableGender, dateOfBirth: editableDateOfBirth };
         setUserData(updated);
         updateUser(updated);
         reload();
@@ -201,7 +201,7 @@ export function UserProfile() {
         body: JSON.stringify({ emergencyContact: editableEmergencyContact }),
       });
       if (res.ok) {
-        const updated = { ...userData, emergencyContact: editableEmergencyContact } as any;
+        const updated = { ...userData, emergencyContact: editableEmergencyContact };
         setUserData(updated);
         updateUser(updated);
         reload();
@@ -267,9 +267,9 @@ export function UserProfile() {
     return <SkeletonUserProfile />;
   }
 
-  const gender = (userData as any).gender;
-  const dateOfBirth = (userData as any).dateOfBirth;
-  const emergencyContact = (userData as any).emergencyContact;
+  const gender = userData.gender;
+  const dateOfBirth = userData.dateOfBirth;
+  const emergencyContact = userData.emergencyContact;
 
   const estimatedTotalHours =
     userData.membership?.centerStats?.lifetimeStats?.totalClasses ?? 0;
