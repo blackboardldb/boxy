@@ -105,7 +105,7 @@ export function UserApproval() {
   const rejectedUsers = useMemo(() => {
     if (!pendingUsers || !Array.isArray(pendingUsers)) return [];
     return pendingUsers.filter(
-      (user) => (user as unknown as any)?.rejectionInfo
+      (user) => user?.rejectionInfo
     );
   }, [pendingUsers]);
 
@@ -154,7 +154,7 @@ export function UserApproval() {
         ),
       },
       notes:
-        ((user as unknown as any)?.notes ?? "") +
+        (user?.notes ?? "") +
         " - Approved on " +
         new Date().toLocaleDateString(),
     };
@@ -192,7 +192,7 @@ export function UserApproval() {
         status: "inactive" as const,
       },
       notes:
-        ((user as unknown as any)?.notes ?? "") +
+        (user?.notes ?? "") +
         " - Rechazado: " +
         rejectReason,
       rejectionInfo: {
@@ -237,7 +237,7 @@ export function UserApproval() {
         status: "pending" as const,
       },
       notes:
-        ((user as unknown as any)?.notes ?? "") +
+        (user?.notes ?? "") +
         " - Reactivado el " +
         new Date().toLocaleDateString(),
       rejectionInfo: undefined, // Limpiar información de rechazo
@@ -283,17 +283,15 @@ export function UserApproval() {
 
   // Helper para type guard
   function isPendingUser(user: unknown): user is PendingUser {
+    if (!user || typeof user !== "object") return false;
+    const u = user as Partial<PendingUser>;
     return (
-      user &&
-      typeof (user as any).id === "string" &&
-      typeof (user as any).firstName === "string" &&
-      typeof (user as any).lastName === "string" &&
-      (user as any).membership &&
-      typeof (user as any).membership === "object" &&
-      ((user as any).membership.status === "pending" ||
-        (user as any).membership.status === "inactive" ||
-        (user as any).membership.status === "active" ||
-        (user as any).membership.status === "expired")
+      typeof u.id === "string" &&
+      typeof u.firstName === "string" &&
+      typeof u.lastName === "string" &&
+      typeof u.membership === "object" &&
+      u.membership !== null &&
+      ["pending", "inactive", "active", "expired"].includes(u.membership.status as string)
     );
   }
 
