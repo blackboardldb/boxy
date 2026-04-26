@@ -25,6 +25,7 @@ export const viewport: Viewport = {
 
 
 import PWAInitializer from "@/components/PWAInitializer";
+import ReactQueryProvider from "@/lib/react-query/provider";
 
 export default function RootLayout({
   children,
@@ -34,8 +35,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} bg-black`}>
-        <PWAInitializer />
-        {children}
+        <ReactQueryProvider>
+          <PWAInitializer />
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );

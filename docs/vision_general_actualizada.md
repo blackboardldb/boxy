@@ -19,7 +19,7 @@
 | HAL-07 | `POST /api/classes` sin auth | ✅ Completo | `cb9413a` |
 | HAL-08 | Filtrado de tenant en memoria Node.js | ✅ Completo | `b06c550` |
 | HAL-09 | `getUserStats` SELECT * | ✅ Completo (5 COUNT paralelos + 09b conteo real) | `b1cc016` |
-| HAL-10 | Zustand sin React Query | ❌ Pendiente | — |
+| HAL-10 | Zustand sin React Query | 🟡 En progreso | Sprint A ✅ `2026-04-26` |
 | HAL-11 | Sin RLS en tablas public | ✅ Completo (ya estaba activo) | Confirmado |
 | HAL-12 | Contraseñas hardcodeadas | ✅ Completo — env vars sin fallback (HAL-12b) | `df3d03a` |
 | HAL-13 | Logger sin persistencia | ✅ Cerrado (tracesSampleRate 0.1 y errors 1.0 es correct best practice) | — |

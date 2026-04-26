@@ -5,7 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import {
+  useDisciplines,
+  useCreateDiscipline,
+  useUpdateDiscipline,
+  useDeleteDiscipline,
+} from "@/lib/react-query/hooks/useDisciplines";
 import type { Discipline, DayOfWeek, CancellationRule } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
@@ -52,19 +57,16 @@ const emptyDiscipline: Discipline = {
 };
 
 export default function DisciplinesManager() {
-  const {
-    disciplines,
-    deleteDiscipline,
-    createDiscipline,
-    updateDisciplineById,
-  } = useBlackSheepStore();
-
+  const { data: disciplines, isLoading: isLoadingList } = useDisciplines({ limit: 50 });
+  const createDisciplineMutation = useCreateDiscipline();
+  const updateDisciplineMutation = useUpdateDiscipline();
+  const deleteDisciplineMutation = useDeleteDiscipline();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<Discipline>(emptyDiscipline);
   const [showModal, setShowModal] = useState(false);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = createDisciplineMutation.isPending || updateDisciplineMutation.isPending;
   const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(
     new Set()
   );
@@ -160,28 +162,21 @@ export default function DisciplinesManager() {
   // --- Guardar/Editar/Eliminar ---
   const handleSave = async () => {
     if (!form.name) return;
-    setIsLoading(true);
 
     const filteredSchedule = form.schedule.filter((s) =>
       selectedDays.includes(s.day)
     );
 
-    const disciplineData = {
-      ...form,
-      schedule: filteredSchedule,
-    };
+    const disciplineData = { ...form, schedule: filteredSchedule };
 
-    let result;
-    if (editing) {
-      result = await updateDisciplineById(editing, disciplineData);
-    } else {
-      result = await createDiscipline(disciplineData);
-    }
-
-    setIsLoading(false);
-    if (result) {
+    try {
+      if (editing) {
+        await updateDisciplineMutation.mutateAsync({ id: editing, data: disciplineData });
+      } else {
+        await createDisciplineMutation.mutateAsync(disciplineData);
+      }
       handleCloseModal();
-    } else {
+    } catch {
       console.error("Hubo un error al procesar la solicitud.");
     }
   };
@@ -204,12 +199,9 @@ export default function DisciplinesManager() {
     const confirmation = window.confirm(
       `¿Estás seguro de que deseas eliminar "${name}"?\n\nSolo podrá eliminarse si no tiene historial de clases (pasadas o canceladas). Si tiene historial, la mejor opción es marcarla como "Inactiva" para limpiar el calendario.`
     );
-    
+
     if (confirmation) {
-      const result = await deleteDiscipline(id);
-      if (result) {
-        // Disciplina eliminada
-      }
+      deleteDisciplineMutation.mutate(id);
     }
   };
 
@@ -425,7 +417,9 @@ export default function DisciplinesManager() {
       </Dialog>
 
       <div className="flex flex-col gap-4">
-        {!disciplines || disciplines.length === 0 ? (
+        {isLoadingList ? (
+          <div className="text-center py-16 text-zinc-400 text-sm">Cargando disciplinas...</div>
+        ) : !disciplines || disciplines.length === 0 ? (
           <Card className="col-span-full border-2 border-dashed border-zinc-100 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
             <div className="w-20 h-20 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
               <Calendar className="w-10 h-10 text-zinc-300" />
@@ -450,10 +444,7 @@ export default function DisciplinesManager() {
                       id={`active-${d.id}`}
                       checked={!!d.isActive} 
                       onCheckedChange={async (checked) => {
-                        const result = await updateDisciplineById(d.id, { isActive: checked });
-                        if (result) {
-                          // Estado actualizado
-                        }
+                        updateDisciplineMutation.mutate({ id: d.id, data: { isActive: checked } });
                       }}
                     />
                     <div className="flex items-center gap-3">

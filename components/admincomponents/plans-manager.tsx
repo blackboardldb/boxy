@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { usePlans, useCreatePlan, useUpdatePlan, useDeletePlan } from "@/lib/react-query/hooks/usePlans";
+import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   calcularClasesSegunDuracion,
@@ -66,22 +67,32 @@ const durationOptions = [
 ];
 
 export default function PlansManager() {
-  const {
-    plans,
-    addPlan,
-    updatePlan,
-    deletePlan,
-    fetchPlans,
-    disciplines,
-    createPlan,
-    updatePlanById,
-    deletePlanById,
-    fetchDisciplines,
-  } = useBlackSheepStore();
+  // ── Estados de filtro ──────────────────────────────────────────────────────
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("todos");
+  const [durationFilter, setDurationFilter] = useState("todos");
 
-  const [isLoading, setIsLoading] = useState(true);
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  // Estados para gestión de planes
+  // ── React Query ───────────────────────────────────────────────────────────
+  const { data: plans = [], isLoading } = usePlans({
+    page: 1,
+    limit: 50,
+    search: debouncedSearch,
+    isActive: activeFilter !== "todos" ? activeFilter : undefined,
+  });
+  const { data: disciplines = [] } = useDisciplines({ limit: 50 });
+
+  const createPlanMutation = useCreatePlan();
+  const updatePlanMutation = useUpdatePlan();
+  const deletePlanMutation = useDeletePlan();
+
+  // ── Estados de UI ─────────────────────────────────────────────────────────
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [planForm, setPlanForm] =
@@ -91,40 +102,7 @@ export default function PlansManager() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
-  // Estados para filtros y búsqueda
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("todos");
-  const [durationFilter, setDurationFilter] = useState("todos");
-
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchPlans(
-          1,
-          50,
-          debouncedSearch,
-          activeFilter !== "todos" ? activeFilter : ""
-        );
-        // Solo cargar disciplinas si no están disponibles (Punto 1 matizado)
-        if (!disciplines || disciplines.length === 0) {
-          await fetchDisciplines();
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [debouncedSearch, activeFilter, fetchPlans, fetchDisciplines, disciplines.length]);
+  // ── Filtros y búsqueda ────────────────────────────────────────────────────
 
   // --- Gestión de planes ---
   const handleNewPlan = () => {
@@ -163,18 +141,7 @@ export default function PlansManager() {
   const confirmDeletePlan = async () => {
     if (planToDelete) {
       try {
-        // En Next.js 15/Prisma, la eliminación puede fallar si hay dependencias
-        const success = await deletePlanById(planToDelete);
-
-        if (success) {
-          // Refrescar la lista después de eliminar
-          await fetchPlans(
-            1,
-            50,
-            searchTerm,
-            activeFilter !== "todos" ? activeFilter : ""
-          );
-        }
+        await deletePlanMutation.mutateAsync(planToDelete);
       } catch (error) {
         console.error("Error deleting plan:", error);
       } finally {
@@ -256,7 +223,6 @@ export default function PlansManager() {
     setError(null);
 
     try {
-      // Preparar datos del plan con validación
       const planData = {
         name: planForm.name.trim(),
         description: planForm.description.trim(),
@@ -272,34 +238,19 @@ export default function PlansManager() {
         organizationId: "org_blacksheep_001",
       };
 
-      let result;
       if (editingPlan) {
-        // Actualizar plan existente
-        result = await updatePlanById(editingPlan, planData);
+        await updatePlanMutation.mutateAsync({ id: editingPlan, data: planData });
       } else {
-        // Crear nuevo plan
-        result = await createPlan(planData);
+        await createPlanMutation.mutateAsync(planData);
       }
 
-      if (result) {
-        // Refrescar la lista después de agregar/editar
-        await fetchPlans(
-          1,
-          50,
-          searchTerm,
-          activeFilter !== "todos" ? activeFilter : ""
-        );
-
-        // Cerrar modal y limpiar formulario
-        setShowPlanModal(false);
-        setPlanForm(emptyPlan);
-        setEditingPlan(null);
-      } else {
-        setError("No se pudo guardar el plan. Por favor revisa los datos e intenta nuevamente.");
-      }
-    } catch (error: any) {
-      console.error("Error saving plan:", error);
-      setError(error.message || "Error inesperado al guardar el plan.");
+      setShowPlanModal(false);
+      setPlanForm(emptyPlan);
+      setEditingPlan(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error inesperado al guardar el plan.";
+      console.error("Error saving plan:", err);
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
