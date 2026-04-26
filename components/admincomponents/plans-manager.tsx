@@ -46,7 +46,7 @@ import {
 const emptyPlan: Omit<MembershipPlan, "id" | "organizationId"> = {
   name: "",
   description: "",
-  price: "" as any, // Permitir string vacío para el input
+  price: 0, // Inicializado en 0
   durationInMonths: 1,
   classLimit: 8,
   disciplineAccess: "all",

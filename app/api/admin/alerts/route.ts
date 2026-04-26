@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         const pushPromises = subscriptions.map(async (subRecord: any) => {
           try {
             await webpush.sendNotification(
-              subRecord.subscription as any,
+              subRecord.subscription as unknown as webpush.PushSubscription,
               pushPayload
             );
           } catch (err: any) {

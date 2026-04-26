@@ -48,7 +48,7 @@ export async function GET(
     const registrationsWithDetails = await prisma.classRegistration.findMany({
       where: { 
         userId,
-        status: { not: 'cancelled' as any },
+        status: { not: 'cancelled' },
         ...(start || end ? {
           class: {
             status: { not: 'cancelled' },

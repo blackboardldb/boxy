@@ -54,7 +54,7 @@ export async function generateClassesFromSchedules(
 
     let scheduleArray = typeof discipline.schedule === "string" 
       ? JSON.parse(discipline.schedule) 
-      : (discipline.schedule as any);
+      : (discipline.schedule as { day: import("../types").DayOfWeek; times: string[] }[]);
 
     if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
@@ -87,7 +87,7 @@ export async function generateClassesFromSchedules(
 
             classesToCreate.push({
               id: classId,
-              organizationId: (discipline as any).organizationId || "org_blacksheep_001",
+              organizationId: (discipline as { organizationId?: string }).organizationId || "org_blacksheep_001",
               disciplineId: discipline.id,
               name: discipline.name,
               dateTime: new Date(localToUTC(date, time)),

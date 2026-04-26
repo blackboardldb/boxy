@@ -81,7 +81,7 @@ export function AdminDashboard() {
               fetch("/api/admin/members/expiring?take=5").then((r) => r.json()),
               fetch("/api/admin/members/expired?take=5").then((r) => r.json()),
             ];
-            if (userRole === "admin") requests.push(fetchEgresos() as any);
+            if (userRole === "admin") requests.push(fetchEgresos());
 
             const [expiring, expired] = await Promise.all(requests);
             if (expiring?.success) {

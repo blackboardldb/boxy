@@ -62,7 +62,7 @@ type RenewalItem = {
 };
 
 export function Notifications() {
-  const { classSessions, fetchClassSessions } = useBlackSheepStore() as any;
+  const { classSessions, fetchClassSessions } = useBlackSheepStore();
 
   const [mounted, setMounted] = useState(false);
   const [pendingRenewals, setPendingRenewals] = useState<RenewalItem[]>([]);

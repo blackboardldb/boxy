@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { FitCenterUserProfile, MembershipPlan } from "@/lib/types";
+import type { FitCenterUserProfile, MembershipPlan, MembershipStatus } from "@/lib/types";
 import {
   calcularFechaTerminoMembresia,
   calcularClasesSegunDuracion,
@@ -72,7 +72,7 @@ const createStudentData = (
       id: initialStudent?.membership?.id || `mem_${Date.now()}`,
       organizationId: "org_blacksheep_001",
       organizationName: "BlackSheep CrossFit",
-      status: formData.status as any,
+      status: formData.status as MembershipStatus,
       membershipType: selectedPlan.name,
       monthlyPrice: selectedPlan.price,
       startDate: formData.joinDate,
@@ -516,7 +516,7 @@ useEffect(() => {
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    status: value as any,
+                    status: value as MembershipStatus,
                   }))
                 }
               >

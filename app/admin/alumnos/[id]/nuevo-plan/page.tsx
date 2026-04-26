@@ -125,7 +125,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     const newMembership = {
       ...student.membership, // Preserve existing fields like organizationId, centerConfig, etc.
       id: `mem_${Date.now()}`,
-      status: "active" as any,
+      status: "active" as const,
       planId: selectedPlan.id,
       membershipType: selectedPlan.name,
       monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
@@ -211,8 +211,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       const currentHistory = Array.isArray(student.membership?.history) ? [...student.membership.history] : [];
       
       // Si el plan anterior estaba 'active' pero ya venció, lo pasamos a 'inactive' antes de guardarlo en history
-      const pastToHistory = student.membership ? { ...student.membership, status: 'inactive' as any } : null;
-      if (pastToHistory) delete (pastToHistory as any).history;
+      const pastToHistory = student.membership ? { ...student.membership, status: 'inactive' as const } : null;
+      if (pastToHistory) delete (pastToHistory as { history?: unknown }).history;
 
       updatedMembership = {
         ...newMembershipBase,

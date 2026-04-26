@@ -84,7 +84,7 @@ export async function POST(
           id: raw.id,
           name: raw.name,
           price: raw.price,
-          classLimit: (raw.config as any)?.classLimit ?? 0,
+          classLimit: (raw.config as { classLimit?: number })?.classLimit ?? 0,
           durationInMonths: raw.duration,
         };
       }
@@ -92,7 +92,7 @@ export async function POST(
 
     if (!planData) {
       // Fallback: usar los detalles guardados en renewalDetails
-      const details = pendingRenewal.renewalDetails as any;
+      const details = pendingRenewal.renewalDetails as { requestedPlanName?: string; requestedPlanPrice?: number; requestedPlanClassLimit?: number; requestedPlanDuration?: number; } | null;
       planData = {
         id: pendingRenewal.requestedPlanId ?? "",
         name: details?.requestedPlanName ?? null,

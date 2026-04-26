@@ -221,10 +221,10 @@ const handleStartDateChange = (newDate: string) => {
             classesContracted: newClassLimit,
           }
         }
-      } as any;
+      } as NonNullable<FitCenterUserProfile["membership"]>;
 
       const changes = {
-        formaDePago: editPaymentMethod as any,
+        formaDePago: editPaymentMethod as FitCenterUserProfile["formaDePago"],
         membership: updatedMembership,
       };
 

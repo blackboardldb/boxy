@@ -445,7 +445,7 @@ export function monitorPerformance(operation?: string, resource?: string) {
         performanceMonitor.recordMetric({
           operation: operationName,
           resource: resourceName,
-          provider: (this as any).providerType || "unknown",
+          provider: (this as { providerType?: string }).providerType || "unknown",
           duration,
           success,
           recordCount,

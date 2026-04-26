@@ -35,7 +35,7 @@ function shouldIgnore(error: unknown): boolean {
     typeof error === "object" &&
     error !== null &&
     "name" in error &&
-    (error as any).name === "ZodError"
+    (error as { name?: string }).name === "ZodError"
   ) return true;
 
   // AppError con statusCode 4xx — flujo normal de negocio

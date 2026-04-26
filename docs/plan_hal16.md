@@ -217,20 +217,6 @@ Sesión 4:
 - [ ] `components/ui/toaster.tsx` (1)
 
 ### Fase 2: API Routes y JsonValue (10 instancias)
-*Aserciones seguras para JSON de Prisma y type guards en rutas.*
-- [ ] Rutas de `renewals` (6) — Aserción estricta `as PlanConfig` / `as RenewalDetails`.
-- [ ] Rutas `me`, `classes/cancel`, `classes`, `alerts` (4) — Type guards básicos para roles y estados.
-
-### Fase 3: Refactor Quirúrgico de `ValidationService` (12 instancias)
-*Migrar el validador a queries directas usando TDD.*
-- [ ] **1. Mapeo Global:** Correr `grep_search` de consumidores (incluyendo `lib/` para `blacksheep-store.ts`) antes de tocar nada.
-- [ ] **2. Chequeo de N+1:** Analizar en el código de los consumidores encontrados si la función es llamada dentro de loops. **Importante:** Si hay calls masivos (bulk operations), mantener el tercer argumento opcional `dayRegistrations` como optimización de performance para no degradarla.
-- [ ] **3. Estandarizar:** Cambiar llamadas internas directas de `prisma` a `this.getProvider()`.
-- [ ] **4. Cambiar Firmas:** Actualizar `canUserRegisterToClass` y `canUserCancelClassWithRules` a `(userId, classId, [opcional: dayRegistrations])`.
-- [ ] **5. Check TSC 1:** `tsc --noEmit`. Debe fallar SOLO en los call sites identificados.
-- [ ] **6. Actualizar Call Sites:** Alinear los consumidores identificados a la nueva firma.
-- [ ] **7. Check TSC 2:** `tsc --noEmit`. **Debe retornar 0**.
-- [ ] **8. Mover Lógica:** Pasar queries de `UserMembership` y `ClassRegistration` al validador y borrar el puente frankenstein de `class-service.ts`.
 - [ ] **9. Check TSC Final y Commit:** `tsc --noEmit` -> **0 errores**.
 
 ### Fase 4: Store, Utils y Monitoring (15 instancias)

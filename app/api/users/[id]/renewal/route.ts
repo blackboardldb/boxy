@@ -77,7 +77,7 @@ export async function POST(
         renewalDetails: {
           requestedPlanName: plan.name,
           requestedPlanPrice: plan.price,
-          requestedPlanClassLimit: (plan.config as any)?.classLimit ?? 0,
+          requestedPlanClassLimit: (plan.config as { classLimit?: number })?.classLimit ?? 0,
           requestedPlanDuration: plan.duration,
           paymentMethod,
         },

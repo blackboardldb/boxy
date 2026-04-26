@@ -36,7 +36,7 @@ export default function ConfiguracionesPage() {
     if (initialOrganization) {
       setCenterName(initialOrganization.name || "");
       if (initialOrganization.branding) {
-        const branding = initialOrganization.branding as any;
+        const branding = initialOrganization.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
         setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
         setLogoSquareSvg(branding.logoSquareSvg || "");
       }
@@ -77,7 +77,7 @@ export default function ConfiguracionesPage() {
     if (initialOrganization) {
       setCenterName(initialOrganization.name || "");
       if (initialOrganization.branding) {
-        const branding = initialOrganization.branding as any;
+        const branding = initialOrganization.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
         setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
         setLogoSquareSvg(branding.logoSquareSvg || "");
       }

@@ -334,7 +334,7 @@ export class PrismaUserRepository implements IUserRepository {
         : undefined,
       emergencyContact: prismaUser.emergencyContact ?? undefined,
       formaDePago:      prismaUser.formaDePago      ?? undefined,
-      membership:       membership as any,
+      membership:       membership as import("../../types").FitCenterUserProfile["membership"],
     } as FitCenterUserProfile;
   }
 }

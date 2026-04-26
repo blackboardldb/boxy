@@ -417,7 +417,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
           requestedPlanPrice: updatedRecord.membership?.monthlyPrice,
           requestedPlanClassLimit: updatedRecord.membership?.planConfig?.classLimit,
           requestedPlanDuration: undefined, // Plan duration not directly in membership
-          requestedPaymentMethod: (updatedRecord.formaDePago as any) || "transferencia",
+          requestedPaymentMethod: (updatedRecord.formaDePago as "contado" | "transferencia" | "debito" | "credito") || "transferencia",
           requestDate: new Date().toISOString(),
           status: "approved", // Automatically approved for admin changes
           requestedBy: updatedRecord.id,

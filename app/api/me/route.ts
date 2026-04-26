@@ -49,7 +49,7 @@ export async function GET() {
           firstName: instructor.firstName,
           lastName: instructor.lastName,
           email: instructor.email,
-          role: (instructor as any).role || "coach",
+          role: (instructor as Record<string, unknown>).role || "coach",
           userMembership: null,
         };
       }

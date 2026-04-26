@@ -47,7 +47,7 @@ export class PrismaClassRegistrationRepository implements IClassRegistrationRepo
 
   async findUnique(params: FindUniqueParams): Promise<ClassRegistration | null> {
     const registration = await this.prisma.classRegistration.findUnique({
-      where: params.where as any,
+      where: params.where as unknown as import("@prisma/client").Prisma.ClassRegistrationWhereUniqueInput,
     });
     return registration ? this.mapToEntity(registration) : null;
   }

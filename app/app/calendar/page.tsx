@@ -199,7 +199,7 @@ export default function CalendarPage() {
 
           // Lógica para días pasados: mostrar solo clases inscritas
           if (isPastDate) {
-            return (session as any).isUserRegistered || session.registeredParticipantsIds.includes(currentUser.id);
+            return session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id);
           }
 
           // Para hoy: mostrar clases no canceladas

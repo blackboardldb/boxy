@@ -9,7 +9,6 @@ import {
   differenceInMinutes,
 } from "date-fns";
 import type {
-  FitCenterUserProfile,
   ClassSession,
   Discipline,
   CancellationValidation,
@@ -75,7 +74,7 @@ export class ValidationService {
    * Ahora usa el data provider para obtener datos relacionados
    */
   static async canUserRegisterToClass(
-    user: FitCenterUserProfile,
+    userId: string,
     classSession: ClassSession,
     allClassSessions?: ClassSession[]
   ): Promise<{ canRegister: boolean; reason?: string }> {
@@ -96,7 +95,7 @@ export class ValidationService {
     }
 
     // 3. Verificar si el usuario ya está inscrito
-    if (classSession.registeredParticipantsIds.includes(user.id)) {
+    if (classSession.registeredParticipantsIds.includes(userId)) {
       return { canRegister: false, reason: "Ya estás inscrito a esta clase" };
     }
 
@@ -107,24 +106,51 @@ export class ValidationService {
       return { canRegister: false, reason: "No hay cupos disponibles" };
     }
 
+    const userMembership = await prisma.userMembership.findUnique({
+      where: { userId },
+    });
+
+    if (!userMembership) {
+      return { canRegister: false, reason: "No tienes un plan activo o programado para esta fecha" };
+    }
+
+    // Calcular remainingClasses usando la fuente de verdad (ClassRegistration)
+    let remainingClasses = 0;
+    if (userMembership.classLimit && userMembership.classLimit > 0) {
+      const periodStart = userMembership.currentPeriodStart ? new Date(userMembership.currentPeriodStart) : new Date(0);
+      const classesUsed = await prisma.classRegistration.count({
+        where: { userId, status: 'registered', class: { dateTime: { gte: periodStart } } }
+      });
+      remainingClasses = Math.max(0, userMembership.classLimit - classesUsed);
+    }
+
+    // Construir mockUser tipado explícitamente para utilidades legadas (utils.ts espera "any" pero se lo pasamos fuertemente tipado)
+    const mockUser = {
+      membership: {
+        status: userMembership.status,
+        currentPeriodStart: userMembership.currentPeriodStart,
+        currentPeriodEnd: userMembership.currentPeriodEnd,
+        startDate: userMembership.startDate,
+        classLimit: userMembership.classLimit,
+        centerStats: { currentMonth: { remainingClasses } },
+      }
+    };
+
     // 5. Verificar si el usuario tiene un plan válido (activo o programado/futuro)
-    const planStatus = getPlanStatus(user);
+    const planStatus = getPlanStatus(mockUser);
     if (
-      !user.membership ||
-      (planStatus !== "active" && planStatus !== "scheduled")
+      planStatus !== "active" && planStatus !== "scheduled"
     ) {
       return { canRegister: false, reason: "No tienes un plan activo o programado para esta fecha" };
     }
 
     // 5.5 Verificar si la clase ocurre dentro de las fechas límite del plan
-    if (!isClassWithinPlanValidity(user, classSession.dateTime)) {
+    if (!isClassWithinPlanValidity(mockUser, classSession.dateTime)) {
        return { canRegister: false, reason: "La fecha de esta clase supera la fecha de expiración de tu plan" };
     }
 
     // 6. Verificar si el usuario tiene clases disponibles en su plan
-    if (user.membership.planConfig.classLimit > 0) {
-      const remainingClasses =
-        user.membership.centerStats.currentMonth.remainingClasses;
+    if (userMembership.classLimit && userMembership.classLimit > 0) {
       if (remainingClasses <= 0) {
         return {
           canRegister: false,
@@ -134,8 +160,10 @@ export class ValidationService {
     }
 
     // 7. Verificar si la disciplina está permitida en el plan
-    if (user.membership.planConfig.disciplineAccess === "limited") {
-      const allowedDisciplines = user.membership.planConfig.allowedDisciplines;
+    if (userMembership.disciplineAccess === "limited") {
+      const allowedDisciplines = Array.isArray(userMembership.allowedDisciplines) 
+        ? userMembership.allowedDisciplines 
+        : [];
       if (!allowedDisciplines.includes(classSession.disciplineId)) {
         return {
           canRegister: false,
@@ -148,14 +176,14 @@ export class ValidationService {
     let targetDayClasses: ClassSession[] = [];
     const targetDate = typeof classSession.dateTime === 'string' 
       ? classSession.dateTime.split("T")[0]
-      : (classSession.dateTime as any).toISOString().split("T")[0];
+      : (classSession.dateTime as Date).toISOString().split("T")[0];
 
     if (allClassSessions) {
       // Use provided sessions if available
       targetDayClasses = allClassSessions.filter((session) => {
         const sessionDate = typeof session.dateTime === 'string'
           ? session.dateTime.split("T")[0]
-          : (session.dateTime as any).toISOString().split("T")[0];
+          : (session.dateTime as Date).toISOString().split("T")[0];
         return sessionDate === targetDate;
       });
     } else {
@@ -163,7 +191,7 @@ export class ValidationService {
       try {
         const registrations = await prisma.classRegistration.findMany({
           where: {
-            userId: user.id,
+            userId: userId,
             status: 'registered',
             class: {
               dateTime: {
@@ -176,7 +204,7 @@ export class ValidationService {
             class: true
           }
         });
-        targetDayClasses = registrations.map(r => r.class) as any;
+        targetDayClasses = registrations.map(r => r.class as unknown as ClassSession);
       } catch (error) {
         console.warn(
           "[ValidationService] Could not fetch target day's registrations for validation:",
@@ -185,8 +213,7 @@ export class ValidationService {
       }
     }
 
-    const maxBookingsPerDay =
-      user.membership.centerConfig.maxBookingsPerDay || 2;
+    const maxBookingsPerDay = userMembership.maxBookingsPerDay || 2;
 
     if (targetDayClasses.length >= maxBookingsPerDay) {
       const isToday = targetDate === new Date().toISOString().split("T")[0];
@@ -203,21 +230,21 @@ export class ValidationService {
   /**
    * Valida si un usuario puede cancelar una clase usando las reglas específicas de la disciplina
    */
-  static canUserCancelClassWithRules(
-    user: FitCenterUserProfile,
+  static async canUserCancelClassWithRules(
+    userId: string,
     classSession: ClassSession,
     discipline: Discipline
-  ): CancellationValidation {
+  ): Promise<CancellationValidation> {
     const now = new Date();
     const classStart = typeof classSession.dateTime === 'string' 
       ? parseISO(classSession.dateTime) 
       : classSession.dateTime;
     const classTime = typeof classSession.dateTime === 'string'
       ? classSession.dateTime.split("T")[1].substring(0, 5)
-      : (classSession.dateTime as any).toISOString().split("T")[1].substring(0, 5); // "08:00"
+      : (classSession.dateTime as Date).toISOString().split("T")[1].substring(0, 5); // "08:00"
 
     // 1. Verificar si el usuario está inscrito
-    if (!classSession.registeredParticipantsIds.includes(user.id)) {
+    if (!classSession.registeredParticipantsIds.includes(userId)) {
       return {
         canCancel: false,
         reason: "No estás inscrito a esta clase",
@@ -280,17 +307,17 @@ export class ValidationService {
   /**
    * Valida si un usuario puede cancelar una clase (versión simple)
    */
-  static canUserCancelClass(
-    user: FitCenterUserProfile,
+  static async canUserCancelClass(
+    userId: string,
     classSession: ClassSession
-  ): { canCancel: boolean; reason?: string } {
+  ): Promise<{ canCancel: boolean; reason?: string }> {
     const now = new Date();
     const classStart = typeof classSession.dateTime === 'string' 
       ? parseISO(classSession.dateTime) 
       : classSession.dateTime;
 
     // 1. Verificar si el usuario está inscrito
-    if (!classSession.registeredParticipantsIds.includes(user.id)) {
+    if (!classSession.registeredParticipantsIds.includes(userId)) {
       return { canCancel: false, reason: "No estás inscrito a esta clase" };
     }
 
@@ -303,8 +330,10 @@ export class ValidationService {
     }
 
     // 3. Verificar política de cancelación
-    const cancellationHours =
-      user.membership.centerConfig.cancellationHours || 2;
+    const userMembership = await prisma.userMembership.findUnique({
+      where: { userId },
+    });
+    const cancellationHours = userMembership?.cancellationHours || 2;
     const cancellationDeadline = addHours(classStart, -cancellationHours);
 
     if (isAfter(now, cancellationDeadline)) {

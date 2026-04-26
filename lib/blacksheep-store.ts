@@ -92,7 +92,8 @@ interface BlackSheepStore {
     startDate?: string,
     endDate?: string,
     page?: number,
-    limit?: number
+    limit?: number,
+    filters?: { status?: string; orderBy?: "asc" | "desc" }
   ) => Promise<any>;
   fetchUserClasses: (userId: string, startDate?: string, endDate?: string) => Promise<ClassSession[]>;
   fetchMyBookings: (userId: string, startDate?: string, endDate?: string) => Promise<ClassSession[]>;
@@ -1206,9 +1207,9 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       updateClassRegistration: (registration) =>
         set((state) => ({
           classRegistrations: state.classRegistrations.map((cr) => {
-            const r = cr as any;
-            const reg = registration as any;
-            return r.userId === reg.userId && r.classSessionId === reg.classSessionId
+            const r = cr as { classId: string; userId: string };
+            const reg = registration as { classId: string; userId: string };
+            return r.classId === reg.classId && r.userId === reg.userId
               ? registration
               : cr;
           }),
@@ -1216,7 +1217,7 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
       deleteClassRegistration: (registrationId) =>
         set((state) => ({
           classRegistrations: state.classRegistrations.filter(
-            (cr) => (cr as any).userId !== registrationId
+            (cr) => (cr as { userId?: string }).userId !== registrationId
           ),
         })),
       fetchClassRegistrations: () => {
@@ -1231,14 +1232,14 @@ export const useBlackSheepStore = create<BlackSheepStore>()(
         })),
       updateMembershipRenewal: (renewal) =>
         set((state) => ({
-          membershipRenewals: state.membershipRenewals.map((mr) =>
-            (mr as any).id === (renewal as any).id ? renewal : mr
+          membershipRenewals: state.membershipRenewals.map(
+            (mr) => (mr as { id: string }).id === (renewal as { id: string }).id ? renewal : mr
           ),
         })),
       deleteMembershipRenewal: (renewalId) =>
         set((state) => ({
           membershipRenewals: state.membershipRenewals.filter(
-            (mr) => (mr as any).id !== renewalId
+            (mr) => (mr as { id: string }).id !== renewalId
           ),
         })),
       fetchMembershipRenewals: () => {

@@ -1,5 +1,5 @@
 import { BaseService } from "./base-service";
-import { ClassSession } from "../types";
+import { ClassSession, Discipline } from "../types";
 import { ClassRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse, createSuccessResponse } from "../api/types";
 import { ValidationError } from "../errors/types";
@@ -145,42 +145,10 @@ export class ClassService extends BaseService<ClassSession> {
             include: { class: true }
           });
 
-          // HAL-01 Fase 4 Sprint 4 pre-DROP: inyectar remainingClasses desde ClassRegistration.
-          // Lee classLimit y currentPeriodStart desde UserMembership (tabla relacional).
-          let userForValidation: any = user;
-
-          const userMembership = await prisma.userMembership.findUnique({
-            where: { userId },
-            select: { classLimit: true, currentPeriodStart: true },
-          });
-
-          const classLimit = userMembership?.classLimit ?? 0;
-          if (classLimit > 0) {
-            const periodStart = userMembership?.currentPeriodStart
-              ? new Date(userMembership.currentPeriodStart)
-              : new Date(0);
-            const classesUsed = await prisma.classRegistration.count({
-              where: { userId, status: 'registered', class: { dateTime: { gte: periodStart } } }
-            });
-            userForValidation = {
-              ...user,
-              membership: {
-                ...(user.membership as any),
-                centerStats: {
-                  ...(user.membership as any)?.centerStats,
-                  currentMonth: {
-                    ...(user.membership as any)?.centerStats?.currentMonth,
-                    remainingClasses: Math.max(0, classLimit - classesUsed)
-                  }
-                }
-              }
-            };
-          }
-
           const validation = await ValidationService.canUserRegisterToClass(
-            userForValidation,
-            classSession as any,
-            dayRegistrations.map(r => r.class) as any
+            userId,
+            classSession as unknown as ClassSession,
+            dayRegistrations.map(r => r.class) as unknown as ClassSession[]
           );
 
           if (!validation.canRegister) {
@@ -233,9 +201,9 @@ export class ClassService extends BaseService<ClassSession> {
         if (!discipline) throw new ValidationError("Disciplina no encontrada");
 
         const validation = await ValidationService.canUserCancelClassWithRules(
-          user as any,
-          classSession as any,
-          discipline as any
+          userId,
+          classSession as unknown as ClassSession,
+          discipline as unknown as Discipline
         );
 
         if (!validation.canCancel) {

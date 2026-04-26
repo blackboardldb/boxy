@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     await prisma.pushSubscription.create({
       data: {
         userId,
-        subscription: subscription as any,
+        subscription: subscription as import("@prisma/client").Prisma.InputJsonValue,
       },
     });
 
@@ -57,12 +57,12 @@ export async function DELETE(req: NextRequest) {
       where: { userId }
     });
 
-    const toDelete = subs.filter((s: any) => s.subscription.endpoint === endpoint);
+    const toDelete = subs.filter((s) => (s.subscription as Record<string, unknown>)?.endpoint === endpoint);
 
     if (toDelete.length > 0) {
       await prisma.pushSubscription.deleteMany({
         where: {
-          id: { in: toDelete.map((d: any) => d.id) }
+          id: { in: toDelete.map((d) => d.id) }
         }
       });
     }

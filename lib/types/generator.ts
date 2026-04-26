@@ -259,8 +259,8 @@ export function createUpdateSchema<T extends z.ZodTypeAny>(baseSchema: T) {
       })
       .deepPartial();
   }
-  if ('partial' in baseSchema && typeof (baseSchema as any).partial === 'function') {
-    return (baseSchema as any).partial();
+  if ('partial' in baseSchema && typeof (baseSchema as { partial?: () => import("zod").ZodTypeAny }).partial === 'function') {
+    return (baseSchema as { partial: () => import("zod").ZodTypeAny }).partial();
   }
   return baseSchema;
 }
