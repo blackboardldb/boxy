@@ -1,7 +1,28 @@
 import { ClassRepository as IClassRepository, FindManyParams, FindUniqueParams, CreateData, UpdateData, CountParams, PaginatedResult } from "../types";
-import { ClassSession } from "../../types";
+import { ClassSession, ClassStatus } from "../../types";
 import { prisma } from "../../prisma";
 import { BaseRepository } from "./base-repository";
+import { Prisma } from "@prisma/client";
+
+type ClassRegistrationRow = { userId: string; status: string };
+
+// Tipo derivado del select real que usa este repositorio.
+// Se define después de la clase, pero TypeScript lo infiere correctamente.
+type ClassRowWithRegistrations = {
+  id: string;
+  name: string;
+  organizationId: string;
+  disciplineId: string;
+  dateTime: Date;
+  durationMinutes: number;
+  instructorId: string;
+  capacity: number;
+  status: string;
+  notes: string | null;
+  isGenerated: boolean;
+  registrations: ClassRegistrationRow[];
+  _count: { registrations: number };
+};
 
 export class PrismaClassRepository implements IClassRepository {
   private get prisma() {
@@ -55,7 +76,7 @@ export class PrismaClassRepository implements IClassRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      items: classes.map((c: any) => this.mapToEntity(c)),
+      items: classes.map((c) => this.mapToEntity(c as ClassRowWithRegistrations)),
       pagination: {
         page,
         limit,
@@ -69,7 +90,7 @@ export class PrismaClassRepository implements IClassRepository {
 
   async findUnique(params: FindUniqueParams): Promise<ClassSession | null> {
     const classSession = await this.prisma.classSession.findUnique({
-      where: params.where as any,
+      where: params.where as Prisma.ClassSessionWhereUniqueInput,
       select: this.defaultSelect
     });
     return classSession ? this.mapToEntity(classSession) : null;
@@ -139,7 +160,7 @@ export class PrismaClassRepository implements IClassRepository {
       orderBy: { dateTime: 'asc' },
       select: this.defaultSelect
     });
-    return classes.map((c: any) => this.mapToEntity(c));
+    return classes.map((c) => this.mapToEntity(c as ClassRowWithRegistrations));
   }
 
   async findByDiscipline(disciplineId: string): Promise<ClassSession[]> {
@@ -148,7 +169,7 @@ export class PrismaClassRepository implements IClassRepository {
       orderBy: { dateTime: 'asc' },
       select: this.defaultSelect
     });
-    return classes.map((c: any) => this.mapToEntity(c));
+    return classes.map((c) => this.mapToEntity(c as ClassRowWithRegistrations));
   }
 
   async findByInstructor(instructorId: string): Promise<ClassSession[]> {
@@ -157,7 +178,7 @@ export class PrismaClassRepository implements IClassRepository {
       orderBy: { dateTime: 'asc' },
       select: this.defaultSelect
     });
-    return classes.map((c: any) => this.mapToEntity(c));
+    return classes.map((c) => this.mapToEntity(c as ClassRowWithRegistrations));
   }
 
   async findByStatus(status: string): Promise<ClassSession[]> {
@@ -166,7 +187,7 @@ export class PrismaClassRepository implements IClassRepository {
       orderBy: { dateTime: 'asc' },
       select: this.defaultSelect
     });
-    return classes.map((c: any) => this.mapToEntity(c));
+    return classes.map((c) => this.mapToEntity(c as ClassRowWithRegistrations));
   }
 
   async getClassStats(): Promise<{
@@ -187,7 +208,7 @@ export class PrismaClassRepository implements IClassRepository {
     return { total, scheduled, completed, cancelled, inProgress };
   }
 
-  private mapToEntity(prismaClass: any): ClassSession {
+  private mapToEntity(prismaClass: ClassRowWithRegistrations): ClassSession {
     return {
       id: prismaClass.id,
       organizationId: prismaClass.organizationId || "",
@@ -199,12 +220,12 @@ export class PrismaClassRepository implements IClassRepository {
       capacity: prismaClass.capacity || 15,
       // HAL-03 Sprint A: calculado desde ClassRegistration (fuente de verdad).
       registeredParticipantsIds: prismaClass.registrations
-        ?.filter((r: any) => r.status === 'registered')
-        .map((r: any) => r.userId) ?? [],
+        ?.filter((r) => r.status === 'registered')
+        .map((r) => r.userId) ?? [],
       waitlistParticipantsIds: prismaClass.registrations
-        ?.filter((r: any) => r.status === 'waitlist')
-        .map((r: any) => r.userId) ?? [],
-      status: (prismaClass.status as any) || "scheduled",
+        ?.filter((r) => r.status === 'waitlist')
+        .map((r) => r.userId) ?? [],
+      status: (prismaClass.status as ClassStatus) || "scheduled",
       notes: prismaClass.notes || undefined,
       isGenerated: !!prismaClass.isGenerated,
       enrolledCount: prismaClass._count?.registrations ?? 0,
