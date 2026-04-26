@@ -150,7 +150,7 @@ WHERE membership IS NOT NULL;
 | **HAL-06b** | **Zod en 26 rutas API PENDIENTES**. Implementado. Bugs críticos de alineación frontend-backend (datetime vs min, nombres reales de schemas, validaciones inline) totalmente resueltos. | 🟢 Refactor | Listo | ✅ Completado |
 | **HAL-03** | **Arrays denormalizados `ClassSession`** (`registeredParticipantsIds`, `waitlistParticipantsIds`). Removidos. Fuente de verdad → `ClassRegistration`. Mapper dual-read → writes eliminados → DROP de columnas ejecutado 2026-04-26. TSC 0 errores. Generación de clases operativa. | ✅ Completo | DROP: `2026-04-26` |
 | **HAL-16** | **131 → 92 `as any` restantes** (conteo post Bloque 1 — 2026-04-26). Bloque 1 data-layer completo: user-repository, organization, discipline, instructor, membership-renewal, plan, class repos. Bloques 2-4 (services, components, api) pendientes. | 🟢 Bajo | 6h | **🔄 EN PROGRESO — Bloque 1 ✅** |
-| **HAL-14** | **Constraint names expuestos**. Filtrar `PrismaClientKnownRequestError` en `lib/errors/handler.ts` para ocultar nombres internos de constraints en producción. `isDev` ya existe en el handler — solo añadir el filtro en P2002. | 🟢 Bajo | 0.5h | **🔜 SIGUIENTE — HAL-16 Bloque 1 completo** |
+| **HAL-14** | **Constraint names expuestos**. `handleZodError`/`handlePrismaError`: `error: any` → `error: unknown`. Type guards narrowed. P2002/P2025/P2003 ya protegíos con `isDev`. Commit `79c96d0`. | 🟢 Bajo | 0.5h | **✅ Completo — 2026-04-26** |
 | **HAL-10** | **Zustand → React Query (TanStack)**. Traspaso final a manejo async de frontend global. Es una tarea backlogged sin deadline pero recomendada iterar posteriormente con el sistema puramente relacional optimizado y la query JSONB bloqueante fuera. | 🟢 Bajo | 12h | **Bloqueado por HAL-01 y HAL-03** |
 
 ### Flujo de Ejecución Acumulativo de HALs (Cronograma)
@@ -394,15 +394,15 @@ WHERE table_name = 'class_sessions'
 ✅ HAL-01 DROP
 ✅ HAL-15 + HAL-12b
 ✅ HAL-06b
-✅ HAL-03 — Sprint C completo (DROP 2026-04-26, TSC 0 errores, generación operativa)
+✅ HAL-03 — Sprint C completo (DROP 2026-04-26)
     ↓
-🔄 HAL-16 — Bloque 1 completo (131 → 92 as any, 2026-04-26)
-   Bloque 1: todos los repos data-layer ✅
-   Bloque 2: services + provider-factory (pendiente)
-   Bloque 3: components + pages (pendiente)
-   Bloque 4: api routes + utils + monitoring (pendiente)
+🔄 HAL-16 — Bloque 1 ✅ (131 → 89 as any, 2026-04-26)
+   Bloques 2-4 pendientes
     ↓
-HAL-14 ← PRÓXIMO PASO (constraint names — 0.5h, handler.ts ya preparado)
+✅ HAL-14 — Completo (2026-04-26, commit 79c96d0)
+   handler.ts: 0 as any, constraint names seguros en prod
+    ↓
+HAL-16 Bloques 2-4 ← PRÓXIMO PASO
     ↓
 HAL-10 (React Query)
 ```

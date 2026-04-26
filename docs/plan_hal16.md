@@ -1,6 +1,6 @@
 # Plan de Trabajo — HAL-16: Eliminar casteos `as any`
 
-> Estado: **EN COLA — HAL-03 ✅ Completo**
+> Estado: **HAL-16 Bloque 1 ✅ | HAL-14 ✅ — HAL-16 Bloques 2-4 siguiente**
 > Documento maestro: `vision_general_actualizada.md`
 > Última actualización: 2026-04-26
 
@@ -8,7 +8,7 @@
 
 ## Contexto
 
-**131 `as any` iniciales → 92 restantes** (conteo real post Bloque 1 completo — 2026-04-26).
+**131 `as any` iniciales → 89 restantes** (post Bloque 1 + HAL-14 — 2026-04-26).
 Objetivo: llevar a 0 sin introducir regresiones.
 
 **Progreso:**
@@ -40,7 +40,7 @@ Objetivo: llevar a 0 sin introducir regresiones.
 | `components/user-profile.tsx` | 9 | Bloque 3 |
 | `lib/services/base-service.ts` | 6 | Bloque 2 |
 | `lib/validation-service.ts` | 4 | Bloque 4 |
-| `lib/errors/handler.ts` | 3 | Bloque 4 (coordinar con HAL-14) |
+| `lib/errors/handler.ts` | **0** | ✅ HAL-14 (2026-04-26) |
 | `lib/data-layer/repositories/plan-repository.ts` | **0** | ✅ Bloque 1 |
 | `app/admin/alumnos/[id]/nuevo-plan/page.tsx` | 3 | Bloque 3 |
 | `lib/utils/class-generator.ts` | 2 | Bloque 4 |
@@ -213,8 +213,8 @@ tsc --noEmit 2>&1 | grep "error TS" | grep -v ".next/" | wc -l
 
 ## HAL-14 — Constraint Names Expuestos
 
-> Estado: **🔜 SIGUIENTE — desbloqueado por HAL-16 Bloque 1**
-> Estimado: **0.5h**
+> Estado: **✅ COMPLETO — 2026-04-26, commit `79c96d0`**
+> Estimado: **0.5h** — Real: **~15 min**
 > Archivo: `lib/errors/handler.ts`
 
 ### Problema
