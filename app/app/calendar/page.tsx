@@ -1,12 +1,11 @@
 // app/app/calendar/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import WeeklyDatePicker from "@/components/weekly-date-picker";
 import ClassList from "@/components/class-list";
 import RegistrationModal from "@/components/registration-modal";
 import CancellationModal from "@/components/cancellation-modal";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import {
   startOfDay,
@@ -28,35 +27,33 @@ import {
   formatDateChile,
   formatTimeChile,
 } from "@/lib/utils";
+import { useClasses, useRegisterClass, useCancelClassRegistration } from "@/lib/react-query/hooks/useClasses";
+import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
+import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
 
 export default function CalendarPage() {
-  const {
-    classSessions,
-    disciplines,
-    fetchInstructorsMinimal,
-    fetchDisciplines,
-    fetchClassSessions,
-    fetchMyBookings,
-  } = useBlackSheepStore();
-
-  // Estado de paginación y loading
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const today = startOfDay(new Date());
-
-
-  // Inicializar la fecha seleccionada: usar hoy por defecto
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
-  const [instructors, setInstructors] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(
-    null
-  );
+  const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(null);
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Obtener el usuario autenticado real
+  // Auth
   const { currentUser, isLoading: userLoading, reload: reloadUser } = useCurrentUser();
+
+  // Semana activa
+  const weekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const weekEnd = format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+  // React Query
+  const { data: classSessions = [], isFetching: classesLoading } = useClasses({ startDate: weekStart, endDate: weekEnd });
+  const { data: disciplinesData } = useDisciplines();
+  const disciplines = disciplinesData ?? [];
+  const { data: instructors = [] } = useInstructorsMinimal();
+  const registerClass = useRegisterClass();
+  const cancelRegistration = useCancelClassRegistration();
 
   // Verificar el estado del plan del usuario
   const planStatus = useMemo(() => {
@@ -126,41 +123,6 @@ export default function CalendarPage() {
 
   // Función para cargar un rango semanal (mejor UX)
   const currentWeekStart = useMemo(() => format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd"), [selectedDate]);
-
-  const loadClassesForWeek = useCallback(async (dateInWeek: Date) => {
-    try {
-      setIsLoading(true);
-      if (instructors.length === 0) {
-        const data = await fetchInstructorsMinimal();
-        setInstructors(data);
-      }
-      if (!disciplines || disciplines.length === 0) await fetchDisciplines();
-      
-      const start = startOfWeek(dateInWeek, { weekStartsOn: 1 });
-      const end = endOfWeek(dateInWeek, { weekStartsOn: 1 });
-      
-      const startStr = format(start, "yyyy-MM-dd");
-      const endStr = format(end, "yyyy-MM-dd");
-      
-      console.log(`[Calendar] Prefetching week: ${startStr} to ${endStr}`);
-      await fetchClassSessions(startStr, endStr, 1, 150);
-    } catch (error) {
-      console.error("Error loading classes:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    instructors.length,
-    disciplines?.length,
-    fetchInstructorsMinimal,
-    fetchDisciplines,
-    fetchClassSessions,
-  ]);
-
-  // Solo recargar si cambiamos de semana física o refresh manual
-  useEffect(() => {
-    loadClassesForWeek(selectedDate);
-  }, [currentWeekStart, loadClassesForWeek, refreshTrigger]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
@@ -274,36 +236,20 @@ export default function CalendarPage() {
 
   const confirmRegistration = async () => {
     if (!selectedClass || !currentUser) return;
-
     try {
-      const classId = selectedClass.id;
-
-      // Registrar al usuario en la clase
-      const response = await fetch(`/api/classes/${classId}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id }),
+      await registerClass.mutateAsync({
+        classId: selectedClass.id,
+        userId: currentUser.id,
       });
-
-      if (response.ok) {
-        // Refrescar las clases y usuario para mostrar el cambio
-        setRefreshTrigger((prev) => prev + 1);
-        reloadUser();
-        // Sincronizar clases del usuario para el contexto del home
-        fetchMyBookings(currentUser.id, currentUser.membership?.currentPeriodStart);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al registrarse en la clase");
-      }
+      reloadUser();
     } catch (error) {
       console.error("Error al registrarse:", error);
-      throw error; // Re-lanzar para que el modal no muestre éxito
+      throw error;
     }
   };
 
   const confirmCancellation = async () => {
     if (!selectedClass || !currentUser) return;
-
     try {
       // Verificar reglas de cancelación
       const discipline = disciplines?.find(
@@ -316,7 +262,6 @@ export default function CalendarPage() {
         const hoursUntilClass =
           (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-        // Buscar regla aplicable para esta hora específica
         const applicableRule = discipline.cancellationRules.find((rule: any) =>
           selectedClass.formattedTime.startsWith(rule.time)
         );
@@ -326,26 +271,14 @@ export default function CalendarPage() {
         }
       }
 
-      // Cancelar la inscripción usando la API
-      const response = await fetch(`/api/classes/${selectedClass.id}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id }),
+      await cancelRegistration.mutateAsync({
+        classId: selectedClass.id,
+        userId: currentUser.id,
       });
-
-      if (response.ok) {
-        // Refrescar las clases y usuario para mostrar el cambio
-        setRefreshTrigger((prev) => prev + 1);
-        reloadUser();
-        // Sincronizar clases del usuario para el contexto del home
-        fetchMyBookings(currentUser.id, currentUser.membership?.currentPeriodStart);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al cancelar la inscripción");
-      }
+      reloadUser();
     } catch (error) {
       console.error("Error al cancelar:", error);
-      throw error; // Re-lanzar para que el modal no muestre éxito
+      throw error;
     }
   };
 

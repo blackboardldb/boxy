@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { HomePage } from "@/components/HomePage";
 import Logo from "@/components/Logo";
-
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { formatTimeLocal, formatWeekday, getStudentClassesInPeriod } from "@/lib/utils";
@@ -14,22 +13,11 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  const { myBookings, fetchMyBookings, isLoading: statsLoading } =
-    useBlackSheepStore();
-
-  // Cargar clases e instructores una sola vez al montar si no hay datos
-  useEffect(() => {
-    if (currentUser) {
-      // Usamos myBookings para separar el contexto del alumno del calendario global
-      if (!myBookings || myBookings.length === 0) {
-        fetchMyBookings(
-          currentUser.id, 
-          currentUser.membership?.currentPeriodStart
-        );
-      }
-    }
-    // Solo dependemos de currentUser y las funciones de fetch. 
-  }, [currentUser, fetchMyBookings]);
+  // Bookings del periodo actual del alumno
+  const { data: myBookings = [], isFetching: statsLoading } = useMyBookings(
+    currentUser?.id,
+    currentUser?.membership?.currentPeriodStart
+  );
 
   // Clases próximas inscritas del usuario actual
   const registeredClasses = useMemo(() => {

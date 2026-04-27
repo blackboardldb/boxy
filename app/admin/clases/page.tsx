@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import AdminWeeklyDatePicker from "@/components/admincomponents/admin-weekly-date-picker";
 import AdminClassList from "@/components/admincomponents/admin-class-list";
 import AdminClassDetailDrawer from "@/components/admincomponents/admin-class-detail-drawer";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { startOfDay, format, isPast } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ClassSession, ClassListItem, Instructor } from "@/lib/types";
 import { formatDateChile, formatTimeChile } from "@/lib/utils";
-import {
-  startOfWeek,
-  endOfWeek,
-} from "date-fns";
+import { startOfWeek, endOfWeek } from "date-fns";
 import type { DayOfWeek } from "@/lib/types";
+import { useClasses, useCancelClass } from "@/lib/react-query/hooks/useClasses";
+import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
+import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
 
 // Utilidad para saber si una clase es pasada
 const isClassPast = (dateTime: string | Date): boolean =>
@@ -30,32 +29,25 @@ function localToUTC(date: Date): string {
 // los detalles completos de la clase, sin necesidad de hacer otra llamada a la API.
 
 export default function AdminClasesPage() {
-  const {
-    classSessions,
-    disciplines,
-    fetchClassSessions,
-    fetchDisciplines,
-    fetchInstructorsMinimal,
-  } = useBlackSheepStore();
-
-  // const { toast } = useToast(); // Deprecated and causing infinite loops
-
-  // Estado de paginación
+  // Estado UI
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const limit = 10;
-  
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
-
   const today = startOfDay(new Date());
-
-  // Inicializar la fecha seleccionada: usar hoy por defecto
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
-  const [selectedClass, setSelectedClass] = useState<ClassListItem | null>(
-    null
-  );
+  const [selectedClass, setSelectedClass] = useState<ClassListItem | null>(null);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+
+  // Semana activa
+  const weekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const weekEnd = format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+  // React Query
+  const { data: classSessions = [], isFetching } = useClasses({ startDate: weekStart, endDate: weekEnd });
+  const { data: disciplinesData } = useDisciplines();
+  const disciplines = disciplinesData ?? [];
+  const { data: instructors = [] } = useInstructorsMinimal();
+  const cancelClass = useCancelClass();
 
   // CONTEXTO: Función de conversión enriquecida. Busca el instructor en la lista
   // de instructores (entidad separada de usuarios/alumnos).
@@ -95,51 +87,12 @@ export default function AdminClasesPage() {
   );
 
 
-  // Función para cargar un rango semanal (mejor UX y evita bucles)
-  const currentWeekStartStr = useMemo(
-    () => format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-    [selectedDate]
-  );
 
-  const loadClassesForWeek = useCallback(async (dateInWeek: Date) => {
-    setIsLoading(true);
-    try {
-      const start = startOfWeek(dateInWeek, { weekStartsOn: 1 });
-      const end = endOfWeek(dateInWeek, { weekStartsOn: 1 });
-      const startStr = format(start, "yyyy-MM-dd");
-      const endStr = format(end, "yyyy-MM-dd");
-
-      console.log(`[AdminClases] Loading week range: ${startStr} to ${endStr}`);
-      
-      // Pedimos a la API las clases de toda la semana
-      await fetchClassSessions(startStr, endStr, 1, 150);
-      
-      await Promise.all([
-        disciplines.length === 0 ? fetchDisciplines() : Promise.resolve(),
-        instructors.length === 0 ? fetchInstructorsMinimal().then(setInstructors) : Promise.resolve(),
-      ]);
-    } catch (error) {
-      console.error("Error loading classes:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    fetchClassSessions,
-    fetchDisciplines,
-    fetchInstructorsMinimal,
-    disciplines.length,
-    instructors.length,
-  ]);
-
-  // Cargar clases al montar y cuando cambie la semana física
-  useEffect(() => {
-    loadClassesForWeek(selectedDate);
-  }, [currentWeekStartStr, loadClassesForWeek]);
 
   // Manejar cambio de fecha
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
-    setPage(Page => 1); // Resetear a la primera página al cambiar fecha
+    setPage(1);
     setSelectedDisciplineId("all");
   }, []);
 
@@ -193,20 +146,8 @@ export default function AdminClasesPage() {
 
   const handleCancelClass = async (classId: string) => {
     try {
-      // Para cancelar clase completa usamos la ruta unificada global
-      const response = await fetch(`/api/classes/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ classId }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al cancelar la clase");
-      }
-      
-      // Punto 3: Sincronización de mutaciones - Recargar la semana para ver cambios en UI
-      console.log("Clase cancelada exitosamente, recargando semana...");
-      await loadClassesForWeek(selectedDate);
+      await cancelClass.mutateAsync(classId);
+      console.log("Clase cancelada exitosamente");
     } catch (error) {
       console.error("Error canceling class:", error);
     }
@@ -258,7 +199,7 @@ export default function AdminClasesPage() {
       {/* Información de resultados */}
       <div className="flex justify-between items-center px-4 md:px-8">
         <p className="text-sm text-muted-foreground">
-          {isLoading
+          {isFetching
             ? "Cargando clases..."
             : `Mostrando ${paginatedClasses.length} de ${
                 filteredClasses.length
@@ -292,7 +233,7 @@ export default function AdminClasesPage() {
       </div>
 
       {/* Lista de clases */}
-      {isLoading && activeClasses.length === 0 ? (
+      {isFetching && activeClasses.length === 0 ? (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />

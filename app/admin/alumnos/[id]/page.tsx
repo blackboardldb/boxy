@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,15 +17,26 @@ import { es } from "date-fns/locale";
 import { getPlanStatus, getStudentClassesInPeriod, calcularFechaTerminoMembresia } from "@/lib/utils";
 import { PhoneInputCL } from "@/components/PhoneInputCL";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
+import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
+import { useUserClasses } from "@/lib/react-query/hooks/useClasses";
+import { usePlans } from "@/lib/react-query/hooks/usePlans";
+import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 
 export default function StudentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { users, fetchUserById, classSessions, disciplines, fetchUserClasses, fetchDisciplines, plans, fetchPlans, updateUser } = useBlackSheepStore();
 
+  // React Query
+  const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
+  const { data: userClasses = [] } = useUserClasses(resolvedParams.id);
+  const { data: plans = [] } = usePlans({ limit: 100 });
+  const { data: disciplinesData } = useDisciplines();
+  const disciplines = disciplinesData ?? [];
+  const updateUserMutation = useUpdateUser();
+
+  // Estado de edición local
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
 
@@ -50,30 +60,10 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [editEndDate, setEditEndDate] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState("");
 
+  // Sincronizar student local con dato de React Query
   useEffect(() => {
-    const loadData = async () => {
-      // Always fetch fresh data to ensure we have the latest membership history
-      const user = await fetchUserById(resolvedParams.id);
-      if (user) {
-        setStudent(user);
-      } else {
-        // Fallback to store if API fails for some reason
-        const found = users.find((u) => u.id === resolvedParams.id);
-        if (found) setStudent(found);
-      }
-      
-      if (!useBlackSheepStore.getState().plans?.length) {
-        await fetchPlans(1, 100);
-      }
-      // Fetch only classes registered to this specific student
-      await fetchUserClasses(resolvedParams.id);
-      if (!useBlackSheepStore.getState().disciplines?.length) {
-        fetchDisciplines();
-      }
-      setIsLoading(false);
-    };
-    loadData();
-  }, [resolvedParams.id, fetchUserById, fetchPlans, fetchUserClasses, fetchDisciplines, users]);
+    if (fetchedUser) setStudent(fetchedUser);
+  }, [fetchedUser]);
 
   // Populate data when starting to edit
   useEffect(() => {
@@ -134,16 +124,11 @@ const handleStartDateChange = (newDate: string) => {
         dateOfBirth: editDateOfBirth,
         emergencyContact: editEmergencyContact,
       };
-      
-      await fetch(`/api/users/${student.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(changes),
-      });
+
+      await updateUserMutation.mutateAsync({ id: student.id, data: changes });
 
       const updated = { ...student, ...changes } as FitCenterUserProfile;
       setStudent(updated);
-      updateUser(updated);
       toast({ title: "Guardado", description: "Datos personales actualizados correctamente" });
     } catch (error) {
       console.error(error);
@@ -184,12 +169,12 @@ const handleStartDateChange = (newDate: string) => {
     try {
       const selectedPlan = plans.find(p => p.id === editPlanId);
       
-      const newStartStr = editStartDate; // "2026-03-01"
-      const newEndStr = editEndDate;     // "2026-03-31"
+      const newStartStr = editStartDate;
+      const newEndStr = editEndDate;
       const newStart = new Date(newStartStr + "T00:00:00");
       const newEnd = new Date(newEndStr + "T23:59:59");
       
-      const newEnrolledClasses = (classSessions || []).filter(s => {
+      const newEnrolledClasses = (userClasses || []).filter(s => {
         const sessionDate = new Date(s.dateTime);
         return (
           s.status !== "cancelled" &&
@@ -228,15 +213,10 @@ const handleStartDateChange = (newDate: string) => {
         membership: updatedMembership,
       };
 
-      await fetch(`/api/users/${student.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(changes),
-      });
+      await updateUserMutation.mutateAsync({ id: student.id, data: changes });
 
       const updated = { ...student, ...changes } as FitCenterUserProfile;
       setStudent(updated);
-      updateUser(updated);
       toast({ title: "Guardado", description: "Membresía actualizada correctamente" });
     } catch (error) {
       console.error(error);
@@ -257,18 +237,13 @@ const handleStartDateChange = (newDate: string) => {
       const newHistory = student.membership.history.filter((_, i) => i !== historyIndex);
       const updatedMembership = { ...student.membership, history: newHistory };
 
-      const response = await fetch(`/api/users/${student.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membership: updatedMembership }),
+      await updateUserMutation.mutateAsync({
+        id: student.id,
+        data: { membership: updatedMembership },
       });
 
-      if (!response.ok) throw new Error("Error en la API al eliminar el plan");
-
       const updated = { ...student, membership: updatedMembership } as FitCenterUserProfile;
-      
       setStudent(updated);
-      updateUser(updated);
 
       toast({ title: "Plan eliminado", description: "El plan fue eliminado del historial." });
     } catch (error) {
@@ -283,11 +258,11 @@ const handleStartDateChange = (newDate: string) => {
   
   const studentAllEnrolledClasses = useMemo(() => {
     return getStudentClassesInPeriod(
-      classSessions, 
-      student?.membership?.currentPeriodStart, 
+      userClasses,
+      student?.membership?.currentPeriodStart,
       student?.membership?.currentPeriodEnd
     );
-  }, [classSessions, student]);
+  }, [userClasses, student]);
 
   // Determine plan status
   const planStatus = student ? getPlanStatus(student) : "inactive";
