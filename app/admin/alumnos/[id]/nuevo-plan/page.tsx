@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +12,22 @@ import { ArrowLeft, Save } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/lib/utils";
 import { parseISO } from "date-fns";
+import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
+import { usePlans } from "@/lib/react-query/hooks/usePlans";
+import { useUserClasses } from "@/lib/react-query/hooks/useClasses";
 
 export default function NuevoPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { users, fetchUserById, updateUserById, plans, fetchPlans, classSessions } = useBlackSheepStore();
+
+  // React Query
+  const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
+  const { data: plans = [] } = usePlans({ limit: 100 });
+  const { data: userClasses = [] } = useUserClasses(resolvedParams.id);
+  const updateUserMutation = useUpdateUser();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     planId: "",
@@ -32,56 +38,32 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     precioTotal: "",
   });
 
+  // Sincronizar student local y pre-rellenar formulario cuando llegan los datos
   useEffect(() => {
-    const loadData = async () => {
-      let found = users.find((u) => u.id === resolvedParams.id);
-      
-      if (!found) {
-        const user = await fetchUserById(resolvedParams.id);
-        if (user) found = user;
-      }
-      
-      if (!useBlackSheepStore.getState().plans?.length) {
-        await fetchPlans(1, 100);
-      }
+    if (!fetchedUser || !plans.length) return;
+    setStudent(fetchedUser);
 
-      useBlackSheepStore.getState().fetchClassSessions(undefined, undefined, 1, 300);
-      
-      const activePlans = useBlackSheepStore.getState().plans || [];
-      
-      if (found) {
-        setStudent(found);
-        
-        // Calcular fecha sugerida
-        let suggestedStartDate = new Date();
-        if (found.membership?.currentPeriodEnd && found.membership.status === 'active') {
-          // Si tiene plan activo, sugerir el día después del término
-          const end = parseISO(found.membership.currentPeriodEnd.substring(0, 10));
-          if (end >= suggestedStartDate) { // If it's today or in the future
-            suggestedStartDate = new Date(end);
-            suggestedStartDate.setDate(suggestedStartDate.getDate() + 1);
-          }
-        }
-        
-        const dateStr = suggestedStartDate.toISOString().split("T")[0];
-        
-        // Pre-seleccionar el mismo plan si existe, o el primero
-        const currentPlanId = found.membership?.planId || activePlans[0]?.id || "";
-        const initPlan = activePlans.find(p => p.id === currentPlanId);
-        
-        setFormData(prev => ({
-          ...prev,
-          planId: currentPlanId,
-          startDate: dateStr,
-          formaDePago: found.formaDePago || "contado",
-          clasesTotales: initPlan ? String(initPlan.classLimit) : "",
-          precioTotal: initPlan ? String(initPlan.price) : "",
-        }));
+    let suggestedStartDate = new Date();
+    if (fetchedUser.membership?.currentPeriodEnd && fetchedUser.membership.status === 'active') {
+      const end = parseISO(fetchedUser.membership.currentPeriodEnd.substring(0, 10));
+      if (end >= suggestedStartDate) {
+        suggestedStartDate = new Date(end);
+        suggestedStartDate.setDate(suggestedStartDate.getDate() + 1);
       }
-      setIsLoading(false);
-    };
-    loadData();
-  }, [resolvedParams.id, fetchUserById, fetchPlans, users]);
+    }
+    const dateStr = suggestedStartDate.toISOString().split("T")[0];
+    const currentPlanId = fetchedUser.membership?.planId || plans[0]?.id || "";
+    const initPlan = plans.find(p => p.id === currentPlanId);
+
+    setFormData(prev => ({
+      ...prev,
+      planId: currentPlanId,
+      startDate: dateStr,
+      formaDePago: fetchedUser.formaDePago || "contado",
+      clasesTotales: initPlan ? String(initPlan.classLimit) : "",
+      precioTotal: initPlan ? String(initPlan.price) : "",
+    }));
+  }, [fetchedUser, plans]);
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === formData.planId),
@@ -103,15 +85,15 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     e.preventDefault();
     if (!student || !selectedPlan) return;
 
-    const newStartStr = formData.startDate; // "2026-03-01"
-    const newEndStr = formData.endDate;     // "2026-03-31"
+    const newStartStr = formData.startDate;
+    const newEndStr = formData.endDate;
     const newStart = new Date(newStartStr + "T00:00:00");
     const newEnd = new Date(newEndStr + "T23:59:59");
 
-    const newEnrolledClasses = (classSessions || []).filter(s => {
+    // Clases del alumno en el periodo usando datos de React Query
+    const newEnrolledClasses = (userClasses || []).filter(s => {
       const sessionDate = new Date(s.dateTime);
       return (
-        s.registeredParticipantsIds.includes(student.id) &&
         s.status !== "cancelled" &&
         sessionDate >= newStart &&
         sessionDate <= newEnd
@@ -226,7 +208,10 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       membership: updatedMembership
     };
 
-    const result = await updateUserById(student.id, updateData);
+    const result = await updateUserMutation.mutateAsync({
+      id: student.id,
+      data: updateData,
+    });
 
     if (result) {
       toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });

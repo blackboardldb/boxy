@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useClasses } from "@/lib/react-query/hooks/useClasses";
 import {
   Select,
   SelectContent,
@@ -62,7 +62,14 @@ type RenewalItem = {
 };
 
 export function Notifications() {
-  const { classSessions, fetchClassSessions } = useBlackSheepStore();
+  const today = new Date().toISOString().split("T")[0];
+
+  // Clases canceladas hoy en adelante — React Query
+  const { data: allCancelledClasses = [] } = useClasses({
+    startDate: today,
+    status: "cancelled",
+    limit: 50,
+  });
 
   const [mounted, setMounted] = useState(false);
   const [pendingRenewals, setPendingRenewals] = useState<RenewalItem[]>([]);
@@ -94,18 +101,13 @@ export function Notifications() {
   useEffect(() => {
     setMounted(true);
     fetchPendingRenewals();
-
-    // Clases canceladas de hoy en adelante
-    const today = new Date().toISOString().split("T")[0];
-    fetchClassSessions(today, undefined, 1, 50, { status: "cancelled" });
   }, []);
 
   if (!mounted) return null;
 
-  // Clases canceladas (hoy en adelante)
-  const cancelledClasses = (classSessions || [])
+  // Clases canceladas (hoy en adelante) — React Query ya filtra por status=cancelled
+  const cancelledClasses = allCancelledClasses
     .filter((cls: any) => {
-      if (cls.status !== "cancelled") return false;
       const classDate = new Date(cls.dateTime);
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);

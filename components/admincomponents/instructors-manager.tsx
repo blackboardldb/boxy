@@ -40,29 +40,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { Instructor } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle, Plus, Edit, Trash2, Search } from "lucide-react";
+import {
+  usePaginatedInstructors,
+  useCreateInstructor,
+  useUpdateInstructor,
+  useDeleteInstructor,
+  useToggleInstructorStatus,
+} from "@/lib/react-query/hooks/useInstructors";
+import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 
 export function InstructorsManager() {
-  const {
-    instructors = [],
-    disciplines,
-    fetchDisciplines,
-    fetchInstructors,
-    instructorsPagination,
-    createInstructor,
-    updateInstructorById,
-    deleteInstructorById,
-    toggleInstructorStatus,
-  } = useBlackSheepStore();
-
-
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Estado de paginación y filtros
+  // Estado de filtros UI
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -70,93 +62,55 @@ export function InstructorsManager() {
   const [activeFilter, setActiveFilter] = useState("todos");
   const limit = 10;
 
-  // Debounce search term
+  // Debounce
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(
-    null
-  );
+  // Reset página al cambiar filtros
+  useEffect(() => { setPage(1); }, [debouncedSearch, roleFilter, activeFilter]);
+
+  // React Query
+  const { data: response, isFetching } = usePaginatedInstructors({
+    page, limit, search: debouncedSearch, role: roleFilter, isActive: activeFilter,
+  });
+  const instructors = response?.data ?? [];
+  const instructorsPagination = response?.pagination;
+
+  const { data: disciplinesData } = useDisciplines();
+  const disciplines = disciplinesData ?? [];
+
+  const createInstructorMutation = useCreateInstructor();
+  const updateInstructorMutation = useUpdateInstructor();
+  const deleteInstructorMutation = useDeleteInstructor();
+  const toggleStatusMutation = useToggleInstructorStatus();
+
+  const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
   const [isAddingInstructor, setIsAddingInstructor] = useState(false);
-  const [deletingInstructor, setDeletingInstructor] =
-    useState<Instructor | null>(null);
-
-  // Cargar disciplinas al montar el componente si no hay ninguna cargada (Punto 1 matizado)
-  useEffect(() => {
-    if (disciplines.length === 0) {
-      fetchDisciplines();
-    }
-  }, [fetchDisciplines, disciplines.length]);
-
-  // Cargar instructores al montar el componente y cuando cambian filtros/página
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchInstructors(
-          page,
-          limit,
-          debouncedSearch,
-          roleFilter !== "todos" ? roleFilter : "",
-          activeFilter !== "todos" ? activeFilter : ""
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [page, debouncedSearch, roleFilter, activeFilter, fetchInstructors]);
-
-  // Resetear página si cambia el filtro de búsqueda o estado
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, roleFilter, activeFilter]);
+  const [deletingInstructor, setDeletingInstructor] = useState<Instructor | null>(null);
 
   const handleSaveInstructor = async (instructorData: Partial<Instructor>): Promise<boolean> => {
-    if (editingInstructor) {
-      // Actualizar instructor existente
-      const result = await updateInstructorById(
-        editingInstructor.id,
-        instructorData
-      );
-      if (result) {
+    try {
+      if (editingInstructor) {
+        await updateInstructorMutation.mutateAsync({ id: editingInstructor.id, data: instructorData });
         setEditingInstructor(null);
-        // Refrescar la lista después de editar
-        fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
-        return true;
-      }
-      return false;
-    } else {
-      // Crear nuevo instructor
-      const result = await createInstructor(instructorData);
-      if (result) {
+      } else {
+        await createInstructorMutation.mutateAsync(instructorData);
         setIsAddingInstructor(false);
-        // Refrescar la lista después de agregar
-        fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
-        return true;
       }
+      return true;
+    } catch {
       return false;
     }
   };
 
   const handleDeleteInstructor = async (instructorId: string) => {
-    const result = await deleteInstructorById(instructorId);
-    if (result) {
-      // Refrescar la lista después de eliminar
-      fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
-    }
+    await deleteInstructorMutation.mutateAsync(instructorId);
   };
 
-  const handleToggleStatus = async (instructorId: string) => {
-    const result = await toggleInstructorStatus(instructorId);
-    if (result) {
-      // Refrescar la lista después del cambio de estado
-      fetchInstructors(page, limit, searchTerm, roleFilter !== "todos" ? roleFilter : "", activeFilter !== "todos" ? activeFilter : "");
-    }
+  const handleToggleStatus = async (instructorId: string, currentStatus: boolean) => {
+    await toggleStatusMutation.mutateAsync({ id: instructorId, currentStatus });
   };
 
   const InstructorForm = ({
@@ -530,7 +484,7 @@ export function InstructorsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && instructors.length === 0 ? (
+              {isFetching && instructors.length === 0 ? (
                 // Skeleton para tabla
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
@@ -619,7 +573,7 @@ export function InstructorsManager() {
                       <Badge
                         variant={instructor.isActive ? "default" : "secondary"}
                         className="cursor-pointer hover:opacity-80 transition-opacity rounded-xl"
-                        onClick={() => handleToggleStatus(instructor.id)}
+                      onClick={() => handleToggleStatus(instructor.id, instructor.isActive)}
                       >
                         {instructor.isActive ? "Activo" : "Inactivo"}
                       </Badge>
