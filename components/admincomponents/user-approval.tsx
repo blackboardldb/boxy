@@ -50,6 +50,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { useUpdateUser } from "@/lib/react-query/hooks/useUsers";
 
 // Tipo para usuarios pendientes con información adicional
 interface PendingUser extends FitCenterUserProfile {
@@ -57,7 +58,7 @@ interface PendingUser extends FitCenterUserProfile {
 }
 
 export function UserApproval() {
-  const { updateUser, updateUserById } = useBlackSheepStore();
+  const updateUserMutation = useUpdateUser();
   const pendingUsers = usePendingUsers();
   const userStats = useUserStats();
   const { toast } = useToast();
@@ -159,7 +160,7 @@ export function UserApproval() {
         new Date().toLocaleDateString(),
     };
 
-    const result = await updateUserById(user.id, updatedUserData);
+    const result = await updateUserMutation.mutateAsync({ id: user.id, data: updatedUserData });
     if (result) {
       toast({
         title: "Usuario aprobado",
@@ -202,7 +203,7 @@ export function UserApproval() {
       },
     };
 
-    const result = await updateUserById(user.id, updatedUserData);
+    const result = await updateUserMutation.mutateAsync({ id: user.id, data: updatedUserData });
     if (result) {
       toast({
         title: "Usuario rechazado",
@@ -243,7 +244,7 @@ export function UserApproval() {
       rejectionInfo: undefined, // Limpiar información de rechazo
     };
 
-    const result = await updateUserById(user.id, updatedUserData);
+    const result = await updateUserMutation.mutateAsync({ id: user.id, data: updatedUserData });
     if (result) {
       toast({
         title: "Usuario reactivado",

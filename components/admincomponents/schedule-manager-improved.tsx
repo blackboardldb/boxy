@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import type { DayOfWeek, Discipline, CancellationRule } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -40,6 +39,12 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import {
+  useDisciplines,
+  useDeleteDiscipline,
+  useUpdateDiscipline,
+  useCreateDiscipline,
+} from "@/lib/react-query/hooks/useDisciplines";
 
 const dayLabels: Record<DayOfWeek, string> = {
   lun: "Lunes",
@@ -62,19 +67,16 @@ const emptyDiscipline: Discipline = {
 };
 
 export default function ScheduleManagerImproved() {
-  const {
-    disciplines,
-    deleteDiscipline,
-    fetchDisciplines,
-    createDiscipline,
-    updateDisciplineById,
-  } = useBlackSheepStore();
+  const { data: disciplinesData, isFetching } = useDisciplines();
+  const disciplines = disciplinesData ?? [];
 
-  const [isLoading, setIsLoading] = useState(true);
+  const deleteDisciplineMutation = useDeleteDiscipline();
+  const updateDisciplineMutation = useUpdateDiscipline();
+  const createDisciplineMutation = useCreateDiscipline();
+
+  const [isLoading] = [isFetching && disciplines.length === 0];
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Estados para gestión de disciplinas
   const [showDisciplineModal, setShowDisciplineModal] = useState(false);
   const [editingDiscipline, setEditingDiscipline] = useState<string | null>(
     null
@@ -96,24 +98,7 @@ export default function ScheduleManagerImproved() {
   );
   const [disciplineToDeleteName, setDisciplineToDeleteName] = useState<string>("");
 
-  // Cargar disciplinas al montar el componente si no hay ninguna cargada (Punto 1 matizado)
-  useEffect(() => {
-    const loadData = async () => {
-      if (disciplines.length === 0) {
-        setIsLoading(true);
-        try {
-          await fetchDisciplines();
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [fetchDisciplines, disciplines.length]);
-
-  // --- Gestión de disciplinas ---
+  // Estados para gestión de disciplinas
   const handleNewDiscipline = () => {
     setDisciplineForm(emptyDiscipline);
     setEditingDiscipline(null);
@@ -142,11 +127,7 @@ export default function ScheduleManagerImproved() {
 
   const confirmDeleteDiscipline = async () => {
     if (disciplineToDelete) {
-      const result = await deleteDiscipline(disciplineToDelete);
-      if (result) {
-        // La lista se refresca automáticamente via store o useEffect
-      }
-      // El store ya limpia el estado local o alertará si falla
+      await deleteDisciplineMutation.mutateAsync(disciplineToDelete);
       setShowDeleteModal(false);
       setDisciplineToDelete(null);
     }
@@ -255,17 +236,17 @@ export default function ScheduleManagerImproved() {
     };
 
     try {
-      let result;
+      let success = false;
       if (editingDiscipline) {
-        result = await updateDisciplineById(editingDiscipline, disciplineData);
+        await updateDisciplineMutation.mutateAsync({ id: editingDiscipline, data: disciplineData });
+        success = true;
       } else {
-        result = await createDiscipline(disciplineData);
+        await createDisciplineMutation.mutateAsync(disciplineData);
+        success = true;
       }
 
-      if (result) {
+      if (success) {
         setShowDisciplineModal(false);
-      } else {
-        setError("No se pudo guardar la disciplina. Por favor verifica los datos e intenta nuevamente.");
       }
     } catch (err: any) {
       setError(err.message || "Error inesperado al guardar la disciplina.");
@@ -334,10 +315,7 @@ export default function ScheduleManagerImproved() {
                       <Switch 
                         checked={d.isActive} 
                         onCheckedChange={async (checked) => {
-                          const result = await updateDisciplineById(d.id, { isActive: checked });
-                          if (result) {
-                            // Cambiado exitosamente
-                          }
+                          await updateDisciplineMutation.mutateAsync({ id: d.id, data: { isActive: checked } });
                         }}
                       />
                       <div className="flex items-center gap-3">

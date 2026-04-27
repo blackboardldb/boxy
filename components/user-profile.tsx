@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Edit3, ChevronRight, Lock, Bell } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { FitCenterUserProfile } from "@/lib/types";
 import { SkeletonUserProfile } from "@/components/ui/skeleton";
@@ -29,7 +28,6 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 export function UserProfile() {
-  const { updateUser } = useBlackSheepStore();
   const { currentUser, isLoading, reload } = useCurrentUser();
 
   const [userData, setUserData] = useState<FitCenterUserProfile | null>(null);
@@ -140,7 +138,6 @@ export function UserProfile() {
       if (res.ok) {
         const updated = { ...userData, firstName: editableFirstName, lastName: editableLastName };
         setUserData(updated);
-        updateUser(updated);
         reload();
       }
     } finally {
@@ -161,7 +158,6 @@ export function UserProfile() {
       if (res.ok) {
         const updated = { ...userData, phone: editablePhone };
         setUserData(updated);
-        updateUser(updated);
         reload();
       }
     } finally {
@@ -182,7 +178,6 @@ export function UserProfile() {
       if (res.ok) {
         const updated = { ...userData, gender: editableGender, dateOfBirth: editableDateOfBirth };
         setUserData(updated);
-        updateUser(updated);
         reload();
       }
     } finally {
@@ -203,7 +198,6 @@ export function UserProfile() {
       if (res.ok) {
         const updated = { ...userData, emergencyContact: editableEmergencyContact };
         setUserData(updated);
-        updateUser(updated);
         reload();
       }
     } finally {
