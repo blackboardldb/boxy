@@ -49,7 +49,7 @@ Para no colapsar la interfaz actual del panel administrador, migraremos dominio 
 - [ ] 1. Crear queries para Calendario (`useClasses`, con filtros robustos de fechas).
 - [ ] 2. Implementar Optimistic Updates en las Mutaciones de Inscripción (`useRegisterClass`, `useCancelClass`) para UI instantánea.
 - [ ] 3. Migrar Instructores (`useInstructors`).
-- [ ] 4. Eliminar lógica de `blacksheep-store.ts`.
+- [x] 4. Eliminar lógica de `blacksheep-store.ts`.
 
 **Sprint D: Renovaciones, Egresos y Notificaciones**
 - [x] **D-1** Migrar Egresos (`useEgresos`, `useCreateEgreso`, `useDeleteEgreso`) ✅ `2026-04-26` — commit `1aef685`
@@ -57,7 +57,7 @@ Para no colapsar la interfaz actual del panel administrador, migraremos dominio 
   - queryKey `["egresos", "list", { year, month }]` — caché por mes independiente
   - `useBlackSheepStore` eliminado de 4 consumidores. `tsc --noEmit` = 0 errores ✅
 - [ ] **D-2** Migrar Alertas y Renovaciones (`useAlerts`, `useRenewals`) ⏳ _Espera Sprint B (depende de `users` y `classSessions`)_
-- [ ] Eliminar lógica de `blacksheep-store.ts`.
+- [x] Eliminar lógica de `blacksheep-store.ts`.
 
 ### Fase 3: Purga Final
 - [ ] 1. Eliminar por completo el `BlackSheepStore` asíncrono.
