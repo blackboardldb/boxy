@@ -81,6 +81,11 @@ export function AlertsManager() {
 
     setIsSubmitting(true);
     try {
+      // Parsear fechas como inicio/fin de día UTC para evitar problemas de timezone.
+      // "2026-04-28" → start: 2026-04-28T00:00:00Z, end: 2026-04-28T23:59:59Z
+      const startISO = new Date(`${startDate}T00:00:00.000Z`).toISOString();
+      const endISO   = new Date(`${endDate}T23:59:59.000Z`).toISOString();
+
       const resp = await fetch("/api/admin/alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,8 +93,8 @@ export function AlertsManager() {
           title,
           content,
           type,
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
+          startDate: startISO,
+          endDate: endISO,
           sendPush: type === "cancelacion" ? true : sendPush,
         }),
       });
