@@ -34,8 +34,11 @@ export const classKeys = {
   // Clases de un usuario específico (historial de asistencia)
   userClasses: (userId: string) => ["classes", "user", userId] as const,
   // Bookings del alumno autenticado para la home
+  myBookingsPrefix: (userId: string) => ["classes", "myBookings", userId] as const,
   myBookings: (userId: string, startDate?: string) =>
     ["classes", "myBookings", userId, startDate] as const,
+  participants: (classId: string) => ["classes", "participants", classId] as const,
+  notes: (classId: string) => ["classes", "notes", classId] as const,
 };
 
 // ─── useClasses — calendario semanal (admin y alumno) ────────────────────────
@@ -119,9 +122,8 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
 /**
  * useRegisterClass — inscribir alumno en una clase.
  *
- * Estrategia post-mutación: invalidateQueries en lugar de optimistic update.
- * Fundamento: inscripción en clase tiene latencia tolerable (300-500ms).
- * El riesgo de rollback mal implementado supera el beneficio UX marginal.
+ * Estrategia post-mutación: Optimistic Update + invalidateQueries.
+ * Fundamento: Mejora radical de la UX en calendar app.
  */
 export function useRegisterClass() {
   const queryClient = useQueryClient();
@@ -139,13 +141,69 @@ export function useRegisterClass() {
         body: JSON.stringify({ userId }),
       }),
 
-    onSuccess: (_data, variables) => {
-      // Invalida todo el calendario y los bookings del usuario
+    onMutate: async ({ classId, userId }) => {
+      await queryClient.cancelQueries({ queryKey: classKeys.lists() });
+      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists() });
+
+      queryClient.setQueriesData({ queryKey: classKeys.lists() }, (old: ClassSession[] | undefined) => {
+        if (!old) return old;
+        return old.map(session => {
+          if (session.id === classId) {
+            return {
+              ...session,
+              enrolledCount: (session.enrolledCount || 0) + 1,
+              isUserRegistered: true,
+              registeredParticipantsIds: [...(session.registeredParticipantsIds || []), userId]
+            };
+          }
+          return session;
+        });
+      });
+
+      // Cancelar y capturar myBookings
+      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(userId) });
+      const previousMyBookings = queryClient.getQueriesData({ 
+        queryKey: classKeys.myBookingsPrefix(userId) 
+      });
+
+      // Actualizar myBookings optimistamente
+      queryClient.setQueriesData(
+        { queryKey: classKeys.myBookingsPrefix(userId) },
+        (old: ClassSession[] | undefined) => {
+          if (!old) return old;
+          return old.map(session => {
+            if (session.id !== classId) return session;
+            return {
+              ...session,
+              isUserRegistered: true,
+              enrolledCount: (session.enrolledCount ?? 0) + 1,
+              registeredParticipantsIds: [...(session.registeredParticipantsIds || []), userId]
+            };
+          });
+        }
+      );
+
+      return { previousClasses, previousMyBookings };
+    },
+
+    onError: (_err, _variables, context) => {
+      if (context?.previousClasses) {
+        context.previousClasses.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousMyBookings) {
+        context.previousMyBookings.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: classKeys.myBookings(variables.userId),
+        queryKey: classKeys.myBookingsPrefix(variables.userId),
       });
-      // Invalida /api/me para reflejar classesAttended actualizado
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
@@ -153,7 +211,7 @@ export function useRegisterClass() {
 
 /**
  * useCancelClassRegistration — cancelar inscripción del alumno.
- * Misma estrategia: invalidateQueries.
+ * Estrategia: Optimistic Update + invalidateQueries.
  */
 export function useCancelClassRegistration() {
   const queryClient = useQueryClient();
@@ -171,10 +229,68 @@ export function useCancelClassRegistration() {
         body: JSON.stringify({ userId }),
       }),
 
-    onSuccess: (_data, variables) => {
+    onMutate: async ({ classId, userId }) => {
+      await queryClient.cancelQueries({ queryKey: classKeys.lists() });
+      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists() });
+
+      queryClient.setQueriesData({ queryKey: classKeys.lists() }, (old: ClassSession[] | undefined) => {
+        if (!old) return old;
+        return old.map(session => {
+          if (session.id === classId) {
+            return {
+              ...session,
+              enrolledCount: Math.max(0, (session.enrolledCount || 0) - 1),
+              isUserRegistered: false,
+              registeredParticipantsIds: (session.registeredParticipantsIds || []).filter(id => id !== userId)
+            };
+          }
+          return session;
+        });
+      });
+
+      // Cancelar y capturar myBookings
+      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(userId) });
+      const previousMyBookings = queryClient.getQueriesData({ 
+        queryKey: classKeys.myBookingsPrefix(userId) 
+      });
+
+      // Actualizar myBookings optimistamente
+      queryClient.setQueriesData(
+        { queryKey: classKeys.myBookingsPrefix(userId) },
+        (old: ClassSession[] | undefined) => {
+          if (!old) return old;
+          return old.map(session => {
+            if (session.id !== classId) return session;
+            return {
+              ...session,
+              isUserRegistered: false,
+              enrolledCount: Math.max(0, (session.enrolledCount ?? 1) - 1),
+              registeredParticipantsIds: (session.registeredParticipantsIds || []).filter(id => id !== userId)
+            };
+          });
+        }
+      );
+
+      return { previousClasses, previousMyBookings };
+    },
+
+    onError: (_err, _variables, context) => {
+      if (context?.previousClasses) {
+        context.previousClasses.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousMyBookings) {
+        context.previousMyBookings.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: classKeys.myBookings(variables.userId),
+        queryKey: classKeys.myBookingsPrefix(variables.userId),
       });
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
@@ -196,6 +312,33 @@ export function useCancelClass() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+    },
+  });
+}
+
+export function useClassParticipants(classId: string | undefined) {
+  return useQuery({
+    queryKey: classKeys.participants(classId ?? ""),
+    queryFn: async () => {
+      const res = await fetchClient<any>(`/classes/${classId}/participants`);
+      return res.data;
+    },
+    enabled: !!classId,
+    staleTime: 1000 * 30, // 30 segundos — participantes cambian frecuente
+  });
+}
+
+export function useSaveClassNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ classId, notes }: { classId: string; notes: string }) =>
+      fetchClient(`/classes/${classId}/notes`, {
+        method: "PUT",
+        body: JSON.stringify({ notes }),
+      }),
+    onSuccess: (_, { classId }) => {
+      queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: classKeys.notes(classId) });
     },
   });
 }

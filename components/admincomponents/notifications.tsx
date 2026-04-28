@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClasses } from "@/lib/react-query/hooks/useClasses";
+import { usePendingRenewals, useApproveRenewal, useRejectRenewal } from "@/lib/react-query/hooks/useRenewals";
 import {
   Select,
   SelectContent,
@@ -72,35 +73,19 @@ export function Notifications() {
   });
 
   const [mounted, setMounted] = useState(false);
-  const [pendingRenewals, setPendingRenewals] = useState<RenewalItem[]>([]);
-  const [renewalsLoading, setRenewalsLoading] = useState(true);
   const [selectedRenewal, setSelectedRenewal] = useState<RenewalItem | null>(null);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [notificationFilter, setNotificationFilter] = useState("todos");
-  const [actionLoading, setActionLoading] = useState(false);
 
-  // Función para cargar renovaciones desde la tabla relacional
-  const fetchPendingRenewals = async () => {
-    setRenewalsLoading(true);
-    try {
-      const res = await fetch("/api/admin/renewals?status=pending");
-      if (!res.ok) throw new Error("Error al cargar renovaciones");
-      const data = await res.json();
-      setPendingRenewals(data.data ?? []);
-    } catch (err) {
-      console.error("[Notifications] Error cargando renovaciones:", err);
-      setPendingRenewals([]);
-    } finally {
-      setRenewalsLoading(false);
-    }
-  };
+  const { data: pendingRenewals = [], isLoading: renewalsLoading } = usePendingRenewals();
+  const approveRenewal = useApproveRenewal();
+  const rejectRenewal = useRejectRenewal();
 
   useEffect(() => {
     setMounted(true);
-    fetchPendingRenewals();
   }, []);
 
   if (!mounted) return null;
@@ -116,63 +101,35 @@ export function Notifications() {
     .sort((a: any, b: any) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
     .slice(0, 5);
 
-  // Aprobar renovación: llama al route de approve que actualiza UserMembership + MembershipRenewal
+  // Aprobar renovación: llama al hook de approve
   const handleApproveRenewal = async (renewal: RenewalItem) => {
-    setActionLoading(true);
     try {
       const startDate = customStartDate || new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Santiago",
       }).format(new Date());
 
-      const res = await fetch(`/api/users/${renewal.user.id}/renewal/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || "Error al aprobar la renovación");
-      }
+      await approveRenewal.mutateAsync({ userId: renewal.user.id, startDate });
 
       setShowRenewalModal(false);
       setSelectedRenewal(null);
-      // Refrescar la lista de pendientes
-      await fetchPendingRenewals();
     } catch (error) {
       console.error("Error al aprobar la renovación:", error);
       alert("Error al aprobar la renovación: " + (error instanceof Error ? error.message : String(error)));
-    } finally {
-      setActionLoading(false);
     }
   };
 
-  // Rechazar renovación: llama al route de reject que actualiza MembershipRenewal
+  // Rechazar renovación: llama al hook de reject
   const handleRejectRenewal = async (renewal: RenewalItem) => {
-    setActionLoading(true);
     try {
-      const res = await fetch(`/api/users/${renewal.user.id}/renewal/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: rejectReason }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || "Error al rechazar la renovación");
-      }
+      await rejectRenewal.mutateAsync({ userId: renewal.user.id, reason: rejectReason });
 
       setShowRejectModal(false);
       setRejectReason("");
       setShowRenewalModal(false);
       setSelectedRenewal(null);
-      // Refrescar la lista de pendientes
-      await fetchPendingRenewals();
     } catch (error) {
       console.error("Error al rechazar la renovación:", error);
       alert("Error al rechazar: " + (error instanceof Error ? error.message : String(error)));
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -209,7 +166,7 @@ export function Notifications() {
               <RefreshCw className="h-4 w-4 text-orange-500" />
             </div>
             <p className="text-xs text-muted-foreground">
-              {pendingRenewals.filter((r) => (r.user.daysUntilExpiration ?? Infinity) <= 7).length} expiran pronto
+              {pendingRenewals.filter((r: RenewalItem) => (r.user.daysUntilExpiration ?? Infinity) <= 7).length} expiran pronto
             </p>
           </CardContent>
         </Card>
@@ -245,7 +202,7 @@ export function Notifications() {
               </div>
             ) : pendingRenewals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pendingRenewals.map((r) => (
+                {pendingRenewals.map((r: RenewalItem) => (
                   <Card
                     key={r.id}
                     className="border-l-4 border-orange-500 hover:shadow-md transition-shadow rounded-xl"
@@ -377,15 +334,15 @@ export function Notifications() {
               <div className="flex gap-3">
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl"
-                  disabled={actionLoading}
+                  disabled={approveRenewal.isPending}
                   onClick={() => handleApproveRenewal(selectedRenewal)}
                 >
-                  {actionLoading ? "Procesando..." : "Confirmar Pago y Activar"}
+                  {approveRenewal.isPending ? "Procesando..." : "Confirmar Pago y Activar"}
                 </Button>
                 <Button
                   variant="destructive"
                   className="flex-1 rounded-xl"
-                  disabled={actionLoading}
+                  disabled={approveRenewal.isPending}
                   onClick={() => setShowRejectModal(true)}
                 >
                   Rechazar
@@ -414,10 +371,10 @@ export function Notifications() {
               <Button
                 variant="destructive"
                 className="flex-1 rounded-xl"
-                disabled={actionLoading}
+                disabled={rejectRenewal.isPending}
                 onClick={() => selectedRenewal && handleRejectRenewal(selectedRenewal)}
               >
-                {actionLoading ? "Procesando..." : "Confirmar Rechazo"}
+                {rejectRenewal.isPending ? "Procesando..." : "Confirmar Rechazo"}
               </Button>
               <Button
                 variant="outline"

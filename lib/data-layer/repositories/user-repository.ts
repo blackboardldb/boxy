@@ -212,7 +212,7 @@ export class PrismaUserRepository implements IUserRepository {
       const m = data.membership as any;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const startDate = m.currentPeriodStart ? new Date(m.currentPeriodStart + 'T00:00:00') : null;
+      const startDate = m.currentPeriodStart ? new Date(m.currentPeriodStart) : null;
       const isScheduledPlan = startDate !== null && startDate > today;
 
       if (isScheduledPlan) {

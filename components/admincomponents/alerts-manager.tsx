@@ -29,7 +29,7 @@ import {
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { useQueryClient } from "@tanstack/react-query";
+import { useAlerts, useCreateAlert, useDeleteAlert } from "@/lib/react-query/hooks/useAlerts";
 
 interface InAppAlert {
   id: string;
@@ -43,10 +43,10 @@ interface InAppAlert {
 
 export function AlertsManager() {
 
-  const [alerts, setAlerts] = useState<InAppAlert[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: alerts = [], isLoading } = useAlerts();
+  const createAlert = useCreateAlert();
+  const deleteAlert = useDeleteAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -55,22 +55,6 @@ export function AlertsManager() {
   const [sendPush, setSendPush] = useState(false);
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
-
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
-
-  const fetchAlerts = async () => {
-    try {
-      const resp = await fetch("/api/admin/alerts");
-      const data = await resp.json();
-      setAlerts(data);
-    } catch (error) {
-      console.error("Error fetching alerts:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,31 +66,20 @@ export function AlertsManager() {
     setIsSubmitting(true);
     try {
       // Parsear fechas como inicio/fin de día UTC para evitar problemas de timezone.
-      // "2026-04-28" → start: 2026-04-28T00:00:00Z, end: 2026-04-28T23:59:59Z
       const startISO = new Date(`${startDate}T00:00:00.000Z`).toISOString();
       const endISO   = new Date(`${endDate}T23:59:59.000Z`).toISOString();
 
-      const resp = await fetch("/api/admin/alerts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          content,
-          type,
-          startDate: startISO,
-          endDate: endISO,
-          sendPush: type === "cancelacion" ? true : sendPush,
-        }),
+      await createAlert.mutateAsync({
+        title,
+        content,
+        type,
+        startDate: startISO,
+        endDate: endISO,
+        sendPush: type === "cancelacion" ? true : sendPush,
       });
 
-      if (resp.ok) {
-        setTitle("");
-        setContent("");
-        fetchAlerts();
-        queryClient.invalidateQueries({ queryKey: ["inAppAlerts"] });
-      } else {
-        throw new Error("Failed to create alert");
-      }
+      setTitle("");
+      setContent("");
     } catch (error) {
       console.error("Error al crear alerta:", error);
     } finally {
@@ -116,18 +89,8 @@ export function AlertsManager() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de que deseas eliminar esta alerta?")) return;
-
     try {
-      const resp = await fetch(`/api/admin/alerts/${id}`, {
-        method: "DELETE",
-      });
-
-      if (resp.ok) {
-        fetchAlerts();
-        queryClient.invalidateQueries({ queryKey: ["inAppAlerts"] });
-      } else {
-        throw new Error("Failed to delete alert");
-      }
+      await deleteAlert.mutateAsync(id);
     } catch (error) {
       console.error("Error al eliminar alerta:", error);
     }
@@ -302,7 +265,7 @@ export function AlertsManager() {
               </div>
             ) : (
               <div className="divide-y divide-zinc-50">
-                {alerts.map((alert) => (
+                {alerts.map((alert: InAppAlert) => (
                   <div key={alert.id} className="p-6 transition-colors hover:bg-zinc-50/50">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">

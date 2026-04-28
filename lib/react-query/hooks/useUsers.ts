@@ -13,6 +13,7 @@ export interface UserListParams {
   search?: string;
   status?: string;
   role?: string;
+  enabled?: boolean;
 }
 
 interface PaginationMeta {
@@ -73,6 +74,7 @@ export function usePaginatedUsers(params: UserListParams = {}) {
       ),
     staleTime: 1000 * 60 * 2, // 2 min — usuarios cambian moderadamente
     placeholderData: (prev) => prev, // mantiene datos anteriores mientras carga nueva página
+    enabled: params.enabled,
   });
 }
 

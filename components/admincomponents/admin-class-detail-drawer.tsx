@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useClassParticipants, useSaveClassNotes } from "@/lib/react-query/hooks/useClasses";
+import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 import {
   Drawer,
   DrawerContent,
@@ -40,74 +43,25 @@ export default function AdminClassDetailDrawer({
   const [activeTab, setActiveTab] = useState("inscritos");
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState("");
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const queryClient = useQueryClient();
 
   const [currentClassItem, setCurrentClassItem] = useState(classItem);
-  const [participants, setParticipants] = useState<any[]>([]);
-  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
 
-  // Búsqueda server-side de usuarios disponibles
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
-  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const { data: participants = [], isLoading: isLoadingParticipants } = 
+    useClassParticipants(isOpen ? classItem?.id : undefined);
 
-  // Cargar participantes al abrir el drawer
-  useEffect(() => {
-    async function fetchParticipants() {
-      if (!isOpen || !classItem?.id) return;
+  const { data: usersResult, isFetching: isSearchingUsers } = usePaginatedUsers({ 
+    search: searchTerm, 
+    limit: 20,
+    enabled: activeTab === "agregar" && isOpen
+  });
 
-      setIsLoadingParticipants(true);
-      try {
-        const response = await fetch(`/api/classes/${classItem.id}/participants`);
-        const result = await response.json();
-        if (result.success) {
-          setParticipants(result.data);
-          setCurrentClassItem((prev) =>
-            prev
-              ? { ...prev, registeredParticipantsIds: result.data.map((p: any) => p.userId) }
-              : null
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching participants:", error);
-      } finally {
-        setIsLoadingParticipants(false);
-      }
-    }
-
-    fetchParticipants();
-  }, [isOpen, classItem?.id]);
-
-  // Búsqueda de usuarios disponibles con debounce (solo cuando el tab está activo)
-  useEffect(() => {
-    if (activeTab !== "agregar" || !currentClassItem) return;
-
-    const timeout = setTimeout(async () => {
-      setIsSearchingUsers(true);
-      try {
-        const params = new URLSearchParams({ limit: "20" });
-        if (searchTerm.trim()) params.set("search", searchTerm.trim());
-
-        const res = await fetch(`/api/users?${params}`);
-        const result = await res.json();
-
-        const enrolled = new Set(currentClassItem.registeredParticipantsIds || []);
-        const waitlisted = new Set(currentClassItem.waitlistParticipantsIds || []);
-
-        setAvailableUsers(
-          (result.data || []).filter(
-            (u: any) => !enrolled.has(u.id) && !waitlisted.has(u.id)
-          )
-        );
-      } catch (e) {
-        console.error("Error buscando usuarios:", e);
-      } finally {
-        setIsSearchingUsers(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [searchTerm, activeTab, currentClassItem?.registeredParticipantsIds]);
+  const availableUsers = (usersResult?.users || []).filter((u: any) => {
+    const enrolled = new Set(currentClassItem?.registeredParticipantsIds || []);
+    const waitlisted = new Set(currentClassItem?.waitlistParticipantsIds || []);
+    return !enrolled.has(u.id) && !waitlisted.has(u.id);
+  });
 
   // Inicializar estado al abrir/cerrar el drawer
   useEffect(() => {
@@ -117,8 +71,7 @@ export default function AdminClassDetailDrawer({
     setCurrentClassItem(classItem);
     setSearchTerm("");
     if (!isOpen) {
-      setParticipants([]);
-      setAvailableUsers([]);
+      setSearchTerm("");
     }
   }, [classItem, isOpen]);
 
@@ -131,25 +84,18 @@ export default function AdminClassDetailDrawer({
 
   const enrolledStudents = participants;
 
-  const handleSaveNotes = async () => {
-    setIsSavingNotes(true);
-    try {
-      const response = await fetch(`/api/classes/${currentClassItem.id}/notes`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
-      });
+  const saveNotes = useSaveClassNotes();
 
-      if (response.ok) {
-        setNotesSaved(true);
-        setTimeout(() => setNotesSaved(false), 2000);
-      } else {
-        console.error("Error al guardar notas");
-      }
+  const handleSaveNotes = async () => {
+    try {
+      await saveNotes.mutateAsync({
+        classId: currentClassItem.id,
+        notes,
+      });
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
     } catch (error) {
       console.error("Error al guardar notas:", error);
-    } finally {
-      setIsSavingNotes(false);
     }
   };
 
@@ -181,9 +127,8 @@ export default function AdminClassDetailDrawer({
             : null
         );
 
-        // Recargar participantes y limpiar búsqueda
-        const pResult = await fetch(`/api/classes/${classId}/participants`).then((r) => r.json());
-        if (pResult.success) setParticipants(pResult.data);
+        // Invalidate participants so React Query refetches them
+        await queryClient.invalidateQueries({ queryKey: ["classes", "participants", classId] });
         setSearchTerm("");
 
         const addedUser = availableUsers.find((u) => u.id === userId);
@@ -191,6 +136,7 @@ export default function AdminClassDetailDrawer({
           title: "Alumno agregado",
           description: `${addedUser?.firstName} ${addedUser?.lastName} ha sido agregado a la clase`,
         });
+        await queryClient.invalidateQueries({ queryKey: ["classes"] });
       } else {
         const errorData = await response.json();
         toast({
@@ -234,16 +180,14 @@ export default function AdminClassDetailDrawer({
             : null
         );
 
-        const pResult = await fetch(`/api/classes/${currentClassItem.id}/participants`).then((r) =>
-          r.json()
-        );
-        if (pResult.success) setParticipants(pResult.data);
+        await queryClient.invalidateQueries({ queryKey: ["classes", "participants", currentClassItem.id] });
 
-        const removedStudent = enrolledStudents.find((s) => s.userId === userId);
+        const removedStudent = enrolledStudents.find((s: any) => s.userId === userId);
         toast({
           title: "Alumno removido",
           description: `${removedStudent?.firstName} ${removedStudent?.lastName} ha sido removido de la clase`,
         });
+        await queryClient.invalidateQueries({ queryKey: ["classes"] });
       } else {
         const errorData = await response.json();
         toast({
@@ -310,7 +254,7 @@ export default function AdminClassDetailDrawer({
                     </div>
                   ) : enrolledStudents.length > 0 ? (
                     <div className="space-y-2">
-                      {enrolledStudents.map((student) => (
+                      {enrolledStudents.map((student: any) => (
                         <div
                           key={student.userId}
                           className="flex items-center justify-between p-3 border rounded-xl"
@@ -450,7 +394,7 @@ export default function AdminClassDetailDrawer({
 
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      {isSavingNotes && (
+                      {saveNotes.isPending && (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span className="text-sm text-muted-foreground">Guardando...</span>
@@ -463,7 +407,7 @@ export default function AdminClassDetailDrawer({
 
                     <Button
                       onClick={handleSaveNotes}
-                      disabled={isSavingNotes}
+                      disabled={saveNotes.isPending}
                       className="flex items-center gap-2 rounded-xl"
                     >
                       <Save className="h-4 w-4" />
