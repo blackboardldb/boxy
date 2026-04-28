@@ -1,7 +1,7 @@
 // app/app/calendar/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import WeeklyDatePicker from "@/components/weekly-date-picker";
 import ClassList from "@/components/class-list";
 import RegistrationModal from "@/components/registration-modal";
@@ -48,7 +48,24 @@ export default function CalendarPage() {
   const weekEnd = format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
 
   // React Query
-  const { data: classSessions = [], isFetching: classesLoading } = useClasses({ startDate: weekStart, endDate: weekEnd });
+  const dayStart = format(selectedDate, "yyyy-MM-dd");
+  const { data: dayClasses = [], isFetching: dayClassesLoading } = useClasses({ startDate: dayStart, endDate: dayStart });
+  const { data: weekClasses = [], isFetching: weekClassesLoading } = useClasses({ startDate: weekStart, endDate: weekEnd });
+  const classesLoading = dayClassesLoading;
+
+  const classSessions = useMemo(() => {
+    const map = new Map<string, ClassSession>();
+    dayClasses.forEach(c => map.set(c.id, c));   // base: día actual
+    weekClasses.forEach(c => map.set(c.id, c));  // sobreescribe con semana completa
+    return Array.from(map.values());
+  }, [dayClasses, weekClasses]);
+
+  useEffect(() => {
+    console.log('[DEBUG] dayClasses:', dayClasses.length)
+    console.log('[DEBUG] weekClasses:', weekClasses.length)
+    console.log('[DEBUG] classSessions merged:', classSessions.length)
+  }, [dayClasses, weekClasses, classSessions])
+
   const { data: disciplinesData } = useDisciplines();
   const disciplines = disciplinesData ?? [];
   const { data: instructors = [] } = useInstructorsMinimal();
@@ -166,7 +183,22 @@ export default function CalendarPage() {
 
           // Para hoy: mostrar clases no canceladas
           if (isToday) {
-            return session.status !== "cancelled";
+            if (session.status === "cancelled") return false;
+            
+            const now = new Date();
+            const sessionDateTime = new Date(session.dateTime);
+            const sessionEndTime = new Date(
+              sessionDateTime.getTime() + (session.durationMinutes || 60) * 60000
+            );
+            
+            const isFinished = now > sessionEndTime;
+            const isUserRegistered = session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id);
+            
+            if (isFinished && !isUserRegistered) {
+              return false;
+            }
+            
+            return true;
           }
 
           // Para futuro: mostrar clases programadas
@@ -386,7 +418,7 @@ export default function CalendarPage() {
             onRegister={handleRegister}
             onCancel={handleCancel}
             className="max-w-4xl mx-auto min-h-svh pb-20 px-4 py-6 md:px-6 md:py-8"
-            isLoading={isLoading}
+            isLoading={dayClassesLoading || weekClassesLoading}
             canRegister={canRegisterForClasses}
             planStatus={planStatus}
           />

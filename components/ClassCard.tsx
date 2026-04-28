@@ -102,11 +102,21 @@ export function ClassCard({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
-            <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full ">
+            <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center">
              {/* Estado de la clase como span */}
       {statusInfo && (
         <>
-          {statusInfo.label} {""}
+          {isInProgress ? (
+            <span className="flex items-center gap-1.5 mr-2 text-green-600">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="font-bold uppercase tracking-wide text-xs">{statusInfo.label}</span>
+            </span>
+          ) : (
+            <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs`}>{statusInfo.label}</span>
+          )}
         </>
       )}
           {formattedTime}</span>
