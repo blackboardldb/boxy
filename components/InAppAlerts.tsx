@@ -17,8 +17,8 @@ export function InAppAlerts() {
   const { data: alerts = [] } = useQuery({
     queryKey: ["inAppAlerts", today],
     queryFn: () =>
-      fetchClient<InAppAlert[]>("/admin/alerts").then((res) =>
-        Array.isArray(res) ? res : []
+      fetchClient<{ success: boolean; data: InAppAlert[] }>("/alerts").then(
+        (res) => res.data ?? []
       ),
     staleTime: 1000 * 60 * 5, // 5 min — las alertas cambian poco
   });

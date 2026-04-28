@@ -43,10 +43,10 @@ export default function ConfiguracionesPage() {
     setIsSaving(true);
     try {
       await updateOrgMutation.mutateAsync({
-        ...org,
+        id: org.id,
         name: centerName,
         branding: {
-          ...org.branding,
+          ...(org.branding as Record<string, unknown> ?? {}),
           logoHorizontalSvg,
           logoSquareSvg,
         },

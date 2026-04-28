@@ -40,10 +40,18 @@ export function useUpdateOrganization() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (organization: Partial<Organization> & { id: string }) =>
+    mutationFn: ({
+      id,
+      name,
+      branding,
+    }: {
+      id: string;
+      name?: string;
+      branding?: Record<string, unknown>;
+    }) =>
       fetchClient<OrgApiResponse>("/organization", {
         method: "PUT",
-        body: JSON.stringify(organization),
+        body: JSON.stringify({ id, name, branding }),
       }).then((res) => res.data),
 
     onSuccess: (updatedOrg) => {
