@@ -31,11 +31,17 @@ Para no colapsar la interfaz actual del panel administrador, migraremos dominio 
   - `[object Object]` en error de DELETE → `api-client.ts` ahora navega `errorData.error.message` correctamente.
   - Flujo completo validado: crear plan ✅ · editar plan ✅ · eliminar plan ✅
 
-**Sprint B: Usuarios y Auth**
-- [ ] 1. Crear queries para Listado, Paginación y Búsqueda de Usuarios (`useUsers`, `useUser`).
-- [ ] 2. Implementar `useInfiniteQuery` o query keys paginadas para el listado masivo en `admin/alumnos`.
-- [ ] 3. Migrar `fetchMe` y la persistencia de autenticación global (`useMe`).
-- [ ] 4. Eliminar lógica de `blacksheep-store.ts`.
+**Sprint B: Usuarios y Auth** ✅ `2026-04-26` — commit `875953d`
+- [x] Crea `useMe` (staleTime:0, gcTime:5min) — `/api/me` siempre fresca
+- [x] Crea `usePaginatedUsers` con queryKey `{page, limit, search, status}` + `placeholderData`
+- [x] Crea `useUser`, `useCreateUser`, `useUpdateUser`, `useDeleteUser`
+- [x] Migra `lib/hooks/useCurrentUser.ts` — store eliminado, wrappea `useMe()`
+- [x] Migra `admin/alumnos/page.tsx` — `useEffect` + `isLoading` manual eliminados
+- [x] Migra `admin/finanzas/page.tsx` — `users/fetchUsers` del store eliminados
+- [x] Migra `admin/clases/page.tsx` — `users/fetchUsers` del store eliminados
+- [x] `tsc --noEmit` = 0 errores ✅ | grep limpio ✅
+
+⏸ **Validación 24h:** `useMe` toca `/api/me` que promueve `scheduled→active`. Monitorear Sentry/logs 24h antes de Sprint C.
 
 ⏸ **Validación Explícita 24h:** `fetchMe` toca el flujo de login de alumno. Igual que en HAL-01 y HAL-03, detenernos aquí a observar logs en producción por 24h antes de seguir con Sprint C.
 

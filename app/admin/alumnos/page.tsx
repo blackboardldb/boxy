@@ -26,7 +26,7 @@ import {
   STUDENT_STATES,
   STATE_COLORS,
   statusStyles,
-} from "@/lib/blacksheep-store";
+} from "@/lib/utils";
 import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import type { FitCenterUserProfile } from "@/lib/types";

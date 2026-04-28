@@ -1,6 +1,27 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+export const STUDENT_STATES = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  PENDING: "pending",
+  SCHEDULED: "scheduled",
+} as const;
+
+export const STATE_COLORS = {
+  active: "#10b981", // Green
+  inactive: "#6b7280", // Gray
+  pending: "#f59e0b", // Orange
+  scheduled: "#0ea5e9", // Blue
+} as const;
+
+export const statusStyles = {
+  active: "bg-green-50 text-green-700 border-green-300",
+  inactive: "bg-zinc-50 text-zinc-600 border-zinc-300 ",
+  pending: "bg-orange-50 text-orange-700 border-orange-300 ",
+  scheduled: "bg-blue-50 text-blue-700 border-blue-300",
+};
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
