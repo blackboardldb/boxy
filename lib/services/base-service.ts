@@ -544,7 +544,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
     // Return cached data if valid
     if (cached && now - cached.timestamp < cached.ttl) {
-      return cached.data;
+      return cached.data as R;
     }
 
     // Execute operation and cache result
