@@ -5,14 +5,15 @@ import Logo from "@/components/Logo";
 
 import { Edit, Save, X, Globe, Building2, Palette } from "lucide-react";
 import SquareLogo from "@/components/SquareLogo";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { useOrganization, useUpdateOrganization } from "@/lib/react-query/hooks/useOrganization";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AlertsManager } from "@/components/admincomponents/alerts-manager";
 
 export default function ConfiguracionesPage() {
-  const { initialOrganization, updateOrganization, fetchOrganization } = useBlackSheepStore();
+  const { data: org } = useOrganization();
+  const updateOrgMutation = useUpdateOrganization();
 
   
   // States for general info
@@ -24,47 +25,33 @@ export default function ConfiguracionesPage() {
   const [logoHorizontalSvg, setLogoHorizontalSvg] = useState("");
   const [logoSquareSvg, setLogoSquareSvg] = useState("");
 
-  // Fetch organization on mount if not available
+  // Sync local state when org data loads
   useEffect(() => {
-    if (!initialOrganization) {
-      fetchOrganization();
-    }
-  }, [initialOrganization, fetchOrganization]);
-
-  // Sync local state with store data
-  useEffect(() => {
-    if (initialOrganization) {
-      setCenterName(initialOrganization.name || "");
-      if (initialOrganization.branding) {
-        const branding = initialOrganization.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
+    if (org) {
+      setCenterName(org.name || "");
+      if (org.branding) {
+        const branding = org.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
         setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
         setLogoSquareSvg(branding.logoSquareSvg || "");
       }
     }
-  }, [initialOrganization]);
+  }, [org]);
 
   const handleSave = async () => {
-    if (!initialOrganization) return;
+    if (!org) return;
     
     setIsSaving(true);
     try {
-      const updatedOrg = {
-        ...initialOrganization,
+      await updateOrgMutation.mutateAsync({
+        ...org,
         name: centerName,
         branding: {
-          ...initialOrganization.branding,
+          ...org.branding,
           logoHorizontalSvg,
           logoSquareSvg,
         },
-      };
-      
-      const success = await updateOrganization(updatedOrg);
-      
-      if (success) {
-        setEditingSection(null);
-      } else {
-        throw new Error("Failed to update organization");
-      }
+      });
+      setEditingSection(null);
     } catch (error) {
       console.error("Error al guardar configuración:", error);
     } finally {
@@ -73,11 +60,10 @@ export default function ConfiguracionesPage() {
   };
 
   const handleCancel = () => {
-    // Reset local state to store values
-    if (initialOrganization) {
-      setCenterName(initialOrganization.name || "");
-      if (initialOrganization.branding) {
-        const branding = initialOrganization.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
+    if (org) {
+      setCenterName(org.name || "");
+      if (org.branding) {
+        const branding = org.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
         setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
         setLogoSquareSvg(branding.logoSquareSvg || "");
       }

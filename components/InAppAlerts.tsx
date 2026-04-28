@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Megaphone, XOctagon, AlertTriangle, Info, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchClient } from "@/lib/api-client";
 
 interface InAppAlert {
   id: string;
@@ -10,15 +12,19 @@ interface InAppAlert {
   type: string;
 }
 
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
-
 export function InAppAlerts() {
-  const { alerts, fetchAlerts } = useBlackSheepStore();
+  const today = new Date().toISOString().split("T")[0];
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["inAppAlerts", today],
+    queryFn: () =>
+      fetchClient<InAppAlert[]>("/admin/alerts").then((res) =>
+        Array.isArray(res) ? res : []
+      ),
+    staleTime: 1000 * 60 * 5, // 5 min — las alertas cambian poco
+  });
   const [hiddenAlertIds, setHiddenAlertIds] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchAlerts();
-    
     if (typeof window !== "undefined") {
       const saved = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -29,7 +35,7 @@ export function InAppAlerts() {
       }
       setHiddenAlertIds(saved);
     }
-  }, [fetchAlerts]);
+  }, []);
 
   const visibleAlerts = (alerts || []).filter(a => !hiddenAlertIds.includes(a.id));
 

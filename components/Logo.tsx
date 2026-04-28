@@ -1,24 +1,16 @@
 "use client";
 
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useEffect } from "react";
+import { useOrganization } from "@/lib/react-query/hooks/useOrganization";
 
 export default function Logo({ size, className }: { size?: number, className?: string }) {
-  const { initialOrganization, fetchOrganization } = useBlackSheepStore();
+  const { data: org } = useOrganization();
 
-  useEffect(() => {
-    if (!initialOrganization) {
-      fetchOrganization();
-    }
-  }, [initialOrganization, fetchOrganization]);
-
-  // Use dynamic horizontal logo if available
-  if (initialOrganization?.branding?.logoHorizontalSvg) {
+  if (org?.branding?.logoHorizontalSvg) {
     return (
       <div 
         className="flex items-center"
         style={{ width: size ?? 150 }} 
-        dangerouslySetInnerHTML={{ __html: initialOrganization.branding.logoHorizontalSvg }} 
+        dangerouslySetInnerHTML={{ __html: org.branding.logoHorizontalSvg }} 
       />
     );
   }

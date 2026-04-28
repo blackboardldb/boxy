@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertTriangle,
@@ -16,6 +15,8 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
+import { useClasses } from "@/lib/react-query/hooks/useClasses";
 
 interface Alert {
   id: string;
@@ -30,7 +31,10 @@ interface Alert {
 }
 
 export function Alerts() {
-  const { users, classSessions, disciplines } = useBlackSheepStore();
+  const today = new Date().toISOString().split("T")[0];
+  const { data: usersData } = usePaginatedUsers({ page: 1, limit: 200 });
+  const users = usersData?.users ?? [];
+  const { data: classSessions = [] } = useClasses({ startDate: today, limit: 200 });
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);

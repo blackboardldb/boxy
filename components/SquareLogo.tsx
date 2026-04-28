@@ -1,19 +1,12 @@
 "use client";
 
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
-import { useEffect } from "react";
+import { useOrganization } from "@/lib/react-query/hooks/useOrganization";
 import { Dumbbell } from "lucide-react";
 
 export default function SquareLogo({ size = 64 }: { size?: number }) {
-  const { initialOrganization, fetchOrganization } = useBlackSheepStore();
+  const { data: org, isLoading } = useOrganization();
 
-  useEffect(() => {
-    if (!initialOrganization) {
-      fetchOrganization();
-    }
-  }, [initialOrganization, fetchOrganization]);
-
-  if (!initialOrganization) {
+  if (isLoading || !org) {
     return (
       <div 
         className="bg-gray-800 rounded-2xl"
@@ -22,12 +15,12 @@ export default function SquareLogo({ size = 64 }: { size?: number }) {
     );
   }
 
-  if (initialOrganization?.branding?.logoSquareSvg) {
+  if (org?.branding?.logoSquareSvg) {
     return (
       <div 
         className="flex items-center justify-center overflow-hidden"
         style={{ width: size, height: size }} 
-        dangerouslySetInnerHTML={{ __html: initialOrganization.branding.logoSquareSvg }} 
+        dangerouslySetInnerHTML={{ __html: org.branding.logoSquareSvg }} 
       />
     );
   }

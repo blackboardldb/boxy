@@ -1,22 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Eye, EyeOff, Dumbbell, Loader2 } from "lucide-react";
-import SquareLogo from "@/components/SquareLogo";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
-  const { initialOrganization, fetchOrganization, isLoading } = useBlackSheepStore();
-
-  useEffect(() => {
-    if (!initialOrganization) {
-      fetchOrganization();
-    }
-  }, [initialOrganization, fetchOrganization]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
