@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useBlackSheepStore } from "../../../lib/blacksheep-store";
+import { usePlans } from "@/lib/react-query/hooks/usePlans";
+import { fetchClient } from "@/lib/api-client";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
@@ -22,8 +23,7 @@ const PAYMENT_METHODS = [
 
 export default function RenewPlanPage() {
   const router = useRouter();
-  const { plans, requestPlanRenewal, fetchPlans } =
-    useBlackSheepStore();
+  const { data: plans, isLoading: plansLoading } = usePlans({ isActive: "true" });
   const { toast } = useToast();
   const { handleAsyncError } = useErrorHandler();
 
@@ -33,28 +33,7 @@ export default function RenewPlanPage() {
   console.log("RenewPlanPage - Debug Info:", {
     plansCount: plans?.length || 0,
     currentUser: currentUser?.id,
-    requestPlanRenewalExists: typeof requestPlanRenewal === "function",
   });
-
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!plans || plans.length === 0) {
-          await fetchPlans();
-        }
-      } catch (error) {
-        console.error("Error loading plans:", error);
-        toast({
-          title: "Error",
-          description: "Error al cargar los planes disponibles",
-          variant: "destructive",
-        });
-      }
-    };
-
-    loadData();
-  }, [plans, fetchPlans, toast]);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>(
     currentUser?.membership.planId || ""
@@ -71,7 +50,7 @@ export default function RenewPlanPage() {
   const selectedPlan = plans?.find((p) => p.id === selectedPlanId);
 
   // Show skeleton loading state if data is not ready
-  if (userLoading || !currentUser || !plans || plans.length === 0) {
+  if (userLoading || plansLoading || !currentUser || !plans || plans.length === 0) {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <header className="p-4 border-b border-zinc-700 bg-black">
@@ -168,7 +147,13 @@ export default function RenewPlanPage() {
         paymentMethod: selectedPayment,
       });
 
-      await requestPlanRenewal(currentUser.id, selectedPlanId, selectedPayment);
+      await fetchClient(`/users/${currentUser.id}/renewal`, {
+        method: "POST",
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          paymentMethod: selectedPayment,
+        }),
+      });
 
       // Cambiar a estado de completando
       setRenewalStep("completing");

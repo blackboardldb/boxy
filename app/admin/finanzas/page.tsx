@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useBlackSheepStore } from "@/lib/blacksheep-store";
 import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
 import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";

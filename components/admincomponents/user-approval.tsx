@@ -30,11 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useBlackSheepStore,
-  usePendingUsers,
-  useUserStats,
-} from "@/lib/blacksheep-store";
 import { usePagination } from "@/lib/use-pagination";
 import { useToast } from "@/components/ui/use-toast";
 import type { FitCenterUserProfile } from "@/lib/types";
@@ -50,7 +45,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
-import { useUpdateUser } from "@/lib/react-query/hooks/useUsers";
+import { useUpdateUser, usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 
 // Tipo para usuarios pendientes con información adicional
 interface PendingUser extends FitCenterUserProfile {
@@ -59,9 +54,19 @@ interface PendingUser extends FitCenterUserProfile {
 
 export function UserApproval() {
   const updateUserMutation = useUpdateUser();
-  const pendingUsers = usePendingUsers();
-  const userStats = useUserStats();
   const { toast } = useToast();
+  
+  // Usar React Query para traer todos los usuarios (o un límite alto)
+  const { data: usersData } = usePaginatedUsers({ page: 1, limit: 1000 });
+  const allUsers = usersData?.users || [];
+  
+  const pendingUsers = allUsers.filter(u => u.membership?.status === "pending");
+  const userStats = {
+    total: allUsers.length,
+    active: allUsers.filter(u => u.membership?.status === "active").length,
+    pending: pendingUsers.length,
+    expired: allUsers.filter(u => u.membership?.status === "expired").length,
+  };
 
   // Estados locales
   const [page, setPage] = useState(1);

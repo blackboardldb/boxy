@@ -26,7 +26,6 @@ import {
   STUDENT_STATES,
   STATE_COLORS,
   statusStyles,
-  useBlackSheepStore,
 } from "@/lib/blacksheep-store";
 import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
@@ -42,11 +41,11 @@ const formatDate = (dateString: string | undefined): string => {
   return format(parseISO(dateString.substring(0, 10)), "dd/MM/yy");
 };
 import { useRouter } from "next/navigation";
+import { useCreateUser } from "@/lib/react-query/hooks/useUsers";
 
 export default function AlumnosPage() {
   const router = useRouter();
-  // createUser se mantiene en el store hasta Sprint B-mutations
-  const { createUser } = useBlackSheepStore();
+  const createUserMutation = useCreateUser();
 
   // Estado de filtros
   const [page, setPage] = useState(1);
@@ -122,14 +121,13 @@ export default function AlumnosPage() {
         <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
         <AddStudentModal
           onAddStudent={async (studentData) => {
-            const result = await createUser(studentData);
-            return !!result;
+            await createUserMutation.mutateAsync(studentData);
+            return true;
           }}
           plans={plans}
           onSuccess={() => {
-            // React Query refetch automático vía invalidateQueries en useCreateUser
-            // Por ahora createUser está en el store; cuando se migre en Sprint B-mutations
-            // se usará queryClient.invalidateQueries({ queryKey: userKeys.lists() })
+            // Ya no es necesario invalidar manualmente porque
+            // useCreateUser en onSuccess ya llama a queryClient.invalidateQueries(userKeys.lists())
           }}
         />
         </div>
