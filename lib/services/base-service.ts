@@ -19,7 +19,7 @@ import { ErrorHandler, withErrorHandling } from "../errors/handler";
 import { AppError, ValidationError, NotFoundError } from "../errors/types";
 
 // Base service class that all services should extend
-export abstract class BaseService<T extends import("../data-layer/types").BaseEntity> {
+export abstract class BaseService<T extends import("../data-layer/types").BaseEntity, TInput = Partial<T>> {
   protected dataProvider: DataProvider;
   protected abstract repositoryName: keyof DataProvider;
 
@@ -88,13 +88,15 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   }
 
   // Create a new record
-  async create(data: any): Promise<ApiResponse<T>> {
+  async create(data: TInput): Promise<ApiResponse<T>> {
     return withErrorHandling(
       async () => {
         // Validate data before creation
         await this.validateCreateData(data);
 
-        const record = await this.repository.create(data);
+        const record = await this.repository.create(
+          data as unknown as import("../data-layer/types").CreateData<T>
+        );
 
         // Post-creation hook
         await this.afterCreate(record);
@@ -111,7 +113,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   }
 
   // Update an existing record
-  async update(id: string, data: any): Promise<ApiResponse<T>> {
+  async update(id: string, data: TInput): Promise<ApiResponse<T>> {
     return withErrorHandling(
       async () => {
         // Check if record exists
@@ -125,7 +127,10 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
         // Validate update data
         await this.validateUpdateData(id, data, existingRecord);
 
-        const updatedRecord = await this.repository.update(id, data);
+        const updatedRecord = await this.repository.update(
+          id,
+          data as unknown as import("../data-layer/types").UpdateData<T>
+        );
 
         // Post-update hook
         await this.afterUpdate(updatedRecord, existingRecord);
@@ -176,7 +181,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
   // Count records
   async count(params?: {
-    where?: Record<string, any>;
+    where?: Record<string, unknown>;
   }): Promise<ApiResponse<number>> {
     return withErrorHandling(
       async () => {
@@ -214,7 +219,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   // Bulk operations
 
   // Create multiple records
-  async createMany(dataArray: any[]): Promise<ApiResponse<T[]>> {
+  async createMany(dataArray: TInput[]): Promise<ApiResponse<T[]>> {
     return withErrorHandling(
       async () => {
         // Validate all data
@@ -226,7 +231,9 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
         // Create records one by one (can be optimized with bulk operations)
         for (const data of dataArray) {
-          const record = await this.repository.create(data);
+          const record = await this.repository.create(
+            data as unknown as import("../data-layer/types").CreateData<T>
+          );
           results.push(record);
           await this.afterCreate(record);
         }
@@ -246,8 +253,8 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
   // Update multiple records
   async updateMany(
-    criteria: Record<string, any>,
-    data: any
+    criteria: Record<string, unknown>,
+    data: TInput
   ): Promise<ApiResponse<T[]>> {
     return withErrorHandling(
       async () => {
@@ -270,7 +277,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
           await this.validateUpdateData(record.id, data, record);
           const updatedRecord = await this.repository.update(
             record.id,
-            data
+            data as unknown as import("../data-layer/types").UpdateData<T>
           );
           results.push(updatedRecord);
           await this.afterUpdate(updatedRecord, record);
@@ -290,7 +297,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   }
 
   // Delete multiple records
-  async deleteMany(criteria: Record<string, any>): Promise<ApiResponse<T[]>> {
+  async deleteMany(criteria: Record<string, unknown>): Promise<ApiResponse<T[]>> {
     return withErrorHandling(
       async () => {
         // Find matching records first
@@ -359,14 +366,14 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   // Validation hooks (to be overridden by subclasses)
 
   // Validate data before creation
-  protected async validateCreateData(data: any): Promise<void> {
+  protected async validateCreateData(data: TInput): Promise<void> {
     // Override in subclasses for specific validation
   }
 
   // Validate data before update
   protected async validateUpdateData(
     id: string,
-    data: any,
+    data: TInput,
     existingRecord: T
   ): Promise<void> {
     // Override in subclasses for specific validation
@@ -403,7 +410,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   protected buildSearchCriteria(
     query: string,
     fields: string[]
-  ): Record<string, any> {
+  ): Record<string, unknown> {
     if (!query.trim() || fields.length === 0) {
       return {};
     }
@@ -422,8 +429,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
 
   // Get processing time (for performance monitoring)
   protected getProcessingTime(): number {
-    // Simple implementation - can be enhanced with actual timing
-    return Date.now() % 1000; // Mock processing time
+    return 0; // Timing real implementado vía Sentry — ver HAL-13
   }
 
   // Get service statistics
@@ -525,7 +531,7 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   // agregar organizationId a cada key antes de activar el segundo tenant.
   private cache = new Map<
     string,
-    { data: any; timestamp: number; ttl: number }
+    { data: unknown; timestamp: number; ttl: number }
   >();
 
   protected async withCache<R>(

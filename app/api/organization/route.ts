@@ -48,7 +48,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const response = await organizationService.update(id, parsed.data);
+    const response = await organizationService.update(
+      id,
+      parsed.data as Partial<import("@/lib/types").Organization>
+    );
     return NextResponse.json(response);
   } catch (error) {
     return ErrorHandler.createResponse(error, {
