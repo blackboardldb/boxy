@@ -158,6 +158,8 @@ export async function POST(
         data: {
           status: "approved",
           processedAt: new Date(),
+          amount: planData.price, // ← monto guardado para historial
+          organizationId: user.organizationId, // ← denormalización para RLS e índices
           notes: `Aprobado. Período: ${periodStart} → ${periodEnd}`,
         },
       }),

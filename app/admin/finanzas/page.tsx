@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
-import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
+import { useFinances } from "@/lib/react-query/hooks/useFinances";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { ExpensesManager } from "@/components/admincomponents/expenses-manager";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
-import { parseISO } from "date-fns";
 
 export default function FinanzasPage() {
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -23,44 +21,20 @@ export default function FinanzasPage() {
       "0"
     )}`;
   });
+  const [page, setPage] = useState(1);
 
   // Parsear mes seleccionado
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);
   const selectedMonthIndex = selectedMonthNum - 1; // JavaScript months are 0-indexed
 
-  // Egresos del mes seleccionado — React Query filtra en el servidor por (year, month)
-  const { data: egresos = [] } = useEgresos(selectedYear, selectedMonthIndex);
+  // Nueva carga de datos unificada (Ingresos + Egresos + Balance)
+  const { data: financesData, isLoading } = useFinances(selectedYear, selectedMonthIndex + 1, page);
 
-  // Usuarios — React Query con limit grande para calcular ingresos del mes
-  const { data: usersData } = usePaginatedUsers({ limit: 1000 });
-  const users = usersData?.users ?? [];
-
-  // Filtrar ingresos del mes seleccionado
-  const ingresosMes = users
-    .filter(
-      (u) =>
-        u.membership &&
-        u.membership.status === "active" &&
-        u.membership.currentPeriodStart &&
-        parseISO(u.membership.currentPeriodStart.substring(0, 10)).getFullYear() ===
-          selectedYear &&
-        parseISO(u.membership.currentPeriodStart.substring(0, 10)).getMonth() ===
-          selectedMonthIndex
-    )
-    .map((u) => ({
-      nombre: `${u.firstName} ${u.lastName}`,
-      plan: u.membership?.membershipType,
-      fecha: u.membership?.currentPeriodStart,
-      precio: u.membership?.monthlyPrice,
-    }));
-
-  // Calcular totales
-  const totalIngresos = ingresosMes.reduce(
-    (sum, i) => sum + (i.precio || 0),
-    0
-  );
-  const totalEgresos = egresos.reduce((sum, e) => sum + e.monto, 0);
-  const balance = totalIngresos - totalEgresos;
+  const totalIngresos = financesData?.ingresos.total || 0;
+  const totalEgresos = financesData?.egresos.total || 0;
+  const balance = financesData?.balance || 0;
+  const ingresosMes = financesData?.ingresos.items || [];
+  const totalPaginas = financesData?.totalPages || 1;
 
   // Generar opciones de meses (últimos 12 meses)
   const monthOptions = [];
@@ -86,11 +60,16 @@ export default function FinanzasPage() {
     year: "numeric",
   });
 
+  const handleMonthChange = (val: string) => {
+    setSelectedMonth(val);
+    setPage(1); // Reset a primera página al cambiar mes
+  };
+
   return (
     <div className="p-4 pt-8 md:p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Finanzas</h1>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+        <Select value={selectedMonth} onValueChange={handleMonthChange}>
           <SelectTrigger className="w-48 rounded-xl">
             <SelectValue placeholder="Seleccionar mes" />
           </SelectTrigger>
@@ -114,11 +93,15 @@ export default function FinanzasPage() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ${totalIngresos.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <div className="h-8 w-24 bg-zinc-100 animate-pulse rounded" />
+            ) : (
+              <div className="text-2xl font-bold text-green-600">
+                ${totalIngresos.toLocaleString()}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              {ingresosMes.length} membresías activas
+              {financesData?.ingresos.count || 0} renovaciones procesadas
             </p>
           </CardContent>
         </Card>
@@ -131,11 +114,15 @@ export default function FinanzasPage() {
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              ${totalEgresos.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <div className="h-8 w-24 bg-zinc-100 animate-pulse rounded" />
+            ) : (
+              <div className="text-2xl font-bold text-red-600">
+                ${totalEgresos.toLocaleString()}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              {egresos.length} gastos registrados
+              {financesData?.egresos.count || 0} gastos registrados
             </p>
           </CardContent>
         </Card>
@@ -150,13 +137,17 @@ export default function FinanzasPage() {
             />
           </CardHeader>
           <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                balance >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              ${balance.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <div className="h-8 w-24 bg-zinc-100 animate-pulse rounded" />
+            ) : (
+              <div
+                className={`text-2xl font-bold ${
+                  balance >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                ${balance.toLocaleString()}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               {balance >= 0 ? "Ganancia" : "Pérdida"} del mes
             </p>
@@ -167,36 +158,70 @@ export default function FinanzasPage() {
       {/* Detalle de ingresos y egresos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Ingresos */}
-        <Card className="h-full rounded-xl">
+        <Card className="h-full rounded-xl flex flex-col">
           <CardHeader>
-            <p className="text-lg font-bold ">Planes contratados <span className=" font-medium ">{selectedMonthName}</span></p>
+            <p className="text-lg font-bold ">
+              Planes contratados{" "}
+              <span className=" font-medium ">{selectedMonthName}</span>
+            </p>
           </CardHeader>
-          <CardContent>
-            {ingresosMes.length === 0 ? (
+          <CardContent className="flex-1">
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 w-full bg-zinc-100 animate-pulse rounded" />
+                ))}
+              </div>
+            ) : ingresosMes.length === 0 ? (
               <div className="text-muted-foreground">
-                No hay ingresos registrados en {selectedMonthName.toLowerCase()}
-                .
+                No hay ingresos registrados en {selectedMonthName.toLowerCase()}.
               </div>
             ) : (
-              <ul className="divide-y divide-gray-200">
-                {ingresosMes.map((i, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-center justify-between py-2"
-                  >
-                    <div>
-                      <div className="font-medium text-sm">{i.nombre}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {i.plan} |{" "}
-                        {i.fecha && parseISO(i.fecha.substring(0, 10)).toLocaleDateString()}
+              <>
+                <ul className="divide-y divide-gray-200">
+                  {ingresosMes.map((i, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <div>
+                        <div className="font-medium text-sm">{i.userName}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {i.planName} |{" "}
+                          {i.processedAt &&
+                            new Date(i.processedAt).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                    <span className="font-semibold">
-                      ${i.precio?.toLocaleString()}
+                      <span className="font-semibold">
+                        ${i.amount?.toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Controles de paginación */}
+                {totalPaginas > 1 && (
+                  <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="text-sm font-medium text-zinc-600 disabled:opacity-30"
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-sm text-zinc-400">
+                      Página {page} de {totalPaginas}
                     </span>
-                  </li>
-                ))}
-              </ul>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPaginas, p + 1))}
+                      disabled={page === totalPaginas}
+                      className="text-sm font-medium text-zinc-600 disabled:opacity-30"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

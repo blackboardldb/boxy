@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
@@ -28,6 +29,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   const updateUserMutation = useUpdateUser();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
+  const [registrarIngreso, setRegistrarIngreso] = useState(true); // Marcado por defecto
 
   const [formData, setFormData] = useState({
     planId: "",
@@ -165,6 +167,23 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     });
 
     if (result) {
+      // Si el admin marcó "Registrar como ingreso" y el precio es > 0, crear registro financiero
+      if (registrarIngreso && Number(formData.precioTotal) > 0) {
+        await fetch(`/api/users/${student.id}/renewal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: selectedPlan.id,
+            paymentMethod: formData.formaDePago,
+            autoApprove: true,
+            planName: selectedPlan.name,
+            planPrice: Number(formData.precioTotal),
+            planClassLimit: Number(formData.clasesTotales) || selectedPlan.classLimit,
+            planDuration: selectedPlan.durationInMonths,
+            startDate: newStartStr,
+          }),
+        });
+      }
       toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });
       router.push(`/admin/alumnos/${student.id}`);
     } else {
@@ -255,6 +274,23 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   onChange={(e) => setFormData({ ...formData, precioTotal: e.target.value })}
                   className="h-11 rounded-xl"
                 />
+                {/* Checkbox de registro financiero */}
+                <div className="flex items-center gap-2 pt-1">
+                  <Checkbox
+                    id="registrar-ingreso-nuevo"
+                    checked={registrarIngreso}
+                    onCheckedChange={(v) => setRegistrarIngreso(!!v)}
+                  />
+                  <label
+                    htmlFor="registrar-ingreso-nuevo"
+                    className="text-sm text-zinc-500 cursor-pointer select-none"
+                  >
+                    Registrar como ingreso
+                    {formData.precioTotal && Number(formData.precioTotal) > 0
+                      ? ` ($${Number(formData.precioTotal).toLocaleString()})`
+                      : ""}
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-3">

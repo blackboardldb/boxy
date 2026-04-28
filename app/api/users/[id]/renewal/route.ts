@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 // HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
 // Ya no escribe en el JSONB membership.pendingRenewal.
+// Extensión: soporta `autoApprove: true` para registros directos del admin (sin flujo pending → approved).
 
 const renewalRequestSchema = z.object({
-  planId:        z.string().min(1, "planId es requerido"),
-  paymentMethod: z.string().min(1, "paymentMethod es requerido"),
-  notes:         z.string().optional(),
+  planId:         z.string().min(1, "planId es requerido"),
+  paymentMethod:  z.string().min(1, "paymentMethod es requerido"),
+  notes:          z.string().optional(),
+  // Campos opcionales para el modo autoApprove (admin asigna plan directo)
+  autoApprove:    z.boolean().optional().default(false),
+  planName:       z.string().optional(),
+  planPrice:      z.number().optional(),
+  planClassLimit: z.number().optional(),
+  planDuration:   z.number().optional(),
+  startDate:      z.string().optional(),
 });
 
 export async function POST(
@@ -16,7 +25,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: userId } = await params;  // Next.js 15: params es una Promise
+    const { id: userId } = await params;
 
     const parsed = renewalRequestSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -25,19 +34,30 @@ export async function POST(
         { status: 400 }
       );
     }
-    const { planId, paymentMethod, notes } = parsed.data;
+    const {
+      planId, paymentMethod, notes,
+      autoApprove, planName, planPrice, planClassLimit, planDuration, startDate
+    } = parsed.data;
+
+    // Si autoApprove, requerir autenticación de admin antes de continuar
+    if (autoApprove) {
+      const auth = await requireAdmin();
+      if ("error" in auth) {
+        return NextResponse.json({ error: auth.error }, { status: auth.status });
+      }
+    }
 
     // Validar que el usuario existe
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, userMembership: { select: { planId: true } } },
+      select: { id: true, organizationId: true, userMembership: { select: { planId: true } } },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Verificar que el plan existe y está activo
+    // Verificar que el plan existe
     const plan = await prisma.membershipPlan.findUnique({
       where: { id: planId },
       select: { id: true, name: true, price: true, duration: true, config: true },
@@ -54,7 +74,6 @@ export async function POST(
     });
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
-    // (puede ser un ID legado del JSONB que no exista en la tabla relacional)
     const currentPlanIdRaw = user.userMembership?.planId ?? null;
     let currentPlanId: string | null = null;
     if (currentPlanIdRaw) {
@@ -65,37 +84,45 @@ export async function POST(
       currentPlanId = exists ? currentPlanIdRaw : null;
     }
 
-    // Crear la solicitud de renovación en la tabla relacional
+    // Determinar los valores efectivos (el admin puede sobreescribir precio y clases)
+    const effectivePrice      = planPrice      ?? plan.price;
+    const effectiveClassLimit = planClassLimit ?? (plan.config as { classLimit?: number })?.classLimit ?? 0;
+    const effectiveDuration   = planDuration   ?? plan.duration;
+    const effectiveName       = planName       ?? plan.name;
+
+    // Crear el registro de renovación
     const renewal = await prisma.membershipRenewal.create({
       data: {
         userId,
         currentPlanId,
         requestedPlanId: planId,
         paymentMethod,
-        status: "pending",
+        status:      autoApprove ? "approved" : "pending",
+        processedAt: autoApprove ? new Date() : null,
+        // Solo registrar monto y organizationId si es una transacción real (autoApprove + precio > 0)
+        amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
+        organizationId: autoApprove ? user.organizationId : null,
         notes: notes ?? null,
         renewalDetails: {
-          requestedPlanName: plan.name,
-          requestedPlanPrice: plan.price,
-          requestedPlanClassLimit: (plan.config as { classLimit?: number })?.classLimit ?? 0,
-          requestedPlanDuration: plan.duration,
+          requestedPlanName:       effectiveName,
+          requestedPlanPrice:      effectivePrice,
+          requestedPlanClassLimit: effectiveClassLimit,
+          requestedPlanDuration:   effectiveDuration,
           paymentMethod,
+          startDate: startDate ?? null,
         },
       },
     });
 
     return NextResponse.json({
-      message: "Renewal request created successfully",
+      success: true,
+      message: autoApprove ? "Ingreso registrado correctamente" : "Renewal request created successfully",
       renewal,
     });
-  } catch (error: any) {
-    // Log detallado para diagnóstico — incluye mensaje de Prisma
-    const errMsg = error?.message ?? String(error);
-    const errCode = error?.code ?? "unknown";
-    console.error("Error creating renewal request:", { message: errMsg, code: errCode, meta: error?.meta });
-    return NextResponse.json(
-      { error: errMsg, code: errCode },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const errMsg  = error instanceof Error ? error.message : String(error);
+    const errCode = (error as { code?: string })?.code ?? "unknown";
+    console.error("Error creating renewal request:", { message: errMsg, code: errCode });
+    return NextResponse.json({ error: errMsg, code: errCode }, { status: 500 });
   }
 }

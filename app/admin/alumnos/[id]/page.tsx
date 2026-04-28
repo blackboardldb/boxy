@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -39,6 +40,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [registrarIngresoEdit, setRegistrarIngresoEdit] = useState(false); // Desmarcado por defecto
 
   // Password reset state
   const [resetPasswordStatus, setResetPasswordStatus] = useState<"idle" | "loading" | "done">("idle");
@@ -68,6 +70,9 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   // Populate data when starting to edit
   useEffect(() => {
     if (student && editingSection) {
+      // Resetear checkbox de ingreso al abrir cualquier sección de edición
+      setRegistrarIngresoEdit(false);
+
       setEditFirstName(student.firstName || "");
       setEditLastName(student.lastName || "");
       setEditEmail(student.email || "");
@@ -224,6 +229,25 @@ const handleStartDateChange = (newDate: string) => {
       };
 
       await updateUserMutation.mutateAsync({ id: student.id, data: changes });
+
+      // Si el admin marcó "Registrar como ingreso" y el precio es > 0, crear registro financiero
+      if (registrarIngresoEdit && Number(editPrice) > 0) {
+        const selectedPlan = plans.find(p => p.id === editPlanId);
+        await fetch(`/api/users/${student.id}/renewal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId: editPlanId,
+            paymentMethod: editPaymentMethod,
+            autoApprove: true,
+            planName: selectedPlan?.name ?? student.membership?.membershipType,
+            planPrice: Number(editPrice),
+            planClassLimit: Number(editClassLimit),
+            planDuration: selectedPlan?.durationInMonths ?? 1,
+            startDate: editStartDate,
+          }),
+        });
+      }
 
       const updated = { ...student, ...changes } as FitCenterUserProfile;
       setStudent(updated);
@@ -523,7 +547,7 @@ const handleStartDateChange = (newDate: string) => {
                   </div>
                   {/* Banner: plan futuro programado via MembershipRenewal */}
                   {scheduledPlan && (() => {
-                    const details = scheduledPlan.renewalDetails as any;
+                    const details = scheduledPlan.renewalDetails as { membershipType?: string; startDate?: string } | null;
                     const planName = plans.find((p: any) => p.id === scheduledPlan.requestedPlanId)?.name
                       ?? details?.membershipType
                       ?? "Plan";
@@ -584,9 +608,26 @@ const handleStartDateChange = (newDate: string) => {
                         <Label className="text-zinc-700 font-medium">Clases totales</Label>
                         <Input type="number" value={editClassLimit} onChange={e => setEditClassLimit(e.target.value)} className="rounded-xl" />
                       </div>
-                      <div className="space-y-2">
+                    <div className="space-y-2">
                         <Label className="text-zinc-700 font-medium">Total ($)</Label>
                         <Input type="number" value={editPrice} onChange={e => setEditPrice(e.target.value)} className="rounded-xl" />
+                        {/* Checkbox de registro financiero — desmarcado por defecto */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <Checkbox
+                            id="registrar-ingreso-edit"
+                            checked={registrarIngresoEdit}
+                            onCheckedChange={(v) => setRegistrarIngresoEdit(!!v)}
+                          />
+                          <label
+                            htmlFor="registrar-ingreso-edit"
+                            className="text-sm text-zinc-500 cursor-pointer select-none"
+                          >
+                            Registrar como ingreso
+                            {editPrice && Number(editPrice) > 0
+                              ? ` ($${Number(editPrice).toLocaleString()})`
+                              : ""}
+                          </label>
+                        </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">

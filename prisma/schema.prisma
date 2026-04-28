@@ -211,6 +211,8 @@ model MembershipRenewal {
   processedAt     DateTime?
   notes           String?
   renewalDetails  Json?
+  amount          Float?
+  organizationId  String?
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
