@@ -88,6 +88,9 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     const newStartStr = formData.startDate;
     const newEndStr = formData.endDate;
     const newStart = new Date(newStartStr + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isScheduled = newStart > today;
     const newEnd = new Date(newEndStr + "T23:59:59");
 
     // Clases del alumno en el periodo usando datos de React Query
@@ -104,10 +107,10 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     const classesContractedCount = formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths);
     const initialRemaining = Math.max(0, classesContractedCount - classesAttendedCount);
 
-    const newMembership = {
+    const updatedMembership = {
       ...student.membership, // Preserve existing fields like organizationId, centerConfig, etc.
       id: `mem_${Date.now()}`,
-      status: "active" as const,
+      status: (isScheduled ? "scheduled" : "active") as "scheduled" | "active",
       planId: selectedPlan.id,
       membershipType: selectedPlan.name,
       monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
@@ -150,58 +153,6 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
         autoWaitlist: true,
       }
     };
-
-    // Determinamos si el plan actual todavía está vigente para decidir 
-    // si el nuevo plan reemplaza al principal o se guarda en el historial
-    let pastEnd = new Date(0);
-    if (student.membership?.currentPeriodEnd) {
-      const endStr = student.membership.currentPeriodEnd;
-      const endDateOnly = typeof endStr === "string" ? endStr.substring(0, 10) : new Date(endStr).toISOString().substring(0, 10);
-      pastEnd = new Date(endDateOnly + "T23:59:59");
-    }
-
-    const isCurrentlyActive = pastEnd > new Date();
-    
-    // Objeto del nuevo plan (como base)
-    const newMembershipBase = {
-      ...newMembership,
-      id: `mem_${Date.now()}`,
-      history: undefined // El objeto individual no lleva su historial dentro
-    };
-
-    let updatedMembership: any;
-
-    if (isCurrentlyActive && student.membership) {
-      // CASO SOLAPAMIENTO: Mantener el principal ACTIVO y agregar el nuevo al HISTORIAL
-      const currentHistory = Array.isArray(student.membership.history) ? [...student.membership.history] : [];
-      
-      // El nuevo plan se guarda en el historial como 'scheduled'
-      const scheduledPlan = {
-        ...newMembershipBase,
-        status: 'scheduled'
-      };
-
-      updatedMembership = {
-        ...student.membership,
-        history: [scheduledPlan, ...currentHistory] // El plan futuro va al inicio del historial
-      };
-      
-      // Nota: No reemplazamos datos del plan principal (clases, fechas, etc)
-    } else {
-      // CASO NORMAL (Sin plan previo o plan ya vencido)
-      // El nuevo plan pasa a ser el principal (ACTIVE)
-      const currentHistory = Array.isArray(student.membership?.history) ? [...student.membership.history] : [];
-      
-      // Si el plan anterior estaba 'active' pero ya venció, lo pasamos a 'inactive' antes de guardarlo en history
-      const pastToHistory = student.membership ? { ...student.membership, status: 'inactive' as const } : null;
-      if (pastToHistory) delete (pastToHistory as { history?: unknown }).history;
-
-      updatedMembership = {
-        ...newMembershipBase,
-        status: 'active',
-        history: pastToHistory ? [pastToHistory, ...currentHistory] : currentHistory
-      };
-    }
 
     const updateData: Partial<FitCenterUserProfile> = {
       formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],

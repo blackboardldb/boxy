@@ -172,6 +172,9 @@ const handleStartDateChange = (newDate: string) => {
       const newStartStr = editStartDate;
       const newEndStr = editEndDate;
       const newStart = new Date(newStartStr + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isScheduled = newStart > today;
       const newEnd = new Date(newEndStr + "T23:59:59");
       
       const newEnrolledClasses = (userClasses || []).filter(s => {
@@ -186,9 +189,16 @@ const handleStartDateChange = (newDate: string) => {
       const newClassLimit = Number(editClassLimit);
       const newRemainingClasses = Math.max(0, newClassLimit > 0 ? newClassLimit - newClassesConsumed : 0);
 
+      console.log('[DEBUG saveMembership] editStartDate:', editStartDate);
+      console.log('[DEBUG saveMembership] editEndDate:', editEndDate);
+      console.log('[DEBUG saveMembership] isScheduled:', isScheduled);
+      console.log('[DEBUG saveMembership] newStart:', newStart);
+      console.log('[DEBUG saveMembership] today:', today);
+
       const updatedMembership = {
         ...student.membership,
         planId: editPlanId,
+        status: isScheduled ? "scheduled" : "active",
         membershipType: selectedPlan ? selectedPlan.name : student.membership?.membershipType,
         monthlyPrice: Number(editPrice),
         currentPeriodStart: newStartStr,
@@ -227,32 +237,6 @@ const handleStartDateChange = (newDate: string) => {
     }
   };
 
-  const deletePlanFromHistory = async (historyIndex: number) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este plan del historial? Esta acción no se puede deshacer.")) return;
-    if (!student?.membership?.history) return;
-    if (!student.membership.history[historyIndex]) return;
-
-    setIsSaving(true);
-    try {
-      const newHistory = student.membership.history.filter((_, i) => i !== historyIndex);
-      const updatedMembership = { ...student.membership, history: newHistory };
-
-      await updateUserMutation.mutateAsync({
-        id: student.id,
-        data: { membership: updatedMembership },
-      });
-
-      const updated = { ...student, membership: updatedMembership } as FitCenterUserProfile;
-      setStudent(updated);
-
-      toast({ title: "Plan eliminado", description: "El plan fue eliminado del historial." });
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "No se pudo eliminar el plan.", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const now = new Date();
   
@@ -263,6 +247,19 @@ const handleStartDateChange = (newDate: string) => {
       student?.membership?.currentPeriodEnd
     );
   }, [userClasses, student]);
+
+  const planHistory = student?.membershipRenewals?.filter(
+    (r: any) => r.status === 'approved' || r.status === 'cancelled'
+  ) ?? [];
+
+  const hasPendingRenewal = student?.membershipRenewals?.some(
+    (r: any) => r.status === 'pending'
+  ) ?? false;
+
+  // Plan programado futuro (desde MembershipRenewal, NO desde UserMembership)
+  const scheduledPlan = student?.membershipRenewals?.find(
+    (r: any) => r.status === 'scheduled'
+  ) ?? null;
 
   // Determine plan status
   const planStatus = student ? getPlanStatus(student) : "inactive";
@@ -436,25 +433,32 @@ const handleStartDateChange = (newDate: string) => {
                   <div className="">
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-1">
-                        <span
-                          className={`uppercase font-bold tracking-wider text-sm ${
-                            isPlanActive
-                              ? "text-lime-900"
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`uppercase font-bold tracking-wider text-sm ${
+                              isPlanActive
+                                ? "text-lime-900"
+                                : isScheduled
+                                ? "text-blue-500"
+                                : isPendingApproval
+                                ? "text-orange-500"
+                                : "text-zinc-500"
+                            }`}
+                          >
+                            {isPlanActive
+                              ? "Activo"
                               : isScheduled
-                              ? "text-blue-500"
+                              ? "Programado"
                               : isPendingApproval
-                              ? "text-orange-500"
-                              : "text-zinc-500"
-                          }`}
-                        >
-                          {isPlanActive
-                            ? "Activo"
-                            : isScheduled
-                            ? "Programado"
-                            : isPendingApproval
-                            ? "Validar plan"
-                            : "Inactivo"}
-                        </span>
+                              ? "Validar plan"
+                              : "Inactivo"}
+                          </span>
+                          {hasPendingRenewal && (
+                            <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded-full border border-yellow-200">
+                              Renovación pendiente
+                            </span>
+                          )}
+                        </div>
                         <div className="inline-flex gap-1.5 text-xs text-zinc-600 bg-black/5 px-2 py-1 rounded-xl items-center">
                           
                         
@@ -517,6 +521,26 @@ const handleStartDateChange = (newDate: string) => {
                     <div className="text-muted-foreground">Forma de pago</div>
                     <div className="font-medium text-right text-zinc-900 capitalize">{student.formaDePago || "-"}</div>
                   </div>
+                  {/* Banner: plan futuro programado via MembershipRenewal */}
+                  {scheduledPlan && (() => {
+                    const details = scheduledPlan.renewalDetails as any;
+                    const planName = plans.find((p: any) => p.id === scheduledPlan.requestedPlanId)?.name
+                      ?? details?.membershipType
+                      ?? "Plan";
+                    const startStr = details?.startDate
+                      ? (() => { try { return format(parseISO(details.startDate), "d 'de' MMMM yyyy", { locale: es }); } catch { return details.startDate; } })()
+                      : null;
+                    return (
+                      <div className="mt-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-blue-800">
+                        <Clock3 className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                        <div className="text-xs leading-snug">
+                          <p className="font-semibold">Plan programado</p>
+                          <p>{planName}{startStr ? ` · desde ${startStr}` : ""}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="mt-6 pt-4 border-t border-zinc-100 flex flex-col gap-3">
                     {isPendingApproval && (
                       <Button 
@@ -697,42 +721,31 @@ const handleStartDateChange = (newDate: string) => {
                       </p>
                     </div>
                   )}
-                  {(!student?.membership?.history || student.membership.history.length === 0) && !student?.membership?.membershipType && (
+                  {(planHistory.length === 0) && !student?.membership?.membershipType && (
                     <div className="relative pl-6 border-l-2 border-zinc-100 space-y-1.5 py-4">
                         <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-sm -left-[5.5px] top-5" />
                         <p className="text-sm font-medium text-zinc-400">Sin historial previo</p>
                         <p className="text-xs text-zinc-400">Aún no hay membresías asignadas para este alumno.</p>
                     </div>
                   )}
-                  {student?.membership?.history?.map((pastMem, idx) => {
-                      const isPastUnlimited = pastMem.planConfig?.classLimit === 0;
-                      const classesContracted = pastMem.planConfig?.classLimit ?? 0;
-                      const remainingClasses = pastMem.centerStats?.currentMonth?.remainingClasses ?? 0;
-                      const consumed = !isPastUnlimited ? Math.max(0, classesContracted - remainingClasses) : (pastMem.centerStats?.currentMonth?.classesAttended ?? 0);
+                  {planHistory.map((renewal: any, idx: number) => {
+                      const planName = plans.find((p: any) => p.id === renewal.requestedPlanId)?.name || renewal.requestedPlanId;
+                      const statusColor = renewal.status === 'approved' ? 'text-emerald-500' : 'text-red-500';
+                      const statusLabel = renewal.status === 'approved' ? 'Aprobado' : 'Cancelado';
                       
                       return (
-                          <div key={pastMem.id || idx} className="relative pl-6 border-l-2 border-zinc-100 py-4 flex items-start justify-between gap-2">
+                          <div key={renewal.id || idx} className="relative pl-6 border-l-2 border-zinc-100 py-4 flex items-start justify-between gap-2">
                               <div className="space-y-1.5 flex-1">
                                   <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
-                                  <p className="text-sm font-medium text-zinc-500">
-                                    {pastMem.membershipType} | {pastMem.currentPeriodStart 
-                                      ? format(parseISO(pastMem.currentPeriodStart.substring(0, 10)), "d/M/yyyy") 
-                                      : "-"} hasta {pastMem.currentPeriodEnd 
-                                      ? format(parseISO(pastMem.currentPeriodEnd.substring(0, 10)), "d/M/yyyy") 
-                                      : "-"} | {consumed}/{isPastUnlimited ? '∞' : classesContracted}
+                                  <p className="text-sm font-medium text-zinc-700">
+                                    {planName}
+                                  </p>
+                                  <p className="text-xs text-zinc-500">
+                                    Solicitado el {renewal.requestedAt ? format(new Date(renewal.requestedAt), "d 'de' MMMM yyyy", { locale: es }) : "-"}
+                                    {" • "}
+                                    <span className={`font-semibold ${statusColor}`}>{statusLabel}</span>
                                   </p>
                               </div>
-
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deletePlanFromHistory(idx)}
-                                disabled={isSaving}
-                                className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl shrink-0"
-                                title="Eliminar del historial"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
                           </div>
                       );
                   })}

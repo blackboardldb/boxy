@@ -45,6 +45,9 @@ export interface FitCenterUserProfile {
     reason: string;
     rejectedBy: string; // ID del admin que rechazó
   };
+
+  // NUEVO: Historial de renovaciones
+  membershipRenewals?: any[];
 }
 
 // Estructura detallada de la membresía para FitCenterUserProfile
@@ -282,7 +285,8 @@ export type MembershipStatus =
   | "suspended"
   | "expired"
   | "frozen"
-  | "pending";
+  | "pending"
+  | "scheduled";
 export type DayOfWeek = "lun" | "mar" | "mie" | "jue" | "vie" | "sab" | "dom";
 export type ClassStatus =
   | "scheduled"
@@ -304,6 +308,7 @@ export const MEMBERSHIP_STATUS_VALUES: MembershipStatus[] = [
   "expired",
   "frozen",
   "pending",
+  "scheduled",
 ];
 
 export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
@@ -313,6 +318,7 @@ export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
   expired: "Expirado",
   frozen: "Congelado",
   pending: "Pendiente",
+  scheduled: "Programado",
 };
 
 export const MEMBERSHIP_STATUS_COLORS: Record<MembershipStatus, string> = {
@@ -322,6 +328,7 @@ export const MEMBERSHIP_STATUS_COLORS: Record<MembershipStatus, string> = {
   expired: "#CA2A30", // red-900
   frozen: "#0067D6", // blue-900
   pending: "#666666", // gray-900
+  scheduled: "#0284C7", // sky-600
 };
 
 // === INTERFACES DE RESPUESTA (para APIs) ===

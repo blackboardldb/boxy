@@ -4,8 +4,7 @@ import { prisma } from "../../prisma";
 import { Prisma } from "@prisma/client";
 
 // Tipo inferido de Prisma para un User con su UserMembership incluido.
-// Único tipo concreto que mapToEntity y mapUserMembershipRow reciben en runtime.
-type UserWithMembership = Prisma.UserGetPayload<{ include: { userMembership: true } }>;
+type UserWithMembership = Prisma.UserGetPayload<{ include: { userMembership: true, membershipRenewals: true } }>;
 
 // ─── Helper: UserMembership row → FitCenterMembership shape ─────────────────
 // HAL-01 Fase 3A: La fuente de verdad es ahora la tabla user_memberships.
@@ -66,6 +65,9 @@ function mapUserMembershipRow(um: NonNullable<UserWithMembership["userMembership
 // ─── Helper: membership shape → UserMembership upsert data ──────────────────
 // Usado en create() y update() para el dual-write Phase 3.
 function membershipToUpsertData(m: any, organizationId: string) {
+  console.log('[DEBUG membershipToUpsertData] status recibido:', m.status);
+  console.log('[DEBUG membershipToUpsertData] currentPeriodStart:', m.currentPeriodStart);
+  
   const safePlanId = (v: string | null | undefined): string | null =>
     v && v.trim() !== "" ? v : null;
 
@@ -73,7 +75,11 @@ function membershipToUpsertData(m: any, organizationId: string) {
     organizationId,
     planId:             safePlanId(m.planId),
     status:             m.status || "inactive",
-    startDate:          m.startDate          ? new Date(m.startDate)          : null,
+    startDate:          m.startDate 
+      ? new Date(m.startDate) 
+      : m.currentPeriodStart 
+        ? new Date(m.currentPeriodStart) 
+        : null,
     currentPeriodStart: m.currentPeriodStart ? new Date(m.currentPeriodStart) : null,
     currentPeriodEnd:   m.currentPeriodEnd   ? new Date(m.currentPeriodEnd)   : null,
     monthlyPrice:       typeof m.monthlyPrice === "number" ? m.monthlyPrice : null,
@@ -108,7 +114,7 @@ export class PrismaUserRepository implements IUserRepository {
         orderBy: params?.orderBy,
         take:    limit,
         skip,
-        include: { userMembership: true },   // ← HAL-01: incluir relación
+        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },   // ← HAL-01: incluir relación
       }),
       this.prisma.user.count({ where: params?.where }),
     ]);
@@ -128,7 +134,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findUnique(params: FindUniqueParams): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
       where:   params.where as Prisma.UserWhereUniqueInput,
-      include: { userMembership: true },     // ← HAL-01
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },     // ← HAL-01
     });
     return user ? this.mapToEntity(user) : null;
   }
@@ -168,7 +174,7 @@ export class PrismaUserRepository implements IUserRepository {
     // Re-fetch con relación para que mapToEntity lea desde UserMembership
     const withMembership = await this.prisma.user.findUnique({
       where:   { id: created.id },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     return this.mapToEntity(withMembership!);
   }
@@ -199,20 +205,50 @@ export class PrismaUserRepository implements IUserRepository {
       },
     });
 
-    // Si viene membership en el payload, actualizar UserMembership (tabla relacional)
+    // Si viene membership en el payload, bifurcar según fecha de inicio:
+    //   Fecha futura  → crear MembershipRenewal { status: 'scheduled' } — NO tocar UserMembership
+    //   Fecha hoy/pasada → upsert normal en UserMembership
     if (data.membership) {
-      const upsertData = membershipToUpsertData(data.membership, orgId);
-      await this.prisma.userMembership.upsert({
-        where:  { userId: id },
-        create: { userId: id, ...upsertData },
-        update: upsertData,
-      });
+      const m = data.membership as any;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = m.currentPeriodStart ? new Date(m.currentPeriodStart + 'T00:00:00') : null;
+      const isScheduledPlan = startDate !== null && startDate > today;
+
+      if (isScheduledPlan) {
+        // Plan futuro → staging en MembershipRenewal (UserMembership no se toca)
+        await this.prisma.membershipRenewal.create({
+          data: {
+            userId: id,
+            currentPlanId: m.planId ?? null,
+            requestedPlanId: m.planId ?? null,
+            status: 'scheduled',
+            paymentMethod: (data as any).formaDePago ?? null,
+            renewalDetails: {
+              startDate:      m.currentPeriodStart,
+              endDate:        m.currentPeriodEnd,
+              monthlyPrice:   m.monthlyPrice,
+              classLimit:     m.planConfig?.classLimit ?? 0,
+              membershipType: m.membershipType,
+            },
+          },
+        });
+        console.log(`[user-repository] Plan futuro registrado en MembershipRenewal (scheduled) para user ${id}`);
+      } else {
+        // Plan inmediato → upsert normal en UserMembership
+        const upsertData = membershipToUpsertData(m, orgId);
+        await this.prisma.userMembership.upsert({
+          where:  { userId: id },
+          create: { userId: id, ...upsertData },
+          update: upsertData,
+        });
+      }
     }
 
     // Re-fetch con relación
     const updated = await this.prisma.user.findUnique({
       where:   { id },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     return this.mapToEntity(updated!);
   }
@@ -222,7 +258,7 @@ export class PrismaUserRepository implements IUserRepository {
     // Leer antes de borrar para poder retornar el entity (CASCADE borra UserMembership)
     const toDelete = await this.prisma.user.findUnique({
       where:   { id },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     if (!toDelete) throw new Error(`User ${id} not found`);
     const entity = this.mapToEntity(toDelete);
@@ -240,7 +276,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
       where:   { email },
-      include: { userMembership: true },    // ← HAL-01
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },    // ← HAL-01
     });
     return user ? this.mapToEntity(user) : null;
   }
@@ -249,7 +285,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByRole(role: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
       where:   { role },
-      include: { userMembership: true },    // ← HAL-01
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },    // ← HAL-01
     });
     return users.map((u) => this.mapToEntity(u));
   }
@@ -260,7 +296,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
       where:   { userMembership: { status } },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     return users.map((u) => this.mapToEntity(u));
   }
@@ -293,7 +329,7 @@ export class PrismaUserRepository implements IUserRepository {
   async updateMembershipStatus(userId: string, status: string): Promise<FitCenterUserProfile> {
     const user = await this.prisma.user.findUnique({
       where:   { id: userId },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     if (!user) throw new Error("User not found");
     if (!user.userMembership) throw new Error("UserMembership not found for user");
@@ -307,7 +343,7 @@ export class PrismaUserRepository implements IUserRepository {
 
     const updated = await this.prisma.user.findUnique({
       where:   { id: userId },
-      include: { userMembership: true },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     return this.mapToEntity(updated!);
   }
@@ -335,6 +371,7 @@ export class PrismaUserRepository implements IUserRepository {
       emergencyContact: prismaUser.emergencyContact ?? undefined,
       formaDePago:      prismaUser.formaDePago      ?? undefined,
       membership:       membership as import("../../types").FitCenterUserProfile["membership"],
+      membershipRenewals: prismaUser.membershipRenewals,
     } as FitCenterUserProfile;
   }
 }

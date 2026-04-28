@@ -28,6 +28,9 @@ export async function GET() {
         dateOfBirth: true,
         emergencyContact: true,
         userMembership: true,    // ← HAL-01: fuente de verdad relacional
+        membershipRenewals: {
+          orderBy: { requestedAt: 'desc' }
+        },
       },
     });
 
@@ -62,42 +65,83 @@ export async function GET() {
       );
     }
 
-    // 3. Promoción automática scheduled → active (Solo usuarios con membresía en tabla relacional)
-    // Modelo UserMembership tiene @unique en userId: 1 fila por usuario.
-    // Si status="scheduled" y currentPeriodStart <= hoy → promover a "active".
-    if (dbUser.userMembership) {
-      const um = dbUser.userMembership;
-      const now = new Date();
+    // 3. Promoción automática scheduled → active
+    // Primero: revisar si hay un MembershipRenewal con status='scheduled' y startDate <= hoy
+    //          → promover a UserMembership y marcar renewal como 'approved'
+    // Segundo (fallback): si UserMembership tiene status='scheduled' y su startDate <= hoy
+    //          → promover a 'active' directamente (comportamiento legacy)
+    const now = new Date();
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+    }).format(now);
+    const todayDate = new Date(today + "T00:00:00");
 
-      const today = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Santiago",
-      }).format(now);
+    const scheduledRenewal = (dbUser.membershipRenewals ?? []).find((r: any) => {
+      if (r.status !== 'scheduled') return false;
+      const details = r.renewalDetails as any;
+      if (!details?.startDate) return false;
+      return new Date(details.startDate + 'T00:00:00') <= todayDate;
+    });
+
+    if (scheduledRenewal) {
+      const details = scheduledRenewal.renewalDetails as any;
+
+      // Construir datos de upsert desde el renewal
+      const promotionData = {
+        organizationId:    dbUser.userMembership?.organizationId ?? "org_blacksheep_001",
+        planId:            scheduledRenewal.requestedPlanId ?? null,
+        status:            "active",
+        startDate:         details.startDate  ? new Date(details.startDate)  : null,
+        currentPeriodStart: details.startDate ? new Date(details.startDate)  : null,
+        currentPeriodEnd:   details.endDate   ? new Date(details.endDate)    : null,
+        monthlyPrice:      details.monthlyPrice ?? null,
+        membershipType:    details.membershipType ?? null,
+        classLimit:        details.classLimit ?? 0,
+      };
+
+      const promoted = await prisma.userMembership.upsert({
+        where:  { userId: dbUser.id },
+        create: { userId: dbUser.id, ...promotionData },
+        update: promotionData,
+      });
+
+      // Marcar el renewal como approved
+      await prisma.membershipRenewal.update({
+        where: { id: scheduledRenewal.id },
+        data:  { status: 'approved', processedAt: now },
+      });
+
+      dbUser.userMembership = promoted;
+      // Actualizar la lista en memoria para que la respuesta refleje el estado nuevo
+      dbUser.membershipRenewals = dbUser.membershipRenewals.map((r: any) =>
+        r.id === scheduledRenewal.id ? { ...r, status: 'approved', processedAt: now } : r
+      );
+
+      console.log(
+        `[/api/me] MembershipRenewal promoted to UserMembership active for user ${dbUser.id} (renewal ${scheduledRenewal.id})`
+      );
+    } else if (dbUser.userMembership) {
+      // Fallback legacy: UserMembership con status='scheduled' cuya fecha ya llegó
+      const um = dbUser.userMembership;
 
       if (um.status === "scheduled") {
-        // Verificar si el plan ya debe estar activo (fecha de inicio pasó o es hoy)
         const startDateStr = um.currentPeriodStart ?? um.startDate;
-        const startDate = startDateStr
-          ? new Date(startDateStr)
-          : null;
+        const startDate = startDateStr ? new Date(startDateStr) : null;
 
         const isReadyToActivate =
           startDate !== null &&
-          new Date(today + "T00:00:00") >= new Date(
+          todayDate >= new Date(
             startDate.toISOString().split("T")[0] + "T00:00:00"
           );
 
         if (isReadyToActivate) {
-          // Promover en la tabla relacional (fuente de verdad)
           const promoted = await prisma.userMembership.update({
             where: { userId: dbUser.id },
-            data: { status: "active" },
+            data:  { status: "active" },
           });
-
-          // Actualizar objeto en memoria para respuesta inmediata
           dbUser.userMembership = promoted;
-
           console.log(
-            `[/api/me] UserMembership promoted to active for user ${dbUser.id}`
+            `[/api/me] UserMembership (legacy) promoted to active for user ${dbUser.id}`
           );
         }
       }
@@ -173,6 +217,7 @@ export async function GET() {
         : undefined,
       emergencyContact: dbUser.emergencyContact ?? undefined,
       membership,
+      membershipRenewals: dbUser.membershipRenewals,
     };
 
     return NextResponse.json({ success: true, data: responseData });

@@ -20,7 +20,7 @@ export const userSchema = z.object({
       id: z.string(),
       organizationId: z.string(),
       organizationName: z.string(),
-      status: z.enum(["active", "inactive", "expired", "pending"]),
+      status: z.enum(["active", "inactive", "expired", "pending", "scheduled"]),
       membershipType: z.string(),
       planId: z.string(),
       monthlyPrice: z.number(),

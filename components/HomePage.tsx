@@ -46,6 +46,10 @@ const HomePage: React.FC<HomePageProps> = ({
   const classLimit = userProfile.membership?.planConfig?.classLimit ?? currentMonthStats.classesContracted;
   const isUnlimited = classLimit === 0;
 
+  const hasPendingRenewal = userProfile?.membershipRenewals?.some(
+    (r: any) => r.status === 'pending'
+  );
+
   return (
     <main className="max-w-4xl mx-auto pb-28 px-4">
       <InAppAlerts />
@@ -66,6 +70,20 @@ const HomePage: React.FC<HomePageProps> = ({
   {monthlyPrice ? monthlyPrice.toLocaleString("es-CL") : "N/A"}
 </p>
         </div>
+
+        {hasPendingRenewal && (
+          <div className="border-t border-zinc-700 pt-3 space-y-3 pb-3">
+            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-yellow-100 text-base">
+                <Clock size={16} />
+                <p className="font-medium">Solicitud en revisión</p>
+              </div>
+              <p className="text-yellow-100/80 text-sm mt-1">
+                Pronto te confirmaremos la renovación de tu plan.
+              </p>
+            </div>
+          </div>
+        )}
 
         {planStatus === "active" && (
           <div>
@@ -130,22 +148,24 @@ const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
         ) : planStatus !== "active" ? (
-          <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
-            <div className="text-orange-300 inline-flex gap-2 text-sm items-center">
-              <AlertCircle size={16} />
-              <p className="text-sm sm:text-base">
-                Tu plan ya no está vigente
-              </p>
+          !hasPendingRenewal ? (
+            <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
+              <div className="text-orange-300 inline-flex gap-2 text-sm items-center">
+                <AlertCircle size={16} />
+                <p className="text-sm sm:text-base">
+                  Tu plan ya no está vigente
+                </p>
+              </div>
+              <Link href="/app/renovar-plan">
+                <Button
+                  variant={"secondary"}
+                  className="bg-orange-500 text-white hover:bg-orange-600"
+                >
+                  Renovar
+                </Button>
+              </Link>
             </div>
-            <Link href="/app/renovar-plan">
-              <Button
-                variant={"secondary"}
-                className="bg-orange-500 text-white hover:bg-orange-600"
-              >
-                Renovar
-              </Button>
-            </Link>
-          </div>
+          ) : null
         ) : (
           <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
             <div className="text-zinc-200 inline-flex gap-2 text-sm items-center">
@@ -170,7 +190,7 @@ const HomePage: React.FC<HomePageProps> = ({
               Gestionar clases
             </Button>
           </Link>
-        ) : planStatus === "pending" ? (
+        ) : planStatus === "pending" || hasPendingRenewal ? (
           <span className="text-yellow-400 text-sm font-semibold">
             por validar
           </span>
@@ -196,7 +216,7 @@ const HomePage: React.FC<HomePageProps> = ({
               <p className="text-zinc-500 text-base">
                 Aún no te has inscrito en una clase.
               </p>
-            ) : planStatus === "pending" ? (
+            ) : planStatus === "pending" || hasPendingRenewal ? (
               <div className="space-y-2">
                 <p className="text-zinc-400 text-base font-medium">
                   Pronto podrás reservar tus clases
