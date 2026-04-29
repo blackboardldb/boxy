@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       name: classData.name,
       dateTime: classData.dateTime,
       durationMinutes: classData.durationMinutes,
-      instructorId: classData.instructorId ?? "",
+      instructorId: classData.instructorId || "inst_blacksheep_admin",
       capacity: classData.capacity,
       status: (action === "cancel" ? "cancelled" : classData.status ?? "scheduled") as ClassSession["status"],
       notes: classData.notes,

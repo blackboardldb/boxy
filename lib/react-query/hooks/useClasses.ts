@@ -72,6 +72,27 @@ export function useClasses(params: ClassesParams = {}) {
   });
 }
 
+/**
+ * useClassesByDate — obtiene clases reales y generadas para una fecha o rango.
+ */
+export function useClassesByDate(params: { date?: string; startDate?: string; endDate?: string }) {
+  const { date, startDate, endDate } = params;
+  const searchParams = new URLSearchParams();
+  if (date) searchParams.set("date", date);
+  if (startDate) searchParams.set("startDate", startDate);
+  if (endDate) searchParams.set("endDate", endDate);
+
+  return useQuery({
+    queryKey: ["classes", "by-date", params],
+    queryFn: () =>
+      fetchClient<{ classes: ClassSession[] }>(`/classes/by-date?${searchParams.toString()}`).then(
+        (res) => res.classes ?? []
+      ),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!(date || (startDate && endDate)),
+  });
+}
+
 // ─── useUserClasses — clases de un alumno específico (admin: detalle alumno) ──
 /**
  * useUserClasses(userId, startDate?)
@@ -198,7 +219,7 @@ export function useRegisterClass() {
     },
 
     onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
       queryClient.invalidateQueries({
         queryKey: classKeys.myBookingsPrefix(variables.userId),
       });
@@ -284,7 +305,7 @@ export function useCancelClassRegistration() {
     },
 
     onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
       queryClient.invalidateQueries({
         queryKey: classKeys.myBookingsPrefix(variables.userId),
       });
@@ -307,7 +328,34 @@ export function useCancelClass() {
       }),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
+    },
+  });
+}
+
+/**
+ * useCancelDay — cancelar todas las clases de un día (solo admin).
+ */
+export function useCancelDay() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ 
+      date, 
+      organizationId, 
+      generatedClasses 
+    }: { 
+      date: string; 
+      organizationId: string; 
+      generatedClasses?: any[] 
+    }) =>
+      fetchClient<{ success: boolean }>(`/classes/cancel-day`, {
+        method: "POST",
+        body: JSON.stringify({ date, organizationId, generatedClasses }),
+      }),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
     },
   });
 }

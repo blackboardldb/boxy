@@ -53,7 +53,7 @@ function generateClassesForDay(
             name: discipline.name,
             dateTime: dateTimeStr,
             durationMinutes: 60,
-            instructorId: "inst_default",
+            instructorId: "inst_blacksheep_admin",
             capacity: 15,
             status: "scheduled",
             notes: "Clase generada dinámicamente",

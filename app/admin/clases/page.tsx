@@ -24,6 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CancelDayModal } from "@/components/admincomponents/cancel-day-modal";
+import { CreateClassModal } from "@/components/admincomponents/create-class-modal";
 
 // Utilidad para saber si una clase es pasada
 const isClassPast = (dateTime: string | Date): boolean =>
@@ -48,6 +50,8 @@ export default function AdminClasesPage() {
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [classToCancel, setClassToCancel] = useState<ClassListItem | null>(null);
+  const [isCancelDayModalOpen, setIsCancelDayModalOpen] = useState(false);
+  const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
 
   // Semana activa
   const weekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -184,6 +188,22 @@ export default function AdminClasesPage() {
         onDateSelect={handleDateSelect}
       />
 
+      {/* Acciones de día */}
+      <div className="px-4 md:px-8 flex justify-end gap-2">
+        <button 
+          onClick={() => setIsCreateClassModalOpen(true)}
+          className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition-colors"
+        >
+          Nueva clase
+        </button>
+        <button 
+          onClick={() => setIsCancelDayModalOpen(true)}
+          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
+        >
+          Cancelar día completo
+        </button>
+      </div>
+
       {/* Chips de filtro — solo si hay más de una disciplina */}
       {disciplinesInDay.length > 1 && (
         <div className="px-4 md:px-8">
@@ -300,6 +320,18 @@ export default function AdminClasesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CancelDayModal 
+        isOpen={isCancelDayModalOpen}
+        onClose={() => setIsCancelDayModalOpen(false)}
+        date={selectedDate}
+      />
+
+      <CreateClassModal
+        isOpen={isCreateClassModalOpen}
+        onClose={() => setIsCreateClassModalOpen(false)}
+        selectedDate={selectedDate}
+      />
     </div>
   );
 }
