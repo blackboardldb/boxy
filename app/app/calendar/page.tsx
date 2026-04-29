@@ -120,7 +120,7 @@ export default function CalendarPage() {
         id: session.id,
         dateTime: session.dateTime,
         disciplineId: session.disciplineId,
-        name: session.name || discipline?.name,
+        name: session.name || discipline?.name || "Clase",
         instructor: instructorName,
         duration: "60 min",
         alumnRegistred: `${session.enrolledCount ?? 0}/${
