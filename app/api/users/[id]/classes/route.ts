@@ -95,9 +95,7 @@ export async function GET(
       dateTime: reg.class.dateTime.toISOString(),
       // Optimization: Send only necessary info for list view
       enrolledCount: reg.class._count.registrations,
-      isUserRegistered: true,
-      registeredParticipantsIds: [], // Empty to save BW in lists
-      waitlistParticipantsIds: []
+      isUserRegistered: true
     }));
 
     return NextResponse.json({

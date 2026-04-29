@@ -135,8 +135,6 @@ export function createClassSessionSchema() {
     durationMinutes: z.number().min(15).max(180),
     instructorId: z.string(),
     capacity: z.number().min(1).max(100),
-    registeredParticipantsIds: z.array(z.string()),
-    waitlistParticipantsIds: z.array(z.string()),
     status: z.enum(["scheduled", "cancelled", "completed", "in_progress"]),
     notes: z.string().optional(),
     isGenerated: z.boolean().optional(),

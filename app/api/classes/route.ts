@@ -71,11 +71,6 @@ export async function GET(request: NextRequest) {
     const optimizedItems = response.data.map((session: any) => ({
       ...session,
       isUserRegistered: userRegisteredClassIds.has(session.id),
-      // Mantenemos compatibility con UI: registeredParticipantsIds ahora es solo el ID del usuario
-      // para minimizar payload pero permitir lógica local si fuese estrictamente necesario.
-      // Sin embargo, según la propuesta, en listados enviamos vacíos.
-      registeredParticipantsIds: userRegisteredClassIds.has(session.id) ? [dbUserId] : [],
-      waitlistParticipantsIds: [],
       // Aseguramos que enrolledCount venga del repo
       alumnRegistred: `${session.enrolledCount || 0}/${session.capacity || 15}`
     }));

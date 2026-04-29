@@ -82,8 +82,6 @@ export const classSessionSchema = z.object({
   dateTime: z.string(),
   durationMinutes: z.number(),
   maxParticipants: z.number(),
-  registeredParticipantsIds: z.array(z.string()),
-  waitlistParticipantsIds: z.array(z.string()),
   status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   notes: z.string().optional(),
   createdAt: z.string(),
