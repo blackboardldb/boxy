@@ -78,7 +78,7 @@ export default function AdminClasesPage() {
       return {
         id: session.id,
         dateTime: session.dateTime,
-        name: discipline?.name || session.name,
+        name: session.name || discipline?.name || "Clase",
         instructor: instructor
           ? `${instructor.firstName} ${instructor.lastName}`
           : "Por asignar",
