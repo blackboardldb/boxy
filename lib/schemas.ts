@@ -94,7 +94,7 @@ export const createClassSessionSchema = z.object({
   instructorId: z.string().optional(),
   dateTime: z.string(),
   durationMinutes: z.number().min(1),
-  maxParticipants: z.number().min(1),
+  capacity: z.number().min(1),
   notes: z.string().optional(),
 });
 

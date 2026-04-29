@@ -6,6 +6,7 @@ import { parseISO, isToday } from "date-fns";
 import { formatTimeLocal, formatWeekday, formatDayMonth } from "@/lib/utils";
 import { Clock, User, Users } from "lucide-react";
 import type { FormattedClassItem } from "@/lib/types";
+import { CUSTOM_DISCIPLINE_ID } from "@/lib/constants";
 
 interface ClassCardProps {
   classItem: FormattedClassItem;
@@ -101,8 +102,15 @@ export function ClassCard({
       {/* Información principal */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
-            <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
+            {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                Especial
+              </span>
+            )}
+          </div>
+          <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center">
              {/* Estado de la clase como span */}
       {statusInfo && (
         <>

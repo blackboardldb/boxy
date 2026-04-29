@@ -184,3 +184,5 @@ export const INTEGRATION_CONFIG = {
   ENABLE_PAYMENT_INTEGRATION: true,
   ENABLE_CALENDAR_INTEGRATION: true,
 } as const;
+
+export const CUSTOM_DISCIPLINE_ID = "disc_custom_event";

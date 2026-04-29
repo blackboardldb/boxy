@@ -23,6 +23,7 @@ import {
   isClassPast,
 } from "@/lib/utils";
 import type { ClassListItem } from "@/lib/types";
+import { CUSTOM_DISCIPLINE_ID } from "@/lib/constants";
 
 export interface AdminClassCardProps {
   classItem: ClassListItem;
@@ -105,9 +106,16 @@ export default function AdminClassCard({
             </div>
 
             {/* Título principal - disciplina */}
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
-              {classItem.name}
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {classItem.name}
+              </h3>
+              {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                  Especial
+                </span>
+              )}
+            </div>
 
             {/* Información con iconos */}
             <div className="flex items-center gap-4 text-sm text-gray-600">

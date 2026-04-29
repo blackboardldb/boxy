@@ -138,6 +138,31 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
   });
 }
 
+// ─── Mutations de administración ───────────────────────────────────────────────
+
+export function useCreateClass() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: {
+      disciplineId: string;
+      name?: string;
+      dateTime: string;
+      durationMinutes: number;
+      instructorId: string;
+      capacity: number;
+    }) =>
+      fetchClient<{ success: boolean }>("/classes", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
+    },
+  });
+}
+
 // ─── Mutations de inscripción/cancelación ────────────────────────────────────
 
 /**
