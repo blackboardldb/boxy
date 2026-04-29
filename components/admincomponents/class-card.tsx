@@ -23,8 +23,6 @@ type TransformedClass = {
   enrolled: number;
   type: "extra" | "regular";
   cancelled: boolean;
-  registeredParticipantsIds: string[];
-  waitlistParticipantsIds?: string[];
   isGenerated: boolean;
   isExtra: boolean;
   historicalData: {

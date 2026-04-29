@@ -30,7 +30,7 @@ export default function Page() {
         today.setHours(0, 0, 0, 0);
         return (
           sessionDate >= today &&
-          (session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id))
+          (session.isUserRegistered ?? false)
         );
       })
       .sort(
@@ -45,12 +45,10 @@ export default function Page() {
           name: session.name,
           instructor: "Instructor",
           duration: "60 min",
-          alumnRegistred: `${session.enrolledCount ?? session.registeredParticipantsIds.length}/${
+          alumnRegistred: `${session.enrolledCount ?? 0}/${
             session.capacity || 15
           }`,
-          isRegistered: session.isUserRegistered ?? session.registeredParticipantsIds.includes(
-            currentUser.id
-          ),
+          isRegistered: session.isUserRegistered ?? false,
           formattedDayLabel: formatWeekday(session.dateTime),
           formattedTime: formatTimeLocal(session.dateTime),
         };

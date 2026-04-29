@@ -14,6 +14,16 @@ import type { DayOfWeek } from "@/lib/types";
 import { useClasses, useCancelClass } from "@/lib/react-query/hooks/useClasses";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Utilidad para saber si una clase es pasada
 const isClassPast = (dateTime: string | Date): boolean =>
@@ -37,6 +47,7 @@ export default function AdminClasesPage() {
   const [selectedClass, setSelectedClass] = useState<ClassListItem | null>(null);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [classToCancel, setClassToCancel] = useState<ClassListItem | null>(null);
 
   // Semana activa
   const weekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -58,7 +69,7 @@ export default function AdminClasesPage() {
       );
       // Los instructorId referencian la entidad Instructor, NO la de usuarios/alumnos
       const instructor = instructors?.find((i) => i.id === session.instructorId);
-      const enrolled = session.enrolledCount ?? session.registeredParticipantsIds.length;
+      const enrolled = session.enrolledCount ?? 0;
 
       return {
         id: session.id,
@@ -78,8 +89,6 @@ export default function AdminClasesPage() {
         color: discipline?.color || "#666",
         capacity: session.capacity,
         enrolled: enrolled,
-        registeredParticipantsIds: session.registeredParticipantsIds,
-        waitlistParticipantsIds: session.waitlistParticipantsIds,
         notes: session.notes,
       };
     },
@@ -144,10 +153,20 @@ export default function AdminClasesPage() {
     setIsDetailDrawerOpen(true);
   };
 
-  const handleCancelClass = async (classId: string) => {
+  const handleCancelClass = (classId: string) => {
+    // Buscar la clase en activeClasses para tener la info completa (enrolled, name, etc)
+    const cls = activeClasses.find(c => c.id === classId);
+    if (cls) {
+      setClassToCancel(cls);
+    }
+  };
+
+  const confirmCancelClass = async () => {
+    if (!classToCancel) return;
     try {
-      await cancelClass.mutateAsync(classId);
+      await cancelClass.mutateAsync(classToCancel.id);
       console.log("Clase cancelada exitosamente");
+      setClassToCancel(null);
     } catch (error) {
       console.error("Error canceling class:", error);
     }
@@ -255,6 +274,32 @@ export default function AdminClasesPage() {
         classItem={selectedClass}
         onCancelClass={handleCancelClass}
       />
+
+      <AlertDialog open={!!classToCancel} onOpenChange={(open) => !open && setClassToCancel(null)}>
+        <AlertDialogContent className="rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar esta clase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de cancelar la clase de <strong>{classToCancel?.name}</strong> con el instructor <strong>{classToCancel?.instructor}</strong>.
+              <br /><br />
+              <span className="text-red-600 font-medium">
+                ⚠️ Hay {classToCancel?.enrolled || 0} alumno(s) inscrito(s) que se verán afectados. 
+                Se les enviará una notificación y sus cupos serán devueltos.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Volver</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmCancelClass}
+              className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+              disabled={cancelClass.isPending}
+            >
+              {cancelClass.isPending ? "Cancelando..." : "Sí, cancelar clase"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -245,8 +245,6 @@ export interface ClassSession {
   durationMinutes: number; // 60
   instructorId: string; // ID del instructor - Cambiado a string
   capacity: number; // 15
-  registeredParticipantsIds: string[]; // IDs de usuarios registrados - Cambiado a string[]
-  waitlistParticipantsIds: string[]; // IDs de usuarios en lista de espera - Cambiado a string[]
   status: ClassStatus; // "scheduled" | "cancelled" | "completed" | "in_progress"
   notes?: string; // Notas para la clase (ej. WOD)
   isGenerated?: boolean; // Flag para identificar clases generadas dinámicamente
@@ -402,8 +400,6 @@ export interface ClassListItem {
   color: string;
   capacity: number;
   enrolled: number;
-  registeredParticipantsIds: string[];
-  waitlistParticipantsIds?: string[];
   notes?: string;
   enrolledCount?: number;
   isUserRegistered?: boolean;

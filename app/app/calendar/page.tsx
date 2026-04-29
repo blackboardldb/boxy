@@ -97,9 +97,7 @@ export default function CalendarPage() {
         ? `${instructor.firstName} ${instructor.lastName}`
         : "Por asignar";
 
-      const isRegistered = session.isUserRegistered ?? session.registeredParticipantsIds.includes(
-        currentUser.id
-      );
+      const isRegistered = session.isUserRegistered ?? false;
 
       // Determinar el estado final considerando la hora actual
       let finalStatus = session.status || "scheduled";
@@ -125,7 +123,7 @@ export default function CalendarPage() {
         name: discipline?.name || session.name,
         instructor: instructorName,
         duration: "60 min",
-        alumnRegistred: `${session.enrolledCount ?? session.registeredParticipantsIds.length}/${
+        alumnRegistred: `${session.enrolledCount ?? 0}/${
           session.capacity || 15
         }`,
         isRegistered,
@@ -178,7 +176,7 @@ export default function CalendarPage() {
 
           // Lógica para días pasados: mostrar solo clases inscritas
           if (isPastDate) {
-            return session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id);
+            return session.isUserRegistered ?? false;
           }
 
           // Para hoy: mostrar clases no canceladas
@@ -192,7 +190,7 @@ export default function CalendarPage() {
             );
             
             const isFinished = now > sessionEndTime;
-            const isUserRegistered = session.isUserRegistered ?? session.registeredParticipantsIds.includes(currentUser.id);
+            const isUserRegistered = session.isUserRegistered ?? false;
             
             if (isFinished && !isUserRegistered) {
               return false;

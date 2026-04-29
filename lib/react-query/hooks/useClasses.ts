@@ -153,7 +153,6 @@ export function useRegisterClass() {
               ...session,
               enrolledCount: (session.enrolledCount || 0) + 1,
               isUserRegistered: true,
-              registeredParticipantsIds: [...(session.registeredParticipantsIds || []), userId]
             };
           }
           return session;
@@ -177,7 +176,6 @@ export function useRegisterClass() {
               ...session,
               isUserRegistered: true,
               enrolledCount: (session.enrolledCount ?? 0) + 1,
-              registeredParticipantsIds: [...(session.registeredParticipantsIds || []), userId]
             };
           });
         }
@@ -241,7 +239,6 @@ export function useCancelClassRegistration() {
               ...session,
               enrolledCount: Math.max(0, (session.enrolledCount || 0) - 1),
               isUserRegistered: false,
-              registeredParticipantsIds: (session.registeredParticipantsIds || []).filter(id => id !== userId)
             };
           }
           return session;
@@ -265,7 +262,6 @@ export function useCancelClassRegistration() {
               ...session,
               isUserRegistered: false,
               enrolledCount: Math.max(0, (session.enrolledCount ?? 1) - 1),
-              registeredParticipantsIds: (session.registeredParticipantsIds || []).filter(id => id !== userId)
             };
           });
         }

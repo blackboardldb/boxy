@@ -219,12 +219,6 @@ export class PrismaClassRepository implements IClassRepository {
       instructorId: prismaClass.instructorId || "",
       capacity: prismaClass.capacity || 15,
       // HAL-03 Sprint A: calculado desde ClassRegistration (fuente de verdad).
-      registeredParticipantsIds: prismaClass.registrations
-        ?.filter((r) => r.status === 'registered')
-        .map((r) => r.userId) ?? [],
-      waitlistParticipantsIds: prismaClass.registrations
-        ?.filter((r) => r.status === 'waitlist')
-        .map((r) => r.userId) ?? [],
       status: (prismaClass.status as ClassStatus) || "scheduled",
       notes: prismaClass.notes || undefined,
       isGenerated: !!prismaClass.isGenerated,

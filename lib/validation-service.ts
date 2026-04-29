@@ -95,13 +95,16 @@ export class ValidationService {
     }
 
     // 3. Verificar si el usuario ya está inscrito
-    if (classSession.registeredParticipantsIds.includes(userId)) {
+    const isUserRegistered = await prisma.classRegistration.findFirst({
+      where: { classId: classSession.id, userId, status: 'registered' }
+    });
+    if (isUserRegistered) {
       return { canRegister: false, reason: "Ya estás inscrito a esta clase" };
     }
 
     // 4. Verificar cupos disponibles
     if (
-      classSession.registeredParticipantsIds.length >= classSession.capacity
+      (classSession.enrolledCount || 0) >= classSession.capacity
     ) {
       return { canRegister: false, reason: "No hay cupos disponibles" };
     }
@@ -244,7 +247,10 @@ export class ValidationService {
       : (classSession.dateTime as Date).toISOString().split("T")[1].substring(0, 5); // "08:00"
 
     // 1. Verificar si el usuario está inscrito
-    if (!classSession.registeredParticipantsIds.includes(userId)) {
+    const isUserRegistered = await prisma.classRegistration.findFirst({
+      where: { classId: classSession.id, userId, status: 'registered' }
+    });
+    if (!isUserRegistered) {
       return {
         canCancel: false,
         reason: "No estás inscrito a esta clase",
@@ -317,7 +323,10 @@ export class ValidationService {
       : classSession.dateTime;
 
     // 1. Verificar si el usuario está inscrito
-    if (!classSession.registeredParticipantsIds.includes(userId)) {
+    const isUserRegistered = await prisma.classRegistration.findFirst({
+      where: { classId: classSession.id, userId, status: 'registered' }
+    });
+    if (!isUserRegistered) {
       return { canCancel: false, reason: "No estás inscrito a esta clase" };
     }
 

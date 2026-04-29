@@ -74,7 +74,7 @@ export function Alerts() {
     const highDemandClasses = classSessions.filter(
       (cls) =>
         cls.status === "scheduled" &&
-        cls.registeredParticipantsIds.length >= cls.capacity * 0.9
+        (cls.enrolledCount ?? 0) >= cls.capacity * 0.9
     );
     if (highDemandClasses.length > 0) {
       newAlerts.push({

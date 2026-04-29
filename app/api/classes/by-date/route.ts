@@ -55,8 +55,6 @@ function generateClassesForDay(
             durationMinutes: 60,
             instructorId: "inst_default",
             capacity: 15,
-            registeredParticipantsIds: [],
-            waitlistParticipantsIds: [],
             status: "scheduled",
             notes: "Clase generada dinámicamente",
             isGenerated: true,

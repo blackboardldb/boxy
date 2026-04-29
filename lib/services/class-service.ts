@@ -128,8 +128,11 @@ export class ClassService extends BaseService<ClassSession> {
 
         // 2. VALIDATION
         if (classSession.status === "cancelled") throw new ValidationError("La clase ha sido cancelada");
-        if (classSession.registeredParticipantsIds.includes(userId)) throw new ValidationError("Ya estás inscrito/a en esta clase");
-        if (classSession.registeredParticipantsIds.length >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
+        const isReg = await prisma.classRegistration.findUnique({
+          where: { userId_classId: { userId, classId } }
+        });
+        if (isReg && isReg.status === 'registered') throw new ValidationError("Ya estás inscrito/a en esta clase");
+        if ((classSession.enrolledCount || 0) >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
 
         if (!options.isAdmin) {
           const targetDay = classSession.dateTime.split("T")[0];
@@ -254,12 +257,6 @@ export class ClassService extends BaseService<ClassSession> {
       durationMinutes: prismaClass.durationMinutes,
       instructorId: prismaClass.instructorId,
       capacity: prismaClass.capacity,
-      registeredParticipantsIds: prismaClass.registrations
-        ?.filter((r) => r.status === 'registered')
-        .map((r) => r.userId) ?? [],
-      waitlistParticipantsIds: prismaClass.registrations
-        ?.filter((r) => r.status === 'waitlist')
-        .map((r) => r.userId) ?? [],
       status: prismaClass.status as "scheduled" | "completed" | "cancelled",
       notes: prismaClass.notes || undefined,
       isGenerated: prismaClass.isGenerated,

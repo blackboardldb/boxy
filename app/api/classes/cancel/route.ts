@@ -135,6 +135,14 @@ export async function POST(request: NextRequest) {
         });
         const affectedUsers: string[] = registrations.map((reg: { userId: string }) => reg.userId);
 
+        // 3. Devolver créditos a los alumnos cancelando su registro explícitamente
+        if (affectedUsers.length > 0) {
+          await tx.classRegistration.updateMany({
+            where: { classId: classId, status: 'registered' },
+            data: { status: 'cancelled', cancelledAt: new Date() }
+          });
+        }
+
         return { updatedClassSession, affectedUsers };
       });
 

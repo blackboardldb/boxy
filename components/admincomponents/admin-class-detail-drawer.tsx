@@ -58,9 +58,8 @@ export default function AdminClassDetailDrawer({
   });
 
   const availableUsers = (usersResult?.users || []).filter((u: any) => {
-    const enrolled = new Set(currentClassItem?.registeredParticipantsIds || []);
-    const waitlisted = new Set(currentClassItem?.waitlistParticipantsIds || []);
-    return !enrolled.has(u.id) && !waitlisted.has(u.id);
+    const enrolledIds = new Set(participants.map((p: any) => p.userId));
+    return !enrolledIds.has(u.id);
   });
 
   // Inicializar estado al abrir/cerrar el drawer
@@ -75,6 +74,8 @@ export default function AdminClassDetailDrawer({
     }
   }, [classItem, isOpen]);
 
+  const saveNotes = useSaveClassNotes();
+
   if (!currentClassItem) return null;
 
   const classDateTime = parseISO(currentClassItem.dateTime);
@@ -83,8 +84,6 @@ export default function AdminClassDetailDrawer({
   const formattedTime = formatTimeLocal(currentClassItem.dateTime);
 
   const enrolledStudents = participants;
-
-  const saveNotes = useSaveClassNotes();
 
   const handleSaveNotes = async () => {
     try {
@@ -118,10 +117,6 @@ export default function AdminClassDetailDrawer({
           prev
             ? {
                 ...prev,
-                registeredParticipantsIds: [
-                  ...(prev.registeredParticipantsIds || []),
-                  userId,
-                ],
                 enrolledCount: (prev.enrolledCount || 0) + 1,
               }
             : null
@@ -172,9 +167,6 @@ export default function AdminClassDetailDrawer({
           prev
             ? {
                 ...prev,
-                registeredParticipantsIds: (prev.registeredParticipantsIds || []).filter(
-                  (id) => id !== userId
-                ),
                 enrolledCount: Math.max(0, (prev.enrolledCount || 0) - 1),
               }
             : null
