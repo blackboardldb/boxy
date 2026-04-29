@@ -220,10 +220,10 @@ export default function AdminClassDetailDrawer({
             </div>
           </DrawerHeader>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 space-y-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
+                <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1 shrink-0">
                   <TabsTrigger value="inscritos" className="rounded-xl">
                     Inscritos ({currentClassItem.enrolledCount ?? enrolledStudents.length})
                   </TabsTrigger>
@@ -236,7 +236,8 @@ export default function AdminClassDetailDrawer({
                 </TabsList>
 
                 {/* Tab: Inscritos */}
-                <TabsContent value="inscritos" className="space-y-4">
+                <TabsContent value="inscritos" className="data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col overflow-hidden mt-4 pr-2">
+                  <div className="flex-1 overflow-y-auto space-y-3 divide-y divide-gray-100 pr-2">
                   {isLoadingParticipants ? (
                     <div className="flex flex-col items-center justify-center py-12 space-y-4">
                       <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
@@ -283,16 +284,17 @@ export default function AdminClassDetailDrawer({
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">
-                      No hay alumnos inscritos
-                    </p>
-                  )}
+                    ) : (
+                      <p className="text-muted-foreground text-center py-8">
+                        No hay alumnos inscritos
+                      </p>
+                    )}
+                  </div>
                 </TabsContent>
 
                 {/* Tab: Agregar Alumnos */}
-                <TabsContent value="agregar" className="space-y-4">
-                  <div className="relative">
+                <TabsContent value="agregar" className="data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col overflow-hidden space-y-4 mt-4">
+                  <div className="relative shrink-0">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar alumnos..."
@@ -302,7 +304,7 @@ export default function AdminClassDetailDrawer({
                     />
                   </div>
 
-                  <div className="space-y-3 divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto space-y-3 divide-y divide-gray-100 pr-2">
                     {isSearchingUsers ? (
                       <div className="flex justify-center py-6">
                         <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
@@ -378,7 +380,7 @@ export default function AdminClassDetailDrawer({
                 </TabsContent>
 
                 {/* Tab: Notas */}
-                <TabsContent value="notes" className="space-y-4">
+                <TabsContent value="notes" className="data-[state=active]:flex-1 data-[state=active]:flex data-[state=active]:flex-col space-y-4 mt-4 pr-2 overflow-hidden">
                   <Textarea
                     placeholder="Agregar notas para esta clase..."
                     value={notes}
