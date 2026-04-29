@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import type { ClassListItem } from "@/lib/types";
 import { parseISO, format } from "date-fns";
-import { Users, Plus, Search, Save, Loader2 } from "lucide-react";
+import { Users, Plus, Search, Save, Loader2, Trash2 } from "lucide-react";
 import {
   formatTimeLocal,
   formatWeekday,
@@ -221,7 +221,7 @@ export default function AdminClassDetailDrawer({
           </DrawerHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6 space-y-6 min-h-full">
+            <div className="p-6 space-y-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 rounded-xl bg-zinc-100 p-1">
                   <TabsTrigger value="inscritos" className="rounded-xl">
@@ -245,22 +245,24 @@ export default function AdminClassDetailDrawer({
                       </p>
                     </div>
                   ) : enrolledStudents.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3 divide-y divide-gray-100">
                       {enrolledStudents.map((student: any) => (
                         <div
                           key={student.userId}
-                          className="flex items-center justify-between p-3 border rounded-xl"
+                          className="flex items-center justify-between pt-3"
                         >
                           <div className="flex-1">
-                           <div className=" flex item-center gap-2 ">
                              <p className="font-medium">
                               {student.firstName} {student.lastName}
                             </p>
-                              <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium">
-                              {student.membershipType || "Sin estado"}
-                            </span>
+                           <div className=" flex item-center gap-1 text-xs  text-muted-foreground">
+                               <span className="font-medium">
+                              {student.membershipType || "Sin estado"} -  
+                            </span> 
+                            <p className="">
+                              {student.email}</p>
+                           
                            </div>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
                           </div>
                           <div className="flex items-center gap-2">
                           
@@ -274,7 +276,7 @@ export default function AdminClassDetailDrawer({
                               {isAddingStudent ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
                               ) : (
-                                "X"
+                                 <Trash2 />
                               )}
                             </Button>
                           </div>
@@ -300,7 +302,7 @@ export default function AdminClassDetailDrawer({
                     />
                   </div>
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-3 divide-y divide-gray-100 max-h-60 overflow-y-auto">
                     {isSearchingUsers ? (
                       <div className="flex justify-center py-6">
                         <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
@@ -315,7 +317,7 @@ export default function AdminClassDetailDrawer({
                           return (
                             <div
                               key={user.id}
-                              className="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50"
+                              className="flex items-center justify-between pt-3"
                             >
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
@@ -409,15 +411,16 @@ export default function AdminClassDetailDrawer({
                 </TabsContent>
               </Tabs>
 
-              {/* Acciones */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={onClose} className="w-full rounded-xl">
-                  Cerrar
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* Acciones fijas al fondo */}
+        <div className="p-6 pt-4 border-t shrink-0">
+          <Button variant="outline" onClick={onClose} className="w-full rounded-xl">
+            Cerrar
+          </Button>
+        </div>
+      </div>
       </DrawerContent>
     </Drawer>
   );

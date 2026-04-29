@@ -200,7 +200,7 @@ export default function AdminClasesPage() {
           onClick={() => setIsCancelDayModalOpen(true)}
           className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
         >
-          Cancelar día completo
+          Cancelar clases
         </button>
       </div>
 
