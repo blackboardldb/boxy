@@ -24,8 +24,8 @@ function getCancellationRule(
 ): { hoursBefore: number; reason: string } {
   // Default rule: 2 hours before class
   const defaultRule = {
-    hoursBefore: 2,
-    reason: "Política estándar de cancelación",
+    hoursBefore: 0.5,
+    reason: "Política estándar de cancelación (30 min)",
   };
 
   // Check if discipline has specific rules

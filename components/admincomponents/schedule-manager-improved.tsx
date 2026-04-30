@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -277,20 +276,20 @@ export default function ScheduleManagerImproved() {
       </div>
 
       {/* Lista de disciplinas */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-none shadow-md overflow-hidden">
+            <div key={i} className="rounded-xl border-none shadow-md overflow-hidden bg-white">
               <Skeleton className="h-2 flex-1 mb-6 rounded-xl" />
-              <CardContent className="space-y-4">
+              <div className="p-6 pt-0 space-y-4">
                 <Skeleton className="h-8 w-2/3 rounded-xl" />
                 <Skeleton className="h-4 w-full rounded-xl" />
                 <Skeleton className="h-10 w-full rounded-xl" />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))
         ) : !disciplines || disciplines.length === 0 ? (
-          <Card className="col-span-full border-2 border-dashed border-zinc-100 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
+          <div className="col-span-full border-2 border-dashed border-zinc-100 bg-transparent flex flex-col items-center justify-center p-16 text-center rounded-xl">
             <div className="w-20 h-20 rounded-xl bg-zinc-100 flex items-center justify-center mb-6">
               <Settings className="w-10 h-10 text-zinc-300" />
             </div>
@@ -299,38 +298,38 @@ export default function ScheduleManagerImproved() {
             <Button onClick={handleNewDiscipline} variant="outline" className="rounded-xl h-12 px-8 border-2 font-bold transition-all hover:bg-zinc-50">
               Crear Disciplina
             </Button>
-          </Card>
+          </div>
         ) : (
           disciplines
             ?.filter((d) => d && d.id)
             .map((d) => (
-              <Card key={d.id} className={cn(
-                "overflow-hidden border-none shadow-premium rounded-xl transition-all hover:translate-y-[-4px]",
+              <div key={d.id} className={cn(
+                "overflow-hidden border border-zinc-200 rounded-xl transition-all hover:translate-y-[-4px] bg-white",
                 !d.isActive && "grayscale opacity-80"
               )}>
 
-                <CardHeader className="p-3">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 divide-y divide-zinc-100">
-                    <div className="flex items-center gap-4">
+                <div className="p-3">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 divide-y divide-zinc-100 md:divide-y-0">
+                    <div className="flex items-center gap-2">
                       <Switch 
                         checked={d.isActive} 
                         onCheckedChange={async (checked) => {
                           await updateDisciplineMutation.mutateAsync({ id: d.id, data: { isActive: checked } });
                         }}
                       />
-                      <div className="flex items-center gap-3">
-                        <CardTitle className="text-lg font-bold">{d.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-bold">{d.name}</p>
                         <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
                         {!d.isActive && <span className="text-[10px] font-black uppercase text-zinc-400">Inactiva</span>}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 justify-between pt-3">
+                    <div className="flex items-center gap-4 justify-between pt-3 md:pt-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleDisciplineExpansion(d.id)}
-                        className="text-xs font-bold h-10 px-4 rounded-xl bg-zinc-50"
+                        className="text-xs  h-10 px-4 rounded-xl bg-zinc-50"
                       >
                         {d.schedule.length} {d.schedule.length === 1 ? "Día" : "Días"} — {expandedDisciplines.has(d.id) ? "Ocultar horarios" : "Ver horarios"}
                       </Button>
@@ -351,9 +350,9 @@ export default function ScheduleManagerImproved() {
                       </div>
                     </div>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="px-3 pb-3 empty:hidden">
+                <div className="px-3 pb-3 empty:hidden">
                   {expandedDisciplines.has(d.id) && (
                     <div className="space-y-4 pt-2 border-t border-zinc-50 animate-in slide-in-from-top-2 duration-300">
                       {d.schedule.length === 0 ? (
@@ -389,8 +388,8 @@ export default function ScheduleManagerImproved() {
                       )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))
         )}
       </div>
@@ -608,6 +607,9 @@ export default function ScheduleManagerImproved() {
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                 Reglas de Cancelación
               </Label>
+              <p className="text-xs text-muted-foreground bg-zinc-50 p-3 rounded-xl border border-zinc-100 italic">
+               Alumnos pueden cancelar hasta 30 min antes de la clase. Usa las reglas de abajo solo para excepciones horarias.
+              </p>
 
               <div className="space-y-4">
                 {availableTimes.length > 0 && (
