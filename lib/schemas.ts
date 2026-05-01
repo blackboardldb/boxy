@@ -69,6 +69,7 @@ export const createUserSchema = z.object({
   organizationId: z.string().optional(),
   role: z.enum(["user", "admin", "coach"]).default("user"),
   membership: z.unknown().optional(),
+  skipAutomaticRenewal: z.boolean().optional(),
 });
 
 export const updateUserSchema = createUserSchema.partial();

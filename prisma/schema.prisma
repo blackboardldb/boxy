@@ -209,6 +209,7 @@ model MembershipRenewal {
   paymentMethod   String?
   requestedAt     DateTime  @default(now())
   processedAt     DateTime?
+  startDate       DateTime?
   notes           String?
   renewalDetails  Json?
   amount          Float?
@@ -218,6 +219,7 @@ model MembershipRenewal {
   @@index([userId])
   @@index([status])
   @@index([requestedAt])
+  @@index([userId, startDate, status])
   @@map("membership_renewals")
   @@schema("public")
 }

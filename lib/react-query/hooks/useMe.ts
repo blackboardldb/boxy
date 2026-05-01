@@ -36,6 +36,9 @@ export function useMe(options?: { enabled?: boolean }) {
     staleTime: 0,              // siempre refetch al mount
     gcTime: 1000 * 60 * 5,    // 5 min en caché inactiva
     retry: 1,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 1000 * 60 * 3, // refresca cada 3 min si la app está abierta
     enabled: options?.enabled ?? true,
   });
 }

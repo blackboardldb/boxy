@@ -408,7 +408,12 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     this.clearCache(`user_email_${updatedRecord.email}`);
 
     // Detect plan change and create a renewal record
-    if (updatedRecord.membership?.planId !== previousRecord.membership?.planId) {
+    const skipRenewal = (updatedRecord as any).skipAutomaticRenewal === true;
+
+    if (
+      !skipRenewal &&
+      updatedRecord.membership?.planId !== previousRecord.membership?.planId
+    ) {
       try {
         await this.dataProvider.membershipRenewals.create({
           id: `ren_${Date.now()}_${updatedRecord.id.substring(0, 8)}`,

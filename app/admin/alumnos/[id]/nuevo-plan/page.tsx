@@ -38,6 +38,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     endDate: "",
     clasesTotales: "",
     precioTotal: "",
+    fechaPago: "",
   });
 
   // Sincronizar student local y pre-rellenar formulario cuando llegan los datos
@@ -47,13 +48,14 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
 
     let suggestedStartDate = new Date();
     if (fetchedUser.membership?.currentPeriodEnd && fetchedUser.membership.status === 'active') {
-      const end = parseISO(fetchedUser.membership.currentPeriodEnd.substring(0, 10));
-      if (end >= suggestedStartDate) {
-        suggestedStartDate = new Date(end);
-        suggestedStartDate.setDate(suggestedStartDate.getDate() + 1);
+      const [ey, em, ed] = fetchedUser.membership.currentPeriodEnd.substring(0, 10).split("-").map(Number);
+      const endLocal = new Date(ey, em - 1, ed);
+      if (endLocal >= suggestedStartDate) {
+        suggestedStartDate = new Date(ey, em - 1, ed + 1);
       }
     }
-    const dateStr = suggestedStartDate.toISOString().split("T")[0];
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const dateStr = `${suggestedStartDate.getFullYear()}-${pad(suggestedStartDate.getMonth() + 1)}-${pad(suggestedStartDate.getDate())}`;
     const currentPlanId = fetchedUser.membership?.planId || plans[0]?.id || "";
     const initPlan = plans.find(p => p.id === currentPlanId);
 
@@ -156,9 +158,10 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       }
     };
 
-    const updateData: Partial<FitCenterUserProfile> = {
+    const updateData: Partial<FitCenterUserProfile> & { skipAutomaticRenewal?: boolean } = {
       formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],
-      membership: updatedMembership
+      membership: updatedMembership,
+      skipAutomaticRenewal: registrarIngreso,
     };
 
     const result = await updateUserMutation.mutateAsync({
@@ -181,6 +184,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
             planClassLimit: Number(formData.clasesTotales) || selectedPlan.classLimit,
             planDuration: selectedPlan.durationInMonths,
             startDate: newStartStr,
+            paymentDate: formData.fechaPago || null,
           }),
         });
       }
@@ -309,6 +313,19 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   </SelectContent>
                 </Select>
               </div>
+
+              {registrarIngreso && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold text-zinc-800">Fecha de Pago</Label>
+                  <Input
+                    type="date"
+                    value={formData.fechaPago}
+                    onChange={(e) => setFormData({ ...formData, fechaPago: e.target.value })}
+                    className="h-11 rounded-xl"
+                  />
+                  <p className="text-[11px] text-zinc-500">Opcional. Por defecto se usa la fecha de hoy.</p>
+                </div>
+              )}
             </div>
 
             <div className="border border-zinc-100 rounded-xl overflow-hidden p-0">
@@ -347,8 +364,25 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
               <Button type="button" variant="outline" className="w-full sm:w-auto h-11 rounded-xl" onClick={() => router.push(`/admin/alumnos/${student.id}`)}>
                 Cancelar Operación
               </Button>
-              <Button type="submit" className="w-full sm:w-auto h-11 flex items-center justify-center gap-2 group rounded-xl">
-                <Save className="w-4 h-4 group-hover:scale-110 transition-transform" /> Confirmar y Guardar
+              <Button 
+                type="submit" 
+                disabled={updateUserMutation.isPending}
+                className="w-full sm:w-auto h-11 flex items-center justify-center gap-2 group rounded-xl"
+              >
+                {updateUserMutation.isPending ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z" />
+                    </svg>
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Confirmar y Guardar
+                  </>
+                )}
               </Button>
             </div>
           </form>

@@ -18,6 +18,7 @@ const renewalRequestSchema = z.object({
   planClassLimit: z.number().optional(),
   planDuration:   z.number().optional(),
   startDate:      z.string().optional(),
+  paymentDate:    z.string().optional(),
 });
 
 export async function POST(
@@ -34,10 +35,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    const {
-      planId, paymentMethod, notes,
-      autoApprove, planName, planPrice, planClassLimit, planDuration, startDate
-    } = parsed.data;
+    const { planId, paymentMethod, notes, autoApprove, planName, planPrice, planClassLimit, planDuration, startDate, paymentDate } = parsed.data;
 
     // Si autoApprove, requerir autenticación de admin antes de continuar
     if (autoApprove) {
@@ -67,11 +65,41 @@ export async function POST(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
+    // Construir startDate como Date local si viene en el payload
+    let startDateAsDate: Date | null = null;
+    if (startDate) {
+      const [y, m, d] = startDate.split("-").map(Number);
+      startDateAsDate = new Date(y, m - 1, d); // medianoche local, no UTC
+    }
+
+    // Usar paymentDate para processedAt si viene (manual admin)
+    let processedAtDate: Date | null = autoApprove ? new Date() : null;
+    if (autoApprove && paymentDate) {
+      const [py, pm, pd] = paymentDate.split("-").map(Number);
+      processedAtDate = new Date(py, pm - 1, pd);
+    }
+
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
       where: { userId, status: "pending" },
       data: { status: "cancelled" },
     });
+
+    // Si hay startDate y autoApprove, cancelar approved previos del mismo periodo
+    // para que el nuevo reemplace sin acumular
+    if (startDateAsDate && autoApprove) {
+      await prisma.membershipRenewal.updateMany({
+        where: {
+          userId,
+          status: "approved",
+          startDate: startDateAsDate,
+        },
+        data: {
+          status: "cancelled",
+          notes: "Reemplazado por renovación posterior del administrador",
+        },
+      });
+    }
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
     const currentPlanIdRaw = user.userMembership?.planId ?? null;
@@ -98,7 +126,8 @@ export async function POST(
         requestedPlanId: planId,
         paymentMethod,
         status:      autoApprove ? "approved" : "pending",
-        processedAt: autoApprove ? new Date() : null,
+        processedAt: processedAtDate,
+        startDate:   startDateAsDate,
         // Solo registrar monto y organizationId si es una transacción real (autoApprove + precio > 0)
         amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
         organizationId: autoApprove ? user.organizationId : null,
