@@ -46,6 +46,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useUpdateUser, usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
+import { calcularFechaTerminoMembresia } from "@/lib/utils";
+
 
 // Tipo para usuarios pendientes con información adicional
 interface PendingUser extends FitCenterUserProfile {
@@ -128,15 +130,6 @@ export function UserApproval() {
     setPage(1);
   }, [totalPendingUsers]);
 
-  // Función helper para calcular fecha de término (mover a utils)
-  const calcularFechaTerminoMembresia = (
-    startDate: string,
-    months: number
-  ): string => {
-    const date = new Date(startDate);
-    date.setMonth(date.getMonth() + months);
-    return date.toISOString().split("T")[0];
-  };
 
   // Función para aprobar usuario
   const handleApproveUser = async (user: PendingUser) => {
@@ -149,20 +142,22 @@ export function UserApproval() {
       return;
     }
 
+    // Corregimos el bug de timezone calculando la fecha local YYYY-MM-DD
+    const hoy = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const hoyStr = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
+
     const updatedUserData = {
       membership: {
         ...user.membership,
         status: "active" as const,
-        currentPeriodStart: new Date().toISOString().split("T")[0],
-        currentPeriodEnd: calcularFechaTerminoMembresia(
-          new Date().toISOString().split("T")[0],
-          1 // Default to monthly plans
-        ),
+        currentPeriodStart: hoyStr,
+        currentPeriodEnd: calcularFechaTerminoMembresia(hoyStr, 1),
       },
       notes:
         (user?.notes ?? "") +
         " - Approved on " +
-        new Date().toLocaleDateString(),
+        hoy.toLocaleDateString(),
     };
 
     const result = await updateUserMutation.mutateAsync({ id: user.id, data: updatedUserData });

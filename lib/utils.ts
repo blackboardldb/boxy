@@ -338,19 +338,27 @@ export function calcularFechaTerminoMembresia(
   startDate: string,
   durationInMonths: number
 ): string {
-  // Fix timezone: usar / en vez de - para que se interprete como local
-  const start = new Date(startDate.replace(/-/g, "/"));
-  
-  const startDay = start.getDate();
-  const targetMonth = start.getMonth() + durationInMonths;
-  const targetYear = start.getFullYear();
+  const [sy, sm, sd] = startDate.split("-").map(Number);
 
-  // Calcular último día del mes destino para evitar overflow
-  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-  const finalDay = Math.min(startDay, lastDayOfTargetMonth);
+  // Paso 1: calcular el aniversario (mismo día, N meses después)
+  const rawAnniversaryMonth = sm - 1 + durationInMonths;
+  const anniversaryYear = sy + Math.floor(rawAnniversaryMonth / 12);
+  const anniversaryMonth = rawAnniversaryMonth % 12; // 0-based
 
-  const end = new Date(targetYear, targetMonth, finalDay);
-  
+  // Clampear al último día del mes destino si el día no existe
+  // Ej: inicio 31-01 → aniversario clamp a 28-02
+  const lastDayOfAnniversaryMonth = new Date(
+    anniversaryYear,
+    anniversaryMonth + 1,
+    0
+  ).getDate();
+  const anniversaryDay = Math.min(sd, lastDayOfAnniversaryMonth);
+
+  // Paso 2: término = aniversario - 1 día
+  // new Date(año, mes, 0) resuelve overflow solo:
+  // día 0 de junio = 31 mayo, día 0 de enero = 31 diciembre año anterior
+  const end = new Date(anniversaryYear, anniversaryMonth, anniversaryDay - 1);
+
   const y = end.getFullYear();
   const m = String(end.getMonth() + 1).padStart(2, "0");
   const d = String(end.getDate()).padStart(2, "0");
