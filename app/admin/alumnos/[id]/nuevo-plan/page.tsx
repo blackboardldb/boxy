@@ -30,6 +30,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
   const [registrarIngreso, setRegistrarIngreso] = useState(true); // Marcado por defecto
+  const [isSubmitting, setIsSubmitting] = useState(false); // Paso 1: estado de carga global
 
   const [formData, setFormData] = useState({
     planId: "",
@@ -44,6 +45,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   // Sincronizar student local y pre-rellenar formulario cuando llegan los datos
   useEffect(() => {
     if (!fetchedUser || !plans.length) return;
+    if (isSubmitting) return; // Paso 3: frenar recálculo de fechas mientras se guarda
     setStudent(fetchedUser);
 
     let suggestedStartDate = new Date();
@@ -67,7 +69,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       clasesTotales: initPlan ? String(initPlan.classLimit) : "",
       precioTotal: initPlan ? String(initPlan.price) : "",
     }));
-  }, [fetchedUser, plans]);
+  }, [fetchedUser, plans, isSubmitting]);
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === formData.planId),
@@ -87,111 +89,120 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!student || !selectedPlan) return;
+    if (!student || !selectedPlan || isSubmitting) return; // Paso 2: guard doble
 
-    const newStartStr = formData.startDate;
-    const newEndStr = formData.endDate;
-    const newStart = new Date(newStartStr + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const isScheduled = newStart > today;
-    const newEnd = new Date(newEndStr + "T23:59:59");
+    setIsSubmitting(true); // Paso 2: bloquear toda la transacción
+    try {
+      const newStartStr = formData.startDate;
+      const newEndStr = formData.endDate;
+      const newStart = new Date(newStartStr + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isScheduled = newStart > today;
+      const newEnd = new Date(newEndStr + "T23:59:59");
 
-    // Clases del alumno en el periodo usando datos de React Query
-    const newEnrolledClasses = (userClasses || []).filter(s => {
-      const sessionDate = new Date(s.dateTime);
-      return (
-        s.status !== "cancelled" &&
-        sessionDate >= newStart &&
-        sessionDate <= newEnd
-      );
-    });
-    
-    const classesAttendedCount = newEnrolledClasses.length;
-    const classesContractedCount = formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths);
-    const initialRemaining = Math.max(0, classesContractedCount - classesAttendedCount);
+      // Clases del alumno en el periodo usando datos de React Query
+      const newEnrolledClasses = (userClasses || []).filter(s => {
+        const sessionDate = new Date(s.dateTime);
+        return (
+          s.status !== "cancelled" &&
+          sessionDate >= newStart &&
+          sessionDate <= newEnd
+        );
+      });
+      
+      const classesAttendedCount = newEnrolledClasses.length;
+      const classesContractedCount = formData.clasesTotales ? Number(formData.clasesTotales) : calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths);
+      const initialRemaining = Math.max(0, classesContractedCount - classesAttendedCount);
 
-    const updatedMembership = {
-      ...student.membership, // Preserve existing fields like organizationId, centerConfig, etc.
-      id: `mem_${Date.now()}`,
-      status: (isScheduled ? "scheduled" : "active") as "scheduled" | "active",
-      planId: selectedPlan.id,
-      membershipType: selectedPlan.name,
-      monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
-      startDate: student.membership?.startDate || newStartStr, // Keep original join date if exists
-      currentPeriodStart: newStartStr,
-      currentPeriodEnd: newEndStr,
-      planConfig: {
-        classLimit: formData.clasesTotales ? Number(formData.clasesTotales) : selectedPlan.classLimit,
-        disciplineAccess: selectedPlan.disciplineAccess,
-        allowedDisciplines: selectedPlan.allowedDisciplines,
-        canFreeze: selectedPlan.canFreeze,
-        freezeDurationDays: selectedPlan.freezeDurationDays,
-        autoRenews: selectedPlan.autoRenews,
-      },
-      centerStats: {
-        ...student.membership?.centerStats,
-        currentMonth: {
-          classesAttended: classesAttendedCount,
-          classesContracted: classesContractedCount,
-          remainingClasses: initialRemaining,
-          noShows: 0,
-          lastMinuteCancellations: 0,
+      const updatedMembership = {
+        ...student.membership, // Preserve existing fields like organizationId, centerConfig, etc.
+        id: `mem_${Date.now()}`,
+        status: (isScheduled ? "scheduled" : "active") as "scheduled" | "active",
+        planId: selectedPlan.id,
+        membershipType: selectedPlan.name,
+        monthlyPrice: formData.precioTotal ? Number(formData.precioTotal) : selectedPlan.price,
+        startDate: student.membership?.startDate || newStartStr, // Keep original join date if exists
+        currentPeriodStart: newStartStr,
+        currentPeriodEnd: newEndStr,
+        planConfig: {
+          classLimit: formData.clasesTotales ? Number(formData.clasesTotales) : selectedPlan.classLimit,
+          disciplineAccess: selectedPlan.disciplineAccess,
+          allowedDisciplines: selectedPlan.allowedDisciplines,
+          canFreeze: selectedPlan.canFreeze,
+          freezeDurationDays: selectedPlan.freezeDurationDays,
+          autoRenews: selectedPlan.autoRenews,
         },
-        totalMonthsActive: student.membership?.centerStats?.totalMonthsActive ?? 0,
-        memberSince: student.membership?.centerStats?.memberSince ?? newStartStr,
-        lifetimeStats: student.membership?.centerStats?.lifetimeStats ?? {
-          totalClasses: 0,
-          totalNoShows: 0,
-          averageMonthlyAttendance: 0,
-          bestMonth: { month: "enero", year: 2024, count: 0 }
+        centerStats: {
+          ...student.membership?.centerStats,
+          currentMonth: {
+            classesAttended: classesAttendedCount,
+            classesContracted: classesContractedCount,
+            remainingClasses: initialRemaining,
+            noShows: 0,
+            lastMinuteCancellations: 0,
+          },
+          totalMonthsActive: student.membership?.centerStats?.totalMonthsActive ?? 0,
+          memberSince: student.membership?.centerStats?.memberSince ?? newStartStr,
+          lifetimeStats: student.membership?.centerStats?.lifetimeStats ?? {
+            totalClasses: 0,
+            totalNoShows: 0,
+            averageMonthlyAttendance: 0,
+            bestMonth: { month: "enero", year: 2024, count: 0 }
+          }
+        },
+        // Ensure specific mandatory fields for schema validation
+        organizationId: student.membership?.organizationId || "org_default",
+        organizationName: student.membership?.organizationName || "Blacksheep",
+        centerConfig: student.membership?.centerConfig || {
+          allowCancellation: true,
+          cancellationHours: 2,
+          maxBookingsPerDay: 1,
+          autoWaitlist: true,
         }
-      },
-      // Ensure specific mandatory fields for schema validation
-      organizationId: student.membership?.organizationId || "org_default",
-      organizationName: student.membership?.organizationName || "Blacksheep",
-      centerConfig: student.membership?.centerConfig || {
-        allowCancellation: true,
-        cancellationHours: 2,
-        maxBookingsPerDay: 1,
-        autoWaitlist: true,
+      };
+
+      const updateData: Partial<FitCenterUserProfile> & { skipAutomaticRenewal?: boolean } = {
+        formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],
+        membership: updatedMembership,
+        skipAutomaticRenewal: registrarIngreso,
+      };
+
+      const result = await updateUserMutation.mutateAsync({
+        id: student.id,
+        data: updateData,
+      });
+
+      if (result) {
+        // Si el admin marcó "Registrar como ingreso" y el precio es > 0, crear registro financiero
+        // Nota: este fetch ocurre con el spinner AÚN ACTIVO gracias a isSubmitting
+        if (registrarIngreso && Number(formData.precioTotal) > 0) {
+          await fetch(`/api/users/${student.id}/renewal`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              planId: selectedPlan.id,
+              paymentMethod: formData.formaDePago,
+              autoApprove: true,
+              planName: selectedPlan.name,
+              planPrice: Number(formData.precioTotal),
+              planClassLimit: Number(formData.clasesTotales) || selectedPlan.classLimit,
+              planDuration: selectedPlan.durationInMonths,
+              startDate: newStartStr,
+              paymentDate: formData.fechaPago || null,
+            }),
+          });
+        }
+        toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });
+        router.push(`/admin/alumnos/${student.id}`);
+      } else {
+        toast({ title: "Error", description: "Hubo un problema al asignar el plan.", variant: "destructive" });
       }
-    };
-
-    const updateData: Partial<FitCenterUserProfile> & { skipAutomaticRenewal?: boolean } = {
-      formaDePago: formData.formaDePago as FitCenterUserProfile["formaDePago"],
-      membership: updatedMembership,
-      skipAutomaticRenewal: registrarIngreso,
-    };
-
-    const result = await updateUserMutation.mutateAsync({
-      id: student.id,
-      data: updateData,
-    });
-
-    if (result) {
-      // Si el admin marcó "Registrar como ingreso" y el precio es > 0, crear registro financiero
-      if (registrarIngreso && Number(formData.precioTotal) > 0) {
-        await fetch(`/api/users/${student.id}/renewal`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planId: selectedPlan.id,
-            paymentMethod: formData.formaDePago,
-            autoApprove: true,
-            planName: selectedPlan.name,
-            planPrice: Number(formData.precioTotal),
-            planClassLimit: Number(formData.clasesTotales) || selectedPlan.classLimit,
-            planDuration: selectedPlan.durationInMonths,
-            startDate: newStartStr,
-            paymentDate: formData.fechaPago || null,
-          }),
-        });
-      }
-      toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });
-      router.push(`/admin/alumnos/${student.id}`);
-    } else {
+    } catch {
+      // Cubre fallos de mutateAsync Y del fetch a /renewal
       toast({ title: "Error", description: "Hubo un problema al asignar el plan.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false); // Paso 2: siempre desbloquear, aunque router.push no llegue a ejecutarse
     }
   };
 
@@ -366,7 +377,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
               </Button>
               <Button 
                 type="submit" 
-                disabled={updateUserMutation.isPending}
+                disabled={updateUserMutation.isPending || isSubmitting}
                 className="w-full sm:w-auto h-11 flex items-center justify-center gap-2 group rounded-xl"
               >
                 {updateUserMutation.isPending ? (

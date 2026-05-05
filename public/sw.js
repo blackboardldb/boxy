@@ -177,8 +177,13 @@ async function cacheFirst(request, cacheName) {
   } catch (error) {
     console.error("[SW] Error en cache first:", error);
 
-    // Fallback para páginas principales
-    if (OFFLINE_ROUTES.some((route) => request.url.includes(route))) {
+    // Solo devolver fallback HTML en navegación real del browser (misma lógica que networkFirst).
+    const isNavigationRequest = request.mode === 'navigate';
+    const isNextInternal = request.url.includes('/_next/') ||
+                           request.headers.get('RSC') !== null ||
+                           request.headers.get('Next-Router-Prefetch') !== null;
+
+    if (isNavigationRequest && !isNextInternal) {
       return caches.match("/");
     }
 
@@ -207,8 +212,15 @@ async function networkFirst(request, cacheName) {
       return cachedResponse;
     }
 
-    // Si no hay cache y es una página principal, mostrar offline
-    if (OFFLINE_ROUTES.some((route) => request.url.includes(route))) {
+    // Solo devolver fallback HTML en navegación real del browser.
+    // Las peticiones RSC/JSON/prefetch de Next.js tienen mode 'cors' o 'same-origin', NUNCA 'navigate'.
+    // Devolver HTML a esas peticiones causa un SyntaxError de hidratación → pantalla blanca.
+    const isNavigationRequest = request.mode === 'navigate';
+    const isNextInternal = request.url.includes('/_next/') ||
+                           request.headers.get('RSC') !== null ||
+                           request.headers.get('Next-Router-Prefetch') !== null;
+
+    if (isNavigationRequest && !isNextInternal) {
       return caches.match("/");
     }
 
