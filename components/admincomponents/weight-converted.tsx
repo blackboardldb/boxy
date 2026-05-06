@@ -12,6 +12,7 @@ const LB_TO_KG = 0.453592;
 
 // Tabla de equivalencias de 10 lb a 100 lb en pasos de 5 lb
 const conversionTable = [
+  { lb: 1, kg: 0.45 },
   { lb: 10, kg: 4.54 },
   { lb: 15, kg: 6.8 },
   { lb: 20, kg: 9.07 },
@@ -61,14 +62,14 @@ export function WeightConverter() {
     <div className="space-y-6">
       {/* Conversor principal */}
       <Card className="bg-white">
-        <CardHeader>
+        <CardHeader className=" px-2">
           <CardTitle className="flex items-center gap-2">
             <ArrowUpDown className="h-5 w-5" />
             Convierte Kilos 🔄  Libras
           </CardTitle>
         
         </CardHeader>
-        <CardContent className=" flex justify-between gap-3">
+        <CardContent className=" flex justify-between gap-1 px-2">
           {/* Input origen */}
  
             <div className="flex items-center gap-0 w-full">
@@ -118,9 +119,7 @@ export function WeightConverter() {
             </div>
         
         </CardContent>
-          <div className=" text-xs text-muted-foreground text-center border-t border-muted-foreground/10 py-2">
-            <p>1 kg = 2.20462 lb | 1 lb = 0.453592 kg</p>
-          </div>
+          
       </Card>
 
       {/* Tabla de equivalencias */}

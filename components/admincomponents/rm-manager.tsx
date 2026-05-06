@@ -38,12 +38,18 @@ export function RMManager() {
 
         {/* Tabs principales */}
         <Tabs defaultValue="calculator" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="calculator" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white/10">
+            <TabsTrigger 
+              value="calculator" 
+              className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
+            >
               <Calculator className="h-4 w-4" />
               Calcular RM
             </TabsTrigger>
-            <TabsTrigger value="converter" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="converter" 
+              className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
+            >
               <Scale className="h-4 w-4" />
               Convertir kg - lb
             </TabsTrigger>
@@ -52,12 +58,12 @@ export function RMManager() {
           {/* Tab de Calculadora */}
           <TabsContent value="calculator" className="space-y-6">
             {/* Input simple para calculadora */}
-            <Card className="bg-white">
+            <Card className="bg-white/5  border-0">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <h1 className="flex items-center gap-2 text-white text-xl">
                   <Calculator className="h-5 w-5" />
                   Ingresa tu RM
-                </CardTitle>
+                </h1>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
@@ -76,7 +82,7 @@ export function RMManager() {
                     type="number"
                     value={calculatorValue}
                     onChange={(e) => setCalculatorValue(Number(e.target.value))}
-                    className="text-center text-2xl font-bold flex-1 p-3 appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="text-center text-3xl font-bold flex-1 p-3 appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min="0"
                     step="0.5"
                     placeholder="Ingresa tu RM"
@@ -149,8 +155,7 @@ export function RMManager() {
           </TabsContent>
         </Tabs>
 
-        {/* Espacio adicional para navegación móvil */}
-        <div className="h-20" />
+       
       </div>
     </>
   );
