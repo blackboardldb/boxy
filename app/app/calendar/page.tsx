@@ -1,7 +1,7 @@
 // app/app/calendar/page.tsx
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import WeeklyDatePicker from "@/components/weekly-date-picker";
 import ClassList from "@/components/class-list";
 import RegistrationModal from "@/components/registration-modal";
@@ -16,7 +16,7 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns";
-import { es } from "date-fns/locale";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClassSession, FormattedClassItem } from "@/lib/types";
 import {
@@ -32,7 +32,7 @@ import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
 
 export default function CalendarPage() {
-  const [isLoading, setIsLoading] = useState(false);
+
   const today = startOfDay(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(() => today);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
@@ -51,7 +51,7 @@ export default function CalendarPage() {
   const dayStart = format(selectedDate, "yyyy-MM-dd");
   const { data: dayClasses = [], isFetching: dayClassesLoading } = useClasses({ startDate: dayStart, endDate: dayStart });
   const { data: weekClasses = [], isFetching: weekClassesLoading } = useClasses({ startDate: weekStart, endDate: weekEnd });
-  const classesLoading = dayClassesLoading;
+
 
   const classSessions = useMemo(() => {
     const map = new Map<string, ClassSession>();
@@ -60,11 +60,7 @@ export default function CalendarPage() {
     return Array.from(map.values());
   }, [dayClasses, weekClasses]);
 
-  useEffect(() => {
-    console.log('[DEBUG] dayClasses:', dayClasses.length)
-    console.log('[DEBUG] weekClasses:', weekClasses.length)
-    console.log('[DEBUG] classSessions merged:', classSessions.length)
-  }, [dayClasses, weekClasses, classSessions])
+
 
   const { data: disciplinesData } = useDisciplines();
   const disciplines = disciplinesData ?? [];
@@ -152,6 +148,13 @@ export default function CalendarPage() {
       const isPastDate = isBefore(date, today);
       const isToday = isSameDay(date, today);
 
+      // Fix 2: usar dayClasses directamente para la fecha seleccionada actual
+      // si ya llegó del servidor — evita esperar el merge con weekClasses
+      const source =
+        isSameDay(date, selectedDate) && dayClasses.length > 0
+          ? dayClasses
+          : classSessions;
+
       // Determinar disciplinas permitidas
       const allowedDisciplines = (() => {
         if (!currentUser.membership) return null;
@@ -164,7 +167,7 @@ export default function CalendarPage() {
         return "all";
       })();
 
-      return classSessions
+      return source
         .filter((session) => {
         const isSameDate = formatDateChile(session.dateTime) === formatDateChile(date);
         if (!isSameDate) return false;
@@ -209,7 +212,7 @@ export default function CalendarPage() {
         })
         .map(convertClassSessionToFormattedItem);
     },
-    [classSessions, convertClassSessionToFormattedItem, currentUser, today]
+    [dayClasses, classSessions, selectedDate, convertClassSessionToFormattedItem, currentUser, today]
   );
 
   const currentClasses = getClassesForDate(selectedDate);
@@ -416,7 +419,7 @@ export default function CalendarPage() {
             onRegister={handleRegister}
             onCancel={handleCancel}
             className="max-w-4xl mx-auto min-h-svh pb-20 px-4 py-6 md:px-6 md:py-8"
-            isLoading={dayClassesLoading || weekClassesLoading}
+            isLoading={dayClassesLoading}
             canRegister={canRegisterForClasses}
             planStatus={planStatus}
           />

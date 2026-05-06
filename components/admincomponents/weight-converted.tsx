@@ -79,7 +79,7 @@ export function WeightConverter() {
                 value={inputValue || ""}
                 onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="0"
-                className="text-center text-2xl md:text-2xl font-bold flex-1 p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="text-center text-xl  font-bold flex-1 p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 min="0"
                 step="0.1"
               />
@@ -109,7 +109,7 @@ export function WeightConverter() {
                 type="number"
                 value={convertedValue || ""}
                 placeholder="0"
-                className="text-center text-2xl md:text-2xl font-bold flex-1 bg-muted p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="text-center text-xl font-bold flex-1 bg-muted p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 disabled
                 readOnly
               />
