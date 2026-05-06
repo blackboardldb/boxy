@@ -13,11 +13,21 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
-  typescript: {
-    // Permite compilar a pesar de errores de tipado strictos durante el build
-    ignoreBuildErrors: true,
-  },
   async headers() {
+    const isDev = process.env.NODE_ENV === "development";
+    const cspHeader = `
+      default-src 'self';
+      script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' blob: data:;
+      font-src 'self';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      connect-src 'self' https://xkibqawnrolrnnxaxmze.supabase.co wss://xkibqawnrolrnnxaxmze.supabase.co https://*.sentry.io;
+    `.replace(/\n/g, " ").trim();
+
     return [
       {
         source: "/(.*)",
@@ -41,6 +51,14 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: cspHeader,
           },
         ],
       },
