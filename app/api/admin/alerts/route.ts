@@ -62,8 +62,10 @@ export async function POST(req: NextRequest) {
 
     if (shouldSendPush) {
       try {
-        // 1. Obtener todas las suscripciones
-        const subscriptions = await prisma.pushSubscription.findMany();
+        // 1. Obtener todas las suscripciones — solo los campos necesarios para enviar el push
+        const subscriptions = await prisma.pushSubscription.findMany({
+          select: { id: true, subscription: true },
+        });
 
         const pushPayload = JSON.stringify({
           title: alert.title,
