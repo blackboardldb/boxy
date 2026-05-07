@@ -36,11 +36,10 @@ interface MemberListItem {
   currentPeriodEnd: string | null;
 }
 
-export function AdminDashboard() {
+export function AdminDashboard({ role }: { role: string }) {
   const now = new Date();
   const { data: egresos = [] } = useEgresos(now.getFullYear(), now.getMonth());
 
-  const [role, setRole] = useState<string | null>(null);
   const [expiringSkip, setExpiringSkip] = useState(0);
   const [expiredSkip, setExpiredSkip] = useState(0);
 
@@ -48,26 +47,9 @@ export function AdminDashboard() {
   const { data: expiringDataResponse, isLoading: expiringLoading } = useExpiringMembers(5, expiringSkip);
   const { data: expiredDataResponse, isLoading: expiredLoading } = useExpiredMembers(5, expiredSkip);
 
-  const listsLoading = expiringLoading || expiredLoading;
-
   // Use state to accumulate the lists for "load more" functionality
   const [accumulatedExpiring, setAccumulatedExpiring] = useState<MemberListItem[]>([]);
   const [accumulatedExpired, setAccumulatedExpired] = useState<MemberListItem[]>([]);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        const userRole = (user?.app_metadata?.role as string) || (user?.user_metadata?.role as string);
-        setRole(userRole);
-      } catch (error) {
-        console.error("Error loading role:", error);
-      }
-    };
-    fetchRole();
-  }, []);
 
   useEffect(() => {
     if (expiringDataResponse) {
@@ -217,7 +199,7 @@ export function AdminDashboard() {
           subtitle="Pendientes de validación"
           icon={AlertTriangle}
           isLoading={statsLoading}
-          linkTo="/admin/alumnos?status=pending"
+          linkTo="/admin/alertas"
         />
       </div>
 
@@ -306,7 +288,7 @@ export function AdminDashboard() {
             <CardTitle className="text-base">Próximos a vencer</CardTitle>
           </CardHeader>
           <CardContent>
-            {listsLoading ? (
+            {expiringLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
@@ -351,7 +333,7 @@ export function AdminDashboard() {
             <CardTitle className="text-base text-red-600">Recientemente inactivos</CardTitle>
           </CardHeader>
           <CardContent>
-            {listsLoading ? (
+            {expiredLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />

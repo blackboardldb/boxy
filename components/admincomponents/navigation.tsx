@@ -31,35 +31,11 @@ const navigationItems = [
   { name: "Configuración", href: "/admin/configuraciones", icon: Settings, roles: ["admin"] },
 ];
 
-export function Navigation({ onNavigate }: { onNavigate?: () => void }) {
+export function Navigation({ role, onNavigate }: { role: string, onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
   const supabase = createClient();
   const notificationCount = useNotificationCount();
-
-  useEffect(() => {
-    async function getProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // 1. Obtener rol de los metadatos (rápido y evita RLS)
-        let userRole = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
-
-        // 2. Fallback a la tabla profiles si no hay en metadatos
-        if (!userRole) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-          userRole = profile?.role;
-        }
-
-        setRole(userRole || "alumno");
-      }
-    }
-    getProfile();
-  }, [supabase]);
 
   async function handleLogout() {
     await supabase.auth.signOut();

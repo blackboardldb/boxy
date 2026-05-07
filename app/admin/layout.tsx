@@ -1,18 +1,17 @@
-"use client";
 import type React from "react";
-import { useState } from "react";
 import { Navigation } from "../../components/admincomponents/navigation";
 import { MobileAdminNav } from "../../components/admincomponents/mobile-nav-admin-v2";
 import Logo from "@/components/Logo";
 import Link from "next/link";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 
-
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const auth = await requireAuth();
+  const role = "role" in auth ? auth.role : "alumno";
 
   return (
     <div className="min-h-screen bg-white flex rounded-t-2xl sm-rounded-none">
@@ -26,44 +25,13 @@ export default function AdminLayout({
           </Link>
         </div>
         <div className="flex-1 overflow-hidden">
-          <Navigation />
+          <Navigation role={role} />
         </div>
       </aside>
      </div>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col overflow-x-hidden">
-        {/* Mobile Header (hamburger — kept as fallback/logo bar)
-        <header className="lg:hidden flex items-center justify-between p-4 bg-white border-b border-zinc-100 sticky top-0 z-30">
-          <Link href="/admin">
-            <Logo size={140} />
-          </Link>
-
-         
-          <Drawer open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-            <DrawerTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-xl hover:bg-zinc-100"
-              >
-                <Menu className="h-6 w-6 text-zinc-700" />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="h-[80vh] px-0">
-              <DrawerHeader className="px-6 border-b border-zinc-50 pb-4">
-                <div className="flex items-center justify-between">
-                  <DrawerTitle>
-                    <Logo size={120} />
-                  </DrawerTitle>
-                </div>
-              </DrawerHeader>
-              <div className="flex-1 overflow-hidden">
-                <Navigation onNavigate={() => setIsSidebarOpen(false)} />
-              </div>
-            </DrawerContent>
-          </Drawer>
-        </header> */}
         {/* Content — extra bottom padding so the floating nav never covers content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar pb-24">
           {children}
@@ -71,10 +39,7 @@ export default function AdminLayout({
       </div>
 
       {/* ── Mobile bottom nav ── */}
-      <MobileAdminNav />
+      <MobileAdminNav role={role} />
     </div>
   );
 }
-
-
-

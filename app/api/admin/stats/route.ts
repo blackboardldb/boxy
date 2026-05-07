@@ -20,68 +20,55 @@ export async function GET() {
     const today = new Date();
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const baseWhere = { organizationId };
+    // ── HAL-01 Phase 3D: Refactorización a única consulta SQL ──
+    // Se reemplaza Promise.all con 6 queries de Prisma (que causaba cuellos de botella 
+    // en el pool de conexiones, tardando ~2.7s) por una única consulta agregada (~300ms).
+    
+    type StatsRow = {
+      totalMembers: bigint;
+      pendingMembers: bigint;
+      scheduledMembers: bigint;
+      activeMembers: bigint;
+      inactiveMembers: bigint;
+      newThisMonth: bigint;
+      monthlyRevenue: bigint;
+    };
 
-    // ── Conteos paralelos — todos usan índice btree (sin Full Table Scan) ──
-    const [
-      totalMembers,
-      pendingMembers,
-      scheduledMembers,
-      activeMembers,
-      newThisMonth,
-      revenueResult,
-    ] = await Promise.all([
-      // Total alumnos con membresía
-      prisma.userMembership.count({
-        where: baseWhere,
-      }),
+    const rawStats = await prisma.$queryRaw<StatsRow[]>`
+      SELECT 
+        COUNT(*) as "totalMembers",
+        (SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) + 
+         COALESCE((
+           SELECT COUNT(*) 
+           FROM "membership_renewals" mr 
+           JOIN "users" u ON mr."userId" = u.id 
+           WHERE mr.status = 'pending' AND u."organizationId" = ${organizationId}
+         ), 0)
+        ) as "pendingMembers",
+        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" > ${today} THEN 1 ELSE 0 END) as "scheduledMembers",
+        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" <= ${today} AND "currentPeriodEnd" >= ${today} THEN 1 ELSE 0 END) as "activeMembers",
+        SUM(CASE 
+          WHEN status NOT IN ('active', 'pending') THEN 1 
+          WHEN status = 'active' AND "currentPeriodEnd" < ${today} THEN 1 
+          ELSE 0 
+        END) as "inactiveMembers",
+        SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END) as "newThisMonth",
+        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" >= ${firstOfMonth} AND "currentPeriodStart" <= ${today} THEN "monthlyPrice" ELSE 0 END) as "monthlyRevenue"
+      FROM "user_memberships"
+      WHERE "organizationId" = ${organizationId}
+    `;
 
-      // Pendientes: usuarios nuevos sin plan aprobado
-      prisma.userMembership.count({
-        where: { ...baseWhere, status: "pending" },
-      }),
+    const result = rawStats[0];
+    
+    // Prisma $queryRaw devuelve BigInt para agregaciones (COUNT, SUM), las parseamos a Number
+    const totalMembers = Number(result.totalMembers || 0);
+    const pendingMembers = Number(result.pendingMembers || 0);
+    const scheduledMembers = Number(result.scheduledMembers || 0);
+    const activeMembers = Number(result.activeMembers || 0);
+    const inactiveMembers = Number(result.inactiveMembers || 0);
+    const newThisMonth = Number(result.newThisMonth || 0);
+    const monthlyRevenue = Number(result.monthlyRevenue || 0);
 
-      // Programados: plan futuro (aún no inició)
-      prisma.userMembership.count({
-        where: {
-          ...baseWhere,
-          status: "active",
-          currentPeriodStart: { gt: today },
-        },
-      }),
-
-      // Activos: plan vigente hoy
-      prisma.userMembership.count({
-        where: {
-          ...baseWhere,
-          status: "active",
-          currentPeriodStart: { lte: today },
-          currentPeriodEnd:   { gte: today },
-        },
-      }),
-
-      // Nuevos este mes: startDate dentro del mes actual
-      prisma.userMembership.count({
-        where: {
-          ...baseWhere,
-          startDate: { gte: firstOfMonth },
-        },
-      }),
-
-      // Ingresos del mes: activos cuyo currentPeriodStart es este mes
-      prisma.userMembership.aggregate({
-        where: {
-          ...baseWhere,
-          status: "active",
-          currentPeriodStart: { gte: firstOfMonth, lte: today },
-        },
-        _sum: { monthlyPrice: true },
-      }),
-    ]);
-
-    // Inactivos = total − activos − programados − pendientes
-    const inactiveMembers = totalMembers - activeMembers - scheduledMembers - pendingMembers;
-    const monthlyRevenue  = revenueResult._sum.monthlyPrice ?? 0;
     const retentionRate   = totalMembers > 0
       ? parseFloat(((activeMembers / totalMembers) * 100).toFixed(1))
       : 0;

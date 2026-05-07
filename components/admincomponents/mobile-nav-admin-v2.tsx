@@ -46,37 +46,13 @@ const secondaryNavItems = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MobileAdminNav() {
+export function MobileAdminNav({ role }: { role: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const notificationCount = useNotificationCount();
 
-  const [role, setRole]           = useState<string | null>(null);
   const [moreOpen, setMoreOpen]   = useState(false);
-
-  useEffect(() => {
-    async function getProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      let userRole =
-        (user.app_metadata?.role as string) ||
-        (user.user_metadata?.role as string);
-
-      if (!userRole) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        userRole = profile?.role;
-      }
-
-      setRole(userRole || "alumno");
-    }
-    getProfile();
-  }, [supabase]);
 
   async function handleLogout() {
     setMoreOpen(false);
