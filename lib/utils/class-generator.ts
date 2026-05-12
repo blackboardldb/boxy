@@ -58,14 +58,31 @@ export async function generateClassesFromSchedules(
 
     if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
-    const instructor = instructors.find((inst: any) => {
-      const specsObj = inst.profile?.specialties || inst.specialties;
+    // 1. Buscar instructor con la especialidad requerida
+    let instructor = instructors.find((inst) => {
+      const profile = inst.profile as any;
+      const specsObj = profile?.specialties;
       if (!specsObj) return false;
       const specs = typeof specsObj === "string" ? JSON.parse(specsObj) : specsObj;
       return Array.isArray(specs) && specs.includes(discipline.id);
-    }) || instructors[0];
+    });
 
-    if (!instructor) continue;
+    // 2. Fallback explícito: Instructor Administrador/Maestro
+    if (!instructor) {
+      instructor = instructors.find((inst) => inst.role === "admin");
+    }
+
+    // 3. Fallback final (red de seguridad por orden de DB)
+    if (!instructor && instructors.length > 0) {
+      console.warn(`[class-generator] Alerta: Fallback a instructors[0] para disciplina ${discipline.id} porque no hay instructor especializado ni rol "admin".`);
+      instructor = instructors[0];
+    }
+
+    // 4. Omisión si no existen instructores activos en absoluto
+    if (!instructor) {
+      console.warn(`[class-generator] Omisión: No hay ningún instructor disponible en la BD para asignar a la disciplina ${discipline.id}`);
+      continue;
+    }
 
     for (const scheduleDay of scheduleArray) {
       const dayNumber = dayMap[scheduleDay.day];
@@ -91,9 +108,9 @@ export async function generateClassesFromSchedules(
               disciplineId: discipline.id,
               name: discipline.name,
               dateTime: new Date(localToUTC(date, time)),
-              durationMinutes: 60,
+              durationMinutes: (discipline as any).durationMinutes ?? 60,
               instructorId: instructor.id,
-              capacity: 15,
+              capacity: (discipline as any).capacity ?? 15,
               status: "scheduled",
               notes: "Autogenerada",
               isGenerated: true,

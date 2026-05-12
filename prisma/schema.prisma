@@ -76,6 +76,8 @@ model Discipline {
   updatedAt         DateTime       @updatedAt
   schedule          Json?
   cancellationRules Json?
+  capacity          Int            @default(15)
+  durationMinutes   Int            @default(60)
   classes           ClassSession[]
 
   @@unique([organizationId, name])

@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 import type { Discipline } from "@/lib/types";
+import { classKeys } from "./useClasses";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const disciplineKeys = {
@@ -61,6 +62,7 @@ export function useCreateDiscipline() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: disciplineKeys.all });
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
     },
   });
 }
@@ -83,6 +85,7 @@ export function useUpdateDiscipline() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: disciplineKeys.all });
+      queryClient.invalidateQueries({ queryKey: classKeys.all });
     },
   });
 }
