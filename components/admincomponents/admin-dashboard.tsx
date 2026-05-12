@@ -9,7 +9,6 @@ import {
   DollarSign,
   AlertTriangle,
 } from "lucide-react";
-import { useEgresos } from "@/lib/react-query/hooks/useEgresos";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WhatsAppLink } from "../WhatsAppLink";
@@ -24,7 +23,9 @@ interface DashboardStats {
   inactiveMembers: number;
   newThisMonth: number;
   retentionRate: number;
-  monthlyRevenue: number;
+  monthlyRevenue: number;  // Ingresos reales: SUM(membership_renewals.amount) aprobados este mes
+  monthlyEgresos: number;  // Egresos: SUM(expenses.monto) del mes
+  monthlyBalance: number;  // monthlyRevenue - monthlyEgresos
 }
 
 interface MemberListItem {
@@ -37,9 +38,6 @@ interface MemberListItem {
 }
 
 export function AdminDashboard({ role }: { role: string }) {
-  const now = new Date();
-  const { data: egresos = [] } = useEgresos(now.getFullYear(), now.getMonth());
-
   const [expiringSkip, setExpiringSkip] = useState(0);
   const [expiredSkip, setExpiredSkip] = useState(0);
 
@@ -71,9 +69,6 @@ export function AdminDashboard({ role }: { role: string }) {
     }
   }, [expiredDataResponse]);
 
-  // Egresos del mes actual — React Query los provee ya filtrados por (year, month)
-  const totalEgresosMes = egresos.reduce((sum, e) => sum + e.monto, 0);
-
   const upcomingExpirations = accumulatedExpiring;
   const recentlyInactive = accumulatedExpired;
 
@@ -90,6 +85,7 @@ export function AdminDashboard({ role }: { role: string }) {
     setExpiredSkip(recentlyInactive.length);
   };
 
+  // Egresos y balance vienen ahora desde el API (fuente unificada con Finanzas)
   const {
     totalMembers = 0,
     activeMembers = 0,
@@ -99,6 +95,8 @@ export function AdminDashboard({ role }: { role: string }) {
     newThisMonth: newMembersThisMonth = 0,
     retentionRate = 0,
     monthlyRevenue = 0,
+    monthlyEgresos = 0,
+    monthlyBalance = 0,
   } = dashboardStats || {};
 
   const MetricCard = ({
@@ -178,13 +176,13 @@ export function AdminDashboard({ role }: { role: string }) {
 
         {role === "admin" && (
           <MetricCard
-            title="Balance"
-            value={`$${(monthlyRevenue - totalEgresosMes).toLocaleString()}`}
+            title="Balance del Mes"
+            value={`$${monthlyBalance.toLocaleString()}`}
             subtitle={
               <>
-                Ganancia del mes ${monthlyRevenue.toLocaleString()}
+                Ingresos reales ${monthlyRevenue.toLocaleString()}
                 <br />
-                Egresos Mensuales ${totalEgresosMes.toLocaleString()}
+                Egresos ${monthlyEgresos.toLocaleString()}
               </>
             }
             icon={DollarSign}

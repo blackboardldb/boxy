@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
-// HAL-01 Phase 3C — Eliminado el Full Table Scan + filtrado Node.js.
-// Todos los conteos usan queries indexadas en user_memberships.
-// Lógica replicada desde getPlanStatus:
+// ── Fuente de Verdad Unificada ──────────────────────────────────────────────
+// monthlyRevenue = SUM(amount) de membership_renewals WHERE status='approved'
+//   y processedAt en el mes actual → IDÉNTICO a /api/finances.
+// Esto elimina la discrepancia histórica donde el Dashboard leía monthlyPrice
+// de user_memberships (proyección MRR) mientras Finanzas leía la caja real.
+//
+// Lógica de estados (replicada de getPlanStatus):
 //   pending   → status = 'pending'
 //   scheduled → status = 'active' AND currentPeriodStart > today
 //   active    → status = 'active' AND currentPeriodStart <= today AND currentPeriodEnd >= today
@@ -19,11 +23,9 @@ export async function GET() {
     const { organizationId } = auth;
     const today = new Date();
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const firstOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
-    // ── HAL-01 Phase 3D: Refactorización a única consulta SQL ──
-    // Se reemplaza Promise.all con 6 queries de Prisma (que causaba cuellos de botella 
-    // en el pool de conexiones, tardando ~2.7s) por una única consulta agregada (~300ms).
-    
+    // ── Query 1: Conteos de membresías desde user_memberships ──────────────
     type StatsRow = {
       totalMembers: bigint;
       pendingMembers: bigint;
@@ -31,7 +33,6 @@ export async function GET() {
       activeMembers: bigint;
       inactiveMembers: bigint;
       newThisMonth: bigint;
-      monthlyRevenue: bigint;
     };
 
     const rawStats = await prisma.$queryRaw<StatsRow[]>`
@@ -52,24 +53,49 @@ export async function GET() {
           WHEN status = 'active' AND "currentPeriodEnd" < ${today} THEN 1 
           ELSE 0 
         END) as "inactiveMembers",
-        SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END) as "newThisMonth",
-        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" >= ${firstOfMonth} AND "currentPeriodStart" <= ${today} THEN "monthlyPrice" ELSE 0 END) as "monthlyRevenue"
+        SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END) as "newThisMonth"
       FROM "user_memberships"
       WHERE "organizationId" = ${organizationId}
     `;
 
-    const result = rawStats[0];
-    
-    // Prisma $queryRaw devuelve BigInt para agregaciones (COUNT, SUM), las parseamos a Number
-    const totalMembers = Number(result.totalMembers || 0);
-    const pendingMembers = Number(result.pendingMembers || 0);
-    const scheduledMembers = Number(result.scheduledMembers || 0);
-    const activeMembers = Number(result.activeMembers || 0);
-    const inactiveMembers = Number(result.inactiveMembers || 0);
-    const newThisMonth = Number(result.newThisMonth || 0);
-    const monthlyRevenue = Number(result.monthlyRevenue || 0);
+    // ── Query 2: Ingresos reales del mes desde membership_renewals ─────────
+    // FUENTE DE VERDAD: misma lógica que /api/finances
+    type RevenueRow = { monthlyRevenue: number | null };
+    const rawRevenue = await prisma.$queryRaw<RevenueRow[]>`
+      SELECT COALESCE(SUM(mr.amount), 0)::float AS "monthlyRevenue"
+      FROM "membership_renewals" mr
+      JOIN "users" u ON mr."userId" = u.id
+      WHERE u."organizationId" = ${organizationId}
+        AND mr.status = 'approved'
+        AND mr.amount IS NOT NULL
+        AND mr."processedAt" >= ${firstOfMonth}
+        AND mr."processedAt" < ${firstOfNextMonth}
+    `;
 
-    const retentionRate   = totalMembers > 0
+    // ── Query 3: Egresos del mes desde expenses ────────────────────────────
+    type EgresosRow = { monthlyEgresos: number | null };
+    const rawEgresos = await prisma.$queryRaw<EgresosRow[]>`
+      SELECT COALESCE(SUM(monto), 0)::float AS "monthlyEgresos"
+      FROM "expenses"
+      WHERE fecha >= ${firstOfMonth}
+        AND fecha < ${firstOfNextMonth}
+    `;
+
+    const result = rawStats[0];
+
+    // Prisma $queryRaw devuelve BigInt para COUNT/SUM de enteros; lo parseamos a Number
+    const totalMembers    = Number(result.totalMembers    || 0);
+    const pendingMembers  = Number(result.pendingMembers  || 0);
+    const scheduledMembers = Number(result.scheduledMembers || 0);
+    const activeMembers   = Number(result.activeMembers   || 0);
+    const inactiveMembers = Number(result.inactiveMembers || 0);
+    const newThisMonth    = Number(result.newThisMonth    || 0);
+
+    // Revenue y egresos ya vienen como float desde el CAST
+    const monthlyRevenue = Number(rawRevenue[0]?.monthlyRevenue ?? 0);
+    const monthlyEgresos = Number(rawEgresos[0]?.monthlyEgresos ?? 0);
+
+    const retentionRate = totalMembers > 0
       ? parseFloat(((activeMembers / totalMembers) * 100).toFixed(1))
       : 0;
 
@@ -83,7 +109,9 @@ export async function GET() {
         inactiveMembers,
         newThisMonth,
         retentionRate,
-        monthlyRevenue,
+        monthlyRevenue,  // Caja real: SUM(membership_renewals.amount) aprobados este mes
+        monthlyEgresos,  // Egresos: SUM(expenses.monto) del mes
+        monthlyBalance: monthlyRevenue - monthlyEgresos,
       },
     });
   } catch (error) {
