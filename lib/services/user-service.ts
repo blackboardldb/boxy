@@ -407,34 +407,10 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     this.clearCache();
     this.clearCache(`user_email_${updatedRecord.email}`);
 
-    // Detect plan change and create a renewal record
-    const skipRenewal = (updatedRecord as any).skipAutomaticRenewal === true;
-
-    if (
-      !skipRenewal &&
-      updatedRecord.membership?.planId !== previousRecord.membership?.planId
-    ) {
-      try {
-        await this.dataProvider.membershipRenewals.create({
-          id: `ren_${Date.now()}_${updatedRecord.id.substring(0, 8)}`,
-          requestedPlanId: updatedRecord.membership?.planId || "",
-          requestedPlanName: updatedRecord.membership?.membershipType,
-          requestedPlanPrice: updatedRecord.membership?.monthlyPrice,
-          requestedPlanClassLimit: updatedRecord.membership?.planConfig?.classLimit,
-          requestedPlanDuration: undefined, // Plan duration not directly in membership
-          requestedPaymentMethod: (updatedRecord.formaDePago as "contado" | "transferencia" | "debito" | "credito") || "transferencia",
-          requestDate: new Date().toISOString(),
-          status: "approved", // Automatically approved for admin changes
-          requestedBy: updatedRecord.id,
-          processedDate: new Date().toISOString(),
-          notes: `Plan changed from ${previousRecord.membership?.membershipType || "none"} to ${updatedRecord.membership?.membershipType || "none"}`,
-          previousPlanId: previousRecord.membership?.planId,
-        });
-        console.log(`[UserService] MembershipRenewal created for user ${updatedRecord.id}`);
-      } catch (error) {
-        console.error(`[UserService] Failed to create MembershipRenewal:`, error);
-      }
-    }
+    // NOTA: El registro de ingresos/renovación se crea explícitamente desde el frontend
+    // a través de POST /api/users/[id]/renewal con autoApprove: true.
+    // El bloque automático que existía aquí generaba registros sin organizationId,
+    // amount ni processedAt — dejándolos invisibles en el dashboard de finanzas.
 
     await this.afterUserUpdate(updatedRecord, previousRecord);
   }

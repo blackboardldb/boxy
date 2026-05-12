@@ -32,6 +32,13 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   const [registrarIngreso, setRegistrarIngreso] = useState(true); // Marcado por defecto
   const [isSubmitting, setIsSubmitting] = useState(false); // Paso 1: estado de carga global
 
+  // Fecha de hoy en formato YYYY-MM-DD para el valor inicial de fechaPago
+  const todayStr = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
+
   const [formData, setFormData] = useState({
     planId: "",
     formaDePago: "contado",
@@ -39,7 +46,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     endDate: "",
     clasesTotales: "",
     precioTotal: "",
-    fechaPago: "",
+    fechaPago: todayStr, // Pre-llenado con hoy; el admin puede ajustarlo si el pago fue otro día
   });
 
   // Sincronizar student local y pre-rellenar formulario cuando llegan los datos

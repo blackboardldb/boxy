@@ -33,8 +33,12 @@ export async function GET(request: NextRequest) {
       _sum: { amount: true },
       _count: { id: true },
       where: {
-        organizationId: auth.organizationId,
+        OR: [
+          { organizationId: auth.organizationId },
+          { organizationId: null },
+        ],
         status: "approved",
+        amount: { not: null }, // excluir registros legacy sin monto
         processedAt: {
           gte: startDate,
           lt: endDate,
@@ -44,8 +48,12 @@ export async function GET(request: NextRequest) {
 
     const ingresosList = await prisma.membershipRenewal.findMany({
       where: {
-        organizationId: auth.organizationId,
+        OR: [
+          { organizationId: auth.organizationId },
+          { organizationId: null },
+        ],
         status: "approved",
+        amount: { not: null }, // excluir registros legacy sin monto
         processedAt: {
           gte: startDate,
           lt: endDate,

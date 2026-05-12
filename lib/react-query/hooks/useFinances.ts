@@ -45,6 +45,6 @@ export function useFinances(year: number, month: number, page: number = 1) {
       fetchClient<{ success: boolean; data: FinancesResponse }>(
         `/finances?${searchParams.toString()}`
       ).then((res) => res.data),
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 0, // siempre refrescar — los ingresos cambian al asignar planes
   });
 }

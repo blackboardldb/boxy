@@ -35,7 +35,7 @@ export function SkeletonHomePage() {
 
       {/* Estadísticas y progreso */}
       <section className="p-4 max-w-4xl mx-auto">
-        <div className="grid  gap-4 bg-zinc-800 rounded-lg p-4">
+        <div className="grid  gap-4 bg-zinc-900 rounded-lg p-4">
           <Skeleton className="h-8 max-w-28 bg-zinc-700 rounded-lg" />
           <Skeleton className="h-4 max-w-32 bg-zinc-700 rounded-lg" />
           <Skeleton className="h-3 w-full bg-zinc-700 rounded-lg" />
