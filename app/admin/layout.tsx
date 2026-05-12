@@ -3,15 +3,15 @@ import { Navigation } from "../../components/admincomponents/navigation";
 import { MobileAdminNav } from "../../components/admincomponents/mobile-nav-admin-v2";
 import Logo from "@/components/Logo";
 import Link from "next/link";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { headers } from "next/headers";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const auth = await requireAuth();
-  const role = "role" in auth ? auth.role : "alumno";
+  const headersList = await headers();
+  const role = headersList.get("x-user-role") || "alumno";
 
   return (
     <div className="min-h-screen bg-white flex rounded-t-2xl sm-rounded-none">

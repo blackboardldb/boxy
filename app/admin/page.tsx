@@ -1,12 +1,10 @@
 import Logo from "@/components/Logo";
 import { AdminDashboard } from "../../components/admincomponents/admin-dashboard";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { headers } from "next/headers";
 
-// El layout ya llama requireAuth() para proteger la ruta.
-// Reutilizamos la misma llamada en lugar de volver a hacer getUser() (evita RTT duplicado a Supabase).
 export default async function AdminPage() {
-  const auth = await requireAuth();
-  const role = "role" in auth ? auth.role : "alumno";
+  const headersList = await headers();
+  const role = headersList.get("x-user-role") || "alumno";
 
   return (
     <div className="p-4 pt-8 md:p-8">

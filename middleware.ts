@@ -3,8 +3,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({
-    request: { headers: request.headers },
+  const requestHeaders = new Headers(request.headers);
+
+  // Respuesta temporal para que Supabase pueda setear cookies si necesita refrescar sesión
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient(
@@ -18,7 +21,7 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
@@ -58,6 +61,11 @@ export async function middleware(request: NextRequest) {
         role = profile?.role;
       }
 
+      // Pasar el rol en un header para no tener que consultarlo de nuevo en el layout
+      if (role) {
+        requestHeaders.set('x-user-role', role);
+      }
+
       // --- Lógica de Redirecciones ---
 
       // A. Redirección desde login
@@ -80,7 +88,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  // 3. Crear la respuesta final con los headers actualizados
+  const finalResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // Copiar cualquier cookie que Supabase haya refrescado en la respuesta temporal
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    finalResponse.cookies.set(cookie.name, cookie.value);
+  });
+
+  return finalResponse;
 }
 
 export const config = {
