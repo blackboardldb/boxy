@@ -71,10 +71,12 @@ export function useCreateEgreso(year: number, month: number) {
       }).then((res) => res.data),
 
     onSuccess: () => {
-      // Invalida solo el mes activo — no toca caché de otros meses
+      // Invalida el mes activo y las vistas dependientes
       queryClient.invalidateQueries({
         queryKey: egresoKeys.list(year, month),
       });
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }
@@ -92,6 +94,8 @@ export function useDeleteEgreso(year: number, month: number) {
       queryClient.invalidateQueries({
         queryKey: egresoKeys.list(year, month),
       });
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }

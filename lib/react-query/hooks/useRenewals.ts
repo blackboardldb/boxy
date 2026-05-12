@@ -26,6 +26,8 @@ export function useApproveRenewal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }
@@ -40,6 +42,8 @@ export function useRejectRenewal() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }

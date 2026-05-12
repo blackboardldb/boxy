@@ -29,9 +29,12 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refrescar sesión (importante para mantener tokens válidos)
+  // Usamos getSession en vez de getUser para evitar latencia de red en cada navegación
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user;
 
   const { pathname } = request.nextUrl;
 
