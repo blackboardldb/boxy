@@ -21,9 +21,10 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     const { organizationId } = auth;
-    const today = new Date();
-    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const firstOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
+    const today          = new Date();
+    const firstOfMonth    = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    const firstOfNextMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
 
     // ── Query 1: Conteos de membresías desde user_memberships ──────────────
     type StatsRow = {

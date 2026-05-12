@@ -35,15 +35,15 @@ export async function GET(request: NextRequest) {
         const targetYear = parseInt(year);
         const targetMonth = parseInt(month); // 0-indexed
 
-        // Crear fechas de inicio y fin del mes
-        const startDate = new Date(targetYear, targetMonth, 1);
-        const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+        // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
+        const startDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+        const endDate   = new Date(Date.UTC(targetYear, targetMonth + 1, 1)); // límite exclusivo
 
         dbExpenses = await prisma.expense.findMany({
           where: {
             fecha: {
               gte: startDate,
-              lte: endDate,
+              lt: endDate,  // límite exclusivo: primer día del mes siguiente
             },
           },
           orderBy: {

@@ -25,8 +25,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(limitParam);
     const skip = (page - 1) * limit;
 
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 1);
+    // ⚠️  Siempre UTC — evita la discrepancia localhost (UTC-4) vs Vercel (UTC+0)
+    //     new Date(year, month-1, 1) usa hora local del servidor, desplazando el
+    //     límite del mes 4 horas entre entornos. Date.UTC() es invariante.
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate   = new Date(Date.UTC(year, month, 1));
 
     // Ingresos — _sum nativo
     const ingresosAgg = await prisma.membershipRenewal.aggregate({
