@@ -93,7 +93,7 @@ export function MobileAdminNav({ role }: { role: string }) {
                 "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all duration-200 min-w-[3rem]",
                 active
                   ? "text-zinc-900"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  : "text-zinc-600 hover:text-zinc-800"
               )}
             >
               {/* Active pill background */}
@@ -120,7 +120,7 @@ export function MobileAdminNav({ role }: { role: string }) {
               "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-full transition-all duration-200 min-w-[3rem]",
               secondaryActive || moreOpen
                 ? "text-zinc-900"
-                : "text-zinc-400 hover:text-zinc-200"
+                : "text-zinc-600 hover:text-zinc-800"
             )}
           >
             {(secondaryActive || moreOpen) && (

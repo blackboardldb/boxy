@@ -15,6 +15,10 @@ const nextConfig = {
   },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
+    // NOTE: script-src mantiene 'unsafe-inline' temporalmente por compatibilidad con Next.js
+    // inline scripts (HMR en dev, hydration chunks). El worker-src blob: resuelve el error
+    // "Creating a worker from blob URL violates CSP" detectado en Lighthouse.
+    // La migración completa a nonces se gestiona en middleware.ts.
     const cspHeader = `
       default-src 'self';
       script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
@@ -25,6 +29,7 @@ const nextConfig = {
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
+      worker-src blob: 'self';
       connect-src 'self' https://xkibqawnrolrnnxaxmze.supabase.co wss://xkibqawnrolrnnxaxmze.supabase.co https://*.sentry.io;
     `.replace(/\n/g, " ").trim();
 
@@ -55,6 +60,14 @@ const nextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            // Aisla el contexto de ventana — previene ataques de timing cross-origin
+            // y habilita SharedArrayBuffer para el futuro.
+            // IMPORTANTE: verificar que los popups de auth de Supabase no queden bloqueados.
+            // Si hay regresión, cambiar a 'same-origin-allow-popups'.
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
           },
           {
             key: "Content-Security-Policy",

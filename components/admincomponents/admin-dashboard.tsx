@@ -202,7 +202,7 @@ export function AdminDashboard({ role }: { role: string }) {
       </div>
 
       {/* Breakdown por Estados */}
-      <div className="grid gap-6 md:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-1 min-h-[280px]">
         <Card className="rounded-xl">
           <CardHeader>
             <CardTitle>Estados de Membresía</CardTitle>
@@ -226,6 +226,7 @@ export function AdminDashboard({ role }: { role: string }) {
             <Progress
               value={totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0}
               className="h-2 rounded-xl"
+              aria-label={`Alumnos activos: ${activeMembers} de ${totalMembers} (${totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0}%)`}
             />
 
             <div className="flex items-center justify-between">

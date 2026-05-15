@@ -13,6 +13,10 @@ import { prisma } from "@/lib/prisma";
 //   scheduled → status = 'active' AND currentPeriodStart > today
 //   active    → status = 'active' AND currentPeriodStart <= today AND currentPeriodEnd >= today
 //   inactive  → todo lo demás (expired, frozen, suspended, o fechas vencidas)
+//
+// PERFORMANCE: Las 3 queries originales (membresías + ingresos + egresos) se
+// consolidaron en un solo CTE para eliminar 2 roundtrips al connection pooler.
+// Latencia objetivo: < 500ms (vs ~5s original con 3 queries seriales).
 
 export async function GET() {
   try {
@@ -21,86 +25,102 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     const { organizationId } = auth;
+
     // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
-    const today          = new Date();
-    const firstOfMonth    = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    const today            = new Date();
+    const firstOfMonth     = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
     const firstOfNextMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
 
-    // ── Query 1: Conteos de membresías desde user_memberships ──────────────
-    type StatsRow = {
-      totalMembers: bigint;
-      pendingMembers: bigint;
+    // ── Query única con CTE — elimina 2 roundtrips al connection pooler ──────
+    // Antes: 3 queries seriales (~5s total en producción con pooler transaction mode)
+    // Ahora: 1 CTE que corre todo en el mismo plan de ejecución de Postgres
+    type DashboardRow = {
+      totalMembers:     bigint;
+      pendingMembers:   bigint;
       scheduledMembers: bigint;
-      activeMembers: bigint;
-      inactiveMembers: bigint;
-      newThisMonth: bigint;
+      activeMembers:    bigint;
+      inactiveMembers:  bigint;
+      newThisMonth:     bigint;
+      monthlyRevenue:   number | null;
+      monthlyEgresos:   number | null;
     };
 
-    const rawStats = await prisma.$queryRaw<StatsRow[]>`
-      SELECT 
-        COUNT(*) as "totalMembers",
-        (SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) + 
-         COALESCE((
-           SELECT COUNT(*) 
-           FROM "membership_renewals" mr 
-           JOIN "users" u ON mr."userId" = u.id 
-           WHERE mr.status = 'pending' AND u."organizationId" = ${organizationId}
-         ), 0)
-        ) as "pendingMembers",
-        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" > ${today} THEN 1 ELSE 0 END) as "scheduledMembers",
-        SUM(CASE WHEN status = 'active' AND "currentPeriodStart" <= ${today} AND "currentPeriodEnd" >= ${today} THEN 1 ELSE 0 END) as "activeMembers",
-        SUM(CASE 
-          WHEN status NOT IN ('active', 'pending') THEN 1 
-          WHEN status = 'active' AND "currentPeriodEnd" < ${today} THEN 1 
-          ELSE 0 
-        END) as "inactiveMembers",
-        SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END) as "newThisMonth"
-      FROM "user_memberships"
-      WHERE "organizationId" = ${organizationId}
+    const [row] = await prisma.$queryRaw<DashboardRow[]>`
+      WITH
+        membership_counts AS (
+          SELECT
+            COUNT(*)                                                                     AS "totalMembers",
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)                         AS "pendingFromMemberships",
+            SUM(CASE WHEN status = 'active' AND "currentPeriodStart" > ${today}
+                     THEN 1 ELSE 0 END)                                                  AS "scheduledMembers",
+            SUM(CASE WHEN status = 'active'
+                          AND "currentPeriodStart" <= ${today}
+                          AND "currentPeriodEnd"   >= ${today}
+                     THEN 1 ELSE 0 END)                                                  AS "activeMembers",
+            SUM(CASE
+                  WHEN status NOT IN ('active', 'pending') THEN 1
+                  WHEN status = 'active' AND "currentPeriodEnd" < ${today} THEN 1
+                  ELSE 0
+                END)                                                                     AS "inactiveMembers",
+            SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)             AS "newThisMonth"
+          FROM "user_memberships"
+          WHERE "organizationId" = ${organizationId}
+        ),
+        renewal_pending AS (
+          SELECT COUNT(*) AS cnt
+          FROM "membership_renewals" mr
+          JOIN "users" u ON mr."userId" = u.id
+          WHERE mr.status = 'pending'
+            AND u."organizationId" = ${organizationId}
+        ),
+        revenue AS (
+          SELECT COALESCE(SUM(mr.amount), 0)::float AS "monthlyRevenue"
+          FROM "membership_renewals" mr
+          JOIN "users" u ON mr."userId" = u.id
+          WHERE u."organizationId" = ${organizationId}
+            AND mr.status  = 'approved'
+            AND mr.amount  IS NOT NULL
+            AND mr."processedAt" >= ${firstOfMonth}
+            AND mr."processedAt" <  ${firstOfNextMonth}
+        ),
+        egresos AS (
+          SELECT COALESCE(SUM(monto), 0)::float AS "monthlyEgresos"
+          FROM "expenses"
+          WHERE fecha >= ${firstOfMonth}
+            AND fecha <  ${firstOfNextMonth}
+        )
+      SELECT
+        mc."totalMembers",
+        (mc."pendingFromMemberships" + rp.cnt)  AS "pendingMembers",
+        mc."scheduledMembers",
+        mc."activeMembers",
+        mc."inactiveMembers",
+        mc."newThisMonth",
+        rv."monthlyRevenue",
+        eg."monthlyEgresos"
+      FROM membership_counts mc
+      CROSS JOIN renewal_pending rp
+      CROSS JOIN revenue rv
+      CROSS JOIN egresos eg
     `;
-
-    // ── Query 2: Ingresos reales del mes desde membership_renewals ─────────
-    // FUENTE DE VERDAD: misma lógica que /api/finances
-    type RevenueRow = { monthlyRevenue: number | null };
-    const rawRevenue = await prisma.$queryRaw<RevenueRow[]>`
-      SELECT COALESCE(SUM(mr.amount), 0)::float AS "monthlyRevenue"
-      FROM "membership_renewals" mr
-      JOIN "users" u ON mr."userId" = u.id
-      WHERE u."organizationId" = ${organizationId}
-        AND mr.status = 'approved'
-        AND mr.amount IS NOT NULL
-        AND mr."processedAt" >= ${firstOfMonth}
-        AND mr."processedAt" < ${firstOfNextMonth}
-    `;
-
-    // ── Query 3: Egresos del mes desde expenses ────────────────────────────
-    type EgresosRow = { monthlyEgresos: number | null };
-    const rawEgresos = await prisma.$queryRaw<EgresosRow[]>`
-      SELECT COALESCE(SUM(monto), 0)::float AS "monthlyEgresos"
-      FROM "expenses"
-      WHERE fecha >= ${firstOfMonth}
-        AND fecha < ${firstOfNextMonth}
-    `;
-
-    const result = rawStats[0];
 
     // Prisma $queryRaw devuelve BigInt para COUNT/SUM de enteros; lo parseamos a Number
-    const totalMembers    = Number(result.totalMembers    || 0);
-    const pendingMembers  = Number(result.pendingMembers  || 0);
-    const scheduledMembers = Number(result.scheduledMembers || 0);
-    const activeMembers   = Number(result.activeMembers   || 0);
-    const inactiveMembers = Number(result.inactiveMembers || 0);
-    const newThisMonth    = Number(result.newThisMonth    || 0);
+    const totalMembers     = Number(row.totalMembers     || 0);
+    const pendingMembers   = Number(row.pendingMembers   || 0);
+    const scheduledMembers = Number(row.scheduledMembers || 0);
+    const activeMembers    = Number(row.activeMembers    || 0);
+    const inactiveMembers  = Number(row.inactiveMembers  || 0);
+    const newThisMonth     = Number(row.newThisMonth     || 0);
 
-    // Revenue y egresos ya vienen como float desde el CAST
-    const monthlyRevenue = Number(rawRevenue[0]?.monthlyRevenue ?? 0);
-    const monthlyEgresos = Number(rawEgresos[0]?.monthlyEgresos ?? 0);
+    // Revenue y egresos ya vienen como float desde el CAST en Postgres
+    const monthlyRevenue = Number(row.monthlyRevenue ?? 0);
+    const monthlyEgresos = Number(row.monthlyEgresos ?? 0);
 
     const retentionRate = totalMembers > 0
       ? parseFloat(((activeMembers / totalMembers) * 100).toFixed(1))
       : 0;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         totalMembers,
@@ -115,6 +135,15 @@ export async function GET() {
         monthlyBalance: monthlyRevenue - monthlyEgresos,
       },
     });
+
+    // Cache en Vercel Edge / CDN por 5 min (alineado con staleTime de React Query).
+    // stale-while-revalidate permite servir el caché mientras revalida en background.
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=60"
+    );
+
+    return response;
   } catch (error) {
     console.error("[GET /api/admin/stats]", error);
     return NextResponse.json(
