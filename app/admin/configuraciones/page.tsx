@@ -9,7 +9,7 @@ import { useOrganization, useUpdateOrganization } from "@/lib/react-query/hooks/
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AlertsManager } from "@/components/admincomponents/alerts-manager";
+
 
 export default function ConfiguracionesPage() {
   const { data: org } = useOrganization();
@@ -205,9 +205,6 @@ export default function ConfiguracionesPage() {
             )}
           </CardContent>
         </Card>
-
-        <AlertsManager />
-
 
       </div>
     </div>

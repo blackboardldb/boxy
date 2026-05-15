@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, lazy } from "react";
+import { useState, useEffect } from "react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,13 +127,8 @@ function CancelledClassesTab() {
 }
 
 // --- Componente principal ---
-export function Notifications() {
+export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"renovaciones" | "cancelaciones">(
-    "renovaciones"
-  );
-  // Lazy: sólo hacemos fetch de cancelaciones cuando el usuario abre ese tab
-  const [cancelacionesVisited, setCancelacionesVisited] = useState(false);
 
   const [selectedRenewal, setSelectedRenewal] = useState<RenewalItem | null>(
     null
@@ -156,11 +152,6 @@ export function Notifications() {
   const urgentCount = pendingRenewals.filter(
     (r: RenewalItem) => (r.user.daysUntilExpiration ?? Infinity) <= 7
   ).length;
-
-  const handleTabChange = (tab: "renovaciones" | "cancelaciones") => {
-    setActiveTab(tab);
-    if (tab === "cancelaciones") setCancelacionesVisited(true);
-  };
 
   // Aprobar renovación
   const handleApproveRenewal = async (renewal: RenewalItem) => {
@@ -206,178 +197,146 @@ export function Notifications() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Alertas</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Renovaciones pendientes y clases canceladas
-          </p>
-        </div>
-        {pendingRenewals.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">
-            <RefreshCw className="h-3 w-3" />
-            {pendingRenewals.length} pendiente{pendingRenewals.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit">
-        <button
-          onClick={() => handleTabChange("renovaciones")}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-            activeTab === "renovaciones"
-              ? "bg-background shadow text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Renovaciones
+      {!hideHeader && (
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Alertas</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Renovaciones pendientes y clases canceladas
+            </p>
+          </div>
           {pendingRenewals.length > 0 && (
-            <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-              {pendingRenewals.length}
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">
+              <RefreshCw className="h-3 w-3" />
+              {pendingRenewals.length} pendiente{pendingRenewals.length !== 1 ? "s" : ""}
             </span>
-          )}
-        </button>
-        <button
-          onClick={() => handleTabChange("cancelaciones")}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-            activeTab === "cancelaciones"
-              ? "bg-background shadow text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <XCircle className="h-3.5 w-3.5" />
-          Clases Canceladas
-        </button>
-      </div>
-
-      {/* Tab: Renovaciones */}
-      {activeTab === "renovaciones" && (
-        <div className="space-y-4">
-          {urgentCount > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
-              <span>
-                <span className="font-semibold">{urgentCount}</span>{" "}
-                {urgentCount === 1
-                  ? "membresía vence"
-                  : "membresías vencen"}{" "}
-                en los próximos 7 días.
-              </span>
-            </div>
-          )}
-
-          {renewalsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-44 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : pendingRenewals.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pendingRenewals.map((r: RenewalItem) => {
-                const isUrgent =
-                  (r.user.daysUntilExpiration ?? Infinity) <= 7;
-                return (
-                  <Card
-                    key={r.id}
-                    className={`border-l-4 hover:shadow-md transition-shadow rounded-xl cursor-pointer ${
-                      isUrgent ? "border-l-red-500" : "border-l-orange-400"
-                    }`}
-                    onClick={() => {
-                      setSelectedRenewal(r);
-                      setCustomStartDate(
-                        new Intl.DateTimeFormat("en-CA", {
-                          timeZone: "America/Santiago",
-                        }).format(new Date())
-                      );
-                      setShowRenewalModal(true);
-                    }}
-                  >
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-bold text-base leading-tight">
-                            {r.user.firstName} {r.user.lastName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {r.user.email}
-                          </p>
-                        </div>
-                        {isUrgent && (
-                          <Badge
-                            variant="destructive"
-                            className="rounded-full text-[10px] shrink-0"
-                          >
-                            Urgente
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Solicita</span>
-                        <span className="font-semibold text-orange-700">
-                          {r.requestedPlan?.name ?? "Plan desconocido"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Estado</span>
-                        <span
-                          className={`text-xs font-medium ${
-                            r.user.daysUntilExpiration === null
-                              ? "text-zinc-500"
-                              : r.user.daysUntilExpiration < 0
-                              ? "text-red-600"
-                              : isUrgent
-                              ? "text-amber-600"
-                              : "text-zinc-700"
-                          }`}
-                        >
-                          {r.user.daysUntilExpiration === null
-                            ? "Sin plan activo"
-                            : r.user.daysUntilExpiration < 0
-                            ? "Plan vencido"
-                            : `Vence en ${r.user.daysUntilExpiration}d`}
-                        </span>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        className="w-full bg-orange-600 hover:bg-orange-700 rounded-lg mt-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedRenewal(r);
-                          setCustomStartDate(
-                            new Intl.DateTimeFormat("en-CA", {
-                              timeZone: "America/Santiago",
-                            }).format(new Date())
-                          );
-                          setShowRenewalModal(true);
-                        }}
-                      >
-                        Gestionar
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <CheckCircle2 className="h-10 w-10 text-green-400 mb-3" />
-              <p className="font-medium text-zinc-700">Todo al día</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No hay renovaciones pendientes.
-              </p>
-            </div>
           )}
         </div>
       )}
 
-      {/* Tab: Cancelaciones (lazy mount) */}
-      {activeTab === "cancelaciones" && <CancelledClassesTab />}
+
+
+      {/* Contenido: Renovaciones pendientes */}
+      <div className="space-y-4">
+        {urgentCount > 0 && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+            <span>
+              <span className="font-semibold">{urgentCount}</span>{" "}
+              {urgentCount === 1
+                ? "membresía vence"
+                : "membresías vencen"}{" "}
+              en los próximos 7 días.
+            </span>
+          </div>
+        )}
+
+        {renewalsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-44 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : pendingRenewals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingRenewals.map((r: RenewalItem) => {
+              const isUrgent =
+                (r.user.daysUntilExpiration ?? Infinity) <= 7;
+              return (
+                <Card
+                  key={r.id}
+                  className={`border-l-4 hover:shadow-md transition-shadow rounded-xl cursor-pointer ${
+                    isUrgent ? "border-l-red-500" : "border-l-orange-400"
+                  }`}
+                  onClick={() => {
+                    setSelectedRenewal(r);
+                    setCustomStartDate(
+                      new Intl.DateTimeFormat("en-CA", {
+                        timeZone: "America/Santiago",
+                      }).format(new Date())
+                    );
+                    setShowRenewalModal(true);
+                  }}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-base leading-tight">
+                          {r.user.firstName} {r.user.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {r.user.email}
+                        </p>
+                      </div>
+                      {isUrgent && (
+                        <Badge
+                          variant="destructive"
+                          className="rounded-full text-[10px] shrink-0"
+                        >
+                          Urgente
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Solicita</span>
+                      <span className="font-semibold text-orange-700">
+                        {r.requestedPlan?.name ?? "Plan desconocido"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Estado</span>
+                      <span
+                        className={`text-xs font-medium ${
+                          r.user.daysUntilExpiration === null
+                            ? "text-zinc-500"
+                            : r.user.daysUntilExpiration < 0
+                            ? "text-red-600"
+                            : isUrgent
+                            ? "text-amber-600"
+                            : "text-zinc-700"
+                        }`}
+                      >
+                        {r.user.daysUntilExpiration === null
+                          ? "Sin plan activo"
+                          : r.user.daysUntilExpiration < 0
+                          ? "Plan vencido"
+                          : `Vence en ${r.user.daysUntilExpiration}d`}
+                      </span>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full bg-orange-600 hover:bg-orange-700 rounded-lg mt-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedRenewal(r);
+                        setCustomStartDate(
+                          new Intl.DateTimeFormat("en-CA", {
+                            timeZone: "America/Santiago",
+                          }).format(new Date())
+                        );
+                        setShowRenewalModal(true);
+                      }}
+                    >
+                      Gestionar
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <CheckCircle2 className="h-10 w-10 text-green-400 mb-3" />
+            <p className="font-medium text-zinc-700">Todo al día</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              No hay renovaciones pendientes.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Modal: Gestionar Renovación */}
       <Dialog open={showRenewalModal} onOpenChange={setShowRenewalModal}>
