@@ -62,7 +62,7 @@ export function MembershipCard({
       {/* Cabecera: nombre/precio izq · contador der (solo active) */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-white font-bold text-2xl">{membershipType}</h2>
+          <h2 className="text-white font-bold text-xl">{membershipType}</h2>
           <p className="text-white/80 text-md">
             {isUnlimited ? "Ilimitadas" : classLimit} clases •{" "}
             ${monthlyPrice ? monthlyPrice.toLocaleString("es-CL") : "N/A"}
