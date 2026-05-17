@@ -7,6 +7,15 @@ export interface BaseEntity {
   updatedAt?: string;
 }
 
+// Filtro de rango de fechas — acepta solo objetos Date, no strings.
+// Pasar .toISOString() hace que Prisma falle silenciosamente en las comparaciones.
+export interface DateRangeFilter {
+  gte?: Date;
+  lte?: Date;
+  gt?: Date;
+  lt?: Date;
+}
+
 // Query parameter types
 export interface FindManyParams {
   where?: Record<string, any>;

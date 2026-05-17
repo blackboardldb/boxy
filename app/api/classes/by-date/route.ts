@@ -119,11 +119,13 @@ export async function GET(request: NextRequest) {
     const provider = getDataProvider();
 
     // 1. Buscar clases REALES que ya existan para ese rango de fechas en la BD usando repositorio
+    // NOTA: Se pasan objetos Date directamente. Pasar .toISOString() (string) hace que Prisma
+    // falle silenciosamente en la comparación y retorne []. Consistente con classService.getClasses.
     const realClassesResult = await provider.classes.findMany({
       where: {
         dateTime: {
-          gte: targetStartDate.toISOString(),
-          lte: targetEndDate.toISOString(),
+          gte: targetStartDate,
+          lte: targetEndDate,
         },
       },
       limit: 1000,
