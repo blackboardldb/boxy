@@ -10,6 +10,7 @@ import { InAppAlerts } from "@/components/InAppAlerts";
 import Link from "next/link";
 import type { FitCenterUserProfile, FormattedClassItem } from "@/lib/types";
 import { getPlanStatus } from "@/lib/utils";
+import { MembershipCard } from "./Membershipcard";
 
 interface HomePageProps {
   userProfile: FitCenterUserProfile;
@@ -61,6 +62,9 @@ const HomePage: React.FC<HomePageProps> = ({
           ¿Cómo estamos para entrenar hoy 💪?
         </p>
       </div>
+
+
+{/* ANTIGUO  COMPONENTE 
       <p className=" uppercase text-white/80 text-xs mb-2">Tu plan</p>
       <div className="w-full bg-zinc-900 p-4 rounded-lg mb-10 space-y-3">
         <div className="mb-6">
@@ -178,6 +182,20 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
         )}
       </div>
+
+*/}
+      <MembershipCard
+        planStatus={planStatus}
+        hasPendingRenewal={!!hasPendingRenewal}
+        membershipType={membershipType}
+        classLimit={classLimit}
+        isUnlimited={isUnlimited}
+        monthlyPrice={monthlyPrice}
+        formattedPeriodStart={formattedPeriodStart}
+        formattedPeriodEnd={formattedPeriodEnd}
+        currentMonthStats={currentMonthStats}
+        isLoadingStats={isLoadingStats}
+      />
 
       <div className="flex justify-between items-center mb-2">
         <p className=" uppercase text-white/80 text-xs">Clases inscritas</p>
