@@ -247,7 +247,7 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      <div className="w-full bg-zinc-900 p-4 pt-2 rounded-lg divide-y divide-zinc-700">
+      <div className="w-full bg-white/5 p-4 pt-2 rounded-lg divide-y divide-zinc-700">
         {registeredClasses.length > 0 && planStatus === "active" ? (
           <ClassesHomeCard classes={registeredClasses} />
         ) : (

@@ -62,7 +62,7 @@ export function ClassesHomeCard({
               {todayClasses.map((classItem) => (
                 <div
                   key={classItem.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-800 border-zinc-800 text-white"
+                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-900 border-zinc-950 text-white"
                  
                 >
               
@@ -107,7 +107,7 @@ export function ClassesHomeCard({
               {upcomingClasses.map((classItem) => (
                 <div
                   key={classItem.id}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-800 border-zinc-800 text-white"
+                  className="flex items-center justify-between p-3 border rounded-lg bg-zinc-900 border-zinc-950 text-white"
                   onClick={() => onClassClick?.(classItem)}
                 >
                   <div className="flex items-center gap-3">
