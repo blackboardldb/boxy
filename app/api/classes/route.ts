@@ -9,9 +9,6 @@ import { createClassSessionSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("startDate");
@@ -22,8 +19,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "100"); // Aumentar límite para listados
 
-    // 1. Obtener clases del servicio
-    const response: any = await classService.getClasses({
+    // 1. Promesa para obtener clases del servicio
+    const classesPromise = classService.getClasses({
       page,
       limit,
       startDate: startDate || undefined,
@@ -33,38 +30,44 @@ export async function GET(request: NextRequest) {
       status: status || undefined,
     });
 
-    if (!response.success) {
-      return NextResponse.json(response);
-    }
+    // 2. Promesa para identificar clases donde el usuario actual está inscrito
+    const userRegistrationsPromise = (async () => {
+      const supabase = await createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser?.email) return new Set<string>();
 
-    // 2. Identificar clases donde el usuario actual está inscrito
-    let userRegisteredClassIds: Set<string> = new Set();
-    let dbUserId: string | null = null;
-    
-    if (authUser && authUser.email) {
-      // Optimizamos buscando al usuario en DB solo si hay sesión
       const dbUser = await prisma.user.findFirst({
         where: { email: { equals: authUser.email, mode: "insensitive" } },
         select: { id: true }
       });
 
-      if (dbUser) {
-        dbUserId = dbUser.id;
-        const registrations = await prisma.classRegistration.findMany({
-          where: {
-            userId: dbUser.id,
-            status: 'registered',
-            class: {
-              dateTime: {
-                gte: startDate ? new Date(startDate) : undefined,
-                lte: endDate ? new Date(endDate) : undefined
-              }
+      if (!dbUser) return new Set<string>();
+
+      const registrations = await prisma.classRegistration.findMany({
+        where: {
+          userId: dbUser.id,
+          status: 'registered',
+          class: {
+            dateTime: {
+              gte: startDate ? new Date(startDate) : undefined,
+              lte: endDate ? new Date(endDate) : undefined
             }
-          },
-          select: { classId: true }
-        });
-        userRegisteredClassIds = new Set(registrations.map(r => r.classId));
-      }
+          }
+        },
+        select: { classId: true }
+      });
+      return new Set(registrations.map(r => r.classId));
+    })();
+
+    // Ejecutar ambas ramas de consultas en paralelo
+    const [response, userRegisteredClassIds] = await Promise.all([
+      classesPromise,
+      userRegistrationsPromise
+    ]);
+
+    if (!response.success) {
+      return NextResponse.json(response);
     }
 
     // 3. Enriquecer respuesta con flags de optimización y limpiar arrays pesados
