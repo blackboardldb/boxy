@@ -20,7 +20,6 @@ type ClassRowWithRegistrations = {
   status: string;
   notes: string | null;
   isGenerated: boolean;
-  registrations: ClassRegistrationRow[];
   _count: { registrations: number };
 };
 
@@ -44,9 +43,6 @@ export class PrismaClassRepository implements IClassRepository {
       isGenerated: true,
       // HAL-03 Sprint A: registeredParticipantsIds ya no se lee de la columna array.
       // Se calcula en mapToEntity() desde la relación ClassRegistration.
-      registrations: {
-        select: { userId: true, status: true }
-      },
       _count: {
         select: {
           registrations: {

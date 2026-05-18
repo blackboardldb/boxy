@@ -2,6 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -34,6 +36,14 @@ export default function RegistrationModal({
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: participants = [], isLoading: loadingParticipants } = useQuery({
+    queryKey: ["participants", classItem?.id],
+    queryFn: () =>
+      fetch(`/api/classes/${classItem?.id}/participants`).then(r => r.json()),
+    enabled: isOpen && !!classItem,
+    staleTime: 1000 * 30 // 30 segundos
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -119,6 +129,32 @@ export default function RegistrationModal({
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Sección de participantes — no bloquea el botón de reservar */}
+              <div className="mt-4 text-left">
+                <p className="text-sm text-zinc-500 mb-2">
+                  Inscritos ({participants.length})
+                </p>
+
+                {loadingParticipants ? (
+                  <p className="text-sm text-zinc-500">Cargando...</p>
+                ) : participants.length === 0 ? (
+                  <p className="text-sm text-zinc-500">Sé el primero en inscribirte.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {participants.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <Avatar className="w-7 h-7 border border-white shadow-sm">
+                          <AvatarFallback className="text-xs font-bold bg-gradient-to-r from-teal-400 to-yellow-200 text-zinc-900">
+                            {p.firstName?.[0] ?? "?"}{p.lastName?.[0] ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-zinc-700">{p.firstName}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           ) : (
