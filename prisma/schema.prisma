@@ -28,6 +28,7 @@ model User {
   classRegistrations ClassRegistration[]
   membershipRenewals MembershipRenewal[]
   userMembership     UserMembership?
+  userLifts          UserLift[]
 
   @@index([email])
   @@index([role])
@@ -227,6 +228,21 @@ model MembershipRenewal {
 }
 
 
+model UserLift {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  exerciseKey    String
+  weight         Float
+  unit           String   // 'kg' | 'lbs'
+  recordedAt     DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, exerciseKey, recordedAt])
+  @@map("user_lifts")
+  @@schema("public")
+}
 
 model Expense {
   id        String   @id @default(cuid())

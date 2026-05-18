@@ -420,4 +420,12 @@ export interface FormattedClassItem {
   isWithinPlanDates?: boolean;
 }
 
-
+export const LIFT_EXERCISES = [
+  { key: 'clean',       label: 'RM Clean' },
+  { key: 'snatch',      label: 'RM Snatch' },
+  { key: 'clean_jerk',  label: 'RM Clean & Jerk' },
+  { key: 'press',       label: 'RM Press' },
+  { key: 'back_squat',  label: 'RM Back Squat' },
+  { key: 'front_squat', label: 'RM Front Squat' },
+  { key: 'deadlift',    label: 'RM Deadlift' },
+] as const;
