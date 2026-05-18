@@ -51,6 +51,13 @@ const HomePage: React.FC<HomePageProps> = ({
     (r: any) => r.status === 'pending'
   );
 
+  // Si el plan está inactivo pero hay una renovación programada, mostrarlo como scheduled.
+  // Override solo visual — getPlanStatus() no se modifica.
+  const hasScheduledRenewal = userProfile?.membershipRenewals?.some(
+    (r: any) => r.status === 'scheduled'
+  );
+  const effectivePlanStatus = planStatus === 'inactive' && hasScheduledRenewal ? 'scheduled' : planStatus;
+
   return (
     <main className="max-w-4xl mx-auto pb-28 px-4">
       <InAppAlerts />
@@ -185,7 +192,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
 */}
       <MembershipCard
-        planStatus={planStatus}
+        planStatus={effectivePlanStatus}
         hasPendingRenewal={!!hasPendingRenewal}
         membershipType={membershipType}
         classLimit={classLimit}

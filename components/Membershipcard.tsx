@@ -63,7 +63,7 @@ export function MembershipCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-white font-bold text-xl">{membershipType}</h2>
-          <p className="text-white/80 text-md">
+          <p className="text-white/80 text-sm">
             {isUnlimited ? "Ilimitadas" : classLimit} clases •{" "}
             ${monthlyPrice ? monthlyPrice.toLocaleString("es-CL") : "N/A"}
           </p>
@@ -107,7 +107,7 @@ export function MembershipCard({
  
       {/* Banner: renovación en revisión — overlay sob1re cualquier estado base */}
       {hasPendingRenewal && (
-        <div className="border-t border-zinc-700 pt-3 pb-1">
+        <div className="border-t border-white/10 pt-3 pb-1">
            <p className="text-white/80 text-sm mb-2">
             Si tu plan no se activa pronto, informa a tu coach o escríbenos por WhatsApp:    
              {" "} <Link href="https://wa.me/56912345678" className=" font-bold underline text-white" target="_blank" >
@@ -123,16 +123,12 @@ export function MembershipCard({
  
       {/* Banner: scheduled */}
       {planStatus === "scheduled" && (
-        <div className="border-t border-zinc-700 pt-3 space-y-3">
-          <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-blue-100 text-xl">
-              <Calendar size={16} />
-              <p className="font-medium">Plan Programado</p>
-            </div>
-            <p className="text-blue-100 mb-2">
-              Tu plan iniciará el {formattedPeriodStart}. Pronto podrás empezar a entrenar 💪.
+        <div className="border-t border-white/10 pt-3 space-y-3">
+        
+            <p className="text-blue-100 text-sm mb-2">
+              Tu próximo plan iniciará el <span className="font-bold">{formattedPeriodStart}</span>.
             </p>
-          </div>
+ 
         </div>
       )}
  
@@ -142,7 +138,7 @@ export function MembershipCard({
         planStatus !== "scheduled" &&
         planStatus !== "pending" &&
         !hasPendingRenewal && (
-          <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
+          <div className="flex justify-between items-center border-t border-white/10 pt-3">
             <div className="text-orange-300 inline-flex gap-2 text-sm items-center">
               <AlertCircle size={16} />
               <p className="text-sm sm:text-base">Tu plan ya no está vigente</p>
@@ -157,7 +153,7 @@ export function MembershipCard({
  
       {/* Footer con fechas — solo active 
       {planStatus === "active" && (
-        <div className="flex justify-between items-center border-t border-zinc-700 pt-3">
+        <div className="flex justify-between items-center border-t border-white/10 pt-3">
           <div className="text-zinc-200 inline-flex gap-2 text-sm items-center">
             <Ticket size={16} />
             <p className="sm:text-sm">

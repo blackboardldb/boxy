@@ -228,6 +228,19 @@ const handleStartDateChange = (newDate: string) => {
         membership: updatedMembership,
       };
 
+      // Fix 1: Cancelar renovaciones zombie (scheduled/pending) antes de guardar.
+      // El admin está tomando control manual → cualquier renovación en cola pierde validez.
+      const zombieRenewals = (student.membershipRenewals ?? []).filter(
+        (r: any) => r.status === 'scheduled' || r.status === 'pending'
+      );
+      for (const renewal of zombieRenewals) {
+        await fetch(`/api/users/${student.id}/renewal/${renewal.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'cancelled' }),
+        });
+      }
+
       await updateUserMutation.mutateAsync({ id: student.id, data: changes });
 
       // Si el admin marcó "Registrar como ingreso" y el precio es > 0, crear registro financiero
@@ -272,9 +285,8 @@ const handleStartDateChange = (newDate: string) => {
     );
   }, [userClasses, student]);
 
-  const planHistory = student?.membershipRenewals?.filter(
-    (r: any) => r.status === 'approved' || r.status === 'cancelled'
-  ) ?? [];
+  // Historial completo: todos los estados — scheduled, pending, approved, cancelled, superseded
+  const planHistory = student?.membershipRenewals ?? [];
 
   const hasPendingRenewal = student?.membershipRenewals?.some(
     (r: any) => r.status === 'pending'
@@ -545,25 +557,8 @@ const handleStartDateChange = (newDate: string) => {
                     <div className="text-muted-foreground">Forma de pago</div>
                     <div className="font-medium text-right text-zinc-900 capitalize">{student.formaDePago || "-"}</div>
                   </div>
-                  {/* Banner: plan futuro programado via MembershipRenewal */}
-                  {scheduledPlan && (() => {
-                    const details = scheduledPlan.renewalDetails as { membershipType?: string; startDate?: string } | null;
-                    const planName = plans.find((p: any) => p.id === scheduledPlan.requestedPlanId)?.name
-                      ?? details?.membershipType
-                      ?? "Plan";
-                    const startStr = details?.startDate
-                      ? (() => { try { return format(parseISO(details.startDate), "d 'de' MMMM yyyy", { locale: es }); } catch { return details.startDate; } })()
-                      : null;
-                    return (
-                      <div className="mt-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-blue-800">
-                        <Clock3 className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
-                        <div className="text-xs leading-snug">
-                          <p className="font-semibold">Plan programado</p>
-                          <p>{planName}{startStr ? ` · desde ${startStr}` : ""}</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  {/* Banner azul eliminado — la info de plan programado
+                      vive en "Historial de Planes" con todos los estados */}
 
                   <div className="mt-6 pt-4 border-t border-zinc-100 flex flex-col gap-3">
                     {isPendingApproval && (
@@ -770,21 +765,38 @@ const handleStartDateChange = (newDate: string) => {
                     </div>
                   )}
                   {planHistory.map((renewal: any, idx: number) => {
-                      const planName = plans.find((p: any) => p.id === renewal.requestedPlanId)?.name || renewal.requestedPlanId;
-                      const statusColor = renewal.status === 'approved' ? 'text-emerald-500' : 'text-red-500';
-                      const statusLabel = renewal.status === 'approved' ? 'Aprobado' : 'Cancelado';
-                      
+                      const planName = plans.find((p: any) => p.id === renewal.requestedPlanId)?.name
+                        ?? (renewal.renewalDetails as any)?.membershipType
+                        ?? renewal.requestedPlanId
+                        ?? "Plan";
+
+                      const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
+                        approved:   { label: "Aprobado",   color: "text-emerald-600", dot: "bg-emerald-400" },
+                        scheduled:  { label: "Programado", color: "text-blue-600",    dot: "bg-blue-400"    },
+                        pending:    { label: "Pendiente",  color: "text-yellow-600",  dot: "bg-yellow-400"  },
+                        cancelled:  { label: "Cancelado",  color: "text-red-500",     dot: "bg-red-400"     },
+                        superseded: { label: "Reemplazado",color: "text-zinc-400",    dot: "bg-zinc-300"    },
+                        rejected:   { label: "Rechazado",  color: "text-red-600",     dot: "bg-red-500"     },
+                      };
+                      const meta = STATUS_META[renewal.status] ?? { label: renewal.status, color: "text-zinc-500", dot: "bg-zinc-300" };
+
+                      const details = renewal.renewalDetails as { startDate?: string } | null;
+                      const startStr = details?.startDate
+                        ? (() => { try { return format(parseISO(details.startDate.substring(0,10)), "d/M/yyyy"); } catch { return details.startDate; } })()
+                        : null;
+
                       return (
                           <div key={renewal.id || idx} className="relative pl-6 border-l-2 border-zinc-100 py-4 flex items-start justify-between gap-2">
-                              <div className="space-y-1.5 flex-1">
-                                  <div className="absolute w-2.5 h-2.5 bg-zinc-300 rounded-sm -left-[5.5px] top-5" />
+                              <div className="space-y-1 flex-1">
+                                  <div className={`absolute w-2.5 h-2.5 ${meta.dot} rounded-sm -left-[5.5px] top-5`} />
                                   <p className="text-sm font-medium text-zinc-700">
                                     {planName}
+                                    {startStr && <span className="text-zinc-400 font-normal"> · desde {startStr}</span>}
                                   </p>
                                   <p className="text-xs text-zinc-500">
-                                    Solicitado el {renewal.requestedAt ? format(new Date(renewal.requestedAt), "d 'de' MMMM yyyy", { locale: es }) : "-"}
+                                    {renewal.requestedAt ? format(new Date(renewal.requestedAt), "d 'de' MMMM yyyy", { locale: es }) : "-"}
                                     {" • "}
-                                    <span className={`font-semibold ${statusColor}`}>{statusLabel}</span>
+                                    <span className={`font-semibold ${meta.color}`}>{meta.label}</span>
                                   </p>
                               </div>
                           </div>

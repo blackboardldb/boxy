@@ -211,7 +211,12 @@ export default function AlumnosPage() {
                 </TableRow>
               ) : (
                 studentsOnly.map((student: FitCenterUserProfile) => {
-                  const currentPlanStatus = getPlanStatus(student);
+                  const rawPlanStatus = getPlanStatus(student);
+                  const hasScheduledRenewal = student.membershipRenewals?.some(
+                    (r: any) => r.status === 'scheduled'
+                  );
+                  const currentPlanStatus =
+                    rawPlanStatus === 'inactive' && hasScheduledRenewal ? 'scheduled' : rawPlanStatus;
                   return (
                     <TableRow
                       key={student.id}
