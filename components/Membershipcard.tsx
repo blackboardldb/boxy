@@ -17,6 +17,7 @@ interface MembershipCardProps {
   monthlyPrice?: number | null;
   formattedPeriodStart: string;
   formattedPeriodEnd: string;
+  scheduledStartFormatted?: string | null;
   currentMonthStats: { classesAttended: number };
   isLoadingStats?: boolean;
 }
@@ -43,6 +44,7 @@ export function MembershipCard({
   monthlyPrice,
   formattedPeriodStart,
   formattedPeriodEnd,
+  scheduledStartFormatted,
   currentMonthStats,
   isLoadingStats = false,
 }: MembershipCardProps) {
@@ -124,11 +126,9 @@ export function MembershipCard({
       {/* Banner: scheduled */}
       {planStatus === "scheduled" && (
         <div className="border-t border-white/10 pt-3 space-y-3">
-        
             <p className="text-blue-100 text-sm mb-2">
-              Tu próximo plan iniciará el <span className="font-bold">{formattedPeriodStart}</span>.
+              Tu próximo plan iniciará el <span className="font-bold">{scheduledStartFormatted ?? formattedPeriodStart}</span>.
             </p>
- 
         </div>
       )}
  

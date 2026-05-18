@@ -53,10 +53,25 @@ const HomePage: React.FC<HomePageProps> = ({
 
   // Si el plan está inactivo pero hay una renovación programada, mostrarlo como scheduled.
   // Override solo visual — getPlanStatus() no se modifica.
-  const hasScheduledRenewal = userProfile?.membershipRenewals?.some(
+  const scheduledRenewal = userProfile?.membershipRenewals?.find(
     (r: any) => r.status === 'scheduled'
-  );
+  ) ?? null;
+  const hasScheduledRenewal = !!scheduledRenewal;
   const effectivePlanStatus = planStatus === 'inactive' && hasScheduledRenewal ? 'scheduled' : planStatus;
+
+  // Fecha de inicio del plan programado — viene del renewal, NO del plan viejo.
+  // Solo se usa cuando effectivePlanStatus === 'scheduled' via override.
+  const scheduledStartFormatted: string | null = (() => {
+    if (!scheduledRenewal) return null;
+    const details = scheduledRenewal.renewalDetails as { startDate?: string } | null;
+    const raw = details?.startDate;
+    if (!raw) return null;
+    try {
+      const { format: fmt, parseISO: pISO } = require('date-fns');
+      const { es: esLocale } = require('date-fns/locale');
+      return fmt(pISO(raw.substring(0, 10)), "dd 'de' MMMM", { locale: esLocale });
+    } catch { return raw; }
+  })();
 
   return (
     <main className="max-w-4xl mx-auto pb-28 px-4">
@@ -200,6 +215,7 @@ const HomePage: React.FC<HomePageProps> = ({
         monthlyPrice={monthlyPrice}
         formattedPeriodStart={formattedPeriodStart}
         formattedPeriodEnd={formattedPeriodEnd}
+        scheduledStartFormatted={scheduledStartFormatted}
         currentMonthStats={currentMonthStats}
         isLoadingStats={isLoadingStats}
       />

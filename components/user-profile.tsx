@@ -24,6 +24,7 @@ import {
   MEMBERSHIP_STATUS_LABELS,
   MEMBERSHIP_STATUS_COLORS,
 } from "@/lib/types";
+import { getPlanStatus } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -265,8 +266,21 @@ export function UserProfile() {
   const dateOfBirth = userData.dateOfBirth;
   const emergencyContact = userData.emergencyContact;
 
-  const estimatedTotalHours =
-    userData.membership?.centerStats?.lifetimeStats?.totalClasses ?? 0;
+  // Override visual: si el plan está inactivo pero hay renovación scheduled, mostrar como programado
+  const rawMembershipStatus = getPlanStatus(userData);
+  const scheduledRenewal = userData.membershipRenewals?.find((r: any) => r.status === 'scheduled');
+  const hasScheduledRenewal = !!scheduledRenewal;
+  const effectiveMembershipStatus =
+    rawMembershipStatus === 'inactive' && hasScheduledRenewal ? 'scheduled' : rawMembershipStatus;
+
+  // Si es scheduled, extraer fechas de la renovación para no mostrar las del plan vencido
+  const details = scheduledRenewal?.renewalDetails as { startDate?: string; endDate?: string } | undefined;
+  const displayStart = effectiveMembershipStatus === 'scheduled' && details?.startDate 
+    ? details.startDate 
+    : userData.membership?.currentPeriodStart;
+  const displayEnd = effectiveMembershipStatus === 'scheduled' && details?.endDate 
+    ? details.endDate 
+    : userData.membership?.currentPeriodEnd;
 
   return (
     <div>
@@ -302,26 +316,26 @@ export function UserProfile() {
         {userData.membership && (
           <div className="bg-white/5 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white">
-                  {userData.membership.membershipType} {" "}
+                  {userData.membership.membershipType}{" "}
               
-                <span
-                  className="font-semibold"
-                  style={{
-                    color: MEMBERSHIP_STATUS_COLORS[userData.membership.status] || "#fff",
-                  }}
-                >
-                  {MEMBERSHIP_STATUS_LABELS[userData.membership.status] || "N/A"}
+              <span
+                className="font-semibold"
+                style={{
+                  color: MEMBERSHIP_STATUS_COLORS[effectiveMembershipStatus] || "#fff",
+                }}
+              >
+                {MEMBERSHIP_STATUS_LABELS[effectiveMembershipStatus] || "N/A"}
              </span>
             </h3>
             <div className="space-y-2 text-sm mt-4">
   
-              {userData.membership.currentPeriodStart && userData.membership.currentPeriodEnd && (
+              {displayStart && displayEnd && (
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
                   <span className="text-white">
-                    {format(parseISO(userData.membership.currentPeriodStart.substring(0, 10)), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(displayStart.substring(0, 10)), "dd/MM/yy", { locale: es })}
                     {" - "}
-                    {format(parseISO(userData.membership.currentPeriodEnd.substring(0, 10)), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(displayEnd.substring(0, 10)), "dd/MM/yy", { locale: es })}
                   </span>
                 </div>
               )}
