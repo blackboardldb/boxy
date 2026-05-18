@@ -40,7 +40,9 @@ export default function RegistrationModal({
   const { data: participants = [], isLoading: loadingParticipants } = useQuery({
     queryKey: ["participants", classItem?.id],
     queryFn: () =>
-      fetch(`/api/classes/${classItem?.id}/participants`).then(r => r.json()),
+      fetch(`/api/classes/${classItem?.id}/participants`)
+        .then(r => r.json())
+        .then(res => res.data || []),
     enabled: isOpen && !!classItem,
     staleTime: 1000 * 30 // 30 segundos
   });

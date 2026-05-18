@@ -50,16 +50,13 @@ export async function GET(request: NextRequest) {
 
       if (dbUser) {
         dbUserId = dbUser.id;
+        const classIds = response.data.map((c: any) => c.id);
+
         const registrations = await prisma.classRegistration.findMany({
           where: {
             userId: dbUser.id,
             status: 'registered',
-            class: {
-              dateTime: {
-                gte: startDate ? new Date(startDate) : undefined,
-                lte: endDate ? new Date(endDate) : undefined
-              }
-            }
+            classId: { in: classIds }
           },
           select: { classId: true }
         });

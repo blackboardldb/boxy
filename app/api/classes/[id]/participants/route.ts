@@ -1,38 +1,64 @@
-import { NextRequest, NextResponse } from "next/server"
-import { requireAuth } from "@/lib/supabase/auth-guard"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { ErrorHandler } from "@/lib/errors/handler";
 
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth()
-  if ("error" in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status })
-  }
-  const { organizationId } = auth
-  const { id } = await params
+  let id = "unknown";
+  try {
+    id = (await params).id;
 
-  const registrations = await prisma.classRegistration.findMany({
-    where: {
-      classId: id,
-      status: "registered",
-      class: { organizationId }
-    },
-    select: {
-      user: {
-        select: {
-          firstName: true,
-          lastName: true
-        }
-      }
+    if (!id) {
+      return NextResponse.json({ error: "ID de clase requerido" }, { status: 400 });
     }
-  })
 
-  const participants = registrations.map((r: any) => ({
-    firstName: r.user.firstName,
-    lastName: r.user.lastName
-  }))
+    const registrations = await prisma.classRegistration.findMany({
+      where: {
+        classId: id,
+        status: "registered",
+      },
+      select: {
+        userId: true,
+        registeredAt: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            // HAL-01 COMPLETO: membership JSONB eliminado → userMembership relacional
+            userMembership: {
+              select: { membershipType: true },
+            },
+          },
+        },
+      },
+      orderBy: { registeredAt: "asc" },
+    });
 
-  return NextResponse.json(participants)
+    // Mapear a un formato más útil para el Drawer
+    const participants = registrations.map((reg) => ({
+      userId: reg.user.id,
+      firstName: reg.user.firstName,
+      lastName: reg.user.lastName,
+      email: reg.user.email,
+      phone: reg.user.phone,
+      membershipType: reg.user.userMembership?.membershipType ?? "Sin plan",
+      bookedAt: reg.registeredAt.toISOString(),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: participants,
+    });
+  } catch (error) {
+    return ErrorHandler.createResponse(error, {
+      operation: "getClassParticipants",
+      resource: "classes",
+      metadata: { id },
+    });
+  }
 }
