@@ -29,6 +29,7 @@ export async function GET() {
         emergencyContact: true,
         userMembership: true,    // ← HAL-01: fuente de verdad relacional
         membershipRenewals: {
+          where: { status: { in: ['pending', 'scheduled'] } },
           orderBy: { requestedAt: 'desc' }
         },
       },

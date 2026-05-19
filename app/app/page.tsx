@@ -13,10 +13,17 @@ import { SkeletonHomePage } from "@/components/ui/skeleton";
 export default function Page() {
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
-  // Bookings del periodo actual del alumno
+  // Determinamos desde cuándo buscar clases (inicio del periodo actual, o hoy si no tiene)
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const periodStartStr = currentUser?.membership?.currentPeriodStart;
+  const startDateToFetch = periodStartStr
+    ? (periodStartStr < todayStr ? periodStartStr : todayStr)
+    : todayStr;
+
+  // Bookings del periodo actual o futuros del alumno
   const { data: myBookings = [], isFetching: statsLoading } = useMyBookings(
     currentUser?.id,
-    currentUser?.membership?.currentPeriodStart
+    startDateToFetch
   );
 
   // Clases próximas inscritas del usuario actual
