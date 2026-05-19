@@ -97,6 +97,84 @@ function membershipToUpsertData(m: any, organizationId: string) {
   };
 }
 
+// ─── Helper: promoción scheduled → active ────────────────────────────────────
+// Centraliza la lógica que antes vivía solo en /api/me.
+// Se ejecuta en findUnique para que admin y alumno siempre vean el estado real.
+// Costo: 0 escrituras si no hay nada que promover.
+async function promoteScheduledIfReady(
+  userId: string,
+  userMembership: UserWithMembership["userMembership"],
+  membershipRenewals: UserWithMembership["membershipRenewals"]
+): Promise<UserWithMembership["userMembership"]> {
+  const now = new Date();
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+  }).format(now);
+  const todayDate = new Date(today + "T00:00:00");
+
+  // Camino 1: MembershipRenewal con status='scheduled' cuya startDate ya llegó
+  const scheduledRenewal = (membershipRenewals ?? []).find((r) => {
+    if (r.status !== "scheduled") return false;
+    const details = r.renewalDetails as Record<string, unknown> | null;
+    if (!details?.startDate) return false;
+    return new Date((details.startDate as string) + "T00:00:00") <= todayDate;
+  });
+
+  if (scheduledRenewal) {
+    const details = scheduledRenewal.renewalDetails as Record<string, unknown>;
+    const promotionData = {
+      organizationId:     userMembership?.organizationId ?? "org_blacksheep_001",
+      planId:             scheduledRenewal.requestedPlanId ?? null,
+      status:             "active",
+      startDate:          details.startDate ? new Date(details.startDate as string) : null,
+      currentPeriodStart: details.startDate ? new Date(details.startDate as string) : null,
+      currentPeriodEnd:   details.endDate   ? new Date(details.endDate   as string) : null,
+      monthlyPrice:       (details.monthlyPrice as number)      ?? null,
+      membershipType:     (details.membershipType as string)    ?? null,
+      classLimit:         (details.classLimit as number)        ?? 0,
+    };
+
+    const promoted = await prisma.userMembership.upsert({
+      where:  { userId },
+      create: { userId, ...promotionData },
+      update: promotionData,
+    });
+
+    await prisma.membershipRenewal.update({
+      where: { id: scheduledRenewal.id },
+      data:  { status: "approved", processedAt: now },
+    });
+
+    console.log(
+      `[user-repository] MembershipRenewal promoted → active for user ${userId} (renewal ${scheduledRenewal.id})`
+    );
+    return promoted;
+  }
+
+  // Camino 2 (legacy): UserMembership con status='scheduled' cuya fecha ya llegó
+  if (userMembership?.status === "scheduled") {
+    const startDateStr = userMembership.currentPeriodStart ?? userMembership.startDate;
+    const startDate = startDateStr ? new Date(startDateStr) : null;
+    const isReady =
+      startDate !== null &&
+      todayDate >= new Date(startDate.toISOString().split("T")[0] + "T00:00:00");
+
+    if (isReady) {
+      const promoted = await prisma.userMembership.update({
+        where: { userId },
+        data:  { status: "active" },
+      });
+      console.log(
+        `[user-repository] UserMembership (legacy) promoted → active for user ${userId}`
+      );
+      return promoted;
+    }
+  }
+
+  // Sin cambios — retorna lo que llegó
+  return userMembership;
+}
+
 export class PrismaUserRepository implements IUserRepository {
   private get prisma() {
     return prisma;
@@ -134,9 +212,25 @@ export class PrismaUserRepository implements IUserRepository {
   async findUnique(params: FindUniqueParams): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
       where:   params.where as Prisma.UserWhereUniqueInput,
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },     // ← HAL-01
+      include: {
+        userMembership: true,
+        membershipRenewals: {
+          where:   { status: { in: ["pending", "scheduled"] } }, // OPT-01: solo accionables
+          orderBy: { requestedAt: "desc" },
+        },
+      },
     });
-    return user ? this.mapToEntity(user) : null;
+    if (!user) return null;
+
+    // BUG-02 Propuesta A: promover scheduled → active antes de mapear.
+    // Si no hay nada que promover, esta función retorna sin escribir en DB.
+    user.userMembership = await promoteScheduledIfReady(
+      user.id,
+      user.userMembership,
+      user.membershipRenewals
+    );
+
+    return this.mapToEntity(user);
   }
 
   // ── create ────────────────────────────────────────────────────────────────

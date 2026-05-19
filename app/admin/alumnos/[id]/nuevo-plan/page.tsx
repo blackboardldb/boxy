@@ -15,7 +15,7 @@ import { calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/li
 import { parseISO } from "date-fns";
 import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
-import { useUserClasses } from "@/lib/react-query/hooks/useClasses";
+import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
 
 export default function NuevoPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -25,7 +25,6 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   // React Query
   const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
   const { data: plans = [] } = usePlans({ limit: 100 });
-  const { data: userClasses = [] } = useUserClasses(resolvedParams.id);
   const updateUserMutation = useUpdateUser();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
@@ -33,11 +32,11 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   const [isSubmitting, setIsSubmitting] = useState(false); // Paso 1: estado de carga global
 
   // Fecha de hoy en formato YYYY-MM-DD para el valor inicial de fechaPago
-  const todayStr = (() => {
+  const todayStr = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  })();
+  }, []);
 
   const [formData, setFormData] = useState({
     planId: "",
@@ -48,6 +47,9 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
     precioTotal: "",
     fechaPago: todayStr, // Pre-llenado con hoy; el admin puede ajustarlo si el pago fue otro día
   });
+
+  const startDateToFetch = formData.startDate || todayStr;
+  const { data: userClasses = [] } = useMyBookings(fetchedUser?.id, startDateToFetch);
 
   // Sincronizar student local y pre-rellenar formulario cuando llegan los datos
   useEffect(() => {

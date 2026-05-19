@@ -350,9 +350,9 @@ export default function CalendarPage() {
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               <button
                 onClick={() => setSelectedDisciplineId("all")}
-                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                   ${selectedDisciplineId === "all"
-                    ? "bg-lime-500 text-black"
+                    ? "bg-lime-500 text-black font-semibold"
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                   }`}
               >
@@ -362,9 +362,9 @@ export default function CalendarPage() {
                 <button
                   key={d.id}
                   onClick={() => setSelectedDisciplineId(d.id)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                  className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                     ${selectedDisciplineId === d.id
-                      ? "bg-lime-500 text-black"
+                      ? "bg-lime-500 text-black font-semibold"
                       : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                     }`}
                 >

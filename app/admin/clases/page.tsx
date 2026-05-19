@@ -189,16 +189,16 @@ export default function AdminClasesPage() {
       />
 
       {/* Acciones de día */}
-      <div className="px-4 md:px-8 flex justify-end gap-2">
+      <div className="px-4 pb-6 md:px-8 flex justify-end gap-2">
         <button 
           onClick={() => setIsCreateClassModalOpen(true)}
-          className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition-colors"
+          className="px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition-colors w-full sm:w-auto"
         >
           Nueva clase
         </button>
         <button 
           onClick={() => setIsCancelDayModalOpen(true)}
-          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
+          className="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors w-full sm:w-auto"
         >
           Cancelar clases
         </button>
@@ -210,9 +210,9 @@ export default function AdminClasesPage() {
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
             <button
               onClick={() => setSelectedDisciplineId("all")}
-              className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+              className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                 ${selectedDisciplineId === "all"
-                  ? "bg-lime-500 text-black"
+                  ? "bg-lime-500 text-black font-semibold"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                 }`}
             >
@@ -222,9 +222,9 @@ export default function AdminClasesPage() {
               <button
                 key={d.id}
                 onClick={() => setSelectedDisciplineId(d.id)}
-                className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+                className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                   ${selectedDisciplineId === d.id
-                    ? "bg-lime-500 text-black"
+                    ? "bg-lime-500 text-black font-semibold"
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
               >

@@ -13,13 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, KeyRound, Trash2 } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { getPlanStatus, getStudentClassesInPeriod, calcularFechaTerminoMembresia } from "@/lib/utils";
 import { PhoneInputCL } from "@/components/PhoneInputCL";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
-import { useUserClasses } from "@/lib/react-query/hooks/useClasses";
+import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 
@@ -30,7 +30,16 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
 
   // React Query
   const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
-  const { data: userClasses = [] } = useUserClasses(resolvedParams.id);
+
+  // Fecha segura: periodo actual del alumno, o últimos 30 días como fallback
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const thirtyDaysAgoStr = format(subDays(new Date(), 30), "yyyy-MM-dd");
+  const periodStart = fetchedUser?.membership?.currentPeriodStart;
+  const startDateToFetch = periodStart
+    ? (periodStart < todayStr ? periodStart : todayStr)
+    : thirtyDaysAgoStr;
+
+  const { data: userClasses = [] } = useMyBookings(fetchedUser?.id, startDateToFetch);
   const { data: plans = [] } = usePlans({ limit: 100 });
   const { data: disciplinesData } = useDisciplines();
   const disciplines = disciplinesData ?? [];
