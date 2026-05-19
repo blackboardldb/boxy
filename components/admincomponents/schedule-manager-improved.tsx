@@ -63,6 +63,8 @@ const emptyDiscipline: Discipline = {
   isActive: true,
   schedule: [],
   cancellationRules: [],
+  capacity: 15,
+  durationMinutes: 60,
 };
 
 export default function ScheduleManagerImproved() {
@@ -109,7 +111,12 @@ export default function ScheduleManagerImproved() {
   };
 
   const handleEditDiscipline = (discipline: Discipline) => {
-    setDisciplineForm(discipline);
+    setDisciplineForm({
+      ...emptyDiscipline,
+      ...discipline,
+      capacity: discipline.capacity ?? 15,
+      durationMinutes: discipline.durationMinutes ?? 60,
+    });
     setEditingDiscipline(discipline.id);
     setSelectedDays(discipline.schedule.map((s) => s.day));
     setSelectedDayForSchedule("");
@@ -148,9 +155,10 @@ export default function ScheduleManagerImproved() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    const isNumber = name === "capacity" || name === "durationMinutes";
     setDisciplineForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: isNumber ? (value === "" ? "" : parseInt(value) || 0) : value,
     }));
   };
 
@@ -465,6 +473,43 @@ export default function ScheduleManagerImproved() {
               <div className="h-px bg-zinc-100 w-full mt-6" />
             </div>
 
+            {/* Cupo y duración */}
+            <div className="space-y-6">
+              <Label className="text-lg font-bold">Cupo y Duración por Defecto</Label>
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-zinc-700">Cupo Máximo</Label>
+                  <Input
+                    name="capacity"
+                    type="number"
+                    min={1}
+                    value={disciplineForm.capacity ?? 15}
+                    onChange={handleDisciplineChange}
+                    placeholder="Ej: 15"
+                    className="rounded-xl h-11 border-zinc-100"
+                  />
+                </div>
+
+                <div className="flex-1 space-y-2">
+                  <Label className="font-bold text-zinc-700">Duración (minutos)</Label>
+                  <Input
+                    name="durationMinutes"
+                    type="number"
+                    min={15}
+                    step={15}
+                    value={disciplineForm.durationMinutes ?? 60}
+                    onChange={handleDisciplineChange}
+                    placeholder="Ej: 60"
+                    className="rounded-xl h-11 border-zinc-100"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-zinc-500 italic mt-1">
+                Nota: Estos valores actúan como plantilla por defecto. El cupo de eventos especiales se puede modificar individualmente por clase desde el calendario de clases.
+              </p>
+              <div className="h-px bg-zinc-100 w-full mt-6" />
+            </div>
+
             {/* Selección de días */}
             <div className="space-y-4">
               <Label className="text-lg font-bold">Días de la semana</Label>
@@ -488,118 +533,97 @@ export default function ScheduleManagerImproved() {
             </div>
 
             {/* Horarios por día seleccionado */}
-            {selectedDays.length > 0 && (
-              <div className="space-y-4">
-                <Label className="text-lg font-bold">Horarios por día</Label>
+            {selectedDays.length > 0 && (() => {
+              const dayOrder: Record<DayOfWeek, number> = { lun: 1, mar: 2, mie: 3, jue: 4, vie: 5, sab: 6, dom: 7 };
+              const sortedSelectedDays = [...selectedDays].sort((a, b) => dayOrder[a] - dayOrder[b]);
 
-                {/* Inputs para agregar horarios */}
-                <div className="bg-zinc-50 rounded-xl p-4 border-2 border-dotted border-zinc-100 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-base">Programar nueva hora clase</span>
-                  </div>
+              return (
+                <div className="space-y-4">
+                  <Label className="text-lg font-bold">Horarios por día</Label>
+                  <div className="space-y-3">
+                    {sortedSelectedDays.map((day) => {
+                      const daySchedule = disciplineForm.schedule.find(
+                        (d) => d.day === day
+                      ) || { times: [] };
 
-                  <div className="flex flex-wrap gap-4 items-end">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-zinc-400">Día</Label>
-                      <Select
-                        value={selectedDayForSchedule}
-                        onValueChange={(value) =>
-                          setSelectedDayForSchedule(value as DayOfWeek)
-                        }
-                      >
-                        <SelectTrigger className="w-40 rounded-xl h-10 border-zinc-100">
-                          <SelectValue placeholder="Elegir día" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {selectedDays.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {dayLabels[day]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      return (
+                        <div key={day} className="flex flex-col gap-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-bold text-zinc-800">{dayLabels[day]}</span>
+                            
+                            {/* Input inline para agregar hora */}
+                            <div className="flex items-center gap-2">
+                              <Input
+                                className="w-14 rounded-xl h-9 text-center p-1"
+                                placeholder="HH"
+                                maxLength={2}
+                                type="number"
+                                min={0}
+                                max={23}
+                                id={`hour-${day}`}
+                              />
+                              <span className="font-bold text-sm">:</span>
+                              <Input
+                                className="w-14 rounded-xl h-9 text-center p-1"
+                                placeholder="MM"
+                                maxLength={2}
+                                type="number"
+                                min={0}
+                                max={59}
+                                id={`minute-${day}`}
+                              />
+                              <Button
+                                size="sm"
+                                type="button"
+                                onClick={() => {
+                                  const hourInput = document.getElementById(`hour-${day}`) as HTMLInputElement;
+                                  const minuteInput = document.getElementById(`minute-${day}`) as HTMLInputElement;
+                                  const hVal = hourInput.value.padStart(2, "0");
+                                  const mVal = minuteInput.value.padStart(2, "0");
 
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase text-zinc-400">Hora (HH:MM)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          className="w-16 rounded-xl h-10"
-                          placeholder="HH"
-                          maxLength={2}
-                          type="number"
-                          id="new-hour"
-                        />
-                        <span className="flex items-center text-lg font-bold">:</span>
-                        <Input
-                          className="w-16 rounded-xl h-10"
-                          placeholder="MM"
-                          maxLength={2}
-                          type="number"
-                          id="new-minute"
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      disabled={!selectedDayForSchedule}
-                      onClick={() => {
-                        const hourInput = document.getElementById("new-hour") as HTMLInputElement;
-                        const minuteInput = document.getElementById("new-minute") as HTMLInputElement;
-                        const hour = hourInput.value.padStart(2, "0");
-                        const minute = minuteInput.value.padStart(2, "0");
-
-                        if (selectedDayForSchedule && hour && minute) {
-                          handleAddTimeToDiscipline(selectedDayForSchedule, `${hour}:${minute}`);
-                          hourInput.value = "";
-                          minuteInput.value = "";
-                        }
-                      }}
-                      className="rounded-xl h-10 px-6 font-bold"
-                    >
-                      Añadir Hora
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Horarios existentes */}
-                <div className="grid grid-cols-1 gap-3">
-                  {selectedDays.map((day) => {
-                    const daySchedule = disciplineForm.schedule.find(
-                      (d) => d.day === day
-                    ) || { times: [] };
-                    if (daySchedule.times.length === 0) return null;
-
-                    return (
-                      <div key={day} className="flex items-center justify-between p-4 bg-white rounded-xl border border-zinc-100">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="h-8 rounded-xl px-3 bg-zinc-50 font-bold border-zinc-100">
-                            {dayLabels[day]}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          {daySchedule.times.map((time) => (
-                            <Badge
-                              key={time}
-                              className="bg-primary/5 text-primary border-primary/10 pl-3 pr-1 py-1 h-8 rounded-xl font-bold transition-all hover:bg-primary/10"
-                            >
-                              <Clock className="w-3.5 h-3.5 mr-1.5 opacity-50" />
-                              {time}
-                              <button
-                                className="ml-1.5 w-6 h-6 flex items-center justify-center rounded-xl hover:bg-red-50 text-red-400"
-                                onClick={() => handleRemoveTimeFromDiscipline(day, time)}
+                                  if (hourInput.value !== "" && minuteInput.value !== "") {
+                                    handleAddTimeToDiscipline(day, `${hVal}:${mVal}`);
+                                    hourInput.value = "";
+                                    minuteInput.value = "";
+                                  }
+                                }}
+                                className="rounded-xl h-9 px-3 font-bold"
                               >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </Badge>
-                          ))}
+                                <Plus className="w-4 h-4 mr-1" /> Añadir
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Horarios ya agregados */}
+                          {daySchedule.times.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100">
+                              {daySchedule.times.map((time) => (
+                                <Badge
+                                  key={time}
+                                  className="bg-primary/5 text-primary border-primary/10 pl-3 pr-1 py-1 h-8 rounded-xl font-bold transition-all hover:bg-primary/10"
+                                >
+                                  <Clock className="w-3.5 h-3.5 mr-1.5 opacity-50" />
+                                  {time}
+                                  <button
+                                    type="button"
+                                    className="ml-1.5 w-6 h-6 flex items-center justify-center rounded-xl hover:bg-red-50 text-red-400"
+                                    onClick={() => handleRemoveTimeFromDiscipline(day, time)}
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-zinc-400 italic">No hay horarios programados para este día.</span>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Reglas de cancelación */}
             <div className="space-y-4">
@@ -630,11 +654,14 @@ export default function ScheduleManagerImproved() {
 
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase text-yellow-700">Horas de anticipación</Label>
-                      <div className="flex gap-2">
-                        <Input className="w-16 rounded-xl h-10 bg-white border-yellow-200" placeholder="HH" type="number" id="rule-cancel-hour" />
-                        <span className="flex items-center font-bold">:</span>
-                        <Input className="w-16 rounded-xl h-10 bg-white border-yellow-200" placeholder="MM" type="number" id="rule-cancel-minute" />
-                      </div>
+                      <Input
+                        className="w-28 rounded-xl h-10 bg-white border-yellow-200"
+                        placeholder="Ej: 2"
+                        type="number"
+                        step={0.5}
+                        min={0}
+                        id="rule-cancel-hours"
+                      />
                     </div>
 
                     <Button
@@ -643,17 +670,13 @@ export default function ScheduleManagerImproved() {
                       variant="secondary"
                       className="rounded-xl h-10 px-6 font-bold bg-yellow-100 text-yellow-800 border-none hover:bg-yellow-200"
                       onClick={() => {
-                        const cancelHourInput = document.getElementById("rule-cancel-hour") as HTMLInputElement;
-                        const cancelMinuteInput = document.getElementById("rule-cancel-minute") as HTMLInputElement;
-                        const hour = cancelHourInput.value || "0";
-                        const min = cancelMinuteInput.value || "0";
-                        const totalHours = parseInt(hour) + parseInt(min) / 60;
+                        const cancelHoursInput = document.getElementById("rule-cancel-hours") as HTMLInputElement;
+                        const totalHours = parseFloat(cancelHoursInput.value);
 
-                        if (selectedCancellationTime && totalHours >= 0) {
+                        if (selectedCancellationTime && !isNaN(totalHours) && totalHours >= 0) {
                           handleAddCancellationRule({ time: selectedCancellationTime, hoursBefore: totalHours, priority: 1 });
                           setSelectedCancellationTime("");
-                          cancelHourInput.value = "";
-                          cancelMinuteInput.value = "";
+                          cancelHoursInput.value = "";
                         }
                       }}
                     >
@@ -667,14 +690,15 @@ export default function ScheduleManagerImproved() {
                     <div key={rule.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-zinc-100">
                       <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-sm bg-yellow-400" />
-                        <span className="text-sm font-bold">Clase: <span className="text-primary">{rule.time}</span></span>
-                        <span className="text-sm text-zinc-500">Mínimo <span className="font-bold text-zinc-700">{rule.hoursBefore}h</span> antes</span>
+                        <span className="text-sm font-medium text-zinc-700">
+                          Clase de las <span className="font-bold text-primary">{rule.time}</span> → cancelar con <span className="font-bold text-zinc-800">{rule.hoursBefore} h</span> de anticipación
+                        </span>
                       </div>
                       <Button 
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl" 
+                        className="inline-flex items-center justify-center gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl" 
                         onClick={() => handleRemoveCancellationRule(rule.id)}
                       >
-                        <Trash2 />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
@@ -684,7 +708,7 @@ export default function ScheduleManagerImproved() {
           </div>
 
           <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 shrink-0 flex flex-row items-center justify-end gap-3">
-            <Button variant="ghost" onClick={() => setShowDisciplineModal(false)} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
+            <Button variant="ghost" type="button" onClick={() => setShowDisciplineModal(false)} className="rounded-xl h-12 px-8 font-bold">Cancelar</Button>
             <Button onClick={handleSaveDiscipline} disabled={isSaving} className="rounded-xl h-12 px-10 bg-zinc-950 text-white font-bold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-70">
               {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
               {editingDiscipline ? "Actualizar Horario" : "Guardar Disciplina"}

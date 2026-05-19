@@ -58,6 +58,8 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
         isActive: data.isActive ?? true,
         schedule: (data.schedule as unknown as Prisma.InputJsonValue) ?? [],
         cancellationRules: (data.cancellationRules as unknown as Prisma.InputJsonValue) ?? [],
+        capacity: data.capacity,
+        durationMinutes: data.durationMinutes,
       },
     });
     return this.mapToEntity(created);
@@ -73,6 +75,8 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
         isActive: data.isActive,
         schedule: data.schedule ? (data.schedule as unknown as Prisma.InputJsonValue) : undefined,
         cancellationRules: data.cancellationRules ? (data.cancellationRules as unknown as Prisma.InputJsonValue) : undefined,
+        capacity: data.capacity,
+        durationMinutes: data.durationMinutes,
       },
     });
     return this.mapToEntity(updated);
@@ -115,6 +119,8 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
       isActive: d.isActive,
       schedule: Array.isArray(d.schedule) ? d.schedule as unknown as Discipline["schedule"] : [],
       cancellationRules: Array.isArray(d.cancellationRules) ? d.cancellationRules as unknown as Discipline["cancellationRules"] : [],
+      capacity: d.capacity,
+      durationMinutes: d.durationMinutes,
     };
   }
 }

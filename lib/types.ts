@@ -216,6 +216,8 @@ export interface Discipline {
   isActive: boolean;
   schedule: { day: DayOfWeek; times: string[] }[];
   cancellationRules: CancellationRule[];
+  capacity?: number;
+  durationMinutes?: number;
 }
 
 export interface CancellationRule {

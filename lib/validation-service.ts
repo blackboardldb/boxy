@@ -15,7 +15,7 @@ import type {
 } from "./types";
 import { getDataProvider } from "./data-layer/provider-factory";
 import { DataProvider } from "./data-layer/types";
-import { getPlanStatus, isClassWithinPlanValidity } from "./utils";
+import { getPlanStatus, isClassWithinPlanValidity, formatTimeChile } from "./utils";
 
 // Helper function to get cancellation rule for a specific time
 function getCancellationRule(
@@ -242,9 +242,7 @@ export class ValidationService {
     const classStart = typeof classSession.dateTime === 'string' 
       ? parseISO(classSession.dateTime) 
       : classSession.dateTime;
-    const classTime = typeof classSession.dateTime === 'string'
-      ? classSession.dateTime.split("T")[1].substring(0, 5)
-      : (classSession.dateTime as Date).toISOString().split("T")[1].substring(0, 5); // "08:00"
+    const classTime = formatTimeChile(classSession.dateTime); // Ensure time string matches the local time configured by the admin
 
     // 1. Verificar si el usuario está inscrito
     const isUserRegistered = await prisma.classRegistration.findFirst({

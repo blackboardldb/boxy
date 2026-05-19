@@ -117,6 +117,8 @@ export const createDisciplineSchema = z.object({
   description:       z.string().optional(),
   color:             z.string().optional(),
   isActive:          z.boolean().optional(),
+  capacity:          z.number().int().min(1).optional(),
+  durationMinutes:   z.number().int().min(15).optional(),
   schedule: z.array(
     z.object({
       day:   z.string(),           // DayOfWeek: "lun"|"mar"|...
@@ -291,6 +293,8 @@ export const DisciplineSchema = z.object({
   description: z.string().optional(),
   color: z.string().optional(),
   isActive: z.boolean(),
+  capacity: z.number().int().min(1).optional(),
+  durationMinutes: z.number().int().min(15).optional(),
   schedule: z.array(
     z.object({
       day: z.enum(["lun", "mar", "mie", "jue", "vie", "sab", "dom"]),
