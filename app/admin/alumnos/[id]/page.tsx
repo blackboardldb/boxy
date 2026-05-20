@@ -76,32 +76,37 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     if (fetchedUser) setStudent(fetchedUser);
   }, [fetchedUser]);
 
-  // Populate data when starting to edit
-  useEffect(() => {
-    if (student && editingSection) {
-      // Resetear checkbox de ingreso al abrir cualquier sección de edición
-      setRegistrarIngresoEdit(false);
+  // Inicialización explícita al abrir la sección de datos personales.
+  // No usamos useEffect([student]) para evitar que un refetch de React Query
+  // en background resetee silenciosamente los campos mientras el admin escribe.
+  const handleEditPersonal = () => {
+    if (!student) return;
+    setRegistrarIngresoEdit(false);
+    setEditFirstName(student.firstName || "");
+    setEditLastName(student.lastName || "");
+    setEditEmail(student.email || "");
+    setEditPhone(student.phone || "");
+    setEditGender(student.gender || "");
+    setEditDateOfBirth(student.dateOfBirth || "");
+    setEditEmergencyContact(student.emergencyContact || "");
+    setEditingSection("personal");
+  };
 
-      setEditFirstName(student.firstName || "");
-      setEditLastName(student.lastName || "");
-      setEditEmail(student.email || "");
-      setEditPhone(student.phone || "");
-      setEditGender(student.gender || "");
-      setEditDateOfBirth(student.dateOfBirth || "");
-      setEditEmergencyContact(student.emergencyContact || "");
-
-      const m = student.membership;
-      if (m) {
-        setEditPlanId(m.planId || "");
-        setEditClassLimit(m.planConfig?.classLimit ?? 0);
-        setEditPrice(m.monthlyPrice ?? 0);
-        setEditStartDate(m.currentPeriodStart ? m.currentPeriodStart.substring(0, 10) : "");
-        setEditEndDate(m.currentPeriodEnd ? m.currentPeriodEnd.substring(0, 10) : "");
-        setEditPaymentMethod(student.formaDePago || "transferencia");
-        setEditPaymentMethod(student.formaDePago || "transferencia");
-      }
+  // Inicialización explícita al abrir la sección de membresía.
+  const handleEditMembership = () => {
+    if (!student) return;
+    setRegistrarIngresoEdit(false);
+    const m = student.membership;
+    if (m) {
+      setEditPlanId(m.planId || "");
+      setEditClassLimit(m.planConfig?.classLimit ?? 0);
+      setEditPrice(m.monthlyPrice ?? 0);
+      setEditStartDate(m.currentPeriodStart ? m.currentPeriodStart.substring(0, 10) : "");
+      setEditEndDate(m.currentPeriodEnd ? m.currentPeriodEnd.substring(0, 10) : "");
+      setEditPaymentMethod(student.formaDePago || "transferencia");
     }
-  }, [editingSection, student]);
+    setEditingSection("membership");
+  };
 
   const handlePlanChange = (planId: string) => {
     setEditPlanId(planId);
@@ -203,11 +208,7 @@ const handleStartDateChange = (newDate: string) => {
       const newClassLimit = Number(editClassLimit);
       const newRemainingClasses = Math.max(0, newClassLimit > 0 ? newClassLimit - newClassesConsumed : 0);
 
-      console.log('[DEBUG saveMembership] editStartDate:', editStartDate);
-      console.log('[DEBUG saveMembership] editEndDate:', editEndDate);
-      console.log('[DEBUG saveMembership] isScheduled:', isScheduled);
-      console.log('[DEBUG saveMembership] newStart:', newStart);
-      console.log('[DEBUG saveMembership] today:', today);
+
 
       const updatedMembership = {
         ...student.membership,
@@ -242,13 +243,15 @@ const handleStartDateChange = (newDate: string) => {
       const zombieRenewals = (student.membershipRenewals ?? []).filter(
         (r: any) => r.status === 'scheduled' || r.status === 'pending'
       );
-      for (const renewal of zombieRenewals) {
-        await fetch(`/api/users/${student.id}/renewal/${renewal.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'cancelled' }),
-        });
-      }
+      await Promise.all(
+        zombieRenewals.map((renewal: any) =>
+          fetch(`/api/users/${student.id}/renewal/${renewal.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
+          })
+        )
+      );
 
       await updateUserMutation.mutateAsync({ id: student.id, data: changes });
 
@@ -358,7 +361,7 @@ const handleStartDateChange = (newDate: string) => {
                     <CardTitle className="text-lg">Datos Personales</CardTitle>
                     <CardDescription>Información de contacto</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setEditingSection("personal")} className="rounded-xl">
+                  <Button variant="ghost" size="sm" onClick={handleEditPersonal} className="rounded-xl">
                     <Edit className="w-4 h-4 text-muted-foreground mr-1" /> Editar
                   </Button>
                 </CardHeader>
@@ -470,7 +473,7 @@ const handleStartDateChange = (newDate: string) => {
                   <div>
                     <p className="text-md font-semibold">Plan Actual</p>
                   </div>
-                  <Button variant="ghost" size="sm" className="underline " onClick={() => setEditingSection("membership")}>
+                  <Button variant="ghost" size="sm" className="underline " onClick={handleEditMembership}>
                     <Edit className="w-4 h-4 text-muted-foreground mr-1" /> Editar
                   </Button>
                 </CardHeader>

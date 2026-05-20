@@ -60,17 +60,13 @@ export default function AlumnosPage() {
     limit,
     search: debouncedSearch,
     status: statusFilter !== "todos" ? statusFilter : undefined,
+    role: "user",
   });
   const { data: plansData } = usePlans({ limit: 100 });
 
   const users = data?.users ?? [];
   const pagination = data?.pagination ?? null;
   const plans = plansData ?? [];
-
-  // Filtrar staff — solo alumnos
-  const studentsOnly = users.filter(
-    (user) => !user.role || user.role === "user"
-  );
 
   // Debounce search term
   useEffect(() => {
@@ -198,7 +194,7 @@ export default function AlumnosPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : studentsOnly.length === 0 ? (
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -210,7 +206,7 @@ export default function AlumnosPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                studentsOnly.map((student: FitCenterUserProfile) => {
+                users.map((student: FitCenterUserProfile) => {
                   const rawPlanStatus = getPlanStatus(student);
                   const hasScheduledRenewal = student.membershipRenewals?.some(
                     (r: any) => r.status === 'scheduled'

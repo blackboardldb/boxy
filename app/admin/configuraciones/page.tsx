@@ -19,7 +19,7 @@ export default function ConfiguracionesPage() {
   // States for general info
   const [centerName, setCenterName] = useState("");
   const [editingSection, setEditingSection] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+
   
   // States for logos
   const [logoHorizontalSvg, setLogoHorizontalSvg] = useState("");
@@ -39,8 +39,6 @@ export default function ConfiguracionesPage() {
 
   const handleSave = async () => {
     if (!org) return;
-    
-    setIsSaving(true);
     try {
       await updateOrgMutation.mutateAsync({
         id: org.id,
@@ -54,8 +52,6 @@ export default function ConfiguracionesPage() {
       setEditingSection(null);
     } catch (error) {
       console.error("Error al guardar configuración:", error);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -195,10 +191,10 @@ export default function ConfiguracionesPage() {
                   </Button>
                   <Button 
                     onClick={handleSave} 
-                    disabled={isSaving}
+                    disabled={updateOrgMutation.isPending}
                     className="rounded-xl px-8 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 font-bold"
                   >
-                    {isSaving ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>}
+                    {updateOrgMutation.isPending ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>}
                   </Button>
                 </div>
               </div>
