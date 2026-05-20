@@ -64,12 +64,11 @@ export default function AdminClassCard({
       <div
         className={`
           border rounded-xl p-3 transition-all duration-200 relative
-          ${
-            isCancelled
-              ? "opacity-20 bg-white"
-              : isPastClass
+          ${isCancelled
+            ? "opacity-20 bg-white"
+            : isPastClass
               ? "opacity-50 border-gray-100 bg-white"
-              : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
+              : "border-gray-300 shadow-sm hover:bg-gray-50 bg-white"
           }
         `}
       >
@@ -96,11 +95,10 @@ export default function AdminClassCard({
           <div className="flex-1 w-full md:w-auto">
             {/* Hora como badge CSS - con estado finalizado integrado */}
             <div
-              className={`inline-block text-xs px-2 py-1 rounded-xl mb-2 ${
-                isFinished
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-700"
-              }`}
+              className={`inline-block text-xs px-2 py-1 rounded-xl mb-2 ${isFinished
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-700"
+                }`}
             >
               {formattedTime} {isFinished && "FINALIZADA"}
             </div>
