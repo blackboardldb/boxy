@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ExpensesManager } from "@/components/admincomponents/expenses-manager";
+import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 
 export default function FinanzasPage() {
@@ -200,27 +201,12 @@ export default function FinanzasPage() {
                 </ul>
 
                 {/* Controles de paginación */}
-                {totalPaginas > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-gray-100">
-                    <button
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="text-sm font-medium text-zinc-600 disabled:opacity-30"
-                    >
-                      Anterior
-                    </button>
-                    <span className="text-sm text-zinc-400">
-                      Página {page} de {totalPaginas}
-                    </span>
-                    <button
-                      onClick={() => setPage((p) => Math.min(totalPaginas, p + 1))}
-                      disabled={page === totalPaginas}
-                      className="text-sm font-medium text-zinc-600 disabled:opacity-30"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                )}
+                <AdminPagination
+                  currentPage={page}
+                  totalPages={totalPaginas}
+                  onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                  onNext={() => setPage((p) => Math.min(totalPaginas, p + 1))}
+                />
               </>
             )}
           </CardContent>

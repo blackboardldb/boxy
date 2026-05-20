@@ -1,4 +1,3 @@
-"use client";
 
 import { InstructorsManager } from "../../../components/admincomponents/instructors-manager";
 

@@ -1,4 +1,3 @@
-"use client";
 
 import ScheduleManagerImproved from "../../../components/admincomponents/schedule-manager-improved";
 

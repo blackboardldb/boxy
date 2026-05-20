@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CancelDayModal } from "@/components/admincomponents/cancel-day-modal";
 import { CreateClassModal } from "@/components/admincomponents/create-class-modal";
+import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 
 // Utilidad para saber si una clase es pasada
 const isClassPast = (dateTime: string | Date): boolean =>
@@ -244,31 +245,12 @@ export default function AdminClasesPage() {
                 filteredClasses.length
               } clases para ${format(selectedDate, "dd/MM/yyyy")}`}
         </p>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl"
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Página {page} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl"
-            >
-              Siguiente
-            </Button>
-          </div>
-        )}
+          <AdminPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          />
       </div>
 
       {/* Lista de clases */}

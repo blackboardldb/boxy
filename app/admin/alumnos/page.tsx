@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -280,31 +281,12 @@ export default function AlumnosPage() {
         {/* Información de resultados */}
       <div className="flex justify-end items-center">
        
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="rounded-xl"
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded-xl"
-            >
-              Siguiente
-            </Button>
-          </div>
-        )}
+        <AdminPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
       </div>
 
     </div>

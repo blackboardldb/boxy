@@ -1,4 +1,3 @@
-"use client";
 
 import PlansManager from "../../../components/admincomponents/plans-manager";
 
