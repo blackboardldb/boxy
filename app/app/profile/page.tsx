@@ -28,7 +28,7 @@ export default function ProfilePage() {
         <UserProfile />
         <Button
          
-          className="w-full bg-red-600/70 text-white hover:bg-red-600/80 rounded-xl"
+          className="w-full bg-red-600 text-white hover:bg-red-700 rounded-xl"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >

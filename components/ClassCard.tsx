@@ -82,7 +82,7 @@ export function ClassCard({
   return (
     <div
       className={`
-        border rounded-xl p-3 transition-all duration-200 relative
+        border rounded-lg p-3 transition-all duration-200 relative
         ${
           !isActionable
             ? "opacity-50 bg-white"
@@ -169,11 +169,11 @@ export function ClassCard({
           <button
             onClick={handleAction}
             className={`
-              flex-1 p-2.5 rounded-lg text-base font-bold transition-colors duration-200
+              flex-1 p-2.5 rounded-xl text-base font-bold transition-colors duration-200
               ${
                 isRegistered
-                  ? "bg-red-500 text-white hover:bg-red-600"
-                  : "bg-lime-400 text-black hover:bg-lime-500"
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-lime-500 text-black hover:bg-lime-400"
               }
             `}
           >
