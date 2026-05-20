@@ -79,7 +79,7 @@ const createStudentData = (
       currentPeriodStart: formData.joinDate,
       currentPeriodEnd: formData.nextPayment,
       planConfig: {
-        classLimit: selectedPlan.classLimit,
+        classLimit: calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
         disciplineAccess: selectedPlan.disciplineAccess,
         allowedDisciplines: selectedPlan.allowedDisciplines,
         canFreeze: selectedPlan.canFreeze,

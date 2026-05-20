@@ -75,7 +75,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
       planId: currentPlanId,
       startDate: dateStr,
       formaDePago: fetchedUser.formaDePago || "contado",
-      clasesTotales: initPlan ? String(initPlan.classLimit) : "",
+      clasesTotales: initPlan ? String(calcularClasesSegunDuracion(initPlan.classLimit, initPlan.durationInMonths)) : "",
       precioTotal: initPlan ? String(initPlan.price) : "",
     }));
   }, [fetchedUser, plans, isSubmitting]);
@@ -257,7 +257,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                     setFormData({ 
                       ...formData, 
                       planId: value,
-                      clasesTotales: planSeleccionado ? String(planSeleccionado.classLimit) : "",
+                      clasesTotales: planSeleccionado ? String(calcularClasesSegunDuracion(planSeleccionado.classLimit, planSeleccionado.durationInMonths)) : "",
                       precioTotal: planSeleccionado ? String(planSeleccionado.price) : ""
                     });
                   }}

@@ -15,7 +15,7 @@ import { ArrowLeft, Edit, Clock3, Users, Calendar, Ticket, CheckCircle2, Bell, K
 import type { FitCenterUserProfile } from "@/lib/types";
 import { format, parseISO, subDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { getPlanStatus, getStudentClassesInPeriod, calcularFechaTerminoMembresia } from "@/lib/utils";
+import { getPlanStatus, getStudentClassesInPeriod, calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/lib/utils";
 import { PhoneInputCL } from "@/components/PhoneInputCL";
 import { WhatsAppLink } from "@/components/WhatsAppLink";
 import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
@@ -112,7 +112,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
     setEditPlanId(planId);
     const selectedPlan = plans.find(p => p.id === planId);
     if (selectedPlan) {
-      setEditClassLimit(selectedPlan.classLimit);
+      setEditClassLimit(calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths));
       setEditPrice(selectedPlan.price);
       
       if (editStartDate) {

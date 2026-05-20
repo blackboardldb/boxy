@@ -129,7 +129,7 @@ export async function POST(
           monthlyPrice: planData.price,
           currentPeriodStart: new Date(periodStart + "T00:00:00"),
           currentPeriodEnd: new Date(periodEnd + "T23:59:59"),
-          classLimit: planData.classLimit ?? 0,
+          classLimit: planData.classLimit ? planData.classLimit * (planData.durationInMonths || 1) : 0,
           ...(planData.disciplineAccess ? { disciplineAccess: planData.disciplineAccess } : {}),
           ...(planData.allowedDisciplines ? { allowedDisciplines: planData.allowedDisciplines } : {}),
           ...(typeof planData.canFreeze === "boolean" ? { canFreeze: planData.canFreeze } : {}),
@@ -149,7 +149,7 @@ export async function POST(
           monthlyPrice: planData.price,
           currentPeriodStart: new Date(periodStart + "T00:00:00"),
           currentPeriodEnd: new Date(periodEnd + "T23:59:59"),
-          classLimit: planData.classLimit ?? 0,
+          classLimit: planData.classLimit ? planData.classLimit * (planData.durationInMonths || 1) : 0,
         },
       }),
       // 5b. Marcar la renovación como aprobada
