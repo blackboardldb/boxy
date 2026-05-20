@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Bell, 
-  Plus, 
-  Trash2, 
-  Calendar, 
-  Info, 
-  AlertTriangle, 
-  XOctagon, 
+import {
+  Bell,
+  Plus,
+  Trash2,
+  Calendar,
+  Info,
+  AlertTriangle,
+  XOctagon,
   Megaphone,
   Loader2,
   SendHorizontal
@@ -19,12 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 
 import { format } from "date-fns";
@@ -67,7 +67,7 @@ export function AlertsManager() {
     try {
       // Parsear fechas como inicio/fin de día UTC para evitar problemas de timezone.
       const startISO = new Date(`${startDate}T00:00:00.000Z`).toISOString();
-      const endISO   = new Date(`${endDate}T23:59:59.000Z`).toISOString();
+      const endISO = new Date(`${endDate}T23:59:59.000Z`).toISOString();
 
       await createAlert.mutateAsync({
         title,
@@ -145,9 +145,9 @@ export function AlertsManager() {
                 <Label htmlFor="startDate">Desde</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
-                  <Input 
-                    id="startDate" 
-                    type="date" 
+                  <Input
+                    id="startDate"
+                    type="date"
                     className="pl-9 rounded-xl"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
@@ -158,9 +158,9 @@ export function AlertsManager() {
                 <Label htmlFor="endDate">Hasta</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
-                  <Input 
-                    id="endDate" 
-                    type="date" 
+                  <Input
+                    id="endDate"
+                    type="date"
                     className="pl-9 rounded-xl"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
@@ -171,9 +171,9 @@ export function AlertsManager() {
 
             <div className="space-y-2">
               <Label htmlFor="title">Título</Label>
-              <Input 
-                id="title" 
-                placeholder="Título de la alerta" 
+              <Input
+                id="title"
+                placeholder="Título de la alerta"
                 className="rounded-xl"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -182,9 +182,9 @@ export function AlertsManager() {
 
             <div className="space-y-2">
               <Label htmlFor="content">Contenido</Label>
-              <Textarea 
-                id="content" 
-                placeholder="Mensaje de la alerta..." 
+              <Textarea
+                id="content"
+                placeholder="Mensaje de la alerta..."
                 className="rounded-xl min-h-[100px]"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -209,21 +209,21 @@ export function AlertsManager() {
             <div className={`p-4 rounded-xl border ${type === 'cancelacion' ? 'bg-red-50/50 border-red-100' : 'bg-blue-50/50 border-blue-100'}`}>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${type === 'cancelacion' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                  <div className={`p-2 rounded-xl ${type === 'cancelacion' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
                     <SendHorizontal className="w-4 h-4" />
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-zinc-900">Notificación Push</h5>
                     <p className="text-[10px] text-zinc-500">
-                      {type === 'cancelacion' 
-                        ? 'Se enviará notificación push automáticamente' 
+                      {type === 'cancelacion'
+                        ? 'Se enviará notificación push automáticamente'
                         : 'Enviar este aviso como notificación al móvil'}
                     </p>
                   </div>
                 </div>
                 {type !== 'cancelacion' && (
-                  <Switch 
-                    checked={sendPush} 
+                  <Switch
+                    checked={sendPush}
                     onCheckedChange={setSendPush}
                     className="data-[state=checked]:bg-blue-600"
                   />
@@ -231,8 +231,8 @@ export function AlertsManager() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full rounded-xl font-bold shadow-lg shadow-primary/20"
               disabled={isSubmitting}
             >
@@ -269,7 +269,7 @@ export function AlertsManager() {
                   <div key={alert.id} className="p-6 transition-colors hover:bg-zinc-50/50">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <div className={`mt-1 p-2 rounded-lg text-white ${getAlertColor(alert.type)}`}>
+                        <div className={`mt-1 p-2 rounded-xl text-white ${getAlertColor(alert.type)}`}>
                           {getAlertIcon(alert.type)}
                         </div>
                         <div>
@@ -286,9 +286,9 @@ export function AlertsManager() {
                           <p className="text-xs text-zinc-500 line-clamp-2 mt-1">{alert.content}</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-zinc-400 hover:text-red-500 transition-colors h-8 w-8"
                         onClick={() => handleDelete(alert.id)}
                       >

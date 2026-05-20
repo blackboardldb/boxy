@@ -86,9 +86,9 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
 
-{/* ANTIGUO  COMPONENTE 
+      {/* ANTIGUO  COMPONENTE 
       <p className=" uppercase text-white/80 text-xs mb-2">Tu plan</p>
-      <div className="w-full bg-zinc-900 p-4 rounded-lg mb-10 space-y-3">
+      <div className="w-full bg-zinc-900 p-4 rounded-xl mb-10 space-y-3">
         <div className="mb-6">
           <h2 className="text-white font-bold text-2xl">{membershipType}</h2>
         <p className="text-white/70">
@@ -99,7 +99,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
         {hasPendingRenewal && (
           <div className="border-t border-zinc-700 pt-3 space-y-3 pb-3">
-            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
+            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-xl p-3">
               <div className="flex items-center gap-2 text-yellow-100 text-base">
                 <Clock size={16} />
                 <p className="font-medium">Solicitud en revisión</p>
@@ -137,7 +137,7 @@ const HomePage: React.FC<HomePageProps> = ({
 
         {planStatus === "scheduled" ? (
           <div className="border-t border-zinc-700 pt-3 space-y-3">
-            <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
+            <div className="bg-blue-900/20 border border-blue-600/30 rounded-xl p-3">
               <div className="flex items-center gap-2 text-blue-100 text-xl">
                 <Calendar size={16} />
                 <p className="font-medium">Plan Programado</p>
@@ -149,7 +149,7 @@ const HomePage: React.FC<HomePageProps> = ({
           </div>
         ) : planStatus === "pending" ? (
           <div className="border-t border-zinc-700 pt-3 space-y-3">
-            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3">
+            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-xl p-3">
               <div className="flex items-center gap-2 text-yellow-100 text-xl">
                 <Clock size={16} />
                 <p className="font-medium">Pendiente validación</p>
@@ -247,7 +247,7 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      <div className="w-full bg-white/5 p-4 pt-2 rounded-lg divide-y divide-zinc-700">
+      <div className="w-full bg-white/5 p-4 pt-2 rounded-xl divide-y divide-zinc-700">
         {registeredClasses.length > 0 && planStatus === "active" ? (
           <ClassesHomeCard classes={registeredClasses} />
         ) : (

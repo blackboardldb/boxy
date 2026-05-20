@@ -169,7 +169,7 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
       console.error("Error al aprobar la renovación:", error);
       alert(
         "Error al aprobar la renovación: " +
-          (error instanceof Error ? error.message : String(error))
+        (error instanceof Error ? error.message : String(error))
       );
     }
   };
@@ -189,7 +189,7 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
       console.error("Error al rechazar la renovación:", error);
       alert(
         "Error al rechazar: " +
-          (error instanceof Error ? error.message : String(error))
+        (error instanceof Error ? error.message : String(error))
       );
     }
   };
@@ -245,9 +245,8 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
               return (
                 <Card
                   key={r.id}
-                  className={`border-l-4 hover:shadow-md transition-shadow rounded-xl cursor-pointer ${
-                    isUrgent ? "border-l-red-500" : "border-l-orange-400"
-                  }`}
+                  className={`border-l-4 hover:shadow-md transition-shadow rounded-xl cursor-pointer ${isUrgent ? "border-l-red-500" : "border-l-orange-400"
+                    }`}
                   onClick={() => {
                     setSelectedRenewal(r);
                     setCustomStartDate(
@@ -288,27 +287,26 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Estado</span>
                       <span
-                        className={`text-xs font-medium ${
-                          r.user.daysUntilExpiration === null
+                        className={`text-xs font-medium ${r.user.daysUntilExpiration === null
                             ? "text-zinc-500"
                             : r.user.daysUntilExpiration < 0
-                            ? "text-red-600"
-                            : isUrgent
-                            ? "text-amber-600"
-                            : "text-zinc-700"
-                        }`}
+                              ? "text-red-600"
+                              : isUrgent
+                                ? "text-amber-600"
+                                : "text-zinc-700"
+                          }`}
                       >
                         {r.user.daysUntilExpiration === null
                           ? "Sin plan activo"
                           : r.user.daysUntilExpiration < 0
-                          ? "Plan vencido"
-                          : `Vence en ${r.user.daysUntilExpiration}d`}
+                            ? "Plan vencido"
+                            : `Vence en ${r.user.daysUntilExpiration}d`}
                       </span>
                     </div>
 
                     <Button
                       size="sm"
-                      className="w-full bg-orange-600 hover:bg-orange-700 rounded-lg mt-1"
+                      className="w-full bg-orange-600 hover:bg-orange-700 rounded-xl mt-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedRenewal(r);

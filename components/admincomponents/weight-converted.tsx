@@ -44,8 +44,8 @@ export function WeightConverter() {
     inputValue === 0
       ? 0
       : fromUnit === "kg"
-      ? Math.round(inputValue * KG_TO_LB * 100) / 100
-      : Math.round(inputValue * LB_TO_KG * 100) / 100;
+        ? Math.round(inputValue * KG_TO_LB * 100) / 100
+        : Math.round(inputValue * LB_TO_KG * 100) / 100;
 
   const handleSwapUnits = () => {
     setFromUnit(fromUnit === "kg" ? "lb" : "kg");
@@ -67,69 +67,69 @@ export function WeightConverter() {
             <ArrowUpDown className="h-5 w-5" />
             Convierte Kilos 🔄  Libras
           </CardTitle>
-        
+
         </CardHeader>
         <CardContent className=" flex justify-between gap-1 px-2">
           {/* Input origen */}
- 
-            <div className="flex items-center gap-0 w-full">
-              <Input
-                id="input-from"
-                type="number"
-                value={inputValue || ""}
-                onChange={(e) => handleInputChange(e.target.value)}
-                placeholder="0"
-                className="text-center text-xl  font-bold flex-1 p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                min="0"
-                step="0.1"
-              />
-              <div className="px-3 py-3 bg-zinc-100 border border-l-0 rounded-r-md font-medium min-w-[50px] text-center h-12">
-                {fromUnit}
-              </div>
+
+          <div className="flex items-center gap-0 w-full">
+            <Input
+              id="input-from"
+              type="number"
+              value={inputValue || ""}
+              onChange={(e) => handleInputChange(e.target.value)}
+              placeholder="0"
+              className="text-center text-xl  font-bold flex-1 p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              min="0"
+              step="0.1"
+            />
+            <div className="px-3 py-3 bg-zinc-100 border border-l-0 rounded-r-md font-medium min-w-[50px] text-center h-12">
+              {fromUnit}
             </div>
+          </div>
 
 
           {/* Botón de intercambio */}
- 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleSwapUnits}
-              className="h-12 w-12 shrink-0 rounded-full hover:rotate-180 transition-transform duration-300 bg-lime-500 hover:bg-lime-600 text-black"
-            >
-              <ArrowUpDown className="h-5 w-5 rotate-90"  />
-            </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleSwapUnits}
+            className="h-12 w-12 shrink-0 rounded-full hover:rotate-180 transition-transform duration-300 bg-lime-500 hover:bg-lime-600 text-black"
+          >
+            <ArrowUpDown className="h-5 w-5 rotate-90" />
+          </Button>
 
 
           {/* Input destino */}
-       
-            <div className="flex items-center gap-0 w-full">
-              <Input
-                id="input-to"
-                type="number"
-                value={convertedValue || ""}
-                placeholder="0"
-                className="text-center text-xl font-bold flex-1 bg-muted p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                disabled
-                readOnly
-              />
-              <div className="px-3 py-3 bg-zinc-100 border border-l-0 rounded-r-md font-medium min-w-[50px] text-center h-12">
-                {toUnit}
-              </div>
+
+          <div className="flex items-center gap-0 w-full">
+            <Input
+              id="input-to"
+              type="number"
+              value={convertedValue || ""}
+              placeholder="0"
+              className="text-center text-xl font-bold flex-1 bg-muted p-2 w-full h-12 rounded-r-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              disabled
+              readOnly
+            />
+            <div className="px-3 py-3 bg-zinc-100 border border-l-0 rounded-r-md font-medium min-w-[50px] text-center h-12">
+              {toUnit}
             </div>
-        
+          </div>
+
         </CardContent>
-          
+
       </Card>
 
       {/* Tabla de equivalencias */}
       <Card className="bg-white">
         <div className="text-center pt-4">
           <p className="text-lg font-semibold">Tabla de Equivalencias</p>
-          
+
         </div>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3 p-3 bg-muted/20 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-muted/20 rounded-xl">
             {/* Headers */}
             <div className="font-bold text-2xl text-center pb-2 border-b border-muted-foreground/20">
               Libras
@@ -154,7 +154,7 @@ export function WeightConverter() {
               </div>,
             ])}
           </div>
-        
+
         </CardContent>
       </Card>
     </div>

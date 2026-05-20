@@ -132,18 +132,18 @@ export function CreateClassModal({ isOpen, onClose, selectedDate }: CreateClassM
     try {
       // Combinar fecha y hora en un ISOString válido
       const [hours, minutes] = data.time.split(":").map(Number);
-      
+
       // Parsear la fecha manualmente para evitar problemas de zona horaria con new Date('YYYY-MM-DD')
       const [year, month, day] = data.date.split("-").map(Number);
       const dateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
-      const disciplineName = data.mode === "existing" 
+      const disciplineName = data.mode === "existing"
         ? activeDisciplines.find((d) => d.id === data.disciplineId)?.name || "Clase"
         : data.customName;
 
       const payload = {
-        disciplineId: data.mode === "special" 
-          ? CUSTOM_DISCIPLINE_ID 
+        disciplineId: data.mode === "special"
+          ? CUSTOM_DISCIPLINE_ID
           : data.disciplineId,
         name: disciplineName,
         dateTime: dateTime.toISOString(),
@@ -185,15 +185,15 @@ export function CreateClassModal({ isOpen, onClose, selectedDate }: CreateClassM
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5 bg-white">
-          
+
           {/* Tarea 3.4: Toggle primitivo de Modo */}
           <div className="flex rounded-xl overflow-hidden border border-zinc-200">
             <button
               type="button"
               onClick={() => setMode("existing")}
               className={`flex-1 px-3 py-2 text-sm font-medium transition-colors
-                ${mode === "existing" 
-                  ? "bg-zinc-900 text-white" 
+                ${mode === "existing"
+                  ? "bg-zinc-900 text-white"
                   : "bg-white text-zinc-600 hover:bg-zinc-50"}`}
             >
               Disciplina existente
@@ -202,8 +202,8 @@ export function CreateClassModal({ isOpen, onClose, selectedDate }: CreateClassM
               type="button"
               onClick={() => setMode("special")}
               className={`flex-1 px-3 py-2 text-sm font-medium transition-colors
-                ${mode === "special" 
-                  ? "bg-zinc-900 text-white" 
+                ${mode === "special"
+                  ? "bg-zinc-900 text-white"
                   : "bg-white text-zinc-600 hover:bg-zinc-50"}`}
             >
               Clase especial
@@ -228,11 +228,11 @@ export function CreateClassModal({ isOpen, onClose, selectedDate }: CreateClassM
                     </div>
                   ) : (
                     activeDisciplines.map((d) => (
-                      <SelectItem key={d.id} value={d.id} className="rounded-lg cursor-pointer">
+                      <SelectItem key={d.id} value={d.id} className="rounded-xl cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-2.5 h-2.5 rounded-full shadow-sm" 
-                            style={{ backgroundColor: d.color }} 
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shadow-sm"
+                            style={{ backgroundColor: d.color }}
                           />
                           <span className="font-medium text-zinc-800">{d.name}</span>
                         </div>
@@ -310,7 +310,7 @@ export function CreateClassModal({ isOpen, onClose, selectedDate }: CreateClassM
                   </div>
                 ) : (
                   instructors.map((i) => (
-                    <SelectItem key={i.id} value={i.id} className="rounded-lg cursor-pointer">
+                    <SelectItem key={i.id} value={i.id} className="rounded-xl cursor-pointer">
                       <span className="font-medium text-zinc-800">{i.firstName} {i.lastName}</span>
                     </SelectItem>
                   ))

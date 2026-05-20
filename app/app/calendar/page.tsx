@@ -119,9 +119,8 @@ export default function CalendarPage() {
         name: session.name || discipline?.name || "Clase",
         instructor: instructorName,
         duration: "60 min",
-        alumnRegistred: `${session.enrolledCount ?? 0}/${
-          session.capacity || 15
-        }`,
+        alumnRegistred: `${session.enrolledCount ?? 0}/${session.capacity || 15
+          }`,
         isRegistered,
         formattedDayLabel: formatWeekday(session.dateTime),
         formattedTime: formatTimeChile(session.dateTime),
@@ -160,7 +159,7 @@ export default function CalendarPage() {
         if (!currentUser.membership) return null;
         const { disciplineAccess, allowedDisciplines: userAllowedDisciplines } =
           currentUser.membership.planConfig;
-        
+
         if (disciplineAccess === "limited" && userAllowedDisciplines) {
           return userAllowedDisciplines;
         }
@@ -169,8 +168,8 @@ export default function CalendarPage() {
 
       return source
         .filter((session) => {
-        const isSameDate = formatDateChile(session.dateTime) === formatDateChile(date);
-        if (!isSameDate) return false;
+          const isSameDate = formatDateChile(session.dateTime) === formatDateChile(date);
+          if (!isSameDate) return false;
 
           // Filtrar por disciplinas permitidas
           if (allowedDisciplines !== "all" && allowedDisciplines !== null) {
@@ -185,20 +184,20 @@ export default function CalendarPage() {
           // Para hoy: mostrar clases no canceladas
           if (isToday) {
             if (session.status === "cancelled") return false;
-            
+
             const now = new Date();
             const sessionDateTime = new Date(session.dateTime);
             const sessionEndTime = new Date(
               sessionDateTime.getTime() + (session.durationMinutes || 60) * 60000
             );
-            
+
             const isFinished = now > sessionEndTime;
             const isUserRegistered = session.isUserRegistered ?? false;
-            
+
             if (isFinished && !isUserRegistered) {
               return false;
             }
-            
+
             return true;
           }
 
@@ -232,7 +231,7 @@ export default function CalendarPage() {
     selectedDisciplineId === "all"
       ? currentClasses
       : currentClasses.filter(c => c.disciplineId === selectedDisciplineId)
-  , [currentClasses, selectedDisciplineId]);
+    , [currentClasses, selectedDisciplineId]);
 
   const bookedClassesCount = useMemo(() => {
     return filteredClasses.filter((c) => c.isRegistered).length;
@@ -329,21 +328,21 @@ export default function CalendarPage() {
     <>
       <div className="max-w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-8 bg-white">
         <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
-          Reserva de clases
-        </h1>
+          <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
+            Reserva de clases
+          </h1>
         </div>
       </div>
-        <div className=" sticky top-0 z-10 max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white">
-          <WeeklyDatePicker
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            className=""
-          />
-          </div>
+      <div className=" sticky top-0 z-10 max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white">
+        <WeeklyDatePicker
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+          className=""
+        />
+      </div>
 
       <div className="bg-black min-h-screen pb-28">
-        
+
         {/* Chips de filtro — solo si hay más de una disciplina */}
         {disciplinesInDay.length > 1 && (
           <div className="max-w-4xl mx-auto px-4 pt-4 md:px-6">
@@ -379,7 +378,7 @@ export default function CalendarPage() {
         {!userLoading && planStatus !== "active" && (
           <div className="max-w-4xl mx-auto px-4 py-3 md:px-6">
             {planStatus === "pending" ? (
-              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3 mb-4">
+              <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-xl p-3 mb-4">
                 <p className="text-yellow-200 text-sm font-medium mb-1">
                   Plan pendiente de validación
                 </p>
@@ -389,7 +388,7 @@ export default function CalendarPage() {
                 </p>
               </div>
             ) : planStatus === "scheduled" ? (
-              <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 mb-4">
+              <div className="bg-blue-900/20 border border-blue-600/30 rounded-xl p-3 mb-4">
                 <p className="text-blue-200 text-sm font-medium mb-1">
                   Plan Programado
                 </p>
@@ -399,9 +398,9 @@ export default function CalendarPage() {
                 </p>
               </div>
             ) : (
-              <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-3 mb-4">
+              <div className="bg-orange-900/20 border border-orange-600/30 rounded-xl p-3 mb-4">
                 <p className="text-orange-200 text-sm font-medium mb-1">
-                  🟠 Plan ya no está vigente 
+                  🟠 Plan ya no está vigente
                 </p>
                 <p className="text-orange-300 text-xs">
                   Renueva tu plan para poder agendar clases.

@@ -77,7 +77,7 @@ export function RMManager() {
         setIsExpanded(false);
         setCalculatorValue(inputWeight);
         setCalculatorUnit(inputUnit);
-        
+
         const refreshRes = await fetch(`/api/rm/${selectedExercise}`);
         const refreshJson = await refreshRes.json();
         if (refreshJson.success) {
@@ -109,15 +109,15 @@ export function RMManager() {
         {/* Tabs principales */}
         <Tabs defaultValue="calculator" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white/10">
-            <TabsTrigger 
-              value="calculator" 
+            <TabsTrigger
+              value="calculator"
               className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
             >
               <Calculator className="h-4 w-4" />
               Calcular RM
             </TabsTrigger>
-            <TabsTrigger 
-              value="converter" 
+            <TabsTrigger
+              value="converter"
               className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
             >
               <Scale className="h-4 w-4" />
@@ -131,13 +131,13 @@ export function RMManager() {
             <Card className="bg-white/5  border-0">
               <CardHeader>
                 <h1 className="flex items-center gap-2 text-white text-xl">
-         
+
                   Ingresa tu RM
                 </h1>
                 <p className="text-sm text-zinc-400">
-                 Calcula de forma libre o elige un ejercicio y agrega tu 1RM.
+                  Calcula de forma libre o elige un ejercicio y agrega tu 1RM.
                 </p>
-                
+
                 <div className="mt-4">
                   <Select value={selectedExercise} onValueChange={setSelectedExercise}>
                     <SelectTrigger className="w-full bg-white/10 text-white border-0">
@@ -155,7 +155,7 @@ export function RMManager() {
                 </div>
 
                 {selectedExercise !== "manual" && (
-                  <div className="mt-4 bg-white/5 rounded-lg p-4">
+                  <div className="mt-4 bg-white/5 rounded-xl p-4">
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
                       <div className="text-white font-medium">
                         {LIFT_EXERCISES.find(e => e.key === selectedExercise)?.label}
@@ -235,14 +235,14 @@ export function RMManager() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button 
+                          <Button
                             className="flex-1 bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
                             onClick={saveRM}
                             disabled={isSaving || inputWeight <= 0}
                           >
                             {isSaving ? "Guardando..." : "Guardar"}
                           </Button>
-                          <Button 
+                          <Button
                             variant="outline"
                             className="flex-1 bg-transparent border-white/20 text-white hover:bg-white/10"
                             onClick={() => setIsExpanded(false)}
@@ -283,14 +283,14 @@ export function RMManager() {
                       setCalculatorUnit(value)
                     }
                   >
-                     <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setCalculatorValue((prev) => prev + 5)}
-                    className="h-10 w-10"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setCalculatorValue((prev) => prev + 5)}
+                      className="h-10 w-10"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                     <SelectTrigger className="w-24 bg-slate-100 font-bold">
                       <SelectValue />
                     </SelectTrigger>
@@ -299,7 +299,7 @@ export function RMManager() {
                       <SelectItem value="lbs" >Libras</SelectItem>
                     </SelectContent>
                   </Select>
-                 
+
                 </div>
               </CardContent>
             </Card>
@@ -315,7 +315,7 @@ export function RMManager() {
                     {percentages.map((percentage) => (
                       <div
                         key={percentage}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <div className="text-lg font-bold w-12 text-center">
@@ -345,7 +345,7 @@ export function RMManager() {
           </TabsContent>
         </Tabs>
 
-       
+
       </div>
     </>
   );

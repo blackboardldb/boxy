@@ -43,8 +43,8 @@ export function WeightConverter() {
     inputValue === 0
       ? 0
       : fromUnit === "kg"
-      ? Math.round(inputValue * KG_TO_LB * 100) / 100
-      : Math.round(inputValue * LB_TO_KG * 100) / 100;
+        ? Math.round(inputValue * KG_TO_LB * 100) / 100
+        : Math.round(inputValue * LB_TO_KG * 100) / 100;
 
   const handleSwapUnits = () => {
     setFromUnit(fromUnit === "kg" ? "lb" : "kg");
@@ -131,7 +131,7 @@ export function WeightConverter() {
           <CardTitle>Tabla de Equivalencias</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3 p-4 bg-muted/20 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 p-4 bg-muted/20 rounded-xl">
             {/* Headers */}
             <div className="font-bold text-2xl text-center pb-2 border-b border-muted-foreground/20">
               Libras

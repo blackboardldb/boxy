@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {showInstallBanner && (
         <div className="bg-zinc-900 text-white px-4 py-2 flex items-center justify-between sticky top-0 z-[100] animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
               <Download className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -55,15 +55,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="secondary" 
-              size="sm" 
+            <Button
+              variant="secondary"
+              size="sm"
               className="h-7 text-[10px] font-bold px-3 rounded-full"
               onClick={handleInstallClick}
             >
               Instalar
             </Button>
-            <button 
+            <button
               onClick={() => setShowInstallBanner(false)}
               className="p-1 hover:bg-white/10 rounded-full transition-colors"
             >

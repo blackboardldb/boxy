@@ -61,7 +61,7 @@ export function UserProfile() {
 
   const togglePush = async (checked: boolean) => {
     if (permission === "unsupported") return;
-    
+
     // Si ya tiene permiso denegado en sistema
     if (permission === "denied" && checked) {
       alert("Las notificaciones están bloqueadas en tu dispositivo. Debes activarlas manualmente desde el menú de Configuración del sistema.");
@@ -81,7 +81,7 @@ export function UserProfile() {
             userVisibleOnly: true,
             applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
           });
-          
+
           await fetch("/api/push/subscribe", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ export function UserProfile() {
         console.error("Error al activar notificaciones:", err);
       }
     }
-    
+
     // Si desactiva (checked=false)
     if (!checked && permission === "granted") {
       // Simplemente eliminamos suscripción localmente o notificamos borrado al servidor
@@ -275,11 +275,11 @@ export function UserProfile() {
 
   // Si es scheduled, extraer fechas de la renovación para no mostrar las del plan vencido
   const details = scheduledRenewal?.renewalDetails as { startDate?: string; endDate?: string } | undefined;
-  const displayStart = effectiveMembershipStatus === 'scheduled' && details?.startDate 
-    ? details.startDate 
+  const displayStart = effectiveMembershipStatus === 'scheduled' && details?.startDate
+    ? details.startDate
     : userData.membership?.currentPeriodStart;
-  const displayEnd = effectiveMembershipStatus === 'scheduled' && details?.endDate 
-    ? details.endDate 
+  const displayEnd = effectiveMembershipStatus === 'scheduled' && details?.endDate
+    ? details.endDate
     : userData.membership?.currentPeriodEnd;
 
   return (
@@ -314,10 +314,10 @@ export function UserProfile() {
         </div>
         {/* Plan */}
         {userData.membership && (
-          <div className="bg-white/5 rounded-lg p-4">
+          <div className="bg-white/5 rounded-xl p-4">
             <h3 className="text-lg font-semibold text-white">
-                  {userData.membership.membershipType}{" "}
-              
+              {userData.membership.membershipType}{" "}
+
               <span
                 className="font-semibold"
                 style={{
@@ -325,10 +325,10 @@ export function UserProfile() {
                 }}
               >
                 {MEMBERSHIP_STATUS_LABELS[effectiveMembershipStatus] || "N/A"}
-             </span>
+              </span>
             </h3>
             <div className="space-y-2 text-sm mt-4">
-  
+
               {displayStart && displayEnd && (
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
@@ -350,36 +350,36 @@ export function UserProfile() {
                 </div>
               )}
             </div>
-                <div className="flex justify-between items-center mt-4 ">
-                  <p className="text-zinc-400 text-sm"> ¿Dudas? Escríbenos </p>
-                     <WhatsAppLink phone="56987522551" label="Chatear en Whatsapp" />
-                </div>
+            <div className="flex justify-between items-center mt-4 ">
+              <p className="text-zinc-400 text-sm"> ¿Dudas? Escríbenos </p>
+              <WhatsAppLink phone="56987522551" label="Chatear en Whatsapp" />
+            </div>
           </div>
         )}
-   {/* Notificaciones App */}
-          {permission !== "unsupported" && (
-            <div className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    
-                    <div>
-                      <p className="text-lg font-semibold text-white">Notificaciones App</p>
-                      <p className="text-sm text-zinc-400">Recibe avisos de clases y cancelaciones</p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={permission === "granted"} 
-                    onCheckedChange={togglePush}
-                    className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-zinc-700"
-                  />
+        {/* Notificaciones App */}
+        {permission !== "unsupported" && (
+          <div className="bg-white/5 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+
+                <div>
+                  <p className="text-lg font-semibold text-white">Notificaciones App</p>
+                  <p className="text-sm text-zinc-400">Recibe avisos de clases y cancelaciones</p>
                 </div>
               </div>
-          )}
+              <Switch
+                checked={permission === "granted"}
+                onCheckedChange={togglePush}
+                className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-zinc-700"
+              />
+            </div>
+          </div>
+        )}
         {/* Secciones editables */}
         {/* BSProfileButton — botones nativos del perfil de usuario */}
         <div className="space-y-4">
           {/* Nombre */}
-          <div className="bg-white/5 rounded-lg p-4">
+          <div className="bg-white/5 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">Nombre</h3>
@@ -438,7 +438,7 @@ export function UserProfile() {
           </div>
 
           {/* Informacion de Contacto */}
-          <div className="bg-white/5 rounded-lg p-4">
+          <div className="bg-white/5 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">Información de Contacto</h3>
@@ -446,7 +446,7 @@ export function UserProfile() {
                 {userData.phone && (
                   <div className="flex flex-col gap-1 mt-1">
                     <p className="text-zinc-400">{userData.phone}</p>
-                
+
                   </div>
                 )}
               </div>
@@ -503,7 +503,7 @@ export function UserProfile() {
           </div>
 
           {/* Seguridad — cambio de contraseña */}
-          <div className="bg-white/5 rounded-lg p-4">
+          <div className="bg-white/5 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">Contraseña</h3>
@@ -548,9 +548,8 @@ export function UserProfile() {
                   />
                 </div>
                 {passwordMsg && (
-                  <p className={`text-sm font-medium ${
-                    passwordMsg.ok ? "text-zinc-900" : "text-red-400"
-                  }`}>
+                  <p className={`text-sm font-medium ${passwordMsg.ok ? "text-zinc-900" : "text-red-400"
+                    }`}>
                     {passwordMsg.text}
                   </p>
                 )}
@@ -574,118 +573,118 @@ export function UserProfile() {
           </div>
 
           {/* Información personal */}
-          <div className="bg-white/5 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Información Personal</h3>
-                  {gender && <p className="text-zinc-400">Género: {gender}</p>}
-                  {dateOfBirth && (
-                    <p className="text-zinc-400">
-                      Nacimiento: {formatDateOfBirth(dateOfBirth)}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpandedSection(expandedSection === "personal" ? null : "personal")}
-                  className="text-white hover:bg-white/90"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </Button>
+          <div className="bg-white/5 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Información Personal</h3>
+                {gender && <p className="text-zinc-400">Género: {gender}</p>}
+                {dateOfBirth && (
+                  <p className="text-zinc-400">
+                    Nacimiento: {formatDateOfBirth(dateOfBirth)}
+                  </p>
+                )}
               </div>
-              {expandedSection === "personal" && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <Label htmlFor="gender" className="text-white">Género</Label>
-                    <Select value={editableGender} onValueChange={setEditableGender}>
-                      <SelectTrigger className="mt-1 bg-white border-zinc-800 text-black">
-                        <SelectValue placeholder="Selecciona tu género" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="masculino">Masculino</SelectItem>
-                        <SelectItem value="femenino">Femenino</SelectItem>
-                        <SelectItem value="otro">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="dateOfBirth" className="text-white">Fecha de nacimiento</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={editableDateOfBirth}
-                      onChange={(e) => setEditableDateOfBirth(e.target.value)}
-                      className="mt-1 bg-white border-zinc-800 text-black"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={savePersonalInfo}
-                      disabled={isSaving}
-                      className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
-                    >
-                      {isSaving ? "Guardando..." : "Guardar"}
-                    </button>
-                    <button
-                      onClick={() => setExpandedSection(null)}
-                      className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandedSection(expandedSection === "personal" ? null : "personal")}
+                className="text-white hover:bg-white/90"
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
             </div>
+            {expandedSection === "personal" && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label htmlFor="gender" className="text-white">Género</Label>
+                  <Select value={editableGender} onValueChange={setEditableGender}>
+                    <SelectTrigger className="mt-1 bg-white border-zinc-800 text-black">
+                      <SelectValue placeholder="Selecciona tu género" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="femenino">Femenino</SelectItem>
+                      <SelectItem value="otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="dateOfBirth" className="text-white">Fecha de nacimiento</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={editableDateOfBirth}
+                    onChange={(e) => setEditableDateOfBirth(e.target.value)}
+                    className="mt-1 bg-white border-zinc-800 text-black"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={savePersonalInfo}
+                    disabled={isSaving}
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    {isSaving ? "Guardando..." : "Guardar"}
+                  </button>
+                  <button
+                    onClick={() => setExpandedSection(null)}
+                    className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Contacto de emergencia */}
-          <div className="bg-white/5 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Contacto de Emergencia</h3>
-                  <p className="text-zinc-400">{emergencyContact}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpandedSection(expandedSection === "emergency" ? null : "emergency")}
-                  className="text-white hover:bg-white/90"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </Button>
+          <div className="bg-white/5 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Contacto de Emergencia</h3>
+                <p className="text-zinc-400">{emergencyContact}</p>
               </div>
-              {expandedSection === "emergency" && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <Label htmlFor="emergencyContact" className="text-white">Contacto de emergencia</Label>
-                    <Input
-                      id="emergencyContact"
-                      value={editableEmergencyContact}
-                      onChange={(e) => setEditableEmergencyContact(e.target.value)}
-                      className="mt-1 bg-white border-zinc-800 text-black"
-                      placeholder="Nombre y teléfono"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={saveEmergencyContactInfo}
-                      disabled={isSaving}
-                      className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
-                    >
-                      {isSaving ? "Guardando..." : "Guardar"}
-                    </button>
-                    <button
-                      onClick={() => setExpandedSection(null)}
-                      className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandedSection(expandedSection === "emergency" ? null : "emergency")}
+                className="text-white hover:bg-white/90"
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
             </div>
+            {expandedSection === "emergency" && (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <Label htmlFor="emergencyContact" className="text-white">Contacto de emergencia</Label>
+                  <Input
+                    id="emergencyContact"
+                    value={editableEmergencyContact}
+                    onChange={(e) => setEditableEmergencyContact(e.target.value)}
+                    className="mt-1 bg-white border-zinc-800 text-black"
+                    placeholder="Nombre y teléfono"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveEmergencyContactInfo}
+                    disabled={isSaving}
+                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    {isSaving ? "Guardando..." : "Guardar"}
+                  </button>
+                  <button
+                    onClick={() => setExpandedSection(null)}
+                    className="bg-white hover:bg-zinc-100 text-black font-semibold text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
-       
+
         </div>
       </div>
     </div>

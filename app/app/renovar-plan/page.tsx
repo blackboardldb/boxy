@@ -62,22 +62,22 @@ export default function RenewPlanPage() {
             <div className="h-9 bg-zinc-800 rounded animate-pulse w-64"></div>
 
             {/* Plan selection skeleton */}
-            <div className="bg-zinc-900 p-4 rounded-lg">
+            <div className="bg-zinc-900 p-4 rounded-xl">
               <div className="h-8 bg-zinc-800 rounded animate-pulse w-40 mb-4"></div>
-              <div className="p-4 border rounded-lg bg-zinc-800 animate-pulse">
+              <div className="p-4 border rounded-xl bg-zinc-800 animate-pulse">
                 <div className="h-6 bg-zinc-700 rounded w-32 mb-2"></div>
                 <div className="h-4 bg-zinc-700 rounded w-24"></div>
               </div>
             </div>
 
             {/* Payment method skeleton */}
-            <div className="bg-zinc-900 p-4 rounded-lg">
+            <div className="bg-zinc-900 p-4 rounded-xl">
               <div className="h-8 bg-zinc-800 rounded animate-pulse w-48 mb-4"></div>
               <div className="grid grid-cols-2 gap-4">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="p-4 border rounded-lg bg-zinc-800 animate-pulse"
+                    className="p-4 border rounded-xl bg-zinc-800 animate-pulse"
                   >
                     <div className="h-5 bg-zinc-700 rounded w-20"></div>
                   </div>
@@ -218,13 +218,13 @@ export default function RenewPlanPage() {
         <div className="space-y-6">
           <h1 className="text-3xl font-bold text-white">Renovar Membresía</h1>
           {/* Selección de Plan */}
-          <div className="bg-zinc-900 p-4 rounded-lg">
+          <div className="bg-zinc-900 p-4 rounded-xl">
             <h2 className="text-2xl font-bold text-white mb-2">
               1. Elige tu Plan
             </h2>
 
             {!isChangingPlan && selectedPlan ? (
-              <div className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center">
+              <div className="p-4 border rounded-xl bg-gray-50 flex justify-between items-center">
                 <div>
                   <p className="font-bold">{selectedPlan.name}</p>
                   <p className="text-sm text-muted-foreground">
@@ -274,7 +274,7 @@ export default function RenewPlanPage() {
                                 <Label
                                   key={plan.id}
                                   htmlFor={plan.id}
-                                  className="flex items-center justify-between p-4 border rounded-lg cursor-pointer bg-white hover:bg-gray-50 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
+                                  className="flex items-center justify-between p-4 border rounded-xl cursor-pointer bg-white hover:bg-gray-50 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
                                 >
                                   <div>
                                     <p className="font-bold">{plan.name}</p>
@@ -321,7 +321,7 @@ export default function RenewPlanPage() {
                                 <Label
                                   key={plan.id}
                                   htmlFor={plan.id}
-                                  className="flex items-center justify-between p-4 border rounded-lg cursor-pointer bg-white hover:bg-gray-50 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
+                                  className="flex items-center justify-between p-4 border rounded-xl cursor-pointer bg-white hover:bg-gray-50 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
                                 >
                                   <div>
                                     <p className="font-bold">{plan.name}</p>
@@ -351,11 +351,11 @@ export default function RenewPlanPage() {
             )}
           </div>
           {/* Selección de Método de Pago */}
-          <div className="bg-zinc-900 p-4 rounded-lg ">
+          <div className="bg-zinc-900 p-4 rounded-xl ">
             <h2 className="text-2xl font-bold text-white mb-2">
               2. Elige tu Forma de Pago
             </h2>
-                      <p className="text-sm text-gray-400 ">
+            <p className="text-sm text-gray-400 ">
               Contado, débito y crédito se deben pagar presencial en el box
             </p>
 
@@ -374,7 +374,7 @@ export default function RenewPlanPage() {
                   <Label
                     key={method.id}
                     htmlFor={`payment-${method.id}`}
-                    className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer bg-white hover:bg-gray-100 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
+                    className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer bg-white hover:bg-gray-100 has-[:checked]:bg-lime-100 has-[:checked]:border-lime-500 has-[:checked]:shadow-md transition-all duration-200"
                   >
                     <RadioGroupItem
                       value={method.id}
@@ -388,9 +388,9 @@ export default function RenewPlanPage() {
             </div>
           </div>
           {/* Botón de Confirmación */}
-          <div className="bg-zinc-900 p-4 rounded-lg ">
+          <div className="bg-zinc-900 p-4 rounded-xl ">
             <p className="text-2xl text-center">🚨</p>
-             <p className="text-sm text-center text-gray-400 mt-2">
+            <p className="text-sm text-center text-gray-400 mt-2">
               Esta es una solicitud de renovación, solicita a tu coach aprobar la renovación o escribenos al whatsapp.
             </p>
           </div>
@@ -415,7 +415,7 @@ export default function RenewPlanPage() {
                 "Solicitar Renovación"
               )}
             </Button>
-           
+
           </div>
         </div>
       </main>

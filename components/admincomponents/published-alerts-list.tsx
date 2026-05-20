@@ -183,7 +183,7 @@ export function PublishedAlertsList() {
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-1 p-2 rounded-lg text-white shrink-0 ${getAlertColor(alert.type)}`}
+                    className={`mt-1 p-2 rounded-xl text-white shrink-0 ${getAlertColor(alert.type)}`}
                   >
                     {getAlertIcon(alert.type)}
                   </div>

@@ -80,19 +80,19 @@ export default function CancellationModal({
         <div className="px-4 pb-4 space-y-4">
           {!isCancelled ? (
             <>
-              <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                 <div className="flex items-center justify-center gap-3 text-2xl font-semibold py-2">
-                <h3 className=" text-zinc-900">
-                  {classItem.name}
-                </h3>
-    
-                    <span className="text-zinc-800">
-                      {formattedTime}
-                    </span>
-                  
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+                <div className="flex items-center justify-center gap-3 text-2xl font-semibold py-2">
+                  <h3 className=" text-zinc-900">
+                    {classItem.name}
+                  </h3>
+
+                  <span className="text-zinc-800">
+                    {formattedTime}
+                  </span>
+
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  
+
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-zinc-500" />
                     <span className="text-sm text-zinc-600">
@@ -128,7 +128,7 @@ export default function CancellationModal({
                   {formattedTime} con {classItem.instructor}
                 </p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-50 rounded-xl p-4">
                 <p className="text-sm text-blue-800">
                   Hemos liberado tu cupo y esta clase no será descontada de tu
                   plan.

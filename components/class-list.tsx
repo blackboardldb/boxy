@@ -17,12 +17,12 @@ interface ClassListProps {
   isLoading?: boolean;
   canRegister?: boolean;
   planStatus?:
-    | "active"
-    | "expired"
-    | "pending"
-    | "exhausted"
-    | "scheduled"
-    | "inactive";
+  | "active"
+  | "expired"
+  | "pending"
+  | "exhausted"
+  | "scheduled"
+  | "inactive";
 }
 
 export default function ClassList({
@@ -91,7 +91,7 @@ export default function ClassList({
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 border border-zinc-800 rounded-lg">
+          <div className="text-center py-16 border border-zinc-800 rounded-xl">
             <Calendar className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
             <p className="text-gray-400 text-base">
               No hay clases disponibles para este día

@@ -94,26 +94,26 @@ export default function RegistrationModal({
             {isConfirmed ? "Clase reservada" : "Vas a reservar la siguiente clase"}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
-             Detalles de confirmación de reserva
+            Detalles de confirmación de reserva
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 space-y-4">
           {!isConfirmed ? (
             <>
-              <div className="bg-zinc-100 rounded-lg p-4">
-              <div className="flex items-center justify-center gap-3 text-2xl font-semibold py-2">
-                <h3 className=" text-zinc-900">
-                  {classItem.name}
-                </h3>
-    
-                    <span className="text-blue-600">
-                      {formattedTime}
-                    </span>
-                  
+              <div className="bg-zinc-100 rounded-xl p-4">
+                <div className="flex items-center justify-center gap-3 text-2xl font-semibold py-2">
+                  <h3 className=" text-zinc-900">
+                    {classItem.name}
+                  </h3>
+
+                  <span className="text-blue-600">
+                    {formattedTime}
+                  </span>
+
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  
+
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-zinc-500" />
                     <span className="text-sm text-zinc-600">
@@ -176,7 +176,7 @@ export default function RegistrationModal({
                     {formattedTime} con {classItem.instructor}
                   </p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-4">
+                <div className="bg-green-50 rounded-xl p-4">
                   <p className="text-sm text-green-700">
                     Llega con 10 minutos de anticipación. Puedes cancelar hasta
                     45 minutos antes del inicio.
@@ -194,7 +194,7 @@ export default function RegistrationModal({
                 </p>
               )}
               {error && (
-                <div className="bg-red-50 border border-red-100 rounded-lg p-3 mb-2">
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-2">
                   <p className="text-sm font-medium text-red-600 text-center">
                     {error}
                   </p>
@@ -207,21 +207,21 @@ export default function RegistrationModal({
         <DrawerFooter>
           {!isConfirmed ? (
             <>
-              <Button 
-                onClick={handleConfirm} 
+              <Button
+                onClick={handleConfirm}
                 disabled={isProcessing || (isLimitReached && !isConfirmed)}
-                className="bg-lime-500 hover:bg-lime-400 text-black"
+                className="bg-lime-500 hover:bg-lime-400 text-black rounded-xl font-bold"
               >
                 {isProcessing ? "Procesando..." : "Confirmar reserva"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancelar</Button>
+                <Button variant="outline" className="rounded-xl">Cancelar</Button>
               </DrawerClose>
             </>
           ) : (
             <DrawerClose asChild>
               <Button
-                className="w-full"
+                className="w-full  rounded-xl"
                 variant="outline"
                 onClick={handleClose}
               >

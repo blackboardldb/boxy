@@ -14,12 +14,12 @@ interface ClassCardProps {
   onCancel: () => void;
   canRegister?: boolean;
   planStatus?:
-    | "active"
-    | "expired"
-    | "pending"
-    | "exhausted"
-    | "scheduled"
-    | "inactive";
+  | "active"
+  | "expired"
+  | "pending"
+  | "exhausted"
+  | "scheduled"
+  | "inactive";
 }
 
 
@@ -71,22 +71,21 @@ export function ClassCard({
   const isActionable = canCancelRegistration || canRegisterForNewClass;
 
   // Lógica de estado simplificada para el span
-  const statusInfo = isCancelled 
+  const statusInfo = isCancelled
     ? { label: "Cancelada", className: "text-red-500" }
-    : isCompleted 
-    ? { label: "Finalizada", className: "text-gray-400" }
-    : isInProgress 
-    ? { label: "En curso", className: "text-green-600 font-bold" }
-    : null;
+    : isCompleted
+      ? { label: "Finalizada", className: "text-gray-400" }
+      : isInProgress
+        ? { label: "En curso", className: "text-green-600 font-bold" }
+        : null;
 
   return (
     <div
       className={`
-        border rounded-lg p-3 transition-all duration-200 relative
-        ${
-          !isActionable
-            ? "opacity-50 bg-white"
-            : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
+        border rounded-xl p-3 transition-all duration-200 relative
+        ${!isActionable
+          ? "opacity-50 bg-white"
+          : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
         }
       `}
     >
@@ -97,7 +96,7 @@ export function ClassCard({
         </span>
       )}
 */}
- 
+
 
       {/* Información principal */}
       <div className="space-y-2">
@@ -111,44 +110,44 @@ export function ClassCard({
             )}
           </div>
           <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center">
-             {/* Estado de la clase como span */}
-      {statusInfo && (
-        <>
-          {isInProgress ? (
-            <span className="flex items-center gap-1.5 mr-2 text-green-600">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="font-bold uppercase tracking-wide text-xs">{statusInfo.label}</span>
-            </span>
-          ) : (
-            <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs`}>{statusInfo.label}</span>
-          )}
-        </>
-      )}
-          {formattedTime}</span>
+            {/* Estado de la clase como span */}
+            {statusInfo && (
+              <>
+                {isInProgress ? (
+                  <span className="flex items-center gap-1.5 mr-2 text-green-600">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="font-bold uppercase tracking-wide text-xs">{statusInfo.label}</span>
+                  </span>
+                ) : (
+                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs`}>{statusInfo.label}</span>
+                )}
+              </>
+            )}
+            {formattedTime}</span>
         </div>
       </div>
-      
+
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
       <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}`}>
-         
-      
-              <div className=" inline-flex items-center gap-1">
-                <User className="w-4 h-4" />
-              <span>{classItem.instructor}</span>
-              </div>
-         
-      <div className=" inline-flex items-center gap-1">
+
+
+        <div className=" inline-flex items-center gap-1">
+          <User className="w-4 h-4" />
+          <span>{classItem.instructor}</span>
+        </div>
+
+        <div className=" inline-flex items-center gap-1">
           <Clock className="w-4 h-4" />
           <span>{classItem.duration}</span>
-          </div>
-           <div className=" inline-flex items-center gap-1">
+        </div>
+        <div className=" inline-flex items-center gap-1">
           <Users className="w-4 h-4" />
           <span>{classItem.alumnRegistred}</span>
-          </div>
-                 {/* Indicador de clase de hoy
+        </div>
+        {/* Indicador de clase de hoy
           <div className=" inline-flex items-center gap-1">
           <Clock className="w-4 h-4" />
           <span>
@@ -161,7 +160,7 @@ export function ClassCard({
             {formatDayMonth(classItem.dateTime)}</span>
             </div>
              */}
-        </div>
+      </div>
 
       {/* Botones de acción - Ocultos si no hay acción posible (en lugar de deshabilitados) */}
       {isActionable && (
@@ -170,10 +169,9 @@ export function ClassCard({
             onClick={handleAction}
             className={`
               flex-1 p-2.5 rounded-xl text-base font-bold transition-colors duration-200
-              ${
-                isRegistered
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-lime-500 text-black hover:bg-lime-400"
+              ${isRegistered
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-lime-500 text-black hover:bg-lime-400"
               }
             `}
           >

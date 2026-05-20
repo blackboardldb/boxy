@@ -47,7 +47,7 @@ function showUpdateNotification() {
   // Crear notificación de actualización
   const updateNotification = document.createElement("div");
   updateNotification.className =
-    "fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50";
+    "fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-xl shadow-lg z-50";
   updateNotification.innerHTML = `
     <div class="flex items-center gap-3">
       <div class="flex-1">
@@ -181,7 +181,7 @@ function showOfflineNotification() {
   const notification = document.createElement("div");
   notification.id = "offline-notification";
   notification.className =
-    "fixed top-4 left-4 right-4 bg-red-600 text-white p-3 rounded-lg shadow-lg z-50 text-center";
+    "fixed top-4 left-4 right-4 bg-red-600 text-white p-3 rounded-xl shadow-lg z-50 text-center";
   notification.innerHTML = `
     <div class="flex items-center justify-center gap-2">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

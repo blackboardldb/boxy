@@ -65,7 +65,7 @@ const DefaultErrorFallback: React.FC<{
 }> = ({ error, resetError }) => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-zinc-900 rounded-lg p-6 text-center">
+      <div className="max-w-md w-full bg-zinc-900 rounded-xl p-6 text-center">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">Algo salió mal</h2>
         <p className="text-gray-400 mb-4">

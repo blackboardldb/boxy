@@ -156,20 +156,18 @@ export function InAppAlertsCreator() {
 
       {/* Push notification toggle */}
       <div
-        className={`p-4 rounded-xl border ${
-          type === "cancelacion"
+        className={`p-4 rounded-xl border ${type === "cancelacion"
             ? "bg-red-50/50 border-red-100"
             : "bg-blue-50/50 border-blue-100"
-        }`}
+          }`}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-lg ${
-                type === "cancelacion"
+              className={`p-2 rounded-xl ${type === "cancelacion"
                   ? "bg-red-100 text-red-600"
                   : "bg-blue-100 text-blue-600"
-              }`}
+                }`}
             >
               <SendHorizontal className="w-4 h-4" />
             </div>

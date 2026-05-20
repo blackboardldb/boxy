@@ -124,7 +124,7 @@ export function RMManager() {
                     {percentages.map((percentage) => (
                       <div
                         key={percentage}
-                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl border hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <div className="text-lg font-bold w-12 text-center">
