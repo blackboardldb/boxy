@@ -76,7 +76,7 @@ export function ClassCard({
     : isCompleted
       ? { label: "Finalizada", className: "text-gray-400" }
       : isInProgress
-        ? { label: "En curso", className: "text-green-600 font-bold" }
+        ? { label: "Ahora", className: "text-green-600 font-bold" }
         : null;
 
   return (
@@ -100,8 +100,8 @@ export function ClassCard({
 
       {/* Información principal */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
             {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
               <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
@@ -109,7 +109,7 @@ export function ClassCard({
               </span>
             )}
           </div>
-          <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center">
+          <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center shrink-0">
             {/* Estado de la clase como span */}
             {statusInfo && (
               <>

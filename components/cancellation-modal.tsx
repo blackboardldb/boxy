@@ -77,15 +77,15 @@ export default function CancellationModal({
             {isCancelled
               ? "Clase cancelada"
               : blockedMessage
-              ? "No puedes cancelar esta clase"
-              : "¿Estás seguro de cancelar la clase?"}
+                ? "No puedes cancelar esta clase"
+                : "¿Estás seguro de cancelar la clase?"}
           </DrawerTitle>
           <DrawerDescription className={(isCancelled || blockedMessage) ? "sr-only" : "text-center"}>
             {isCancelled
               ? "Detalles de confirmación de reserva cancelada"
               : blockedMessage
-              ? blockedMessage
-              : "Verifica los detalles de la clase antes de cancelar"}
+                ? blockedMessage
+                : "Verifica los detalles de la clase antes de cancelar"}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -169,11 +169,11 @@ export default function CancellationModal({
             // Botón único de cierre para estado final (éxito o bloqueado)
             <DrawerClose asChild>
               <Button
-                className="w-full"
+                className="w-full rounded-xl bg-zinc-100 border-zinc-200"
                 variant="outline"
                 onClick={handleClose}
               >
-                Cerrar
+                Volver
               </Button>
             </DrawerClose>
           ) : (
@@ -187,7 +187,7 @@ export default function CancellationModal({
                 {isProcessing ? "Procesando..." : "Cancelar esta clase"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Conservar clase</Button>
+                <Button variant="outline" className="rounded-xl bg-zinc-100 border-zinc-200">Conservar clase</Button>
               </DrawerClose>
             </>
           )}

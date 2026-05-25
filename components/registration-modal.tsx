@@ -215,7 +215,7 @@ export default function RegistrationModal({
                 {isProcessing ? "Procesando..." : "Confirmar reserva"}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline" className="rounded-xl">Cancelar</Button>
+                <Button variant="outline" className="rounded-xl bg-zinc-100 border-zinc-200">Volver</Button>
               </DrawerClose>
             </>
           ) : (
@@ -225,7 +225,7 @@ export default function RegistrationModal({
                 variant="outline"
                 onClick={handleClose}
               >
-                Cerrar
+                Cancelar
               </Button>
             </DrawerClose>
           )}
