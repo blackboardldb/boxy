@@ -6,12 +6,11 @@ const MOTIVATIONAL_PHRASES = [
   "Buen día 💪 ¿Entrenamos?",
   "Activa el día con un buen WOD ⚡",
   "Un entrenamiento y cambia todo 💪",
-  "¿Escapamos a entrenar? 😎",
   "Reinicia el día entrenando ⚡",
-  "Todavía estás a tiempo 💪",
   "Cierra el día entrenando 🔥",
   "Tu mejor hora empieza ahora 🏋️",
   "Entrena y cambia el ritmo 🔥",
+  "    Hora de desconectarse entrenando 💥"
 ];
 
 export function MotivationalHome() {
