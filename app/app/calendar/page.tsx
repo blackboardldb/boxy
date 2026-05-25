@@ -282,27 +282,38 @@ export default function CalendarPage() {
 
   const confirmCancellation = async () => {
     if (!selectedClass || !currentUser) return;
-    try {
-      // Verificar reglas de cancelación
-      const discipline = disciplines?.find(
-        (d) => selectedClass.name === d.name || selectedClass.id.includes(d.id)
+
+    // Verificar reglas de cancelación ANTES del try para no contaminar la consola
+    const discipline = disciplines?.find(
+      (d) => selectedClass.name === d.name || selectedClass.id.includes(d.id)
+    );
+
+    if (discipline?.cancellationRules) {
+      const classDateTime = new Date(selectedClass.dateTime);
+      const now = new Date();
+      const hoursUntilClass =
+        (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      const applicableRule = discipline.cancellationRules.find((rule: any) =>
+        selectedClass.formattedTime.startsWith(rule.time)
       );
 
-      if (discipline?.cancellationRules) {
-        const classDateTime = new Date(selectedClass.dateTime);
-        const now = new Date();
-        const hoursUntilClass =
-          (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-        const applicableRule = discipline.cancellationRules.find((rule: any) =>
-          selectedClass.formattedTime.startsWith(rule.time)
+      if (applicableRule && hoursUntilClass < applicableRule.hoursBefore) {
+        const formatHours = (h: number) => {
+          const totalMinutes = Math.round(h * 60);
+          const hrs = Math.floor(totalMinutes / 60);
+          const mins = totalMinutes % 60;
+          if (hrs === 0) return `${mins} min`;
+          if (mins === 0) return `${hrs} hora${hrs !== 1 ? "s" : ""}`;
+          return `${hrs} hora${hrs !== 1 ? "s" : ""} ${mins} min`;
+        };
+        throw new Error(
+          `Ya no puedes cancelar esta clase. La cancelación debe realizarse con al menos ${formatHours(applicableRule.hoursBefore)} de anticipación.`
         );
-
-        if (applicableRule && hoursUntilClass < applicableRule.hoursBefore) {
-          return;
-        }
       }
+    }
 
+    try {
       await cancelRegistration.mutateAsync({
         classId: selectedClass.id,
         userId: currentUser.id,

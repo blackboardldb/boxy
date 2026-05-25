@@ -45,7 +45,7 @@ export default function AdminWeeklyDatePicker({
     return dates;
   };
 
-  // Initialize and sync with selected date
+  // Initialize and sync with selected datea
   useEffect(() => {
     setCurrentWeekStart(getWeekStart(selectedDate));
   }, [selectedDate]);
