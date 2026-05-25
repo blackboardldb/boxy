@@ -5,8 +5,11 @@ import type React from "react";
 import { ClassesHomeCard } from "@/components/ClassesHomeCard";
 import { Button } from "@/components/ui/button";
 
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { Calendar, Ticket, AlertCircle, Clock } from "lucide-react";
 import { InAppAlerts } from "@/components/InAppAlerts";
+import { MotivationalHome } from "@/components/motivational-home";
 import Link from "next/link";
 import type { FitCenterUserProfile, FormattedClassItem } from "@/lib/types";
 import { getPlanStatus } from "@/lib/utils";
@@ -80,9 +83,7 @@ const HomePage: React.FC<HomePageProps> = ({
         <span className="uppercase text-lime-400 text-sm font-bold">
           Hola, {userProfile.firstName}
         </span>
-        <p className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-sm mb-6 sm:mb-12">
-          ¿Cómo estamos para entrenar hoy 💪?
-        </p>
+        <MotivationalHome />
       </div>
 
 

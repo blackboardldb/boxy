@@ -27,9 +27,9 @@ export function SkeletonHomePage() {
         {/* Cabecera de usuario */}
         <div className="text-left my-6">
           <span className="uppercase text-lime-400 text-xs">Hola</span>
-          <p className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-sm mb-6 sm:mb-12">
-            ¿Cómo estamos para entrenar hoy 💪?
-          </p>
+          <div className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-sm mb-6 sm:mb-12">
+            <Skeleton className="h-8 max-w-44 bg-zinc-700 rounded-xl" />
+          </div>
         </div>
       </div>
 
