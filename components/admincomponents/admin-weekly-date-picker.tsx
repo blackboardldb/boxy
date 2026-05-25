@@ -135,9 +135,8 @@ export default function AdminWeeklyDatePicker({
     if (firstDate.getMonth() === lastDate.getMonth()) {
       return `${monthNames[firstDate.getMonth()]} ${firstDate.getFullYear()}`;
     } else {
-      return `${monthNames[firstDate.getMonth()]} - ${
-        monthNames[lastDate.getMonth()]
-      } ${firstDate.getFullYear()}`;
+      return `${monthNames[firstDate.getMonth()]} - ${monthNames[lastDate.getMonth()]
+        } ${firstDate.getFullYear()}`;
     }
   };
 
@@ -159,7 +158,7 @@ export default function AdminWeeklyDatePicker({
   };
 
   return (
-    <div className={` border-b-2 border-zinc-200 bg-zinc-50  p-3 ${className}`}>
+    <div className={` border-b-2 border-zinc-200 bg-zinc-100 m-4 rounded-xl overflow-hidden  p-3 ${className}`}>
       {/* Header */}
       <div className="pb-2 border-b border-zinc-100">
         <div className="flex items-center justify-between">
@@ -222,9 +221,8 @@ export default function AdminWeeklyDatePicker({
         onTouchEnd={handleTouchEnd}
       >
         <div
-          className={`grid grid-cols-7 gap-1 md:gap-2 transition-all duration-300 ${
-            isTransitioning ? "opacity-50" : "opacity-100"
-          }`}
+          className={`grid grid-cols-7 gap-1 md:gap-2 transition-all duration-300 ${isTransitioning ? "opacity-50" : "opacity-100"
+            }`}
         >
           {weekDates.map((date, index) => {
             const isCurrentDay = isToday(date);
@@ -247,10 +245,9 @@ export default function AdminWeeklyDatePicker({
                     w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center 
                     text-sm md:text-base font-medium
                     transition-all duration-200 ease-in-out
-                    ${
-                      isSelectedDay
-                        ? "bg-black text-white shadow-md"
-                        : isCurrentDay
+                    ${isSelectedDay
+                      ? "bg-black text-white shadow-md"
+                      : isCurrentDay
                         ? "bg-blue-100 text-blue-600"
                         : "text-zinc-700 hover:bg-zinc-100"
                     }

@@ -168,20 +168,18 @@ export function AddStudentModal({
     [plans, formData.planId]
   );
 
-  // Agregar este useEffect después de donde defines selectedPlan
-useEffect(() => {
-  if (!selectedPlan) return;
-  
-  const newEndDate = calcularFechaTerminoMembresia(
-    formData.joinDate,
-    selectedPlan.durationInMonths
-  );
-  
-  setFormData((prev) => ({
-    ...prev,
-    nextPayment: newEndDate,
-  }));
-}, [selectedPlan]); // se ejecuta cada vez que cambia el plan seleccionado
+  // Recalcular nextPayment cuando cambia el plan seleccionado
+  useEffect(() => {
+    if (!selectedPlan) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      nextPayment: calcularFechaTerminoMembresia(
+        prev.joinDate, // ✅ lee joinDate del estado actual, evita closure stale
+        selectedPlan.durationInMonths
+      ),
+    }));
+  }, [selectedPlan]); // se ejecuta cada vez que cambia el plan seleccionado
 
   // Reset form when modal opens/closes
   useEffect(() => {

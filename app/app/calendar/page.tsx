@@ -326,19 +326,21 @@ export default function CalendarPage() {
 
   return (
     <>
-      <div className="max-w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-8 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-900 pb-3 hidden sm:block">
-            Reserva de clases
-          </h1>
+      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-black">
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-white rounded-t-xl">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-xl font-bold text-gray-900 pb-3 hidden sm:block">
+              Reserva de clases
+            </h1>
+          </div>
         </div>
-      </div>
-      <div className=" sticky top-0 z-10 max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white">
-        <WeeklyDatePicker
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          className=""
-        />
+        <div className="  max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white rounded-b-xl">
+          <WeeklyDatePicker
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            className=""
+          />
+        </div>
       </div>
 
       <div className="bg-black min-h-screen pb-28">
