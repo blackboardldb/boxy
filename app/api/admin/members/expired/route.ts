@@ -54,7 +54,12 @@ export async function GET(request: NextRequest) {
         : null,
     }));
 
-    return NextResponse.json({ success: true, data });
+    const response = NextResponse.json({ success: true, data });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=600, stale-while-revalidate=120"
+    );
+    return response;
   } catch (error) {
     console.error("[GET /api/admin/members/expired]", error);
     return NextResponse.json(

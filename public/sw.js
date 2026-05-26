@@ -99,8 +99,24 @@ self.addEventListener("fetch", (event) => {
 async function handleGetRequest(request) {
   const url = new URL(request.url);
 
-  // 1. Navegación de página (HTML) - Siempre intentar network first para data fresca
+  // 1. Navegación de página (HTML) - Stale-While-Revalidate
+  // Si ya tenemos el HTML cacheado, lo servimos de inmediato y actualizamos en background.
+  // Si no hay caché (primera visita o caché limpiado), cae al networkFirst normal.
   if (request.mode === "navigate") {
+    const cached = await caches.match(request);
+    if (cached) {
+      // Revalidar en background sin bloquear al usuario
+      event.waitUntil(
+        fetch(request)
+          .then((resp) => {
+            if (resp && resp.ok) {
+              caches.open(DYNAMIC_CACHE).then((c) => c.put(request, resp));
+            }
+          })
+          .catch(() => {}) // sin conexión → seguir usando el caché
+      );
+      return cached;
+    }
     return networkFirst(request, DYNAMIC_CACHE);
   }
 
