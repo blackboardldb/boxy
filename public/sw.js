@@ -106,15 +106,13 @@ async function handleGetRequest(request) {
     const cached = await caches.match(request);
     if (cached) {
       // Revalidar en background sin bloquear al usuario
-      event.waitUntil(
-        fetch(request)
-          .then((resp) => {
-            if (resp && resp.ok) {
-              caches.open(DYNAMIC_CACHE).then((c) => c.put(request, resp));
-            }
-          })
-          .catch(() => {}) // sin conexión → seguir usando el caché
-      );
+      fetch(request)
+        .then((resp) => {
+          if (resp && resp.ok) {
+            caches.open(DYNAMIC_CACHE).then((c) => c.put(request, resp));
+          }
+        })
+        .catch(() => {}); // sin conexión → seguir usando el caché
       return cached;
     }
     return networkFirst(request, DYNAMIC_CACHE);
