@@ -22,6 +22,7 @@ import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
 import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
+import { usePlanHistory } from "@/lib/react-query/hooks/usePlanHistory";
 
 export default function StudentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -50,6 +51,13 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [isSaving, setIsSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [registrarIngresoEdit, setRegistrarIngresoEdit] = useState(false); // Desmarcado por defecto
+
+  // Estado del acordeón de historial — controla la carga diferida
+  const [planesOpen, setPlanesOpen] = useState(true); // abierto por defecto (defaultValue=["planes"])
+  const { data: planHistory = [], isLoading: historyLoading } = usePlanHistory(
+    resolvedParams.id,
+    planesOpen
+  );
 
   // Password reset state
   const [resetPasswordStatus, setResetPasswordStatus] = useState<"idle" | "loading" | "done">("idle");
@@ -297,8 +305,8 @@ const handleStartDateChange = (newDate: string) => {
     );
   }, [userClasses, student]);
 
-  // Historial completo: todos los estados — scheduled, pending, approved, cancelled, superseded
-  const planHistory = student?.membershipRenewals ?? [];
+
+
 
   const hasPendingRenewal = student?.membershipRenewals?.some(
     (r: any) => r.status === 'pending'
@@ -699,7 +707,12 @@ const handleStartDateChange = (newDate: string) => {
             </CardHeader>
           </Card>
 
-          <Accordion type="multiple" defaultValue={["planes"]} className="w-full space-y-4">
+          <Accordion
+            type="multiple"
+            defaultValue={["planes"]}
+            className="w-full space-y-4"
+            onValueChange={(vals) => setPlanesOpen(vals.includes("planes"))}
+          >
             
             {/* HISTORIAL DE ASISTENCIA */}
             <AccordionItem value="asistencia" className="border border-zinc-100 bg-white rounded-xl shadow-sm overflow-hidden px-1">
@@ -734,86 +747,94 @@ const handleStartDateChange = (newDate: string) => {
                 Historial de Planes
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4 pt-0 border-t border-zinc-100">
-                <div className="pt-4">
-                  {student?.membership && (
-                    <div
-                      className={`relative pl-6 border-l-2 ${
+                <div className="pt-3 max-h-[420px] overflow-y-auto space-y-2 pr-1">
+
+                  {/* — Plan actual — */}
+                  {student?.membership ? (
+                    <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${
+                      isPlanActive
+                        ? "bg-emerald-50 border border-emerald-100"
+                        : isScheduled
+                        ? "bg-blue-50 border border-blue-100"
+                        : "bg-zinc-50 border border-zinc-100"
+                    }`}>
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-sm font-semibold text-zinc-900 truncate">
+                          {student.membership.membershipType}
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {student.membership.currentPeriodStart
+                            ? format(parseISO(student.membership.currentPeriodStart.substring(0, 10)), "d MMM yyyy", { locale: es })
+                            : "—"}
+                          {" → "}
+                          {student.membership.currentPeriodEnd
+                            ? format(parseISO(student.membership.currentPeriodEnd.substring(0, 10)), "d MMM yyyy", { locale: es })
+                            : "—"}
+                          {" · "}{classesConsumed}/{isUnlimited ? "∞" : planClassLimit} clases
+                        </p>
+                      </div>
+                      <span className={`shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full ${
                         isPlanActive
-                          ? "border-emerald-500"
+                          ? "bg-emerald-100 text-emerald-700"
                           : isScheduled
-                          ? "border-blue-500"
-                          : "border-zinc-300"
-                      } space-y-1.5 py-2`}
-                    >
-                      <div
-                        className={`absolute w-2.5 h-2.5 ${
-                          isPlanActive
-                            ? "bg-emerald-500"
-                            : isScheduled
-                            ? "bg-blue-500"
-                            : "bg-zinc-300"
-                        } rounded-sm -left-[5.5px] top-3`}
-                      />
-                      <p
-                        className={`text-sm font-semibold ${
-                          isPlanActive || isScheduled
-                            ? "text-zinc-900"
-                            : "text-zinc-500"
-                        }`}
-                      >
-                        {student.membership.membershipType} | {student.membership.currentPeriodStart
-                          ? format(parseISO(student.membership.currentPeriodStart.substring(0, 10)), "d/M/yyyy")
-                          : "-"} hasta {student.membership.currentPeriodEnd
-                          ? format(parseISO(student.membership.currentPeriodEnd.substring(0, 10)), "d/M/yyyy")
-                          : "-"} | {classesConsumed}/{isUnlimited ? "∞" : planClassLimit}
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-zinc-100 text-zinc-500"
+                      }`}>
+                        {isPlanActive ? "Activo" : isScheduled ? "Programado" : "Inactivo"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl px-4 py-3 bg-zinc-50 border border-zinc-100">
+                      <p className="text-sm text-zinc-400">Sin plan activo</p>
+                    </div>
+                  )}
+
+                  {/* — Planes anteriores (carga diferida) — */}
+                  {historyLoading ? (
+                    <div className="space-y-2 pt-1">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="rounded-xl px-4 py-3 bg-zinc-50 border border-zinc-100 space-y-1.5">
+                          <div className="h-3.5 bg-zinc-200 rounded-lg animate-pulse w-2/5" />
+                          <div className="h-3 bg-zinc-100 rounded-lg animate-pulse w-3/5" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : planHistory.length > 0 ? (
+                    <>
+                      <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider pt-2 pb-0.5 px-1">
+                        Planes anteriores
                       </p>
-                    </div>
-                  )}
-                  {(planHistory.length === 0) && !student?.membership?.membershipType && (
-                    <div className="relative pl-6 border-l-2 border-zinc-100 space-y-1.5 py-4">
-                        <div className="absolute w-2.5 h-2.5 bg-zinc-200 rounded-sm -left-[5.5px] top-5" />
-                        <p className="text-sm font-medium text-zinc-400">Sin historial previo</p>
-                        <p className="text-xs text-zinc-400">Aún no hay membresías asignadas para este alumno.</p>
-                    </div>
-                  )}
-                  {planHistory.map((renewal: any, idx: number) => {
-                      const planName = plans.find((p: any) => p.id === renewal.requestedPlanId)?.name
-                        ?? (renewal.renewalDetails as any)?.membershipType
-                        ?? renewal.requestedPlanId
-                        ?? "Plan";
-
-                      const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
-                        approved:   { label: "Aprobado",   color: "text-emerald-600", dot: "bg-emerald-400" },
-                        scheduled:  { label: "Programado", color: "text-blue-600",    dot: "bg-blue-400"    },
-                        pending:    { label: "Pendiente",  color: "text-yellow-600",  dot: "bg-yellow-400"  },
-                        cancelled:  { label: "Cancelado",  color: "text-red-500",     dot: "bg-red-400"     },
-                        superseded: { label: "Reemplazado",color: "text-zinc-400",    dot: "bg-zinc-300"    },
-                        rejected:   { label: "Rechazado",  color: "text-red-600",     dot: "bg-red-500"     },
-                      };
-                      const meta = STATUS_META[renewal.status] ?? { label: renewal.status, color: "text-zinc-500", dot: "bg-zinc-300" };
-
-                      const details = renewal.renewalDetails as { startDate?: string } | null;
-                      const startStr = details?.startDate
-                        ? (() => { try { return format(parseISO(details.startDate.substring(0,10)), "d/M/yyyy"); } catch { return details.startDate; } })()
-                        : null;
-
-                      return (
-                          <div key={renewal.id || idx} className="relative pl-6 border-l-2 border-zinc-100 py-4 flex items-start justify-between gap-2">
-                              <div className="space-y-1 flex-1">
-                                  <div className={`absolute w-2.5 h-2.5 ${meta.dot} rounded-sm -left-[5.5px] top-5`} />
-                                  <p className="text-sm font-medium text-zinc-700">
-                                    {planName}
-                                    {startStr && <span className="text-zinc-400 font-normal"> · desde {startStr}</span>}
-                                  </p>
-                                  <p className="text-xs text-zinc-500">
-                                    {renewal.requestedAt ? format(new Date(renewal.requestedAt), "d 'de' MMMM yyyy", { locale: es }) : "-"}
-                                    {" • "}
-                                    <span className={`font-semibold ${meta.color}`}>{meta.label}</span>
-                                  </p>
-                              </div>
+                      {planHistory.map((renewal) => (
+                        <div
+                          key={renewal.id}
+                          className="rounded-xl px-4 py-3 bg-zinc-50 border border-zinc-100 flex items-center justify-between gap-3"
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="text-sm font-medium text-zinc-700 truncate">
+                              {renewal.planName}
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              {renewal.startDate
+                                ? format(parseISO(renewal.startDate.substring(0, 10)), "d MMM yyyy", { locale: es })
+                                : "—"}
+                              {" → "}
+                              {renewal.endDate
+                                ? format(parseISO(renewal.endDate.substring(0, 10)), "d MMM yyyy", { locale: es })
+                                : "—"}
+                            </p>
                           </div>
-                      );
-                  })}
+                          {renewal.amount != null && (
+                            <span className="shrink-0 text-xs font-semibold text-zinc-500">
+                              ${renewal.amount.toLocaleString("es-CL")}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  ) : student?.membership ? (
+                    <p className="text-xs text-zinc-400 px-1 pt-1 italic">Sin planes anteriores registrados.</p>
+                  ) : null}
+
                 </div>
               </AccordionContent>
             </AccordionItem>
