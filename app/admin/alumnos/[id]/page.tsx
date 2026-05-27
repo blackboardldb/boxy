@@ -399,7 +399,16 @@ const handleStartDateChange = (newDate: string) => {
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Fecha de Nacimiento</p>
                       <p className="font-medium text-zinc-900">
-                        {format(parseISO(student.dateOfBirth), "d 'de' MMMM yyyy", { locale: es })}
+                        {(() => {
+                          const parts = student.dateOfBirth.split('-');
+                          if (parts.length === 3) {
+                            const year = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10) - 1;
+                            const day = parseInt(parts[2], 10);
+                            return format(new Date(year, month, day), "d 'de' MMMM yyyy", { locale: es });
+                          }
+                          return format(new Date(student.dateOfBirth), "d 'de' MMMM yyyy", { locale: es });
+                        })()}
                       </p>
                     </div>
                   )}

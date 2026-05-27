@@ -256,6 +256,13 @@ export function UserProfile() {
   const formatDateOfBirth = (isoDateString?: string) => {
     if (!isoDateString) return "No especificado";
     try {
+      const parts = isoDateString.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // 0-indexed in JS
+        const day = parseInt(parts[2], 10);
+        return format(new Date(year, month, day), "d 'de' MMMM yyyy", { locale: es });
+      }
       return format(new Date(isoDateString), "d 'de' MMMM yyyy", { locale: es });
     } catch {
       return isoDateString;
