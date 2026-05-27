@@ -29,6 +29,7 @@ model User {
   membershipRenewals MembershipRenewal[]
   userMembership     UserMembership?
   userLifts          UserLift[]
+  monthlyStats       UserMonthlyStat[]
 
   @@index([email])
   @@index([role])
@@ -241,6 +242,29 @@ model UserLift {
 
   @@index([userId, exerciseKey, recordedAt])
   @@map("user_lifts")
+  @@schema("public")
+}
+
+/// Historial consolidado de períodos cerrados por alumno.
+/// Una fila por período real de plan (no mes calendario).
+/// Se escribe cuando el plan pasa a approved y existe un nuevo plan activo.
+model UserMonthlyStat {
+  id              String   @id @default(cuid())
+  userId          String
+  organizationId  String
+  periodStart     DateTime @db.Date
+  periodEnd       DateTime @db.Date
+  classesAttended Int      @default(0)
+  classesLimit    Int      @default(0)
+  planName        String?
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+  @@index([userId, periodStart(sort: Desc)])
+  @@index([organizationId])
+  @@map("user_monthly_stats")
   @@schema("public")
 }
 

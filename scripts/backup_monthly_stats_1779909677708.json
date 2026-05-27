@@ -1,0 +1,68 @@
+[
+  {
+    "id": "cmpog8a9m0001if6f40ei10xx",
+    "userId": "cmndzi8dt0001iab5ktgyix3w",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-04-26T00:00:00.000Z",
+    "periodEnd": "2026-05-25T00:00:00.000Z",
+    "classesAttended": 6,
+    "classesLimit": 0,
+    "planName": "Plan Lite",
+    "createdAt": "2026-05-27T19:20:17.145Z"
+  },
+  {
+    "id": "cmpog8aj50003if6fep61a3af",
+    "userId": "cmndzi8dt0001iab5ktgyix3w",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-04-27T00:00:00.000Z",
+    "periodEnd": "2026-05-26T00:00:00.000Z",
+    "classesAttended": 6,
+    "classesLimit": 0,
+    "planName": "Plan Lite",
+    "createdAt": "2026-05-27T19:20:17.489Z"
+  },
+  {
+    "id": "cmpog8bon0007if6fo7phakz1",
+    "userId": "cmno30u7v0000i204vh75zgzf",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-04-19T00:00:00.000Z",
+    "periodEnd": "2026-05-18T00:00:00.000Z",
+    "classesAttended": 1,
+    "classesLimit": 0,
+    "planName": "Plan Básico AM",
+    "createdAt": "2026-05-27T19:20:18.984Z"
+  },
+  {
+    "id": "cmpog8g53000bif6flzhicm01",
+    "userId": "cmn6owz210000i85qh3qiczz9",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-04-02T00:00:00.000Z",
+    "periodEnd": "2026-05-01T00:00:00.000Z",
+    "classesAttended": 10,
+    "classesLimit": 0,
+    "planName": "Plan Full",
+    "createdAt": "2026-05-27T19:20:24.760Z"
+  },
+  {
+    "id": "cmpog8lij000dif6fz9s2f81v",
+    "userId": "user_013",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-04-18T00:00:00.000Z",
+    "periodEnd": "2026-05-17T00:00:00.000Z",
+    "classesAttended": 1,
+    "classesLimit": 0,
+    "planName": "Plan Intermedio",
+    "createdAt": "2026-05-27T19:20:31.723Z"
+  },
+  {
+    "id": "cmpog8lsf000fif6foo1ky931",
+    "userId": "user_013",
+    "organizationId": "org_blacksheep_001",
+    "periodStart": "2026-05-18T00:00:00.000Z",
+    "periodEnd": "2026-05-19T00:00:00.000Z",
+    "classesAttended": 0,
+    "classesLimit": 15,
+    "planName": "Plan Intermedio",
+    "createdAt": "2026-05-27T19:20:32.079Z"
+  }
+]

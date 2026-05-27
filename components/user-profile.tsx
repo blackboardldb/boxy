@@ -20,6 +20,7 @@ import { FitCenterUserProfile } from "@/lib/types";
 import { SkeletonUserProfile } from "@/components/ui/skeleton";
 import { PhoneInputCL } from "./PhoneInputCL";
 import { WhatsAppLink } from "./WhatsAppLink";
+import { StatsDrawer } from "./StatsDrawer";
 import {
   MEMBERSHIP_STATUS_LABELS,
   MEMBERSHIP_STATUS_COLORS,
@@ -40,6 +41,7 @@ export function UserProfile() {
   const [editableEmergencyContact, setEditableEmergencyContact] = useState("");
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // Estados para cambio de contraseña
   const [newPassword, setNewPassword] = useState("");
@@ -356,6 +358,32 @@ export function UserProfile() {
             </div>
           </div>
         )}
+
+        {/* Estadísticas — card de entrada */}
+        {userData.id && (() => {
+          const activeMonths = (userData.membershipRenewals ?? []).filter(
+            (r: any) => r.status === "approved"
+          ).length;
+          return (
+            <button
+              id="stats-entry-card"
+              onClick={() => setIsStatsOpen(true)}
+              className="w-full text-left bg-white/5 rounded-xl p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-colors"
+            >
+              <div>
+                <p className="text-lg font-bold text-white">
+                  🏋️{" "}
+                  {activeMonths > 0
+                    ? `Llevas ${activeMonths} ${activeMonths === 1 ? "mes" : "meses"} entrenando`
+                    : "Tu historial de entrenamiento"}
+                </p>
+                <p className="text-sm text-zinc-400 mt-0.5">Ver mis estadísticas</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-400 flex-shrink-0" />
+            </button>
+          );
+        })()}
+
         {/* Notificaciones App */}
         {permission !== "unsupported" && (
           <div className="bg-white/5 rounded-xl p-4">
@@ -683,10 +711,17 @@ export function UserProfile() {
               </div>
             )}
           </div>
-
-
         </div>
       </div>
+
+      {/* Drawer de estadísticas — lazy load al abrirse */}
+      {userData.id && (
+        <StatsDrawer
+          userId={userData.id}
+          isOpen={isStatsOpen}
+          onClose={() => setIsStatsOpen(false)}
+        />
+      )}
     </div>
   );
 }
