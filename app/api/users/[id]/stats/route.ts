@@ -100,7 +100,7 @@ export async function GET(
     // Buscamos el registro en public.users por email para obtener el id real.
     const dbUser = await prisma.user.findUnique({
       where: { email: auth.user.email! },
-      select: { id: true, organizationId: true },
+      select: { id: true, organizationId: true, userMembership: true },
     });
 
     if (!dbUser || dbUser.id !== userId) {
@@ -133,12 +133,13 @@ export async function GET(
 
     const totalClasses = registrations.length;
 
-    // ─── 2. Meses activo (renewals aprobados) ────────────────────────────────
+    // ─── 2. Meses activo (renewals aprobados e intervalo de membresía actual) ──
     const renewals = await prisma.membershipRenewal.findMany({
       where: { userId, organizationId, status: "approved" },
       select: {
         id: true,
         requestedAt: true,
+        startDate: true,
         renewalDetails: true,
         amount: true,
       },
@@ -146,7 +147,71 @@ export async function GET(
       take: 12,
     });
 
-    const monthsActive = renewals.length;
+    const intervals: { start: Date; end: Date }[] = [];
+
+    // Período de membresía activa actual
+    if (dbUser.userMembership && dbUser.userMembership.status === "active") {
+      const start = dbUser.userMembership.currentPeriodStart || dbUser.userMembership.startDate;
+      const end = dbUser.userMembership.currentPeriodEnd;
+      if (start && end) {
+        intervals.push({ start: new Date(start), end: new Date(end) });
+      }
+    }
+
+    // Renovaciones aprobadas
+    for (const r of renewals) {
+      let start: Date | null = null;
+      let end: Date | null = null;
+
+      const details = r.renewalDetails as any;
+      if (details) {
+        if (details.startDate) start = new Date(details.startDate);
+        if (details.endDate) end = new Date(details.endDate);
+      }
+
+      if (!start && r.startDate) {
+        start = new Date(r.startDate);
+      }
+      if (!start) {
+        start = new Date(r.requestedAt);
+      }
+
+      if (!end) {
+        const durationMonths = details?.requestedPlanDuration || details?.planDuration || 1;
+        end = new Date(start);
+        end.setMonth(end.getMonth() + durationMonths);
+      }
+
+      intervals.push({ start, end });
+    }
+
+    let monthsActive = 0;
+    if (intervals.length > 0) {
+      const sorted = [...intervals].sort((a, b) => a.start.getTime() - b.start.getTime());
+      const merged: { start: Date; end: Date }[] = [];
+      let current = sorted[0];
+
+      for (let i = 1; i < sorted.length; i++) {
+        const next = sorted[i];
+        // Fusionar si se superponen o están adyacentes con hasta 3 días de diferencia
+        if (next.start.getTime() <= current.end.getTime() + 3 * 24 * 60 * 60 * 1000) {
+          if (next.end.getTime() > current.end.getTime()) {
+            current.end = next.end;
+          }
+        } else {
+          merged.push(current);
+          current = next;
+        }
+      }
+      merged.push(current);
+
+      let totalDays = 0;
+      for (const interval of merged) {
+        totalDays += Math.ceil((interval.end.getTime() - interval.start.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      const calculatedMonths = Math.round(totalDays / 30);
+      monthsActive = totalDays > 0 ? Math.max(1, calculatedMonths) : 0;
+    }
 
     // ─── 3. Disciplina favorita ───────────────────────────────────────────────
     const disciplineCount: Record<string, { name: string; count: number }> = {};

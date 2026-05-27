@@ -61,21 +61,18 @@ function AchievementBadge({ achievement }: { achievement: Achievement }) {
   const { achieved, emoji, label, hint } = achievement;
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-1 rounded-xl p-3 text-center ${
-        achieved ? "bg-white/10" : "bg-white/5"
-      }`}
+      className={`flex flex-col items-center justify-center gap-1 rounded-xl p-3 text-center ${achieved ? "bg-white/10" : "bg-white/5"
+        }`}
     >
       <span
-        className={`text-2xl leading-none ${
-          achieved ? "opacity-100" : "opacity-25"
-        }`}
+        className={`text-2xl leading-none ${achieved ? "opacity-100" : "opacity-25"
+          }`}
       >
         {emoji}
       </span>
       <span
-        className={`text-xs font-medium leading-tight ${
-          achieved ? "text-white" : "text-zinc-500"
-        }`}
+        className={`text-xs font-medium leading-tight ${achieved ? "text-white" : "text-zinc-500"
+          }`}
       >
         {label}
       </span>
@@ -185,11 +182,11 @@ export function StatsDrawer({ userId, isOpen, onClose }: StatsDrawerProps) {
 
             {/* Sección 2 — Hábitos */}
             {(data.favoriteDiscipline || data.favoriteTime) && (
-              <div className="bg-white/5 rounded-xl p-4">
+              <div className="bg-white/5 rounded-xl p-4 text-center">
                 <p className="text-sm text-zinc-300 leading-relaxed">
                   {data.favoriteDiscipline && (
                     <>
-                      Tu disciplina es{" "}
+                      Tu disciplina favorita es{" "}
                       <span className="text-white font-semibold">
                         {data.favoriteDiscipline}
                       </span>
@@ -198,7 +195,7 @@ export function StatsDrawer({ userId, isOpen, onClose }: StatsDrawerProps) {
                   {data.favoriteDiscipline && data.favoriteTime && " · "}
                   {data.favoriteTime && (
                     <>
-                      Eres de{" "}
+                      Te gusta entrenar por la{" "}
                       <span className="text-white font-semibold">
                         {data.favoriteTime === "AM" ? "mañana" : "tarde"}
                       </span>

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit3, ChevronRight, Lock, Bell } from "lucide-react";
+import { Edit3, ChevronRight, Lock, Bell, Medal } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { FitCenterUserProfile } from "@/lib/types";
@@ -21,6 +21,7 @@ import { SkeletonUserProfile } from "@/components/ui/skeleton";
 import { PhoneInputCL } from "./PhoneInputCL";
 import { WhatsAppLink } from "./WhatsAppLink";
 import { StatsDrawer } from "./StatsDrawer";
+import { useUserStats } from "@/lib/hooks/useUserStats";
 import {
   MEMBERSHIP_STATUS_LABELS,
   MEMBERSHIP_STATUS_COLORS,
@@ -33,6 +34,7 @@ export function UserProfile() {
   const { currentUser, isLoading, reload } = useCurrentUser();
 
   const [userData, setUserData] = useState<FitCenterUserProfile | null>(null);
+  const { data: statsData } = useUserStats(userData?.id ?? "", !!userData?.id);
   const [editableFirstName, setEditableFirstName] = useState("");
   const [editableLastName, setEditableLastName] = useState("");
   const [editablePhone, setEditablePhone] = useState("");
@@ -361,23 +363,25 @@ export function UserProfile() {
 
         {/* Estadísticas — card de entrada */}
         {userData.id && (() => {
-          const activeMonths = (userData.membershipRenewals ?? []).filter(
-            (r: any) => r.status === "approved"
-          ).length;
+          const activeMonths = statsData?.monthsActive ?? 0;
           return (
             <button
               id="stats-entry-card"
               onClick={() => setIsStatsOpen(true)}
               className="w-full text-left bg-white/5 rounded-xl p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-colors"
             >
-              <div>
-                <p className="text-lg font-bold text-white">
-                  🏋️{" "}
-                  {activeMonths > 0
-                    ? `Llevas ${activeMonths} ${activeMonths === 1 ? "mes" : "meses"} entrenando`
-                    : "Tu historial de entrenamiento"}
-                </p>
-                <p className="text-sm text-zinc-400 mt-0.5">Ver mis estadísticas</p>
+              <div className="flex-1 flex items-center justify-start  gap-3">
+                <Medal className="w-8 h-8 text-yellow-200" />
+                <div>
+                  <p className="  text-lg font-bold text-white"> Mis estadísticas</p>
+                  <p className="text-sm text-zinc-400">
+
+                    {activeMonths > 0
+                      ? `    Tiempo total activo:  ${activeMonths} ${activeMonths === 1 ? "mes" : "meses"}`
+                      : "Tu historial de entrenamiento"}
+                  </p>
+
+                </div>
               </div>
               <ChevronRight className="w-5 h-5 text-zinc-400 flex-shrink-0" />
             </button>
