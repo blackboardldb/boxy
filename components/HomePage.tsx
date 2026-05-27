@@ -9,6 +9,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, Ticket, AlertCircle, Clock } from "lucide-react";
 import { InAppAlerts } from "@/components/InAppAlerts";
+import { BirthdayGreeting } from "@/components/BirthdayGreeting";
 import { MotivationalHome } from "@/components/motivational-home";
 import Link from "next/link";
 import type { FitCenterUserProfile, FormattedClassItem } from "@/lib/types";
@@ -79,6 +80,7 @@ const HomePage: React.FC<HomePageProps> = ({
   return (
     <main className="max-w-4xl mx-auto pb-28 px-4">
       <InAppAlerts />
+      <BirthdayGreeting userProfile={userProfile} />
       <div className="text-left mt-4 mb-6">
         <span className="uppercase text-lime-400 text-sm font-bold">
           Hola, {userProfile.firstName}
