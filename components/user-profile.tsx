@@ -370,24 +370,27 @@ export function UserProfile() {
 
         {/* Estadísticas — card de entrada */}
         {userData.id && (() => {
-          const activeMonths = statsData?.monthsActive ?? 0;
+          const periodsCompleted = statsData?.periodsCompleted ?? 0;
+          // Usa la misma fuente que el header para evitar discrepancias
+          const membershipStart = userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince ?? null;
+          const memberSinceLabel = membershipStart ? formatMemberSince(membershipStart) : null;
           return (
             <button
               id="stats-entry-card"
               onClick={() => setIsStatsOpen(true)}
               className="w-full text-left bg-white/5 rounded-xl p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-colors"
             >
-              <div className="flex-1 flex items-center justify-start  gap-3">
+              <div className="flex-1 flex items-center justify-start gap-3">
                 <Medal className="w-8 h-8 text-yellow-200" />
                 <div>
-                  <p className="  text-lg font-bold text-white"> Mis estadísticas</p>
+                  <p className="text-lg font-bold text-white">Mis estadísticas</p>
                   <p className="text-sm text-zinc-400">
-
-                    {activeMonths > 0
-                      ? `    Tiempo total activo:  ${activeMonths} ${activeMonths === 1 ? "mes" : "meses"}`
+                    {memberSinceLabel
+                      ? `Miembro desde ${memberSinceLabel}`
+                      : periodsCompleted > 0
+                      ? `${periodsCompleted} ${periodsCompleted === 1 ? "período" : "períodos"} completados`
                       : "Tu historial de entrenamiento"}
                   </p>
-
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-zinc-400 flex-shrink-0" />

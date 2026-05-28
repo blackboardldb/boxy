@@ -22,7 +22,10 @@ export interface PeriodHistory {
 
 export interface UserStatsResponse {
   totalClasses: number;
+  /** @deprecated use periodsCompleted */
   monthsActive: number;
+  periodsCompleted: number;
+  memberSince: string | null;
   favoriteDiscipline: string | null;
   favoriteTime: "AM" | "PM";
   achievements: Achievement[];
@@ -133,7 +136,10 @@ export async function GET(
 
     const totalClasses = registrations.length;
 
-    // ─── 2. Meses activo (renewals aprobados e intervalo de membresía actual) ──
+    // ─── 2. Períodos activos (renewals approved con startDate limpio) ────────
+    // Solo se cuentan renewals con startDate no nulo — fuente confiable del
+    // flujo actual. Los alumnos migrados empiezan en 0 y acumulan desde su
+    // próxima renovación. Esto evita contar duplicados de migración.
     const renewals = await prisma.membershipRenewal.findMany({
       where: { userId, organizationId, status: "approved" },
       select: {
@@ -143,75 +149,24 @@ export async function GET(
         renewalDetails: true,
         amount: true,
       },
-      orderBy: { requestedAt: "desc" },
+      orderBy: { requestedAt: "asc" }, // asc para que el primero sea el más antiguo
       take: 12,
     });
 
-    const intervals: { start: Date; end: Date }[] = [];
+    // Solo renewals con startDate no nulo (flujo actual confiable)
+    const cleanRenewals = renewals.filter((r) => r.startDate !== null);
+    const periodsCompleted = cleanRenewals.length;
 
-    // Período de membresía activa actual
-    if (dbUser.userMembership && dbUser.userMembership.status === "active") {
-      const start = dbUser.userMembership.currentPeriodStart || dbUser.userMembership.startDate;
-      const end = dbUser.userMembership.currentPeriodEnd;
-      if (start && end) {
-        intervals.push({ start: new Date(start), end: new Date(end) });
-      }
-    }
-
-    // Renovaciones aprobadas
-    for (const r of renewals) {
-      let start: Date | null = null;
-      let end: Date | null = null;
-
-      const details = r.renewalDetails as any;
-      if (details) {
-        if (details.startDate) start = new Date(details.startDate);
-        if (details.endDate) end = new Date(details.endDate);
-      }
-
-      if (!start && r.startDate) {
-        start = new Date(r.startDate);
-      }
-      if (!start) {
-        start = new Date(r.requestedAt);
-      }
-
-      if (!end) {
-        const durationMonths = details?.requestedPlanDuration || details?.planDuration || 1;
-        end = new Date(start);
-        end.setMonth(end.getMonth() + durationMonths);
-      }
-
-      intervals.push({ start, end });
-    }
-
-    let monthsActive = 0;
-    if (intervals.length > 0) {
-      const sorted = [...intervals].sort((a, b) => a.start.getTime() - b.start.getTime());
-      const merged: { start: Date; end: Date }[] = [];
-      let current = sorted[0];
-
-      for (let i = 1; i < sorted.length; i++) {
-        const next = sorted[i];
-        // Fusionar si se superponen o están adyacentes con hasta 3 días de diferencia
-        if (next.start.getTime() <= current.end.getTime() + 3 * 24 * 60 * 60 * 1000) {
-          if (next.end.getTime() > current.end.getTime()) {
-            current.end = next.end;
-          }
-        } else {
-          merged.push(current);
-          current = next;
-        }
-      }
-      merged.push(current);
-
-      let totalDays = 0;
-      for (const interval of merged) {
-        totalDays += Math.ceil((interval.end.getTime() - interval.start.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      const calculatedMonths = Math.round(totalDays / 30);
-      monthsActive = totalDays > 0 ? Math.max(1, calculatedMonths) : 0;
-    }
+    // Fecha del primer período limpio (para mostrar "Miembro desde")
+    const firstCleanRenewal = cleanRenewals[0]; // ya está en orden asc
+    const memberSince: string | null = firstCleanRenewal?.startDate
+      ? new Date(firstCleanRenewal.startDate)
+          .toLocaleDateString("es-CL", {
+            month: "long",
+            year: "numeric",
+            timeZone: "America/Santiago",
+          })
+      : null;
 
     // ─── 3. Disciplina favorita ───────────────────────────────────────────────
     const disciplineCount: Record<string, { name: string; count: number }> = {};
@@ -265,14 +220,15 @@ export async function GET(
       )
     );
 
-    // Meses miembro (progresivo)
+    // Períodos miembro (progresivo) — unidad "períodos" para ser honesto
+    // con planes mensuales y trimestrales por igual
     achievements.push(
       ...buildProgressiveAchievement(
-        "months",
+        "periods",
         "❤️",
         MONTHS_THRESHOLDS,
-        monthsActive,
-        "meses"
+        periodsCompleted,
+        "períodos"
       )
     );
 
@@ -349,7 +305,9 @@ export async function GET(
     // ─── Respuesta ────────────────────────────────────────────────────────────
     const response: UserStatsResponse = {
       totalClasses,
-      monthsActive,
+      monthsActive: periodsCompleted, // @deprecated alias para compatibilidad
+      periodsCompleted,
+      memberSince,
       favoriteDiscipline,
       favoriteTime,
       achievements,

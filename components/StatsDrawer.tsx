@@ -55,6 +55,18 @@ function NumberCard({ value, label }: { value: number; label: string }) {
   );
 }
 
+// ─── Card "Miembro desde" ─────────────────────────────────────────────────────
+
+function MemberSinceCard({ memberSince }: { memberSince: string }) {
+  return (
+    <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
+      <span className="text-sm font-bold text-white leading-tight text-center capitalize">{memberSince}</span>
+      <span className="text-xs text-zinc-400 text-center">miembro desde</span>
+    </div>
+  );
+}
+
+
 // ─── Sección 3 — Badge de logro ───────────────────────────────────────────────
 
 function AchievementBadge({ achievement }: { achievement: Achievement }) {
@@ -171,14 +183,15 @@ export function StatsDrawer({ userId, isOpen, onClose }: StatsDrawerProps) {
 
         {data && (
           <div className="space-y-3 px-4 pb-10">
-            {/* Sección 1 — Números principales */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Sección 1 — Clases + Miembro desde (solo si hay datos limpios) */}
+            {data.memberSince ? (
+              <div className="grid grid-cols-2 gap-3">
+                <NumberCard value={data.totalClasses} label="clases completadas" />
+                <MemberSinceCard memberSince={data.memberSince} />
+              </div>
+            ) : (
               <NumberCard value={data.totalClasses} label="clases completadas" />
-              <NumberCard
-                value={data.monthsActive}
-                label={data.monthsActive === 1 ? "mes entrenando" : "meses entrenando"}
-              />
-            </div>
+            )}
 
             {/* Sección 2 — Hábitos */}
             {(data.favoriteDiscipline || data.favoriteTime) && (
