@@ -72,6 +72,42 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // ⚠️  TODO(Multi-Tenant) — LEER ANTES DE TOCAR ESTAS QUERIES
+    // ─────────────────────────────────────────────────────────────────────────
+    // PROBLEMA:
+    //   El modelo `Expense` en schema.prisma no tiene `organizationId`, a
+    //   diferencia de `MembershipRenewal` que sí filtra por organización
+    //   (ver query de ingresos más arriba). Estas queries devuelven egresos
+    //   de TODAS las organizaciones globalmente.
+    //
+    // IMPACTO ACTUAL:
+    //   Bajo — hay una sola organización en producción. Los números cuadran.
+    //
+    // IMPACTO FUTURO (multi-sucursal):
+    //   Crítico — cada sucursal vería los egresos de las demás. Los reportes
+    //   financieros serían incorrectos y habría fuga de datos entre organizaciones.
+    //
+    // PARA RESOLVERLO (no hacerlo a medias):
+    //   1. En schema.prisma, agregar al modelo Expense:
+    //        organizationId String?
+    //        organization   Organization? @relation(fields: [organizationId], references: [id])
+    //
+    //   2. Correr `prisma migrate dev` con nombre descriptivo,
+    //      ej: "add-organization-to-expense".
+    //
+    //   3. Hacer backfill manual en producción — asignar el organizationId real
+    //      a todos los registros existentes. NO usar @default() hardcodeado.
+    //
+    //   4. Agregar el filtro en ambas queries de egresos (aggregate y findMany):
+    //        where: {
+    //          organizationId: auth.organizationId,
+    //          fecha: { gte: startDate, lt: endDate },
+    //        }
+    //
+    //   5. Repetir el mismo fix en cualquier otro endpoint que consulte `Expense`.
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Egresos — misma lógica
     const egresosAgg = await prisma.expense.aggregate({
       _sum: { monto: true },
