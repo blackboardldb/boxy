@@ -25,6 +25,7 @@ model User {
   emergencyContact   String?
   gender             String?
   formaDePago        String?
+  deletedAt          DateTime?           // Soft delete — ver user-service.ts deleteUser()
   classRegistrations ClassRegistration[]
   membershipRenewals MembershipRenewal[]
   userMembership     UserMembership?
@@ -34,6 +35,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([organizationId])
+  @@index([deletedAt])                   // Índice para filtro O(log n) en listados
   @@map("users")
   @@schema("public")
 }

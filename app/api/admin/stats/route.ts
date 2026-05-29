@@ -50,21 +50,24 @@ export async function GET() {
         membership_counts AS (
           SELECT
             COUNT(*)                                                                     AS "totalMembers",
-            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)                         AS "pendingFromMemberships",
-            SUM(CASE WHEN status = 'active' AND "currentPeriodStart" > ${today}
+            SUM(CASE WHEN um.status = 'pending' THEN 1 ELSE 0 END)                         AS "pendingFromMemberships",
+            SUM(CASE WHEN um.status = 'active' AND um."currentPeriodStart" > ${today}
                      THEN 1 ELSE 0 END)                                                  AS "scheduledMembers",
-            SUM(CASE WHEN status = 'active'
-                          AND "currentPeriodStart" <= ${today}
-                          AND "currentPeriodEnd"   >= ${today}
+            SUM(CASE WHEN um.status = 'active'
+                          AND um."currentPeriodStart" <= ${today}
+                          AND um."currentPeriodEnd"   >= ${today}
                      THEN 1 ELSE 0 END)                                                  AS "activeMembers",
             SUM(CASE
-                  WHEN status NOT IN ('active', 'pending') THEN 1
-                  WHEN status = 'active' AND "currentPeriodEnd" < ${today} THEN 1
+                  WHEN um.status NOT IN ('active', 'pending') THEN 1
+                  WHEN um.status = 'active' AND um."currentPeriodEnd" < ${today} THEN 1
                   ELSE 0
                 END)                                                                     AS "inactiveMembers",
-            SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)             AS "newThisMonth"
-          FROM "user_memberships"
-          WHERE "organizationId" = ${organizationId}
+            SUM(CASE WHEN um."startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)             AS "newThisMonth"
+          FROM "user_memberships" um
+          JOIN "users" u ON um."userId" = u.id
+          WHERE um."organizationId" = ${organizationId}
+            AND u."deletedAt" IS NULL
+            AND u.role = 'user'
         ),
         renewal_pending AS (
           SELECT COUNT(*) AS cnt

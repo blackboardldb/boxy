@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Edit } from "lucide-react";
+import { Search, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 import { Input } from "@/components/ui/input";
@@ -22,13 +22,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddStudentModal } from "../../../components/admincomponents/add-student-modal";
 import {
   STUDENT_STATES,
   STATE_COLORS,
   statusStyles,
 } from "@/lib/utils";
-import { usePaginatedUsers } from "@/lib/react-query/hooks/useUsers";
+import { usePaginatedUsers, useDeleteUser } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,12 +57,14 @@ import { useCreateUser } from "@/lib/react-query/hooks/useUsers";
 export default function AlumnosPage() {
   const router = useRouter();
   const createUserMutation = useCreateUser();
+  const deleteUserMutation = useDeleteUser();
 
   // Estado de filtros
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [deletingStudent, setDeletingStudent] = useState<FitCenterUserProfile | null>(null);
   const limit = 10;
 
   // React Query
@@ -102,6 +114,11 @@ export default function AlumnosPage() {
 
   const handleEditStudent = (student: FitCenterUserProfile) => {
     router.push(`/admin/alumnos/${student.id}`);
+  };
+
+  const handleDeleteStudent = async (id: string) => {
+    await deleteUserMutation.mutateAsync(id);
+    setDeletingStudent(null);
   };
 
   // Paginación desde React Query
@@ -172,7 +189,7 @@ export default function AlumnosPage() {
                 <TableHead>Plan</TableHead>
               
                 <TableHead className="hidden sm:table-cell">Validez</TableHead>
-                <TableHead>Editar</TableHead>
+                <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -261,13 +278,24 @@ export default function AlumnosPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="w-20">
-                      <Button
-                        onClick={() => handleEditStudent(student)}
-                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
-                      >
-                        <Edit />
-                      </Button>
+                    <TableCell className="w-28">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          onClick={() => handleEditStudent(student)}
+                          className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background text-zinc-900 hover:bg-zinc-100 h-10 w-10 rounded-xl"
+                        >
+                          <Edit />
+                        </Button>
+                        <Button
+                          onClick={() => setDeletingStudent(student)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          title="Eliminar alumno"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                   );
@@ -289,6 +317,32 @@ export default function AlumnosPage() {
         />
       </div>
 
+      {/* Modal de confirmación de eliminación */}
+      <AlertDialog
+        open={!!deletingStudent}
+        onOpenChange={(open) => { if (!open) setDeletingStudent(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar alumno?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Su acceso será revocado y sus suscripciones canceladas, pero su
+              historial de pagos se mantendrá para fines contables. Esta acción
+              es permanente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingStudent && handleDeleteStudent(deletingStudent.id)}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

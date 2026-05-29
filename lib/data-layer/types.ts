@@ -87,6 +87,7 @@ export interface UserRepository
     frozen: number;
   }>;
   updateMembershipStatus(userId: string, status: string): Promise<import("../types").FitCenterUserProfile>;
+  softDelete(id: string): Promise<import("../types").FitCenterUserProfile>;
 }
 
 export interface ClassRepository

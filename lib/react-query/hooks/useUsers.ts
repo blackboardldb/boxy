@@ -140,6 +140,7 @@ export function useDeleteUser() {
     onSuccess: (_data, id) => {
       queryClient.removeQueries({ queryKey: userKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
   });
 }

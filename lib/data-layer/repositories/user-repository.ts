@@ -186,15 +186,18 @@ export class PrismaUserRepository implements IUserRepository {
     const limit = params?.limit || params?.take || 10;
     const skip  = params?.skip !== undefined ? params.skip : (page - 1) * limit;
 
+    // Soft delete: excluir usuarios eliminados de todos los listados.
+    const where = { ...params?.where, deletedAt: null };
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where:   params?.where,
+        where,
         orderBy: params?.orderBy,
         take:    limit,
         skip,
-        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },   // ← HAL-01: incluir relación
+        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
       }),
-      this.prisma.user.count({ where: params?.where }),
+      this.prisma.user.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -361,9 +364,24 @@ export class PrismaUserRepository implements IUserRepository {
     return entity;
   }
 
+  // ── softDelete ────────────────────────────────────────────────────────────
+  async softDelete(id: string): Promise<FitCenterUserProfile> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    const withMembership = await this.prisma.user.findUnique({
+      where:   { id },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+    });
+    return this.mapToEntity(withMembership!);
+  }
+
   // ── count ─────────────────────────────────────────────────────────────────
   async count(params: CountParams = {}): Promise<number> {
-    return this.prisma.user.count({ where: params?.where });
+    // Soft delete: los usuarios eliminados no cuentan.
+    return this.prisma.user.count({ where: { ...params?.where, deletedAt: null } });
   }
 
   // ── findByEmail ───────────────────────────────────────────────────────────
@@ -378,7 +396,7 @@ export class PrismaUserRepository implements IUserRepository {
   // ── findByRole ────────────────────────────────────────────────────────────
   async findByRole(role: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
-      where:   { role },
+      where:   { role, deletedAt: null },
       include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },    // ← HAL-01
     });
     return users.map((u) => this.mapToEntity(u));
@@ -389,7 +407,7 @@ export class PrismaUserRepository implements IUserRepository {
   // AHORA: userMembership: { status }                       → índice btree O(log n)
   async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
-      where:   { userMembership: { status } },
+      where:   { userMembership: { status }, deletedAt: null },
       include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
     });
     return users.map((u) => this.mapToEntity(u));

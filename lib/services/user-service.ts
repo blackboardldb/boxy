@@ -7,6 +7,9 @@ import { UserRepository } from "../data-layer/types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
 import { generatedSchemas, updateSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError, NotFoundError } from "../errors/types";
+import { prisma } from "../prisma";
+import { deleteAuthUser, deleteAuthUserByEmail } from "../supabase/admin";
+import * as Sentry from "@sentry/nextjs";
 
 export class UserService extends BaseService<FitCenterUserProfile> {
   protected repositoryName = "users" as const;
@@ -134,9 +137,54 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     return this.update(id, userData);
   }
 
-  // Delete user
+  // Delete user — Soft Delete
+  // El alumno desaparece de toda la operativa pero su historial financiero
+  // (MembershipRenewal) se preserva intacto. Acción permanente desde la UI.
   async deleteUser(id: string): Promise<ApiResponse<FitCenterUserProfile>> {
-    return this.delete(id);
+    return this.withErrorHandling(async () => {
+
+      // 1. Obtener el usuario (sin filtro de deletedAt — findUnique lo ve)
+      const existingUser = await this.userRepository.findUnique({ where: { id } });
+      if (!existingUser) {
+        throw new NotFoundError("User", id);
+      }
+
+      // 2. Soft delete en BD — estampar fecha de eliminación
+      // Usamos el nuevo método dedicado softDelete
+      const updatedUser = await this.userRepository.softDelete(id);
+
+      // 3. Desactivar membresía y detener auto-renovación
+      if (existingUser.membership) {
+        await this.userRepository.updateMembershipStatus(id, "inactive");
+        // updateMembershipStatus solo cambia status — desactivar autoRenews por separado
+        await prisma.userMembership.update({
+          where: { userId: id },
+          data: { autoRenews: false },
+        });
+      }
+
+      // 4. Revocar acceso en Supabase Auth
+      // Buscamos al usuario por email porque el ID de Prisma (cuid)
+      // es distinto al auth.uid (UUID) de Supabase.
+      try {
+        await deleteAuthUserByEmail(existingUser.email);
+      } catch (error) {
+        Sentry.captureException(error, {
+          extra: { userId: id, userEmail: existingUser.email, action: "soft_delete_auth_revoke" },
+        });
+        console.error(
+          `[UserService] ALERTA: Soft delete OK en BD, pero falló revocación en Supabase Auth para email=${existingUser.email}. Requiere limpieza manual.`,
+          error
+        );
+      }
+
+      this.clearCache();
+      this.clearCache(`user_email_${existingUser.email}`);
+
+      console.log(`[UserService] Alumno eliminado (soft delete): userId=${id} (${existingUser.email})`);
+
+      return this.createSuccessResponse(updatedUser);
+    });
   }
 
   // User-specific methods
@@ -349,6 +397,14 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     if (data.email) {
       const existingUser = await this.userRepository.findByEmail(data.email);
       if (existingUser) {
+        // Distinguir cuenta eliminada de una activa — evitar reuso silencioso
+        // y crash de Unique Constraint en la BD.
+        if ((existingUser as any).deletedAt) {
+          throw new ValidationError(
+            "Este correo pertenece a una cuenta desactivada. Contacte al administrador.",
+            "email"
+          );
+        }
         throw new ValidationError("Email already exists", "email");
       }
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateUserSchema } from "@/lib/schemas";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 
 export async function GET(
@@ -73,9 +74,15 @@ export async function DELETE(
 ) {
   let id = "unknown";
   try {
+    // Paso 4: Seguridad — solo admins pueden eliminar alumnos
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
-    // Use UserService to delete user
+    // Use UserService to delete user (soft delete)
     const response = await userService.deleteUser(id);
 
     // Return standardized response
