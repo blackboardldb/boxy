@@ -58,9 +58,11 @@ export async function POST(request: NextRequest) {
     }
     const body = parsed.data;
 
+    // 1. Crear en Supabase Auth y capturar el UUID (authId)
+    let authId: string | undefined;
     try {
       console.log("[POST /api/users] Creando usuario en Supabase Auth:", body.email);
-      await createAuthUser(
+      authId = await createAuthUser(
         body.email,
         "alumno", // Los usuarios creados desde el panel son alumnos por defecto
         {
@@ -91,8 +93,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Crear el perfil de usuario en Prisma (public.users)
-    const response = await userService.createUser(body);
+    // 2. Crear el perfil de usuario en Prisma (public.users) — con authId vinculado
+    const response = await userService.createUser({ ...body, authId: authId ?? null });
 
     // Return standardized response
     return NextResponse.json(response, {

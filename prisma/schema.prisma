@@ -15,6 +15,7 @@ model User {
   firstName          String
   lastName           String
   email              String              @unique
+  authId             String?             @unique  // UUID de Supabase Auth — FK formal entre public.users y auth.users
   phone              String?
   role               String              @default("user")
   organizationId     String              @default("org_blacksheep_001")

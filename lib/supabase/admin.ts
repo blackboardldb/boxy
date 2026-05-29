@@ -127,35 +127,3 @@ export async function deleteAuthUser(authUserId: string): Promise<void> {
   }
 }
 
-/**
- * Elimina un usuario de Supabase Authentication buscando su UUID por email.
- * Útil porque Prisma usa cuid() y Supabase usa UUID, por lo que no coinciden.
- *
- * @param email Email del usuario a eliminar
- */
-export async function deleteAuthUserByEmail(email: string): Promise<void> {
-  const supabase = createAdminClient();
-  
-  // Listamos los usuarios para buscar el UUID. En sistemas con < 1000 usuarios
-  // esto es rápido y suficiente en el panel de admin.
-  const { data, error: listError } = await supabase.auth.admin.listUsers();
-  
-  if (listError) {
-    console.error("[deleteAuthUserByEmail] Error listando usuarios:", listError);
-    throw listError;
-  }
-
-  const authUser = data.users.find(u => u.email === email);
-  
-  if (!authUser) {
-    console.log(`[deleteAuthUserByEmail] No se encontró usuario en Auth con email: ${email}`);
-    return;
-  }
-
-  const { error: deleteError } = await supabase.auth.admin.deleteUser(authUser.id);
-  
-  if (deleteError) {
-    console.error(`[deleteAuthUserByEmail] Error borrando auth.users UUID ${authUser.id}:`, deleteError);
-    throw deleteError;
-  }
-}

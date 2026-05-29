@@ -8,7 +8,7 @@ import { ApiResponse, PaginatedApiResponse } from "../api/types";
 import { generatedSchemas, updateSchemas, validateWithSchema } from "../types/generator";
 import { ValidationError, NotFoundError } from "../errors/types";
 import { prisma } from "../prisma";
-import { deleteAuthUser, deleteAuthUserByEmail } from "../supabase/admin";
+import { deleteAuthUser } from "../supabase/admin";
 import * as Sentry from "@sentry/nextjs";
 
 export class UserService extends BaseService<FitCenterUserProfile> {
@@ -164,18 +164,22 @@ export class UserService extends BaseService<FitCenterUserProfile> {
       }
 
       // 4. Revocar acceso en Supabase Auth
-      // Buscamos al usuario por email porque el ID de Prisma (cuid)
-      // es distinto al auth.uid (UUID) de Supabase.
-      try {
-        await deleteAuthUserByEmail(existingUser.email);
-      } catch (error) {
-        Sentry.captureException(error, {
-          extra: { userId: id, userEmail: existingUser.email, action: "soft_delete_auth_revoke" },
-        });
-        console.error(
-          `[UserService] ALERTA: Soft delete OK en BD, pero falló revocación en Supabase Auth para email=${existingUser.email}. Requiere limpieza manual.`,
-          error
-        );
+      // Usamos authId (UUID de Supabase) para eliminar directamente — sin listUsers().
+      if (existingUser.authId) {
+        try {
+          await deleteAuthUser(existingUser.authId);
+        } catch (error) {
+          Sentry.captureException(error, {
+            extra: { userId: id, authId: existingUser.authId, action: "soft_delete_auth_revoke" },
+          });
+          console.error(
+            `[UserService] ALERTA: Soft delete OK en BD, pero falló revocación en Supabase Auth para authId=${existingUser.authId}. Requiere limpieza manual.`,
+            error
+          );
+        }
+      } else {
+        // Usuario sin authId — ya eliminado de Auth o creado antes del backfill
+        console.warn(`[UserService] Usuario ${id} sin authId — omitiendo revocación en Auth.`);
       }
 
       this.clearCache();

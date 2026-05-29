@@ -248,6 +248,7 @@ export class PrismaUserRepository implements IUserRepository {
         firstName:        data.firstName,
         lastName:         data.lastName,
         email:            data.email,
+        authId:           (data as any).authId ?? null,  // UUID de Supabase Auth
         phone:            data.phone ?? undefined,
         role:             data.role || "user",
         organizationId:   orgId,
@@ -473,6 +474,7 @@ export class PrismaUserRepository implements IUserRepository {
       firstName:        prismaUser.firstName,
       lastName:         prismaUser.lastName,
       email:            prismaUser.email,
+      authId:           prismaUser.authId ?? null,
       phone:            prismaUser.phone,
       role:             prismaUser.role,
       organizationId:   prismaUser.organizationId,
