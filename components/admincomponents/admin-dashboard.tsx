@@ -177,12 +177,12 @@ export function AdminDashboard({ role }: { role: string }) {
         {role === "admin" && (
           <MetricCard
             title="Balance del Mes"
-            value={`$${monthlyBalance.toLocaleString()}`}
+            value={`$${monthlyBalance.toLocaleString("es-CL")}`}
             subtitle={
               <>
-                Ingresos reales ${monthlyRevenue.toLocaleString()}
+                Ingresos reales ${monthlyRevenue.toLocaleString("es-CL")}
                 <br />
-                Egresos ${monthlyEgresos.toLocaleString()}
+                Egresos ${monthlyEgresos.toLocaleString("es-CL")}
               </>
             }
             icon={DollarSign}

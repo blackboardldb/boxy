@@ -311,7 +311,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                   >
                     Registrar como ingreso
                     {formData.precioTotal && Number(formData.precioTotal) > 0
-                      ? ` ($${Number(formData.precioTotal).toLocaleString()})`
+                      ? ` ($${Number(formData.precioTotal).toLocaleString("es-CL")})`
                       : ""}
                   </label>
                 </div>

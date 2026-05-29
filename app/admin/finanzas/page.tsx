@@ -98,7 +98,7 @@ export default function FinanzasPage() {
               <div className="h-8 w-24 bg-zinc-100 animate-pulse rounded" />
             ) : (
               <div className="text-2xl font-bold text-green-600">
-                ${totalIngresos.toLocaleString()}
+                ${totalIngresos.toLocaleString("es-CL")}
               </div>
             )}
             <p className="text-xs text-muted-foreground">
@@ -119,7 +119,7 @@ export default function FinanzasPage() {
               <div className="h-8 w-24 bg-zinc-100 animate-pulse rounded" />
             ) : (
               <div className="text-2xl font-bold text-red-600">
-                ${totalEgresos.toLocaleString()}
+                ${totalEgresos.toLocaleString("es-CL")}
               </div>
             )}
             <p className="text-xs text-muted-foreground">
@@ -146,7 +146,7 @@ export default function FinanzasPage() {
                   balance >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                ${balance.toLocaleString()}
+                ${balance.toLocaleString("es-CL")}
               </div>
             )}
             <p className="text-xs text-muted-foreground">
@@ -194,7 +194,7 @@ export default function FinanzasPage() {
                         </div>
                       </div>
                       <span className="font-semibold">
-                        ${i.amount?.toLocaleString()}
+                        ${i.amount?.toLocaleString("es-CL")}
                       </span>
                     </li>
                   ))}

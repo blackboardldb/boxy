@@ -145,7 +145,7 @@ export function MembershipDatePicker({
               </div>
               <div>
                 <span className="font-medium">Precio:</span> $
-                {selectedPlan.price.toLocaleString()}
+                {selectedPlan.price.toLocaleString("es-CL")}
               </div>
               <div>
                 <span className="font-medium">Clases incluidas:</span>{" "}

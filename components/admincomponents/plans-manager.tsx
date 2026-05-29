@@ -430,7 +430,7 @@ export default function PlansManager() {
                       <Receipt className="w-4 h-4 text-muted-foreground" />
 
                       <p className="text-sm text-muted-foreground">
-                        ${plan.price.toLocaleString()}
+                        ${plan.price.toLocaleString("es-CL")}
                       </p>
                     </div>
                   </div>

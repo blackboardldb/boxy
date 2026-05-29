@@ -648,7 +648,7 @@ const handleStartDateChange = (newDate: string) => {
                           >
                             Registrar como ingreso
                             {editPrice && Number(editPrice) > 0
-                              ? ` ($${Number(editPrice).toLocaleString()})`
+                              ? ` ($${Number(editPrice).toLocaleString("es-CL")})`
                               : ""}
                           </label>
                         </div>

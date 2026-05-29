@@ -44,7 +44,7 @@ export function ExpensesManager({
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="font-semibold">
-                    ${e.monto.toLocaleString()}
+                    ${e.monto.toLocaleString("es-CL")}
                   </span>
                   <Button
                     onClick={() => deleteEgreso.mutate(e.id)}
