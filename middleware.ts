@@ -28,13 +28,11 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refrescar sesión (importante para mantener tokens válidos)
-  // Usamos getSession en vez de getUser para evitar latencia de red en cada navegación
+  // Validar token criptográficamente contra el servidor de Supabase Auth.
+  // getUser() es más seguro que getSession() — autentica el token en vez de solo leerlo.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const user = session?.user;
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
@@ -51,18 +49,9 @@ export async function middleware(request: NextRequest) {
 
     // Solo consultar el rol si estamos en rutas que dependen de él
     if (isLoginRoute || isAdminRoute || isAppRoute) {
-      // 1. Intentar obtener el rol de los metadatos (rápido y evita RLS)
-      let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
-
-      // 2. Si no hay rol en metadatos, consultar la tabla profiles
-      if (!role) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        role = profile?.role;
-      }
+      // Leer el rol desde app_metadata — siempre presente gracias al trigger SQL.
+      // No se realiza ninguna consulta a la base de datos en el middleware.
+      const role = user.app_metadata?.role as string | undefined;
 
       // Pasar el rol en un header para no tener que consultarlo de nuevo en el layout
       if (role) {
