@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Instructor } from "@/lib/types";
+import type { Instructor, Discipline } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle, Plus, Edit, Trash2, Search } from "lucide-react";
@@ -52,6 +52,270 @@ import {
   useToggleInstructorStatus,
 } from "@/lib/react-query/hooks/useInstructors";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
+
+// ─── InstructorForm — componente independiente para evitar re-mount ──────────
+// Definido FUERA de InstructorsManager para que React no lo desmonte al
+// re-renderizar el padre.
+function InstructorForm({
+  instructor,
+  disciplines,
+  onClose,
+  onSave,
+}: {
+  instructor?: Instructor | null;
+  disciplines: Discipline[];
+  onClose: () => void;
+  onSave: (data: Partial<Instructor>) => Promise<boolean>;
+}) {
+  const [formData, setFormData] = useState({
+    firstName: instructor?.firstName || "",
+    lastName: instructor?.lastName || "",
+    email: instructor?.email || "",
+    phone: instructor?.phone || "",
+    specialties: Array.isArray(instructor?.specialties)
+      ? instructor.specialties
+      : [],
+    isActive: instructor?.isActive ?? true,
+    role: instructor?.role || "coach",
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sincronizar cuando cambie el instructor recibido
+  useEffect(() => {
+    setFormData({
+      firstName: instructor?.firstName || "",
+      lastName: instructor?.lastName || "",
+      email: instructor?.email || "",
+      phone: instructor?.phone || "",
+      specialties: Array.isArray(instructor?.specialties)
+        ? instructor.specialties
+        : [],
+      isActive: instructor?.isActive ?? true,
+      role: instructor?.role || "coach",
+    });
+    setError(null);
+    setIsSubmitting(false);
+  }, [instructor]);
+
+  const handleSubmit = async () => {
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      setError("Por favor completa los campos obligatorios (Nombre, Apellido, Email).");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    const instructorData = {
+      ...formData,
+      organizationId: "org_blacksheep_001",
+    };
+
+    try {
+      const success = await onSave(instructorData);
+      if (success) {
+        onClose();
+      } else {
+        setError("No se pudo guardar la información del instructor. Por favor intenta nuevamente.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Ocurrió un error inesperado al guardar.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      firstName: instructor?.firstName || "",
+      lastName: instructor?.lastName || "",
+      email: instructor?.email || "",
+      phone: instructor?.phone || "",
+      specialties: Array.isArray(instructor?.specialties)
+        ? instructor.specialties
+        : [],
+      isActive: instructor?.isActive ?? true,
+      role: instructor?.role || "coach",
+    });
+    onClose();
+  };
+
+  const handleSpecialtyToggle = (disciplineId: string, checked: boolean) => {
+    if (checked) {
+      setFormData((prev) => ({
+        ...prev,
+        specialties: [...prev.specialties, disciplineId],
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        specialties: prev.specialties.filter((id) => id !== disciplineId),
+      }));
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+      {error && (
+        <Alert variant="destructive" className="rounded-xl py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
+      <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="firstName">Nombre</Label>
+            <Input
+              value={formData.firstName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, firstName: e.target.value }))
+              }
+              placeholder="Nombre del instructor"
+              required
+              className="rounded-xl"
+            />
+          </div>
+          <div>
+            <Label htmlFor="lastName">Apellido</Label>
+            <Input
+              value={formData.lastName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, lastName: e.target.value }))
+              }
+              placeholder="Apellido del instructor"
+              required
+              className="rounded-xl"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, email: e.target.value }))
+            }
+            placeholder="instructor@blacksheep.com"
+            required
+            className="rounded-xl"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="phone">Teléfono</Label>
+          <Input
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, phone: e.target.value }))
+            }
+            placeholder="+56 9 1234 5678"
+            className="rounded-xl"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({
+                ...prev,
+                isActive: checked as boolean,
+              }))
+            }
+          />
+          <Label htmlFor="isActive">Instructor activo</Label>
+        </div>
+
+        <div>
+          <Label htmlFor="role">Rol</Label>
+          <Select
+            value={formData.role}
+            onValueChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                role: value as "admin" | "coach",
+              }))
+            }
+          >
+            <SelectTrigger className="rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="coach">Coach</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Coach: acceso a clases, horarios, alumnos. Admin: acceso total.
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-base font-medium">Especialidades</Label>
+        <p className="text-sm text-muted-foreground mb-3">
+          Selecciona las disciplinas que puede impartir este instructor
+        </p>
+        <div className="space-y-2">
+          {(disciplines || []).map((discipline) => (
+            <div key={discipline.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={discipline.id}
+                checked={formData.specialties.includes(discipline.id)}
+                onCheckedChange={(checked) =>
+                  handleSpecialtyToggle(discipline.id, checked as boolean)
+                }
+              />
+              <Label
+                htmlFor={discipline.id}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: discipline.color }}
+                />
+                {discipline.name}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-4 border-t">
+        <Button
+          onClick={handleSubmit}
+          className="flex-1 rounded-xl min-w-[140px]"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            (instructor ? "Actualizar" : "Crear") + " Instructor"
+          )}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleCancel}
+          className="rounded-xl"
+          disabled={isSubmitting}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── InstructorsManager ───────────────────────────────────────────────────────
 
 export function InstructorsManager() {
   // Estado de filtros UI
@@ -113,266 +377,6 @@ export function InstructorsManager() {
     await toggleStatusMutation.mutateAsync({ id: instructorId, currentStatus });
   };
 
-  const InstructorForm = ({
-    instructor,
-    onClose,
-  }: {
-    instructor?: Instructor | null;
-    onClose: () => void;
-  }) => {
-    const [formData, setFormData] = useState({
-      firstName: instructor?.firstName || "",
-      lastName: instructor?.lastName || "",
-      email: instructor?.email || "",
-      phone: instructor?.phone || "",
-      specialties: Array.isArray(instructor?.specialties)
-        ? instructor.specialties
-        : [],
-      isActive: instructor?.isActive ?? true,
-      role: instructor?.role || "coach",
-    });
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Actualizar el formulario cuando cambie el instructor
-    useEffect(() => {
-      setFormData({
-        firstName: instructor?.firstName || "",
-        lastName: instructor?.lastName || "",
-        email: instructor?.email || "",
-        phone: instructor?.phone || "",
-        specialties: Array.isArray(instructor?.specialties)
-          ? instructor.specialties
-          : [],
-        isActive: instructor?.isActive ?? true,
-        role: instructor?.role || "coach",
-      });
-      setError(null);
-      setIsSubmitting(false);
-    }, [instructor]);
-
-    const handleSubmit = async () => {
-      if (!formData.firstName || !formData.lastName || !formData.email) {
-        setError("Por favor completa los campos obligatorios (Nombre, Apellido, Email).");
-        return;
-      }
-
-      setIsSubmitting(true);
-      setError(null);
-
-      // Agregar campos requeridos que no están en el formulario
-      const instructorData = {
-        ...formData,
-        organizationId: "org_blacksheep_001", // ID de la organización
-      };
-
-      try {
-        const success = await handleSaveInstructor(instructorData);
-        if (success) {
-          onClose();
-        } else {
-          setError("No se pudo guardar la información del instructor. Por favor intenta nuevamente.");
-        }
-      } catch (err: any) {
-        setError(err.message || "Ocurrió un error inesperado al guardar.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-
-    const handleCancel = () => {
-      // Reset form data to original values when canceling
-      setFormData({
-        firstName: instructor?.firstName || "",
-        lastName: instructor?.lastName || "",
-        email: instructor?.email || "",
-        phone: instructor?.phone || "",
-        specialties: Array.isArray(instructor?.specialties)
-          ? instructor.specialties
-          : [],
-        isActive: instructor?.isActive ?? true,
-        role: instructor?.role || "coach",
-      });
-      onClose();
-    };
-
-    const handleSpecialtyToggle = (disciplineId: string, checked: boolean) => {
-      if (checked) {
-        setFormData((prev) => ({
-          ...prev,
-          specialties: [...prev.specialties, disciplineId],
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          specialties: prev.specialties.filter((id) => id !== disciplineId),
-        }));
-      }
-    };
-
-    return (
-      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-        {error && (
-          <Alert variant="destructive" className="rounded-xl py-2">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">{error}</AlertDescription>
-          </Alert>
-        )}
-        <div className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="firstName">Nombre</Label>
-              <Input
-                value={formData.firstName}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    firstName: e.target.value,
-                  }))
-                }
-                placeholder="Nombre del instructor"
-                required
-                className="rounded-xl"
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName">Apellido</Label>
-              <Input
-                value={formData.lastName}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-                }
-                placeholder="Apellido del instructor"
-                required
-                className="rounded-xl"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, email: e.target.value }))
-              }
-              placeholder="instructor@blacksheep.com"
-              required
-              className="rounded-xl"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, phone: e.target.value }))
-              }
-              placeholder="+56 9 1234 5678"
-              className="rounded-xl"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  isActive: checked as boolean,
-                }))
-              }
-            />
-            <Label htmlFor="isActive">Instructor activo</Label>
-          </div>
-
-          <div>
-            <Label htmlFor="role">Rol</Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  role: value as "admin" | "coach",
-                }))
-              }
-            >
-              <SelectTrigger className="rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="coach">Coach</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Coach: acceso a clases, horarios, alumnos. Admin: acceso total.
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <Label className="text-base font-medium">Especialidades</Label>
-          <p className="text-sm text-muted-foreground mb-3">
-            Selecciona las disciplinas que puede impartir este instructor
-          </p>
-          <div className="space-y-2">
-            {(disciplines || []).map((discipline) => (
-              <div key={discipline.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={discipline.id}
-                  checked={formData.specialties.includes(discipline.id)}
-                  onCheckedChange={(checked) =>
-                    handleSpecialtyToggle(discipline.id, checked as boolean)
-                  }
-                />
-                <Label
-                  htmlFor={discipline.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: discipline.color }}
-                  />
-                  {discipline.name}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-4 border-t">
-          <Button 
-            onClick={handleSubmit} 
-            className="flex-1 rounded-xl min-w-[140px]" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              (instructor ? "Actualizar" : "Crear") + " Instructor"
-            )}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleCancel} 
-            className="rounded-xl"
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -394,7 +398,9 @@ export function InstructorsManager() {
             </DialogHeader>
             <InstructorForm
               instructor={null}
+              disciplines={disciplines}
               onClose={() => setIsAddingInstructor(false)}
+              onSave={handleSaveInstructor}
             />
           </DialogContent>
         </Dialog>
@@ -555,10 +561,10 @@ export function InstructorsManager() {
                             ) : (
                               <Badge
                                 key={specialtyId}
-                                variant="secondary"
-                                className="text-xs rounded-xl"
+                                variant="outline"
+                                className="text-xs rounded-xl text-amber-700 border-amber-200 bg-amber-50"
                               >
-                                {specialtyId}
+                                Disciplina eliminada
                               </Badge>
                             );
                           })
@@ -605,7 +611,9 @@ export function InstructorsManager() {
                             </DialogHeader>
                             <InstructorForm
                               instructor={editingInstructor}
+                              disciplines={disciplines}
                               onClose={() => setEditingInstructor(null)}
+                              onSave={handleSaveInstructor}
                             />
                           </DialogContent>
                         </Dialog>

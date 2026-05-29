@@ -119,6 +119,7 @@ export const createDisciplineSchema = z.object({
   isActive:          z.boolean().optional(),
   capacity:          z.number().int().min(1).optional(),
   durationMinutes:   z.number().int().min(15).optional(),
+  defaultCoachId:    z.string().optional(),
   schedule: z.array(
     z.object({
       day:   z.string(),           // DayOfWeek: "lun"|"mar"|...

@@ -28,15 +28,14 @@ import {
   Plus,
   X,
   Clock,
-  Calendar,
   Save,
   Edit,
   Trash2,
   AlertTriangle,
   Settings,
-  CheckCircle2,
   Loader2,
   AlertCircle,
+  User,
 } from "lucide-react";
 import {
   useDisciplines,
@@ -44,6 +43,7 @@ import {
   useUpdateDiscipline,
   useCreateDiscipline,
 } from "@/lib/react-query/hooks/useDisciplines";
+import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
 
 const dayLabels: Record<DayOfWeek, string> = {
   lun: "Lunes",
@@ -65,11 +65,15 @@ const emptyDiscipline: Discipline = {
   cancellationRules: [],
   capacity: 15,
   durationMinutes: 60,
+  defaultCoachId: undefined,
 };
 
 export default function ScheduleManagerImproved() {
   const { data: disciplinesData, isFetching } = useDisciplines();
   const disciplines = disciplinesData ?? [];
+
+  const { data: instructorsData } = useInstructorsMinimal();
+  const instructors = instructorsData ?? [];
 
   const deleteDisciplineMutation = useDeleteDiscipline();
   const updateDisciplineMutation = useUpdateDiscipline();
@@ -116,6 +120,7 @@ export default function ScheduleManagerImproved() {
       ...discipline,
       capacity: discipline.capacity ?? 15,
       durationMinutes: discipline.durationMinutes ?? 60,
+      defaultCoachId: discipline.defaultCoachId ?? undefined,
     });
     setEditingDiscipline(discipline.id);
     setSelectedDays(discipline.schedule.map((s) => s.day));
@@ -325,10 +330,21 @@ export default function ScheduleManagerImproved() {
                           await updateDisciplineMutation.mutateAsync({ id: d.id, data: { isActive: checked } });
                         }}
                       />
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-bold">{d.name}</p>
-                        <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
-                        {!d.isActive && <span className="text-[10px] font-black uppercase text-zinc-400">Inactiva</span>}
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-bold">{d.name}</p>
+                          <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color || "#ccc" }} />
+                          {!d.isActive && <span className="text-[10px] font-black uppercase text-zinc-400">Inactiva</span>}
+                        </div>
+                        {d.defaultCoachId && (() => {
+                          const coach = instructors.find((i: any) => i.id === d.defaultCoachId);
+                          return coach ? (
+                            <span className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
+                              <User className="w-3 h-3" />
+                              {(coach as any).firstName} {(coach as any).lastName}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                     
@@ -468,6 +484,48 @@ export default function ScheduleManagerImproved() {
                   placeholder="Descripción de la disciplina"
                   className="rounded-xl h-11 border-zinc-100"
                 />
+              </div>
+
+              {/* Coach asignado por defecto */}
+              <div className="space-y-2">
+                <Label className="font-bold text-zinc-700">Coach por defecto</Label>
+                <Select
+                  value={disciplineForm.defaultCoachId ?? "__none__"}
+                  onValueChange={(val) =>
+                    setDisciplineForm((prev) => ({
+                      ...prev,
+                      defaultCoachId: val === "__none__" ? undefined : val,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="rounded-xl h-11 border-zinc-100">
+                    <SelectValue placeholder="Sin coach asignado" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="__none__">Sin coach asignado (por especialidad)</SelectItem>
+                    {instructors
+                      .slice()
+                      .sort((a: any, b: any) => {
+                        // Admins primero
+                        const aIsAdmin = a.role === "admin";
+                        const bIsAdmin = b.role === "admin";
+                        if (aIsAdmin && !bIsAdmin) return -1;
+                        if (!aIsAdmin && bIsAdmin) return 1;
+                        // Segundo criterio: apellido alfabético
+                        return (a.lastName ?? "").localeCompare(b.lastName ?? "", "es");
+                      })
+                      .map((inst: any) => (
+                        <SelectItem key={inst.id} value={inst.id}>
+                          {inst.firstName} {inst.lastName}
+                          {inst.role === "admin" ? " (Admin)" : ""}
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-zinc-500 italic">
+                  El coach aquí asignado tendrá prioridad al generar clases automáticamente.
+                </p>
               </div>
 
               <div className="h-px bg-zinc-100 w-full mt-6" />

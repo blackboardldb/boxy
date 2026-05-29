@@ -138,10 +138,17 @@ export async function GET(
 
     // ─── 2. Períodos activos (renewals approved con startDate limpio) ────────
     // Solo se cuentan renewals con startDate no nulo — fuente confiable del
-    // flujo actual. Los alumnos migrados empiezan en 0 y acumulan desde su
-    // próxima renovación. Esto evita contar duplicados de migración.
-    const renewals = await prisma.membershipRenewal.findMany({
-      where: { userId, organizationId, status: "approved" },
+    // flujo actual. Los alumnos migrados tienen registros approved con
+    // startDate: null por diseño (arquitectura documentada). El filtro se
+    // aplica en DB antes del take: 12 para que el LIMIT opere solo sobre
+    // registros válidos y no silenciosamente recorte el historial real.
+    const cleanRenewals = await prisma.membershipRenewal.findMany({
+      where: {
+        userId,
+        organizationId,
+        status: "approved",
+        startDate: { not: null }, // excluye registros de migración en DB, no en JS
+      },
       select: {
         id: true,
         requestedAt: true,
@@ -153,8 +160,6 @@ export async function GET(
       take: 12,
     });
 
-    // Solo renewals con startDate no nulo (flujo actual confiable)
-    const cleanRenewals = renewals.filter((r) => r.startDate !== null);
     const periodsCompleted = cleanRenewals.length;
 
     // Fecha del primer período limpio (para mostrar "Miembro desde")

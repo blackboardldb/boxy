@@ -261,6 +261,35 @@ export class DisciplineService extends BaseService<Discipline> {
     console.log(
       `[DisciplineService] Discipline deleted: ${deletedRecord.id} (${deletedRecord.name})`
     );
+
+    // Clean up orphaned specialties from instructors that had this discipline
+    try {
+      const affectedInstructors = await prisma.instructor.findMany({});
+
+      const toUpdate = affectedInstructors.filter((inst) => {
+        const profile = (inst.profile as { specialties?: string[] }) || {};
+        return Array.isArray(profile.specialties) && profile.specialties.includes(deletedRecord.id);
+      });
+
+      await Promise.all(
+        toUpdate.map((inst) => {
+          const profile = (inst.profile as { specialties?: string[]; userId?: string }) || {};
+          const filtered = (profile.specialties ?? []).filter((id) => id !== deletedRecord.id);
+          return prisma.instructor.update({
+            where: { id: inst.id },
+            data: { profile: { ...profile, specialties: filtered } },
+          });
+        })
+      );
+
+      if (toUpdate.length > 0) {
+        console.log(
+          `[DisciplineService] Cleaned orphaned specialties from ${toUpdate.length} instructor(s).`
+        );
+      }
+    } catch (e) {
+      console.error("[DisciplineService] Error cleaning instructor specialties:", e);
+    }
   }
 
   // Helper methods

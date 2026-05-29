@@ -5,6 +5,30 @@ import { Prisma } from "@prisma/client";
 
 type DisciplineRow = Prisma.DisciplineGetPayload<Record<string, never>>;
 
+// We store defaultCoachId inside the cancellationRules JSON column to avoid a
+// DB migration. Format: { rules: [...], defaultCoachId?: string | null }
+// Legacy rows with a plain array are handled safely.
+
+function extractRules(payload: unknown): Discipline["cancellationRules"] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload as Discipline["cancellationRules"];
+  const p = payload as { rules?: unknown };
+  return Array.isArray(p.rules) ? (p.rules as Discipline["cancellationRules"]) : [];
+}
+
+function extractDefaultCoachId(payload: unknown): string | undefined {
+  if (!payload || Array.isArray(payload)) return undefined;
+  const p = payload as { defaultCoachId?: string | null };
+  return p.defaultCoachId || undefined;
+}
+
+function buildPayload(
+  rules: Discipline["cancellationRules"],
+  defaultCoachId?: string
+): Prisma.InputJsonValue {
+  return { rules, defaultCoachId: defaultCoachId ?? null } as unknown as Prisma.InputJsonValue;
+}
+
 export class PrismaDisciplineRepository implements IDisciplineRepository {
   private get prisma() {
     return prisma;
@@ -57,7 +81,7 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
         color: data.color || "#3b82f6",
         isActive: data.isActive ?? true,
         schedule: (data.schedule as unknown as Prisma.InputJsonValue) ?? [],
-        cancellationRules: (data.cancellationRules as unknown as Prisma.InputJsonValue) ?? [],
+        cancellationRules: buildPayload(data.cancellationRules ?? [], data.defaultCoachId),
         capacity: data.capacity,
         durationMinutes: data.durationMinutes,
       },
@@ -66,6 +90,14 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
   }
 
   async update(id: string, data: UpdateData<Discipline>): Promise<Discipline> {
+    // Fetch existing to merge unset fields correctly
+    const existing = await this.prisma.discipline.findUnique({ where: { id } });
+    const existingRules = extractRules(existing?.cancellationRules);
+    const existingCoachId = extractDefaultCoachId(existing?.cancellationRules);
+
+    const newRules = data.cancellationRules !== undefined ? data.cancellationRules : existingRules;
+    const newCoachId = data.defaultCoachId !== undefined ? data.defaultCoachId : existingCoachId;
+
     const updated = await this.prisma.discipline.update({
       where: { id },
       data: {
@@ -74,7 +106,7 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
         color: data.color,
         isActive: data.isActive,
         schedule: data.schedule ? (data.schedule as unknown as Prisma.InputJsonValue) : undefined,
-        cancellationRules: data.cancellationRules ? (data.cancellationRules as unknown as Prisma.InputJsonValue) : undefined,
+        cancellationRules: buildPayload(newRules, newCoachId),
         capacity: data.capacity,
         durationMinutes: data.durationMinutes,
       },
@@ -109,7 +141,6 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
     return discipline ? this.mapToEntity(discipline) : null;
   }
 
-  // Mapper
   private mapToEntity(d: DisciplineRow): Discipline {
     return {
       id: d.id,
@@ -118,7 +149,8 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
       color: d.color,
       isActive: d.isActive,
       schedule: Array.isArray(d.schedule) ? d.schedule as unknown as Discipline["schedule"] : [],
-      cancellationRules: Array.isArray(d.cancellationRules) ? d.cancellationRules as unknown as Discipline["cancellationRules"] : [],
+      cancellationRules: extractRules(d.cancellationRules),
+      defaultCoachId: extractDefaultCoachId(d.cancellationRules),
       capacity: d.capacity,
       durationMinutes: d.durationMinutes,
     };

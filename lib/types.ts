@@ -218,6 +218,8 @@ export interface Discipline {
   cancellationRules: CancellationRule[];
   capacity?: number;
   durationMinutes?: number;
+  /** Coach asignado por defecto a todas las clases de esta disciplina */
+  defaultCoachId?: string;
 }
 
 export interface CancellationRule {

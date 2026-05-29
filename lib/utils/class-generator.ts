@@ -58,14 +58,27 @@ export async function generateClassesFromSchedules(
 
     if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
-    // 1. Buscar instructor con la especialidad requerida
-    let instructor = instructors.find((inst) => {
-      const profile = inst.profile as any;
-      const specsObj = profile?.specialties;
-      if (!specsObj) return false;
-      const specs = typeof specsObj === "string" ? JSON.parse(specsObj) : specsObj;
-      return Array.isArray(specs) && specs.includes(discipline.id);
-    });
+    // 0. Prioridad 1: Coach asignado explícitamente a la disciplina
+    const cancellationPayload = discipline.cancellationRules as any;
+    const defaultCoachId: string | undefined =
+      !Array.isArray(cancellationPayload) && cancellationPayload?.defaultCoachId
+        ? cancellationPayload.defaultCoachId
+        : undefined;
+
+    let instructor = defaultCoachId
+      ? instructors.find((inst) => inst.id === defaultCoachId && inst.isActive)
+      : undefined;
+
+    // 1. Fallback: buscar instructor con la especialidad requerida
+    if (!instructor) {
+      instructor = instructors.find((inst) => {
+        const profile = inst.profile as any;
+        const specsObj = profile?.specialties;
+        if (!specsObj) return false;
+        const specs = typeof specsObj === "string" ? JSON.parse(specsObj) : specsObj;
+        return Array.isArray(specs) && specs.includes(discipline.id);
+      });
+    }
 
     // 2. Fallback explícito: Instructor Administrador/Maestro
     if (!instructor) {
