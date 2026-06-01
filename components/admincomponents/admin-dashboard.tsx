@@ -178,7 +178,7 @@ export function AdminDashboard({ role }: { role: string }) {
       )}
 
       {/* Grilla Principal de Métricas */}
-      <div className={`grid gap-4 grid-cols-1 ${role === "admin" ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+      <div className={`grid gap-2 grid-cols-1 ${role === "admin" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"}`}>
         {/* ── Tarjeta 1: Alumnos Vigentes ── */}
         {/* ── Tarjeta 1: Alumnos Vigentes ── */}
         <div className="rounded-xl border bg-card p-4">
@@ -286,7 +286,7 @@ export function AdminDashboard({ role }: { role: string }) {
                   })}
                 </svg>
                 {/* Leyenda */}
-                <div className="space-y-1.5 flex-1 text-sm">
+                <div className="space-y-1.5 flex-1 text-xs">
                   {segments.map((seg) => (
                     <div key={seg.label} className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -375,7 +375,7 @@ export function AdminDashboard({ role }: { role: string }) {
                         )}
                       </div>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-bold text-zinc-800">
+                        <span className="text-md font-bold text-zinc-800">
                           ${currentEgresos.toLocaleString("es-CL")}
                         </span>
                         <span className="text-[10px] text-zinc-400">
@@ -395,7 +395,7 @@ export function AdminDashboard({ role }: { role: string }) {
                         )}
                       </div>
                       <div className="flex items-baseline justify-end gap-1.5">
-                        <span className={`text-base font-bold ${currentBalance >= 0 ? "text-blue-600" : "text-rose-600"}`}>
+                        <span className={`text-md font-bold ${currentBalance >= 0 ? "text-blue-600" : "text-rose-600"}`}>
                           ${currentBalance.toLocaleString("es-CL")}
                         </span>
                         <span className="text-[10px] text-zinc-400">
