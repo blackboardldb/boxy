@@ -211,13 +211,13 @@ export function AdminDashboard({ role }: { role: string }) {
               <div className="grid grid-cols-2 gap-4">
                 {/* Total (Izquierda) */}
                 <div>
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total</span>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Registrados</span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-sm font-bold text-zinc-800">
                       {totalMembers}
                     </span>
                     <span className="text-[10px] text-zinc-400">
-                      ({totalMembers > 0 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1) : 0}%)
+                      ({totalMembers > 0 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1) : 0}% del total)
                     </span>
                   </div>
                 </div>
@@ -342,7 +342,7 @@ export function AdminDashboard({ role }: { role: string }) {
                 <div className="space-y-4 pt-1">
                   {/* ── Ingresos (Destacado arriba) ── */}
                   <div>
-                    <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
+                    <div className="flex justify-start gap-2 items-center text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
                       <span>Ingresos</span>
                       {revenuePct !== null && (
                         <span className={`text-xs font-bold ${revenueGood ? "text-emerald-600" : "text-rose-600"}`}>
