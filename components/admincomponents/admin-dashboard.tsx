@@ -180,24 +180,64 @@ export function AdminDashboard({ role }: { role: string }) {
       {/* Grilla Principal de Métricas */}
       <div className={`grid gap-4 grid-cols-1 ${role === "admin" ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
         {/* ── Tarjeta 1: Alumnos Vigentes ── */}
-        <MetricCard
-          title="Alumnos vigentes"
-          value={activeMembers + scheduledMembers}
-          subtitle={
-            <>
-              {totalMembers} total (
-              {totalMembers > 0
-                ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1)
-                : 0}
-              %)
-              <br />
-              {newMembersThisMonth} nuevos miembros.
-            </>
-          }
-          icon={Users}
-          isLoading={statsLoading}
-          linkTo="/admin/alumnos"
-        />
+        {/* ── Tarjeta 1: Alumnos Vigentes ── */}
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+              Alumnos vigentes
+            </span>
+            <Link
+              href="/admin/alumnos"
+              className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {statsLoading ? (
+            <div className="space-y-3 mt-4">
+              <Skeleton className="h-8 w-16 mb-1 rounded-xl" />
+              <Skeleton className="h-3 w-24 rounded-xl" />
+            </div>
+          ) : (
+            <div className="space-y-4 pt-1">
+              <div>
+                <span className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+                  {activeMembers + scheduledMembers}
+                </span>
+              </div>
+
+              <div className="border-t border-zinc-100 my-2" />
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Total (Izquierda) */}
+                <div>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Total</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-bold text-zinc-800">
+                      {totalMembers}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      ({totalMembers > 0 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1) : 0}%)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Nuevos (Derecha) */}
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Nuevos</span>
+                  <div className="flex items-baseline justify-end gap-1">
+                    <span className="text-sm font-bold text-zinc-800">
+                      {newMembersThisMonth}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      este mes
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* ── Tarjeta 2: Estados de Membresía ── */}
         <div className="rounded-xl border bg-card p-4 flex flex-col justify-between">
