@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { FitCenterUserProfile, MembershipPlan, MembershipStatus } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   calcularFechaTerminoMembresia,
   calcularClasesSegunDuracion,
@@ -32,7 +33,7 @@ import { MembershipDatePicker } from "./membership-date-picker";
 import { format } from "date-fns";
 
 interface AddStudentModalProps {
-  onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => Promise<boolean>;
+  onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => Promise<FitCenterUserProfile | null>;
   onEditStudent?: (
     id: string,
     updates: Omit<FitCenterUserProfile, "id">
@@ -133,6 +134,7 @@ export function AddStudentModal({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrarIngreso, setRegistrarIngreso] = useState(true);
 
   const createInitialFormData = (student?: FitCenterUserProfile) => ({
     firstName: student?.firstName || "",
@@ -188,6 +190,7 @@ export function AddStudentModal({
       setLastPaymentTouched(false);
       setError(null);
       setIsSubmitting(false);
+      setRegistrarIngreso(true);
     }
   }, [open, initialStudent]);
 
@@ -269,19 +272,45 @@ export function AddStudentModal({
     );
 
     try {
-      let success = false;
       if (initialStudent && onEditStudent) {
-        success = await onEditStudent(initialStudent.id, studentData);
+        const success = await onEditStudent(initialStudent.id, studentData);
+        if (success) {
+          onSuccess?.();
+          setOpen(false);
+        } else {
+          setError("No se pudo guardar la información del alumno. Por favor revisa los datos e intenta nuevamente.");
+        }
       } else {
-        success = await onAddStudent(studentData);
-      }
-
-      if (success) {
-        // Llamar al callback de éxito para refrescar la lista
-        onSuccess?.();
-        setOpen(false);
-      } else {
-        setError("No se pudo guardar la información del alumno. Por favor revisa los datos e intenta nuevamente.");
+        const createdUser = await onAddStudent(studentData);
+        if (createdUser) {
+          // Registrar ingreso en finanzas si el checkbox está marcado y hay precio
+          if (registrarIngreso && selectedPlan.price > 0) {
+            try {
+              await fetch(`/api/users/${createdUser.id}/renewal`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  planId: selectedPlan.id,
+                  paymentMethod: formData.formaDePago || "contado",
+                  autoApprove: true,
+                  planName: selectedPlan.name,
+                  planPrice: selectedPlan.price,
+                  planClassLimit: calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
+                  planDuration: selectedPlan.durationInMonths,
+                  startDate: formData.joinDate,
+                  paymentDate: formData.joinDate,
+                }),
+              });
+            } catch (renewalErr) {
+              // El alumno fue creado; el ingreso falló silenciosamente (no bloquear UX)
+              console.error("[AddStudentModal] Error registrando ingreso:", renewalErr);
+            }
+          }
+          onSuccess?.();
+          setOpen(false);
+        } else {
+          setError("No se pudo guardar la información del alumno. Por favor revisa los datos e intenta nuevamente.");
+        }
       }
     } catch (err: any) {
       setError(err.message || "Ocurrió un error inesperado al guardar.");
@@ -414,7 +443,7 @@ export function AddStudentModal({
                     <SelectContent className="rounded-xl">
                       {plans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name} - ${plan.price} /{" "}
+                          {plan.name} - ${plan.price} {" "}
                           {plan.durationInMonths === 0.5
                             ? "quincena"
                             : plan.durationInMonths === 1
@@ -424,6 +453,22 @@ export function AddStudentModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* Checkbox de ingreso — solo al crear un alumno nuevo */}
+                  {!initialStudent && selectedPlan && selectedPlan.price > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Checkbox
+                        id="registrar-ingreso-add"
+                        checked={registrarIngreso}
+                        onCheckedChange={(v) => setRegistrarIngreso(!!v)}
+                      />
+                      <label
+                        htmlFor="registrar-ingreso-add"
+                        className="text-xs text-muted-foreground cursor-pointer select-none"
+                      >
+                        Registrar como ingreso (${selectedPlan.price.toLocaleString("es-CL")})
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 

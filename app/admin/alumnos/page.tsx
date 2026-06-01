@@ -135,8 +135,8 @@ export default function AlumnosPage() {
         <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
         <AddStudentModal
           onAddStudent={async (studentData) => {
-            await createUserMutation.mutateAsync(studentData);
-            return true;
+            const createdUser = await createUserMutation.mutateAsync(studentData);
+            return createdUser ?? null;
           }}
           plans={plans}
           onSuccess={() => {

@@ -165,12 +165,12 @@ export function AdminDashboard({ role }: { role: string }) {
               <Bell className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-amber-950">
+              <p className="text-sm font-semibold text-amber-100">
                 {pendingMembers === 1
                   ? "1 nueva solicitud de renovación pendiente"
                   : `${pendingMembers} solicitudes de renovación pendientes`}
               </p>
-              <p className="text-xs text-amber-950">Haz clic para revisar</p>
+              <p className="text-xs text-amber-100">Haz clic para revisar</p>
             </div>
           </div>
           <ChevronRight className="h-5 w-5 text-amber-900 shrink-0" />
