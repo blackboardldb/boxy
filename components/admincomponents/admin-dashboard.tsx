@@ -323,60 +323,69 @@ export function AdminDashboard({ role }: { role: string }) {
               const egresosArrow = egresosPct === null ? "" : egresosIsUp ? "↑" : "↓";
 
               return (
-                <div className="space-y-4">
-                  {/* Balance destacado */}
-                  <div className="p-3 bg-zinc-50/50 hover:bg-zinc-50 border border-zinc-100 rounded-xl transition-all duration-200">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                        Balance
-                      </span>
-                      {balancePct !== null ? (
-                        <span className={`text-xs font-semibold px-2 py-0.5 border rounded-full flex items-center gap-0.5 ${balancePill}`}>
-                          <span className="text-[10px]">{balanceIsUp ? "↑" : "↓"}</span>
-                          {Math.abs(balancePct)}%
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium text-zinc-400 px-2 py-0.5 bg-zinc-100 rounded-full">
-                          —
+                <div className="space-y-4 pt-1">
+                  {/* ── Ingresos (Destacado arriba) ── */}
+                  <div>
+                    <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
+                      <span>Ingresos</span>
+                      {revenuePct !== null && (
+                        <span className={`text-xs font-bold ${revenueGood ? "text-emerald-600" : "text-rose-600"}`}>
+                          {revenueArrow}{Math.abs(revenuePct)}%
                         </span>
                       )}
                     </div>
-                    <div className="flex items-baseline justify-between pt-1">
-                      <p className="text-xl font-bold text-zinc-900">
-                        ${currentBalance.toLocaleString("es-CL")}
-                      </p>
-                      <p className="text-xs font-medium text-zinc-500">
-                        vs. ${prevBalance.toLocaleString("es-CL")}
-                      </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+                        ${currentRevenue.toLocaleString("es-CL")}
+                      </span>
+                      <span className="text-xs text-zinc-400">
+                        vs. ${prevRevenue.toLocaleString("es-CL")}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Ingresos & Egresos en una sola línea limpia */}
-                  <div className="flex items-center justify-between border-t border-zinc-100 pt-3 text-xs">
-                    {/* Ingresos */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">Ingresos:</span>
-                      <span className="font-semibold text-zinc-950">
-                        ${currentRevenue.toLocaleString("es-CL")}
-                      </span>
-                      {revenuePct !== null && (
-                        <span className={`text-[10px] font-bold ${revenueGood ? "text-emerald-600" : "text-rose-500"}`}>
-                          ({revenueArrow}{Math.abs(revenuePct)}%)
+                  <div className="border-t border-zinc-100 my-2" />
+
+                  {/* ── Egresos y Balance (Uno a la izquierda y otro a la derecha, limpio) ── */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Egresos (Izquierda) */}
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
+                        <span>Egresos</span>
+                        {egresosPct !== null && (
+                          <span className={`font-bold ${egresosGood ? "text-emerald-600" : "text-rose-500"}`}>
+                            {egresosArrow}{Math.abs(egresosPct)}%
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-base font-bold text-zinc-800">
+                          ${currentEgresos.toLocaleString("es-CL")}
                         </span>
-                      )}
+                        <span className="text-[10px] text-zinc-400">
+                          vs. ${prevEgresos.toLocaleString("es-CL")}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Egresos */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">Egresos:</span>
-                      <span className="font-semibold text-zinc-950">
-                        ${currentEgresos.toLocaleString("es-CL")}
-                      </span>
-                      {egresosPct !== null && (
-                        <span className={`text-[10px] font-bold ${egresosGood ? "text-emerald-600" : "text-rose-500"}`}>
-                          ({egresosArrow}{Math.abs(egresosPct)}%)
+                    {/* Balance (Derecha) */}
+                    <div className="text-right">
+                      <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
+                        <span>Balance</span>
+                        {balancePct !== null && (
+                          <span className={`font-bold ${balanceIsUp ? "text-emerald-600" : "text-rose-500"}`}>
+                            {balanceIsUp ? "↑" : "↓"}{Math.abs(balancePct)}%
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline justify-end gap-1.5">
+                        <span className={`text-base font-bold ${currentBalance >= 0 ? "text-blue-600" : "text-rose-600"}`}>
+                          ${currentBalance.toLocaleString("es-CL")}
                         </span>
-                      )}
+                        <span className="text-[10px] text-zinc-400">
+                          vs. ${prevBalance.toLocaleString("es-CL")}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
