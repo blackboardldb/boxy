@@ -13,17 +13,17 @@ type Tab = "solicitudes" | "inapp" | "notificaciones";
 const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   {
     id: "solicitudes",
-    label: "Solicitudes",
+    label: "Renovar plan",
     icon: <RefreshCw className="h-3.5 w-3.5" />,
   },
   {
     id: "inapp",
-    label: "Alertas In-App",
+    label: "Enviar notificación",
     icon: <Bell className="h-3.5 w-3.5" />,
   },
   {
     id: "notificaciones",
-    label: "Notificaciones",
+    label: "",
     icon: <BellRing className="h-3.5 w-3.5" />,
   },
 ];
@@ -50,16 +50,16 @@ export default function AlertasPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Alertas</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Solicitudes de renovación, alertas In-App y notificaciones
+            Solicitudes de renovación, enviar notificaciones y ver notificaciones
           </p>
         </div>
-        {pendingRenewals.length > 0 && (
+        {/* {pendingRenewals.length > 0 && (
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">
             <RefreshCw className="h-3 w-3" />
             {pendingRenewals.length} pendiente
             {pendingRenewals.length !== 1 ? "s" : ""}
           </span>
-        )}
+        )} */}
       </div>
 
       {/* Tabs */}
@@ -72,14 +72,14 @@ export default function AlertasPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 ${isActive
-                  ? "bg-background shadow text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                ? "bg-background shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {tab.icon}
               {tab.label}
               {count !== null && (
-                <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                <span className=" bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                   {count}
                 </span>
               )}
@@ -100,7 +100,7 @@ export default function AlertasPage() {
         <div className="space-y-4">
           <div>
             <h2 className="text-base font-bold text-zinc-900">
-              Nueva alerta In-App
+              Nueva notificación In-App
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               Las alertas aparecerán en el banner de la app para los alumnos

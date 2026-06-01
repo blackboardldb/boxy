@@ -158,7 +158,7 @@ export default function AdminWeeklyDatePicker({
   };
 
   return (
-    <div className={` border-b-2 border-zinc-200 bg-zinc-100 m-4 rounded-xl overflow-hidden  p-3 ${className}`}>
+    <div className={` border border-zinc-100 bg-white m-4 rounded-xl overflow-hidden  p-3 ${className}`}>
       {/* Header */}
       <div className="pb-2 border-b border-zinc-100">
         <div className="flex items-center justify-between">

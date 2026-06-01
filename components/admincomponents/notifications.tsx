@@ -218,7 +218,7 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
 
       {/* Contenido: Renovaciones pendientes */}
       <div className="space-y-4">
-        {urgentCount > 0 && (
+        {/* {urgentCount > 0 && (
           <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
             <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
             <span>
@@ -229,7 +229,7 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
               en los próximos 7 días.
             </span>
           </div>
-        )}
+        )} */}
 
         {renewalsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -288,12 +288,12 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
                       <span className="text-muted-foreground">Estado</span>
                       <span
                         className={`text-xs font-medium ${r.user.daysUntilExpiration === null
-                            ? "text-zinc-500"
-                            : r.user.daysUntilExpiration < 0
-                              ? "text-red-600"
-                              : isUrgent
-                                ? "text-amber-600"
-                                : "text-zinc-700"
+                          ? "text-zinc-500"
+                          : r.user.daysUntilExpiration < 0
+                            ? "text-red-600"
+                            : isUrgent
+                              ? "text-amber-600"
+                              : "text-zinc-700"
                           }`}
                       >
                         {r.user.daysUntilExpiration === null
