@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ArrowLeft, Save } from "lucide-react";
 import type { FitCenterUserProfile } from "@/lib/types";
 import { calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/lib/utils";
-import { parseISO } from "date-fns";
 import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
@@ -229,7 +228,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
              <h1 className="text-3xl font-bold">Asignar Nuevo Plan</h1>
               <p className="pb-2 text-base text-zinc-500">
             {student.membership?.status === 'active' && student.membership?.currentPeriodEnd 
-              ? `El plan actual de ${student.firstName} ${student.lastName} vence el ${parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString()}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`
+              ? (() => { const [ey, em, ed] = student.membership.currentPeriodEnd.substring(0, 10).split("-").map(Number); return `El plan actual de ${student.firstName} ${student.lastName} vence el ${new Date(ey, em - 1, ed).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}. La sugerencia automática de inicio a continuación es continua para evitar solapamientos.`; })()
               : 'Selecciona el plan, la forma de pago y confirma las fechas de vigencia para activar una nueva membresía.'}
           </p>
           </div>
@@ -242,7 +241,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                <h3 className="text-md font-semibold text-zinc-900 mb-2">Información del Plan Actual</h3>
                <div className="space-y-1 text-sm">
                  <p><span className="text-muted-foreground mr-1">Último plan:</span> <span className="font-medium">{student.membership.membershipType} ({student.membership.status === 'active' ? 'activo' : student.membership.status})</span></p>
-                 <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? parseISO(student.membership.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}</span></p>
+                 <p><span className="text-muted-foreground mr-1">Fecha de término del plan:</span> <span className="font-medium">{student.membership.currentPeriodEnd ? (() => { const [ey, em, ed] = student.membership.currentPeriodEnd.substring(0, 10).split("-").map(Number); return new Date(ey, em - 1, ed).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' }); })() : '-'}</span></p>
                </div>
              </div>
           )}
@@ -358,19 +357,19 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
                     <Input
                       type="date"
                       value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                       required
-                      className="h-11 rounded-xl max-w-full"
+                      className="h-11 rounded-xl w-full"
                     />
                   </div>
-                  <div className="space-y-2 relative">
+                  <div className="space-y-2">
                     <Label className="text-sm font-semibold text-zinc-800">Fecha de Término <span className="text-red-500">*</span></Label>
                     <Input
                       type="date"
                       value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                       required
-                      className="h-11 bg-zinc-50 cursor-pointer rounded-xl"
+                      className="h-11 bg-zinc-50 cursor-pointer rounded-xl w-full"
                     />
                     <p className="text-[11px] font-medium text-muted-foreground mt-1.5 flex items-center justify-between">
                        <span>Calculada automáticamente</span>

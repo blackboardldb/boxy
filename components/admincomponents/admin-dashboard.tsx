@@ -8,6 +8,8 @@ import {
   Users,
   DollarSign,
   AlertTriangle,
+  ArrowLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -123,9 +125,9 @@ export function AdminDashboard({ role }: { role: string }) {
           {linkTo && (
             <Link
               href={linkTo}
-              className="text-sm underline font-bold text-zinc-900 px-2 py-1 rounded-md hover:bg-zinc-100 transition-colors"
+              className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
             >
-              Ver detalle
+              <ChevronRight className="h-4 w-4" />
             </Link>
           )}
         </CardHeader>
@@ -302,7 +304,7 @@ export function AdminDashboard({ role }: { role: string }) {
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                       <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
+                      <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
@@ -312,7 +314,7 @@ export function AdminDashboard({ role }: { role: string }) {
                     </div>
                   </div>
                 ))}
-                
+
                 {hasMoreExpiring && (
                   <button
                     onClick={loadMoreExpiring}
@@ -347,7 +349,7 @@ export function AdminDashboard({ role }: { role: string }) {
                     <div className="">
                       <p className="font-medium">{u.firstName} {u.lastName}</p>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                        <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
+                      <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
