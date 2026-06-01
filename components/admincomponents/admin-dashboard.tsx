@@ -1,21 +1,19 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users,
   DollarSign,
-  AlertTriangle,
-  ArrowLeft,
   ChevronRight,
+  Bell,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WhatsAppLink } from "../WhatsAppLink";
 import { parseISO } from "date-fns";
-import { useAdminStats, useExpiringMembers, useExpiredMembers } from "@/lib/react-query/hooks/useAdminStats";
+import { useAdminStats, useExpiringMembers, useExpiredMembers, useAdminFinanceCompare } from "@/lib/react-query/hooks/useAdminStats";
 
 interface DashboardStats {
   totalMembers: number;
@@ -46,6 +44,7 @@ export function AdminDashboard({ role }: { role: string }) {
   const { data: dashboardStats, isLoading: statsLoading } = useAdminStats();
   const { data: expiringDataResponse, isLoading: expiringLoading } = useExpiringMembers(5, expiringSkip);
   const { data: expiredDataResponse, isLoading: expiredLoading } = useExpiredMembers(5, expiredSkip);
+  const { data: financeCompare, isLoading: financeLoading } = useAdminFinanceCompare();
 
   // Use state to accumulate the lists for "load more" functionality
   const [accumulatedExpiring, setAccumulatedExpiring] = useState<MemberListItem[]>([]);
@@ -139,9 +138,9 @@ export function AdminDashboard({ role }: { role: string }) {
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold text-zinc-900">{value}</div>
+              <div className="flex items-center gap-1">
                 <Icon className="h-5 w-5 text-zinc-400" />
+                <div className="text-2xl font-bold text-zinc-900">{value}</div>
               </div>
               <div className="text-xs text-muted-foreground mt-1">
                 {subtitle}
@@ -155,20 +154,43 @@ export function AdminDashboard({ role }: { role: string }) {
 
   return (
     <div className="space-y-6 mb-16">
+      {/* Banner de Acción Requerida — solo visible cuando hay pendientes */}
+      {!statsLoading && pendingMembers > 0 && (
+        <Link
+          href="/admin/alertas"
+          className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-600 shrink-0">
+              <Bell className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                {pendingMembers === 1
+                  ? "1 nueva solicitud de renovación pendiente"
+                  : `${pendingMembers} solicitudes de renovación pendientes`}
+              </p>
+              <p className="text-xs text-amber-700">Requieren validación — haz clic para revisar</p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-amber-500 shrink-0" />
+        </Link>
+      )}
+
       {/* Estadísticas Principales */}
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 grid-cols-2">
         <MetricCard
-          title="Total alumnos"
-          value={totalMembers}
+          title="Alumnos vigentes"
+          value={activeMembers + scheduledMembers}
           subtitle={
             <>
-              {activeMembers + scheduledMembers} vigentes (
+              {totalMembers} total (
               {totalMembers > 0
                 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1)
                 : 0}
-              % retención)
+              %)
               <br />
-              {newMembersThisMonth} nuevos miembros este mes.
+              {newMembersThisMonth} nuevos miembros.
             </>
           }
           icon={Users}
@@ -182,7 +204,7 @@ export function AdminDashboard({ role }: { role: string }) {
             value={`$${monthlyBalance.toLocaleString("es-CL")}`}
             subtitle={
               <>
-                Ingresos reales ${monthlyRevenue.toLocaleString("es-CL")}
+                Ingresos ${monthlyRevenue.toLocaleString("es-CL")}
                 <br />
                 Egresos ${monthlyEgresos.toLocaleString("es-CL")}
               </>
@@ -192,94 +214,176 @@ export function AdminDashboard({ role }: { role: string }) {
             linkTo="/admin/finanzas"
           />
         )}
-
-        <MetricCard
-          title="Acción Requerida"
-          value={pendingMembers}
-          subtitle="Pendientes de validación"
-          icon={AlertTriangle}
-          isLoading={statsLoading}
-          linkTo="/admin/alertas"
-        />
       </div>
 
-      {/* Breakdown por Estados */}
-      <div className="grid gap-6 md:grid-cols-1 min-h-[280px]">
-        <Card className="rounded-xl">
-          <CardHeader>
-            <CardTitle>Estados de Membresía</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
-                <span>Activos</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{activeMembers}</span>
-                <Badge variant="outline" className="rounded-xl">
-                  {totalMembers > 0
-                    ? Math.round((activeMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
-              </div>
-            </div>
-            <Progress
-              value={totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0}
-              className="h-2 rounded-xl"
-              aria-label={`Alumnos activos: ${activeMembers} de ${totalMembers} (${totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0}%)`}
-            />
+      {/* Breakdown por Estados + Comparativa Financiera */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                <span>Programados</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{scheduledMembers}</span>
-                <Badge variant="outline" className="rounded-xl">
-                  {totalMembers > 0
-                    ? Math.round((scheduledMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
+        {/* ── Tarjeta 1: Pie Chart de Estados ── */}
+        <div className="rounded-xl border bg-card p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Estados de Membresía</p>
+          {statsLoading ? (
+            <div className="flex gap-4 items-center">
+              <Skeleton className="h-32 w-32 rounded-full shrink-0" />
+              <div className="space-y-3 flex-1">
+                <Skeleton className="h-4 w-full rounded-xl" />
+                <Skeleton className="h-4 w-full rounded-xl" />
+                <Skeleton className="h-4 w-full rounded-xl" />
+                <Skeleton className="h-4 w-full rounded-xl" />
               </div>
             </div>
+          ) : (() => {
+            const segments = [
+              { label: "Activos", value: activeMembers, color: "#22c55e" },
+              { label: "Programados", value: scheduledMembers, color: "#3b82f6" },
+              { label: "Pendientes", value: pendingMembers, color: "#f97316" },
+              { label: "Inactivos", value: inactiveMembers, color: "#9ca3af" },
+            ];
+            const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+            const r = 40, cx = 50, cy = 50;
+            const circ = 2 * Math.PI * r;
+            let offset = 0;
+            return (
+              <div className="flex gap-4 items-center">
+                {/* Donut SVG — sin librería, sin JS extra */}
+                <svg viewBox="0 0 100 100" className="h-32 w-32 shrink-0 -rotate-90" aria-hidden="true">
+                  {segments.map((seg, i) => {
+                    const dash = (seg.value / total) * circ;
+                    const gap = circ - dash;
+                    const el = (
+                      <circle
+                        key={i}
+                        cx={cx} cy={cy} r={r}
+                        fill="none"
+                        stroke={seg.color}
+                        strokeWidth="18"
+                        strokeDasharray={`${dash} ${gap}`}
+                        strokeDashoffset={-offset}
+                      />
+                    );
+                    offset += dash;
+                    return el;
+                  })}
+                </svg>
+                {/* Leyenda */}
+                <div className="space-y-2 flex-1 text-sm">
+                  {segments.map((seg) => (
+                    <div key={seg.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
+                        <span className="text-muted-foreground">{seg.label}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-zinc-900">{seg.value}</span>
+                        <span className="text-[11px] text-muted-foreground">{Math.round((seg.value / total) * 100)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
-                <span>Pendientes</span>
+        {/* ── Tarjeta 2: Comparativa Financiera (carga diferida) ── */}
+        {role === "admin" && (
+          <div className="rounded-xl border bg-card p-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Este mes vs. mes anterior</p>
+            {financeLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+                <Skeleton className="h-10 w-full rounded-xl" />
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{pendingMembers}</span>
-                <Badge variant="outline" className="rounded-xl">
-                  {totalMembers > 0
-                    ? Math.round((pendingMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
-              </div>
-            </div>
+            ) : (() => {
+              const currentBalance = financeCompare?.currentBalance ?? 0;
+              const prevBalance = financeCompare?.prevBalance ?? 0;
+              const balancePct = financeCompare?.balancePct ?? null;
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-gray-500 rounded-sm"></div>
-                <span>Inactivos</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold">{inactiveMembers}</span>
-                <Badge variant="outline" className="rounded-xl">
-                  {totalMembers > 0
-                    ? Math.round((inactiveMembers / totalMembers) * 100)
-                    : 0}
-                  %
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              const currentRevenue = financeCompare?.currentRevenue ?? 0;
+              const prevRevenue = financeCompare?.prevRevenue ?? 0;
+              const revenuePct = financeCompare?.revenuePct ?? null;
+
+              const currentEgresos = financeCompare?.currentEgresos ?? 0;
+              const prevEgresos = financeCompare?.prevEgresos ?? 0;
+              const egresosPct = financeCompare?.egresosPct ?? null;
+
+              const balanceIsUp = (balancePct ?? 0) > 0;
+              const balanceGood = balanceIsUp;
+              const balancePill = balancePct === null ? "bg-zinc-100 text-zinc-600"
+                : balanceGood ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                  : "bg-rose-50 text-rose-700 border-rose-100";
+
+              const revenueIsUp = (revenuePct ?? 0) > 0;
+              const revenueGood = revenueIsUp;
+              const revenueArrow = revenuePct === null ? "" : revenueIsUp ? "↑" : "↓";
+
+              const egresosIsUp = (egresosPct ?? 0) > 0;
+              const egresosGood = !egresosIsUp; // for expenses, down is good
+              const egresosArrow = egresosPct === null ? "" : egresosIsUp ? "↑" : "↓";
+
+              return (
+                <div className="space-y-4">
+                  {/* Balance destacado */}
+                  <div className="p-3 bg-zinc-50/50 hover:bg-zinc-50 border border-zinc-100 rounded-xl transition-all duration-200">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                        Balance
+                      </span>
+                      {balancePct !== null ? (
+                        <span className={`text-xs font-semibold px-2 py-0.5 border rounded-full flex items-center gap-0.5 ${balancePill}`}>
+                          <span className="text-[10px]">{balanceIsUp ? "↑" : "↓"}</span>
+                          {Math.abs(balancePct)}%
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-zinc-400 px-2 py-0.5 bg-zinc-100 rounded-full">
+                          —
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline justify-between pt-1">
+                      <p className="text-xl font-bold text-zinc-900">
+                        ${currentBalance.toLocaleString("es-CL")}
+                      </p>
+                      <p className="text-xs font-medium text-zinc-500">
+                        vs. ${prevBalance.toLocaleString("es-CL")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ingresos & Egresos en una sola línea limpia */}
+                  <div className="flex items-center justify-between border-t border-zinc-100 pt-3 text-xs">
+                    {/* Ingresos */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Ingresos:</span>
+                      <span className="font-semibold text-zinc-950">
+                        ${currentRevenue.toLocaleString("es-CL")}
+                      </span>
+                      {revenuePct !== null && (
+                        <span className={`text-[10px] font-bold ${revenueGood ? "text-emerald-600" : "text-rose-500"}`}>
+                          ({revenueArrow}{Math.abs(revenuePct)}%)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Egresos */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Egresos:</span>
+                      <span className="font-semibold text-zinc-950">
+                        ${currentEgresos.toLocaleString("es-CL")}
+                      </span>
+                      {egresosPct !== null && (
+                        <span className={`text-[10px] font-bold ${egresosGood ? "text-emerald-600" : "text-rose-500"}`}>
+                          ({egresosArrow}{Math.abs(egresosPct)}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Listas Rápidas: Próximos a Vencer y Recientemente Inactivos */}

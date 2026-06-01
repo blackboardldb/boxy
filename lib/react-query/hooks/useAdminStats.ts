@@ -7,6 +7,7 @@ export const adminStatsKeys = {
     ["admin", "members", "expiring", { take, skip }] as const,
   expired: (take: number, skip: number) =>
     ["admin", "members", "expired", { take, skip }] as const,
+  financeCompare: () => ["admin", "finance-compare"] as const,
 };
 
 export function useAdminStats() {
@@ -37,6 +38,18 @@ export function useExpiredMembers(take = 5, skip = 0) {
       fetchClient<any>(`/admin/members/expired?take=${take}&skip=${skip}`).then(res => res.data),
     staleTime: 1000 * 60 * 10,  // 10 min — lista secundaria, no bloquea LCP
     gcTime: 1000 * 60 * 20,
+    placeholderData: keepPreviousData,
+  });
+}
+
+// Carga diferida — no bloquea el render inicial del dashboard.
+// Se monta de forma independiente y muestra su propio skeleton.
+export function useAdminFinanceCompare() {
+  return useQuery({
+    queryKey: adminStatsKeys.financeCompare(),
+    queryFn: () => fetchClient<any>("/admin/finance-compare").then(res => res.data),
+    staleTime: 1000 * 60 * 2,   // 2 min — datos comparativos cambian más seguido
+    gcTime: 1000 * 60 * 10,
     placeholderData: keepPreviousData,
   });
 }
