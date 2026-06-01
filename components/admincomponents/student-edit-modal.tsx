@@ -32,7 +32,7 @@ export function StudentEditModal({
       plans={membershipPlans}
       onClose={onClose}
       initialStudent={student}
-      onAddStudent={async () => true}
+      onAddStudent={async () => null}
       onSuccess={onSuccess}
     />
   );
