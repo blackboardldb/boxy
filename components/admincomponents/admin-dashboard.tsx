@@ -177,8 +177,9 @@ export function AdminDashboard({ role }: { role: string }) {
         </Link>
       )}
 
-      {/* Estadísticas Principales */}
-      <div className="grid gap-2 grid-cols-2">
+      {/* Grilla Principal de Métricas */}
+      <div className={`grid gap-4 grid-cols-1 ${role === "admin" ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        {/* ── Tarjeta 1: Alumnos Vigentes ── */}
         <MetricCard
           title="Alumnos vigentes"
           value={activeMembers + scheduledMembers}
@@ -198,32 +199,11 @@ export function AdminDashboard({ role }: { role: string }) {
           linkTo="/admin/alumnos"
         />
 
-        {role === "admin" && (
-          <MetricCard
-            title="Balance del Mes"
-            value={`$${monthlyBalance.toLocaleString("es-CL")}`}
-            subtitle={
-              <>
-                Ingresos ${monthlyRevenue.toLocaleString("es-CL")}
-                <br />
-                Egresos ${monthlyEgresos.toLocaleString("es-CL")}
-              </>
-            }
-            icon={DollarSign}
-            isLoading={statsLoading}
-            linkTo="/admin/finanzas"
-          />
-        )}
-      </div>
-
-      {/* Breakdown por Estados + Comparativa Financiera */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-
-        {/* ── Tarjeta 1: Pie Chart de Estados ── */}
-        <div className="rounded-xl border bg-card p-4">
+        {/* ── Tarjeta 2: Estados de Membresía ── */}
+        <div className="rounded-xl border bg-card p-4 flex flex-col justify-between">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Estados de Membresía</p>
           {statsLoading ? (
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-4 items-center flex-1">
               <Skeleton className="h-32 w-32 rounded-full shrink-0" />
               <div className="space-y-3 flex-1">
                 <Skeleton className="h-4 w-full rounded-xl" />
@@ -244,9 +224,9 @@ export function AdminDashboard({ role }: { role: string }) {
             const circ = 2 * Math.PI * r;
             let offset = 0;
             return (
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center flex-1">
                 {/* Donut SVG — sin librería, sin JS extra */}
-                <svg viewBox="0 0 100 100" className="h-32 w-32 shrink-0 -rotate-90" aria-hidden="true">
+                <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden="true">
                   {segments.map((seg, i) => {
                     const dash = (seg.value / total) * circ;
                     const gap = circ - dash;
@@ -266,7 +246,7 @@ export function AdminDashboard({ role }: { role: string }) {
                   })}
                 </svg>
                 {/* Leyenda */}
-                <div className="space-y-2 flex-1 text-sm">
+                <div className="space-y-1.5 flex-1 text-sm">
                   {segments.map((seg) => (
                     <div key={seg.label} className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -285,7 +265,7 @@ export function AdminDashboard({ role }: { role: string }) {
           })()}
         </div>
 
-        {/* ── Tarjeta 2: Comparativa Financiera (carga diferida) ── */}
+        {/* ── Tarjeta 3: Comparativa Financiera (Carga Diferida) ── */}
         {role === "admin" && (
           <div className="rounded-xl border bg-card p-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Este mes vs. mes anterior</p>
@@ -309,10 +289,6 @@ export function AdminDashboard({ role }: { role: string }) {
               const egresosPct = financeCompare?.egresosPct ?? null;
 
               const balanceIsUp = (balancePct ?? 0) > 0;
-              const balanceGood = balanceIsUp;
-              const balancePill = balancePct === null ? "bg-zinc-100 text-zinc-600"
-                : balanceGood ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                  : "bg-rose-50 text-rose-700 border-rose-100";
 
               const revenueIsUp = (revenuePct ?? 0) > 0;
               const revenueGood = revenueIsUp;
