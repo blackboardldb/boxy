@@ -158,22 +158,22 @@ export function AdminDashboard({ role }: { role: string }) {
       {!statsLoading && pendingMembers > 0 && (
         <Link
           href="/admin/alertas"
-          className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors"
+          className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-orange-500 border border-orange-600 hover:bg-orange-400 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-600 shrink-0">
               <Bell className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-amber-900">
+              <p className="text-sm font-semibold text-amber-950">
                 {pendingMembers === 1
                   ? "1 nueva solicitud de renovación pendiente"
                   : `${pendingMembers} solicitudes de renovación pendientes`}
               </p>
-              <p className="text-xs text-amber-700">Requieren validación — haz clic para revisar</p>
+              <p className="text-xs text-amber-950">Haz clic para revisar</p>
             </div>
           </div>
-          <ChevronRight className="h-4 w-4 text-amber-500 shrink-0" />
+          <ChevronRight className="h-5 w-5 text-amber-900 shrink-0" />
         </Link>
       )}
 
