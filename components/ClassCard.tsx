@@ -46,18 +46,19 @@ export function ClassCard({
   const isClassToday = isToday(classDateTime);
 
   // Determinar si se puede realizar acción
-  const canPerformAction = !isCancelled && !isCompleted && !isInProgress;
+  const canRegisterAction = !isCancelled && !isCompleted;
+  const canCancelAction = !isCancelled && !isCompleted && !isInProgress;
 
   // Determinar si se puede registrar basado en el estado del plan
   const canRegisterForClass =
     canRegister && (planStatus === "active" || planStatus === "scheduled");
 
   // Para usuarios registrados, siempre pueden cancelar (si la clase lo permite)
-  const canCancelRegistration = isRegistered && canPerformAction;
+  const canCancelRegistration = isRegistered && canCancelAction;
 
   // Para usuarios no registrados, solo pueden registrarse si el plan está activo y la clase está dentro de la vigencia
   const canRegisterForNewClass =
-    !isRegistered && canPerformAction && canRegisterForClass && classItem.isWithinPlanDates;
+    !isRegistered && canRegisterAction && canRegisterForClass && classItem.isWithinPlanDates;
 
   const handleAction = () => {
     if (isRegistered) {
@@ -84,8 +85,12 @@ export function ClassCard({
       className={`
         border rounded-xl p-3 transition-all duration-200 relative
         ${!isActionable
-          ? "opacity-50 bg-white"
-          : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
+          ? "opacity-80 bg-white"
+          : "border-gray-100 hover:shadow-md hover:border-white/20 bg-white"
+        }
+        ${!isInProgress
+          ? ""
+          : "border-2 border-lime-400/15 hover:shadow-md bg-lime-400/15"
         }
       `}
     >
@@ -102,36 +107,45 @@ export function ClassCard({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1">
-            <h3 className="font-bold text-xl text-gray-900">{classItem.name}</h3>
+            <h3 className={`font-bold text-xl ${!isInProgress
+              ? "text-gray-900"
+              : "text-lime-200"
+              }`}>{classItem.name}</h3>
             {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-lime-600 bg-lime-50 px-2 py-0.5 rounded-full">
                 Especial
               </span>
             )}
           </div>
-          <span className="bg-gray-100 text-gray-800 text-sm font-semibold px-2 py-1 rounded-full flex items-center shrink-0">
+          <div className="bg-black/10   text-sm font-semibold px-2 py-1 rounded-full flex items-center shrink-0">
             {/* Estado de la clase como span */}
             {statusInfo && (
               <>
                 {isInProgress ? (
-                  <span className="flex items-center gap-1.5 mr-2 text-green-600">
+                  <span className="flex items-center gap-1.5 mr-2 text-lime-600">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500"></span>
                     </span>
-                    <span className="font-bold uppercase tracking-wide text-xs">{statusInfo.label}</span>
+                    <span className="font-bold uppercase tracking-wide text-xs text-black invert">{statusInfo.label}</span>
                   </span>
                 ) : (
-                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs`}>{statusInfo.label}</span>
+                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs text-black invert`}>{statusInfo.label}</span>
                 )}
               </>
             )}
-            {formattedTime}</span>
+            <p className={`${!isInProgress ? "text-black" : "text-white"}`}>
+              {formattedTime}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
-      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}`}>
+      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}  ${!isInProgress
+        ? "text-gray-600"
+        : "text-lime-400/70"
+        }`}>
 
 
         <div className=" inline-flex items-center gap-1">
@@ -181,7 +195,7 @@ export function ClassCard({
       )}
 
       {/* Mensaje informativo cuando no se puede registrar */}
-      {!canRegisterForNewClass && !isRegistered && canPerformAction && (
+      {!canRegisterForNewClass && !isRegistered && canRegisterAction && (
         <div className="mt-2 text-sm text-center w-full border-t border-t-2 border-gray-100 pt-3">
           {planStatus === "pending" ? (
             <span className="text-yellow-600">
