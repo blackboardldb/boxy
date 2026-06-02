@@ -85,7 +85,7 @@ export function ClassCard({
       className={`
         border rounded-xl p-3 transition-all duration-200 relative
         ${!isActionable
-          ? "opacity-80 bg-white"
+          ? "border-2 border-lime-900 hover:shadow-md bg-lime-950"
           : "border-gray-100 hover:shadow-md hover:border-white/20 bg-white"
         }
         ${!isInProgress
