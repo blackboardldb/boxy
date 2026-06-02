@@ -90,7 +90,7 @@ export function ClassCard({
         }
         ${!isInProgress
           ? ""
-          : "border-2 border-lime-400/15 hover:shadow-md bg-lime-400/15"
+          : "border-2 border-lime-900 hover:shadow-md bg-lime-400/15"
         }
       `}
     >
