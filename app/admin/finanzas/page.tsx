@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useFinances } from "@/lib/react-query/hooks/useFinances";
+import { useAdminFinanceCompare } from "@/lib/react-query/hooks/useAdminStats";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -30,6 +31,11 @@ export default function FinanzasPage() {
 
   // Nueva carga de datos unificada (Ingresos + Egresos + Balance)
   const { data: financesData, isLoading } = useFinances(selectedYear, selectedMonthIndex + 1, page);
+  const { data: financeCompare } = useAdminFinanceCompare();
+
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const isCurrentMonth = selectedMonth === currentMonthStr;
 
   const totalIngresos = financesData?.ingresos.total || 0;
   const totalEgresos = financesData?.egresos.total || 0;
@@ -39,7 +45,6 @@ export default function FinanzasPage() {
 
   // Generar opciones de meses (últimos 12 meses)
   const monthOptions = [];
-  const now = new Date();
   for (let i = 0; i < 12; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const year = date.getFullYear();
@@ -101,9 +106,19 @@ export default function FinanzasPage() {
                 ${totalIngresos.toLocaleString("es-CL")}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              {financesData?.ingresos.count || 0} renovaciones procesadas
-            </p>
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              <p>{financesData?.ingresos.count || 0} renovaciones procesadas</p>
+              {isCurrentMonth && financeCompare && (
+                <p>
+                  vs. ${financeCompare.prevRevenue.toLocaleString("es-CL")} mes anterior{" "}
+                  {financeCompare.revenuePct !== null && (
+                    <span className={`font-bold ${financeCompare.revenuePct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {financeCompare.revenuePct >= 0 ? "↑" : "↓"}{Math.abs(financeCompare.revenuePct)}%
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -122,9 +137,19 @@ export default function FinanzasPage() {
                 ${totalEgresos.toLocaleString("es-CL")}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              {financesData?.egresos.count || 0} gastos registrados
-            </p>
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              <p>{financesData?.egresos.count || 0} gastos registrados</p>
+              {isCurrentMonth && financeCompare && (
+                <p>
+                  vs. ${financeCompare.prevEgresos.toLocaleString("es-CL")} mes anterior{" "}
+                  {financeCompare.egresosPct !== null && (
+                    <span className={`font-bold ${financeCompare.egresosPct <= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {financeCompare.egresosPct >= 0 ? "↑" : "↓"}{Math.abs(financeCompare.egresosPct)}%
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -149,9 +174,19 @@ export default function FinanzasPage() {
                 ${balance.toLocaleString("es-CL")}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              {balance >= 0 ? "Ganancia" : "Pérdida"} del mes
-            </p>
+            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+              <p>{balance >= 0 ? "Ganancia" : "Pérdida"} del mes</p>
+              {isCurrentMonth && financeCompare && (
+                <p>
+                  vs. ${financeCompare.prevBalance.toLocaleString("es-CL")} mes anterior{" "}
+                  {financeCompare.balancePct !== null && (
+                    <span className={`font-bold ${financeCompare.balancePct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {financeCompare.balancePct >= 0 ? "↑" : "↓"}{Math.abs(financeCompare.balancePct)}%
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

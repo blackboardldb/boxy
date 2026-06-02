@@ -4,8 +4,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users,
-  DollarSign,
   ChevronRight,
   Bell,
 } from "lucide-react";
@@ -94,63 +92,7 @@ export function AdminDashboard({ role }: { role: string }) {
     pendingMembers = 0,
     inactiveMembers = 0,
     newThisMonth: newMembersThisMonth = 0,
-    retentionRate = 0,
-    monthlyRevenue = 0,
-    monthlyEgresos = 0,
-    monthlyBalance = 0,
   } = dashboardStats || {};
-
-  const MetricCard = ({
-    title,
-    value,
-    subtitle,
-    icon: Icon,
-    isLoading = false,
-    linkTo,
-  }: {
-    title: string;
-    value: string | number;
-    subtitle: React.ReactNode;
-    icon: any;
-    isLoading?: boolean;
-    linkTo?: string;
-  }) => {
-    return (
-      <Card className="rounded-xl overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {title}
-          </CardTitle>
-          {linkTo && (
-            <Link
-              href={linkTo}
-              className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <>
-              <Skeleton className="h-8 w-16 mb-1 rounded-xl" />
-              <Skeleton className="h-3 w-24 rounded-xl" />
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-1">
-                <Icon className="h-5 w-5 text-zinc-400" />
-                <div className="text-2xl font-bold text-zinc-900">{value}</div>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {subtitle}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
 
   return (
     <div className="space-y-6 mb-16">
@@ -178,67 +120,114 @@ export function AdminDashboard({ role }: { role: string }) {
       )}
 
       {/* Grilla Principal de Métricas */}
-      <div className={`grid gap-2 grid-cols-1 ${role === "admin" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"}`}>
+      <div className={`grid gap-2 grid-cols-1 ${role === "admin" ? "md:grid-cols-2 " : "md:grid-cols-2"}`}>
         {/* ── Tarjeta 1: Alumnos Vigentes ── */}
         {/* ── Tarjeta 1: Alumnos Vigentes ── */}
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Alumnos vigentes
-            </span>
-            <Link
-              href="/admin/alumnos"
-              className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          {statsLoading ? (
-            <div className="space-y-3 mt-4">
-              <Skeleton className="h-8 w-16 mb-1 rounded-xl" />
-              <Skeleton className="h-3 w-24 rounded-xl" />
+        <div className="space-y-2">
+          <div className="rounded-xl border bg-card p-4">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Alumnos vigentes
+              </span>
+              <Link
+                href="/admin/alumnos"
+                className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
-          ) : (
-            <div className="space-y-4 pt-1">
-              <div>
-                <span className="text-2xl font-extrabold text-zinc-900 tracking-tight">
-                  {activeMembers + scheduledMembers}
-                </span>
+            {statsLoading ? (
+              <div className="space-y-3 mt-4">
+                <Skeleton className="h-8 w-16 mb-1 rounded-xl" />
+                <Skeleton className="h-3 w-24 rounded-xl" />
               </div>
-
-              <div className="border-t border-zinc-100 my-2" />
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Total (Izquierda) */}
+            ) : (
+              <div className="">
                 <div>
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Registrados</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-sm font-bold text-zinc-800">
-                      {totalMembers}
-                    </span>
-                    <span className="text-[10px] text-zinc-400">
-                      ({totalMembers > 0 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1) : 0}% del total)
-                    </span>
-                  </div>
+                  <span className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+                    {activeMembers + scheduledMembers}
+                  </span>
                 </div>
 
-                {/* Nuevos (Derecha) */}
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-0.5">Nuevos</span>
-                  <div className="flex items-baseline justify-end gap-1">
-                    <span className="text-sm font-bold text-zinc-800">
-                      {newMembersThisMonth}
-                    </span>
-                    <span className="text-[10px] text-zinc-400">
-                      este mes
-                    </span>
+
+
+                <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-2 mt-2" >
+                  {/* Total (Izquierda) */}
+                  <div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-0.5">Inscritos</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-bold text-zinc-800">
+                        {totalMembers}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        ({totalMembers > 0 ? (((activeMembers + scheduledMembers) / totalMembers) * 100).toFixed(1) : 0}% del total activos)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Nuevos (Derecha) */}
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-0.5">Nuevos</span>
+                    <div className="flex items-baseline justify-end gap-1">
+                      <span className="text-sm font-bold text-zinc-800">
+                        {newMembersThisMonth}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        este mes
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+          {/* ── Tarjeta 3: Comparativa Financiera (Carga Diferida) ── */}
+          {role === "admin" && (
+            <div className="rounded-xl border bg-card p-4">
+              {/* <p className="text-xs font-semibold  uppercase tracking-wider mb-4">Este mes vs. mes anterior</p> */}
+              {financeLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-20 rounded" />
+                  <Skeleton className="h-8 w-32 rounded" />
+                  <Skeleton className="h-3 w-28 rounded" />
+                </div>
+              ) : (() => {
+                const currentRevenue = financeCompare?.currentRevenue ?? 0;
+                const prevRevenue = financeCompare?.prevRevenue ?? 0;
+                const revenuePct = financeCompare?.revenuePct ?? null;
 
+                const revenueIsUp = (revenuePct ?? 0) > 0;
+                const revenueGood = revenueIsUp;
+                const revenueArrow = revenuePct === null ? "" : revenueIsUp ? "↑" : "↓";
+
+                return (
+                  <div>
+                    <div className="flex justify-start gap-2 items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                      <span className="text-muted-foreground">Ingresos mes</span>
+
+                    </div>
+                    <div className="flex-col items-baseline gap-2">
+                      <p className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+                        ${currentRevenue.toLocaleString("es-CL")}
+                      </p>
+                      {revenuePct !== null && (
+                        <span className={`text-xs font-bold ${revenueGood ? "text-emerald-600" : "text-rose-600"}`}>
+                          {revenueArrow}{Math.abs(revenuePct)}% {" "}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        vs. ${prevRevenue.toLocaleString("es-CL")} mes anterior
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )
+          }
+
+
+        </div>
         {/* ── Tarjeta 2: Estados de Membresía ── */}
         <div className="rounded-xl border bg-card p-4 flex flex-col justify-between">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Estados de Membresía</p>
@@ -257,14 +246,14 @@ export function AdminDashboard({ role }: { role: string }) {
               { label: "Activos", value: activeMembers, color: "#22c55e" },
               { label: "Programados", value: scheduledMembers, color: "#3b82f6" },
               { label: "Pendientes", value: pendingMembers, color: "#f97316" },
-              { label: "Inactivos", value: inactiveMembers, color: "#9ca3af" },
+              { label: "Inactivos", value: inactiveMembers, color: "#e1e2e5ff" },
             ];
             const total = segments.reduce((s, x) => s + x.value, 0) || 1;
             const r = 40, cx = 50, cy = 50;
             const circ = 2 * Math.PI * r;
             let offset = 0;
             return (
-              <div className="flex gap-4 items-center flex-1">
+              <div className="flex flex-col gap-4 items-center flex-1">
                 {/* Donut SVG — sin librería, sin JS extra */}
                 <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden="true">
                   {segments.map((seg, i) => {
@@ -286,7 +275,7 @@ export function AdminDashboard({ role }: { role: string }) {
                   })}
                 </svg>
                 {/* Leyenda */}
-                <div className="space-y-1.5 flex-1 text-xs">
+                <div className="space-y-1.5 flex-1 text-xs w-full">
                   {segments.map((seg) => (
                     <div key={seg.label} className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -304,115 +293,10 @@ export function AdminDashboard({ role }: { role: string }) {
             );
           })()}
         </div>
-
-        {/* ── Tarjeta 3: Comparativa Financiera (Carga Diferida) ── */}
-        {role === "admin" && (
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Este mes vs. mes anterior</p>
-            {financeLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full rounded-xl" />
-                <Skeleton className="h-10 w-full rounded-xl" />
-                <Skeleton className="h-10 w-full rounded-xl" />
-              </div>
-            ) : (() => {
-              const currentBalance = financeCompare?.currentBalance ?? 0;
-              const prevBalance = financeCompare?.prevBalance ?? 0;
-              const balancePct = financeCompare?.balancePct ?? null;
-
-              const currentRevenue = financeCompare?.currentRevenue ?? 0;
-              const prevRevenue = financeCompare?.prevRevenue ?? 0;
-              const revenuePct = financeCompare?.revenuePct ?? null;
-
-              const currentEgresos = financeCompare?.currentEgresos ?? 0;
-              const prevEgresos = financeCompare?.prevEgresos ?? 0;
-              const egresosPct = financeCompare?.egresosPct ?? null;
-
-              const balanceIsUp = (balancePct ?? 0) > 0;
-
-              const revenueIsUp = (revenuePct ?? 0) > 0;
-              const revenueGood = revenueIsUp;
-              const revenueArrow = revenuePct === null ? "" : revenueIsUp ? "↑" : "↓";
-
-              const egresosIsUp = (egresosPct ?? 0) > 0;
-              const egresosGood = !egresosIsUp; // for expenses, down is good
-              const egresosArrow = egresosPct === null ? "" : egresosIsUp ? "↑" : "↓";
-
-              return (
-                <div className="space-y-4 pt-1">
-                  {/* ── Ingresos (Destacado arriba) ── */}
-                  <div>
-                    <div className="flex justify-start gap-2 items-center text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
-                      <span>Ingresos</span>
-                      {revenuePct !== null && (
-                        <span className={`text-xs font-bold ${revenueGood ? "text-emerald-600" : "text-rose-600"}`}>
-                          {revenueArrow}{Math.abs(revenuePct)}%
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-extrabold text-zinc-900 tracking-tight">
-                        ${currentRevenue.toLocaleString("es-CL")}
-                      </span>
-                      <span className="text-xs text-zinc-400">
-                        vs. ${prevRevenue.toLocaleString("es-CL")}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-zinc-100 my-2" />
-
-                  {/* ── Egresos y Balance (Uno a la izquierda y otro a la derecha, limpio) ── */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Egresos (Izquierda) */}
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
-                        <span>Egresos</span>
-                        {egresosPct !== null && (
-                          <span className={`font-bold ${egresosGood ? "text-emerald-600" : "text-rose-500"}`}>
-                            {egresosArrow}{Math.abs(egresosPct)}%
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-md font-bold text-zinc-800">
-                          ${currentEgresos.toLocaleString("es-CL")}
-                        </span>
-                        <span className="text-[10px] text-zinc-400">
-                          vs. ${prevEgresos.toLocaleString("es-CL")}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Balance (Derecha) */}
-                    <div className="text-right">
-                      <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
-                        <span>Balance</span>
-                        {balancePct !== null && (
-                          <span className={`font-bold ${balanceIsUp ? "text-emerald-600" : "text-rose-500"}`}>
-                            {balanceIsUp ? "↑" : "↓"}{Math.abs(balancePct)}%
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-baseline justify-end gap-1.5">
-                        <span className={`text-md font-bold ${currentBalance >= 0 ? "text-blue-600" : "text-rose-600"}`}>
-                          ${currentBalance.toLocaleString("es-CL")}
-                        </span>
-                        <span className="text-[10px] text-zinc-400">
-                          vs. ${prevBalance.toLocaleString("es-CL")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-      </div>
+      </div >
 
       {/* Listas Rápidas: Próximos a Vencer y Recientemente Inactivos */}
-      <div className="grid gap-6 md:grid-cols-2 mt-6">
+      < div className="grid gap-6 md:grid-cols-2 mt-6" >
         <Card className="rounded-xl">
           <CardHeader className="pb-3 border-b mb-3">
             <CardTitle className="text-base">Próximos a vencer</CardTitle>
@@ -502,7 +386,7 @@ export function AdminDashboard({ role }: { role: string }) {
             )}
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

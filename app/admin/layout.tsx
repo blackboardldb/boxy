@@ -38,7 +38,7 @@ export default async function AdminLayout({
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col overflow-x-hidden">
         {/* Content — extra bottom padding so the floating nav never covers content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar pb-24">
+        <main className="flex-1 overflow-y-auto custom-scrollbar pb-14 sm:pb-0">
           {children}
         </main>
       </div>
