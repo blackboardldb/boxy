@@ -50,7 +50,7 @@ export default function AdminClassCard({
   const classDateTime = parseISO(classItem.dateTime);
   const formattedTime = formatTimeLocal(classItem.dateTime);
   const isClassToday = isToday(classDateTime);
-  const isPastClass = isClassPast(classItem.dateTime); // Clase pasada usando la nueva función
+  const isPastClass = isClassPast(classItem.dateTime, classItem.duration); // Clase pasada usando la nueva función
 
   const handleCancelClass = () => {
     if (onCancelClass && !isFinished) {
@@ -67,14 +67,14 @@ export default function AdminClassCard({
           ${isCancelled
             ? "opacity-20 bg-white"
             : isPastClass
-              ? "opacity-50 border-gray-100 bg-white"
+              ? "border-gray-100 bg-white"
               : "border-gray-300 shadow-sm hover:bg-gray-50 bg-white"
           }
         `}
       >
         {/* Badge de estado - oculto para clases finalizadas */}
         {!isFinished && (
-          <div className="absolute top-2 right-2">
+          <div className={`absolute top-2 right-2 ${isPastClass && !isCancelled ? 'opacity-50' : ''}`}>
             <ClassStatusBadge
               classItem={{
                 ...classItem,
@@ -92,7 +92,7 @@ export default function AdminClassCard({
         {/* Layout principal con flex */}
         <div className="flex flex-col md:flex-row items-center gap-4">
           {/* Contenido a la izquierda */}
-          <div className="flex-1 w-full md:w-auto">
+          <div className={`flex-1 w-full md:w-auto ${isPastClass && !isCancelled ? 'opacity-50' : ''}`}>
             {/* Hora como badge CSS - con estado finalizado integrado */}
             <div
               className={`inline-block text-xs px-2 py-1 rounded-xl mb-2 ${isFinished

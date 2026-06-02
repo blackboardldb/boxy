@@ -29,8 +29,14 @@ import { CreateClassModal } from "@/components/admincomponents/create-class-moda
 import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 
 // Utilidad para saber si una clase es pasada
-const isClassPast = (dateTime: string | Date): boolean =>
-  isPast(new Date(dateTime));
+const isClassPast = (dateTime: string | Date, durationStr?: string): boolean => {
+  const d = new Date(dateTime);
+  if (durationStr) {
+    const minutes = parseInt(durationStr.replace(/\D/g, "")) || 60;
+    d.setMinutes(d.getMinutes() + minutes);
+  }
+  return isPast(d);
+};
 
 // Función simple para convertir fecha local a UTC ISO string
 function localToUTC(date: Date): string {
@@ -138,11 +144,18 @@ export default function AdminClasesPage() {
     }).map(c => ({ id: c.disciplineId, name: c.discipline || c.name }));
   }, [activeClasses]);
 
-  const filteredClasses = useMemo(() =>
-    selectedDisciplineId === "all"
+  const filteredClasses = useMemo(() => {
+    const list = selectedDisciplineId === "all"
       ? activeClasses
-      : activeClasses.filter(c => c.disciplineId === selectedDisciplineId)
-  , [activeClasses, selectedDisciplineId]);
+      : activeClasses.filter(c => c.disciplineId === selectedDisciplineId);
+
+    return [...list].sort((a, b) => {
+      const aPast = isClassPast(a.dateTime, a.duration);
+      const bPast = isClassPast(b.dateTime, b.duration);
+      if (aPast !== bPast) return aPast ? 1 : -1; // futuras/activas primero
+      return new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime();
+    });
+  }, [activeClasses, selectedDisciplineId]);
 
   // Implementar paginación correctamente
   const paginatedClasses = useMemo(() => {

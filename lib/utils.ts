@@ -833,9 +833,15 @@ export function isPast(date: Date | string): boolean {
  * @param classDateTime - Fecha y hora de la clase (Date object o string ISO)
  * @returns boolean
  */
-export function isClassPast(classDateTime: Date | string): boolean {
+export function isClassPast(classDateTime: Date | string, durationStr?: string): boolean {
   const classDate =
-    typeof classDateTime === "string" ? new Date(classDateTime) : classDateTime;
+    typeof classDateTime === "string" ? new Date(classDateTime) : new Date(classDateTime.getTime());
+  
+  if (durationStr) {
+    const minutes = parseInt(durationStr.replace(/\D/g, "")) || 60;
+    classDate.setMinutes(classDate.getMinutes() + minutes);
+  }
+  
   const now = getCurrentLocalDate();
   return classDate < now;
 }
