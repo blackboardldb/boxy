@@ -16,11 +16,11 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-white flex rounded-t-2xl sm-rounded-none " style={{
       backgroundImage: `
-        radial-gradient(circle at 20% 80%, rgba(120,119,198,0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(181, 197, 242, 0.5) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120,119,198,0.1) 0%, transparent 50%)`,
+        radial-gradient(circle at 30% 70%, rgba(173, 216, 230, 0.35), transparent 60%),
+        radial-gradient(circle at 70% 30%, rgba(182, 206, 255, 0.4), transparent 60%)`,
 
     }}>
+
 
       {/* ── Sidebar Desktop ── */}
       <div className="hidden lg:block w-72 h-screen p-4  sticky top-0">
