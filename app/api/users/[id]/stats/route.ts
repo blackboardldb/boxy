@@ -103,7 +103,13 @@ export async function GET(
     // Buscamos el registro en public.users por email para obtener el id real.
     const dbUser = await prisma.user.findUnique({
       where: { email: auth.user.email! },
-      select: { id: true, organizationId: true, userMembership: true },
+      select: {
+        id: true,
+        organizationId: true,
+        userMembership: {
+          select: { startDate: true },
+        },
+      },
     });
 
     if (!dbUser || dbUser.id !== userId) {
@@ -162,15 +168,15 @@ export async function GET(
 
     const periodsCompleted = cleanRenewals.length;
 
-    // Fecha del primer período limpio (para mostrar "Miembro desde")
-    const firstCleanRenewal = cleanRenewals[0]; // ya está en orden asc
-    const memberSince: string | null = firstCleanRenewal?.startDate
-      ? new Date(firstCleanRenewal.startDate)
-          .toLocaleDateString("es-CL", {
-            month: "long",
-            year: "numeric",
-            timeZone: "America/Santiago",
-          })
+    // "Miembro desde" — usa la misma fuente que el perfil: userMembership.startDate
+    // para que ambas pantallas muestren exactamente el mismo valor.
+    const membershipStartDate = dbUser.userMembership?.startDate ?? null;
+    const memberSince: string | null = membershipStartDate
+      ? new Date(membershipStartDate).toLocaleDateString("es-CL", {
+          month: "long",
+          year: "numeric",
+          timeZone: "America/Santiago",
+        })
       : null;
 
     // ─── 3. Disciplina favorita ───────────────────────────────────────────────
@@ -225,15 +231,15 @@ export async function GET(
       )
     );
 
-    // Períodos miembro (progresivo) — unidad "períodos" para ser honesto
-    // con planes mensuales y trimestrales por igual
+    // Renovaciones completadas (progresivo) — se cuenta cada factura pagada,
+    // sin importar si el plan es mensual, quincenal o trimestral.
     achievements.push(
       ...buildProgressiveAchievement(
         "periods",
         "❤️",
         MONTHS_THRESHOLDS,
         periodsCompleted,
-        "períodos"
+        "renovaciones"
       )
     );
 
