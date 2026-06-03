@@ -67,7 +67,7 @@ export async function GET(
       if (!endDate && details?.startDate && details?.requestedPlanDuration) {
         try {
           const start = new Date(details.startDate + "T00:00:00");
-          start.setMonth(start.getMonth() + details.requestedPlanDuration);
+          start.setMonth(start.getMonth() + Number(details.requestedPlanDuration));
           start.setDate(start.getDate() - 1); // último día del período
           endDate = start.toISOString().split("T")[0];
         } catch {
