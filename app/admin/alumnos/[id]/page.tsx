@@ -734,47 +734,6 @@ const handleStartDateChange = (newDate: string) => {
               <AccordionContent className="px-4 pb-4 pt-0 border-t border-zinc-100">
                 <div className="pt-3 max-h-[420px] overflow-y-auto space-y-2 pr-1">
 
-                  {/* — Plan actual — */}
-                  {student?.membership ? (
-                    <div className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${
-                      isPlanActive
-                        ? "bg-emerald-50 border border-emerald-100"
-                        : isScheduled
-                        ? "bg-blue-50 border border-blue-100"
-                        : "bg-zinc-50 border border-zinc-100"
-                    }`}>
-                      <div className="space-y-0.5 min-w-0">
-                        <p className="text-sm font-semibold text-zinc-900 truncate">
-                          {student.membership.membershipType}
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          {student.membership.currentPeriodStart
-                            ? format(parseISO(student.membership.currentPeriodStart.substring(0, 10)), "d MMM yyyy", { locale: es })
-                            : "—"}
-                          {" → "}
-                          {student.membership.currentPeriodEnd
-                            ? format(parseISO(student.membership.currentPeriodEnd.substring(0, 10)), "d MMM yyyy", { locale: es })
-                            : "—"}
-                          {" · "}{classesConsumed}/{isUnlimited ? "∞" : planClassLimit} clases
-                        </p>
-                      </div>
-                      <span className={`shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        isPlanActive
-                          ? "bg-emerald-100 text-emerald-700"
-                          : isScheduled
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-zinc-100 text-zinc-500"
-                      }`}>
-                        {isPlanActive ? "Activo" : isScheduled ? "Programado" : "Inactivo"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl px-4 py-3 bg-zinc-50 border border-zinc-100">
-                      <p className="text-sm text-zinc-400">Sin plan activo</p>
-                    </div>
-                  )}
-
-                  {/* — Planes anteriores (carga diferida) — */}
                   {historyLoading ? (
                     <div className="space-y-2 pt-1">
                       {[1, 2, 3].map((i) => (
@@ -785,40 +744,79 @@ const handleStartDateChange = (newDate: string) => {
                       ))}
                     </div>
                   ) : planHistory.length > 0 ? (
-                    <>
-                      <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider pt-2 pb-0.5 px-1">
-                        Planes anteriores
-                      </p>
-                      {planHistory.map((renewal) => (
-                        <div
-                          key={renewal.id}
-                          className="rounded-xl px-4 py-3 bg-zinc-50 border border-zinc-100 flex items-center justify-between gap-3"
-                        >
-                          <div className="space-y-0.5 min-w-0">
-                            <p className="text-sm font-medium text-zinc-700 truncate">
-                              {renewal.planName}
-                            </p>
-                            <p className="text-xs text-zinc-400">
-                              {renewal.startDate
-                                ? format(parseISO(renewal.startDate.substring(0, 10)), "d MMM yyyy", { locale: es })
-                                : "—"}
-                              {" → "}
-                              {renewal.endDate
-                                ? format(parseISO(renewal.endDate.substring(0, 10)), "d MMM yyyy", { locale: es })
-                                : "—"}
-                            </p>
+                    <div className="space-y-2 pt-1">
+                      {planHistory.map((renewal) => {
+                        const isCurrent =
+                          renewal.planName === student?.membership?.membershipType &&
+                          renewal.startDate?.substring(0, 10) ===
+                            student?.membership?.currentPeriodStart?.substring(0, 10);
+
+                        return (
+                          <div
+                            key={renewal.id}
+                            className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 border ${
+                              isCurrent
+                                ? "bg-emerald-50 border-emerald-100"
+                                : "bg-zinc-50 border-zinc-100"
+                            }`}
+                          >
+                            <div className="space-y-0.5 min-w-0">
+                              <p className="text-sm font-medium text-zinc-800 truncate">
+                                {renewal.planName}
+                              </p>
+                              <p className="text-xs text-zinc-400">
+                                {renewal.startDate
+                                  ? format(parseISO(renewal.startDate.substring(0, 10)), "d MMM yyyy", { locale: es })
+                                  : "—"}
+                                {" → "}
+                                {renewal.endDate
+                                  ? format(parseISO(renewal.endDate.substring(0, 10)), "d MMM yyyy", { locale: es })
+                                  : "—"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {renewal.amount != null && (
+                                <span className="text-xs font-semibold text-zinc-500">
+                                  ${renewal.amount.toLocaleString("es-CL")}
+                                </span>
+                              )}
+                              {isCurrent && (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                  Activo
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          {renewal.amount != null && (
-                            <span className="shrink-0 text-xs font-semibold text-zinc-500">
-                              ${renewal.amount.toLocaleString("es-CL")}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </>
+                        );
+                      })}
+                    </div>
                   ) : student?.membership ? (
-                    <p className="text-xs text-zinc-400 px-1 pt-1 italic">Sin planes anteriores registrados.</p>
-                  ) : null}
+                    /* Fallback: plan activo sin MembershipRenewal (activado antes del sistema de historial) */
+                    <div className="space-y-2 pt-1">
+                      <div className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 border bg-emerald-50 border-emerald-100">
+                        <div className="space-y-0.5 min-w-0">
+                          <p className="text-sm font-medium text-zinc-800 truncate">
+                            {student.membership.membershipType}
+                          </p>
+                          <p className="text-xs text-zinc-400">
+                            {student.membership.currentPeriodStart
+                              ? format(parseISO(student.membership.currentPeriodStart.substring(0, 10)), "d MMM yyyy", { locale: es })
+                              : "—"}
+                            {" → "}
+                            {student.membership.currentPeriodEnd
+                              ? format(parseISO(student.membership.currentPeriodEnd.substring(0, 10)), "d MMM yyyy", { locale: es })
+                              : "—"}
+                          </p>
+                        </div>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                          Activo
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400 px-1 italic">Sin planes anteriores registrados.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-400 px-1 pt-1 italic">Sin historial de planes.</p>
+                  )}
 
                 </div>
               </AccordionContent>

@@ -86,7 +86,19 @@ export async function GET(
       };
     });
 
-    return NextResponse.json({ success: true, data });
+    // Deduplicar por (planName + startDate) — si el admin editó el mismo plan varias
+    // veces, se generan múltiples renewals aprobados con idénticos datos.
+    // La query ya viene ordenada por requestedAt desc, así que el primero de cada
+    // grupo es el más reciente y es el que queremos conservar.
+    const seen = new Set<string>();
+    const deduplicated = data.filter((item) => {
+      const key = `${item.planName}|${item.startDate ?? ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return NextResponse.json({ success: true, data: deduplicated });
   } catch (error) {
     console.error("[GET /api/users/[id]/plan-history]", error);
     return NextResponse.json(
