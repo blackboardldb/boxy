@@ -382,8 +382,9 @@ export class PrismaUserRepository implements IUserRepository {
         const newStart = startDate?.getTime() ?? 0;
         const isNewPeriod = oldStart !== newStart;
         const becameActive = existing?.userMembership?.status !== 'active' && m.status === 'active';
+        const shouldRegisterPayment = (data as any).registerPayment !== false;
 
-        if (m.status === 'active' && startDate && (isNewPeriod || becameActive)) {
+        if (m.status === 'active' && startDate && (isNewPeriod || becameActive) && shouldRegisterPayment) {
           const existingRenewal = await this.prisma.membershipRenewal.findFirst({
             where: {
               userId: id,
