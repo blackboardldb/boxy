@@ -378,22 +378,22 @@ export function UserProfile() {
             <button
               id="stats-entry-card"
               onClick={() => setIsStatsOpen(true)}
-              className="w-full text-left bg-white/5 rounded-xl p-4 flex items-center justify-between gap-3 hover:bg-white/10 transition-colors"
+              className="w-full text-left  bg-gradient-to-l from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 flex items-center justify-between gap-3  transition-colors"
             >
               <div className="flex-1 flex items-center justify-start gap-3">
-                <Medal className="w-8 h-8 text-yellow-200" />
+                <Medal className="w-8 h-8 text-black" />
                 <div>
-                  <p className="text-lg font-bold text-white">Mis estadísticas</p>
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-lg font-bold">Mis estadísticas</p>
+                  <p className="text-sm ">
                     {memberSinceLabel
                       ? `Miembro desde ${memberSinceLabel}`
                       : periodsCompleted > 0
-                      ? `${periodsCompleted} ${periodsCompleted === 1 ? "período" : "períodos"} completados`
-                      : "Tu historial de entrenamiento"}
+                        ? `${periodsCompleted} ${periodsCompleted === 1 ? "período" : "períodos"} completados`
+                        : "Tu historial de entrenamiento"}
                   </p>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-zinc-400 flex-shrink-0" />
+              <ChevronRight className="w-5 h-5  flex-shrink-0" />
             </button>
           );
         })()}

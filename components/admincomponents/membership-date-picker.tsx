@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { MembershipPlan } from "@/lib/types";
 import { useMemo } from "react";
+import { calcularFechaTerminoMembresia } from "@/lib/utils";
 
 interface MembershipDatePickerProps {
   selectedPlan?: MembershipPlan;
@@ -36,14 +37,10 @@ export function MembershipDatePicker({
     [value]
   );
 
-  // Calcular fecha de término automáticamente
+  // Calcular fecha de término usando la función centralizada del sistema
   const endDateStr = useMemo(() => {
-    if (!selectedPlan) return "";
-    // Simple calculation for now
-    const start = new Date(value);
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + selectedPlan.durationInMonths);
-    return end.toISOString().split("T")[0];
+    if (!selectedPlan || !value) return "";
+    return calcularFechaTerminoMembresia(value, selectedPlan.durationInMonths);
   }, [selectedPlan, value]);
 
   const handleStartDateChange = (date: Date | undefined) => {
