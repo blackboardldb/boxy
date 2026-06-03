@@ -25,7 +25,7 @@ interface MembershipCardProps {
 // ─── Config por estado: label, gradiente y color del label ───────────────────
 
 const STATE_CONFIG: Record<string, { label: string; gradient: string; labelColor: string }> = {
-  active: { label: "Plan activo", gradient: "bg-gradient-to-b from-zinc-950  to-lime-950/60", labelColor: "text-lime-400" },
+  active: { label: "Plan activo", gradient: "bg-gradient-to-b from-black  to-lime-950/60", labelColor: "text-lime-500" },
   scheduled: { label: "Plan programado", gradient: "bg-gradient-to-b from-zinc-950  to-blue-950/60", labelColor: "text-blue-400" },
   inactive: { label: "Último plan | Inactivo", gradient: "bg-gradient-to-b from-zinc-950  to-orange-950/60", labelColor: "text-orange-400" },
 };
@@ -54,7 +54,7 @@ export function MembershipCard({
   const displayLabelColor = hasPendingRenewal ? "text-orange-400" : config.labelColor;
 
   return (
-    <div className={`w-full ${config.gradient} p-4 rounded-xl mb-10 space-y-3 border border-zinc-900/50`}>
+    <div className={`w-full ${config.gradient} p-5 rounded-xl mb-10 space-y-3 border border-zinc-900/30`}>
 
       {/* Label dinámico — reemplaza el <p> que estaba fuera del card */}
       <p className={`uppercase ${displayLabelColor} text-xs font-semibold tracking-widest`}>

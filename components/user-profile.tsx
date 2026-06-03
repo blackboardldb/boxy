@@ -378,7 +378,7 @@ export function UserProfile() {
             <button
               id="stats-entry-card"
               onClick={() => setIsStatsOpen(true)}
-              className="w-full text-left  bg-gradient-to-l from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 flex items-center justify-between gap-3  transition-colors"
+              className="w-full text-left bg-gradient-to-r from-lime-400 to-green-400 rounded-xl p-4 flex items-center justify-between gap-3  transition-colors"
             >
               <div className="flex-1 flex items-center justify-start gap-3">
                 <Medal className="w-8 h-8 text-black" />

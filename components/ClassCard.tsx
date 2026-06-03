@@ -182,8 +182,8 @@ export function ClassCard({
             className={`
               flex-1 p-2.5 rounded-xl text-base font-bold transition-colors duration-200
               ${isRegistered
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-lime-500 text-black hover:bg-lime-400"
+                ? "bg-gradient-to-r from-rose-700 to-red-500 text-white hover:bg-red-700"
+                : "bg-gradient-to-r from-lime-400 to-green-400 text-black hover:bg-lime-400"
               }
             `}
           >
