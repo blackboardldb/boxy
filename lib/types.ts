@@ -109,7 +109,7 @@ export interface FitCenterMembership {
   };
   // NUEVO: Solicitud de renovación pendiente
   pendingRenewal?: PendingRenewalRequest;
-  
+
   // Historial de membresías previas guardadas dentro del JSON de la membresía para persistencia
   history?: FitCenterMembership[];
 }
@@ -325,7 +325,7 @@ export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
 };
 
 export const MEMBERSHIP_STATUS_COLORS: Record<MembershipStatus, string> = {
-  active: "#297C3B", // green-900
+  active: "#31e331ff", // green-900
   inactive: "#666666", // gray-900
   suspended: "#A35200", // amber-900
   expired: "#CA2A30", // red-900
@@ -426,11 +426,11 @@ export interface FormattedClassItem {
 }
 
 export const LIFT_EXERCISES = [
-  { key: 'clean',       label: 'RM Clean' },
-  { key: 'snatch',      label: 'RM Snatch' },
-  { key: 'clean_jerk',  label: 'RM Clean & Jerk' },
-  { key: 'press',       label: 'RM Press' },
-  { key: 'back_squat',  label: 'RM Back Squat' },
+  { key: 'clean', label: 'RM Clean' },
+  { key: 'snatch', label: 'RM Snatch' },
+  { key: 'clean_jerk', label: 'RM Clean & Jerk' },
+  { key: 'press', label: 'RM Press' },
+  { key: 'back_squat', label: 'RM Back Squat' },
   { key: 'front_squat', label: 'RM Front Squat' },
-  { key: 'deadlift',    label: 'RM Deadlift' },
+  { key: 'deadlift', label: 'RM Deadlift' },
 ] as const;

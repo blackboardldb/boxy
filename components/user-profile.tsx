@@ -344,9 +344,9 @@ export function UserProfile() {
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-400">Periodo:</span>
                   <span className="text-white">
-                    {format(parseISO(displayStart.substring(0, 10)), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(displayStart.substring(0, 10)), "dd MMM yyyy", { locale: es })}
                     {" - "}
-                    {format(parseISO(displayEnd.substring(0, 10)), "dd/MM/yy", { locale: es })}
+                    {format(parseISO(displayEnd.substring(0, 10)), "dd MMM yyyy", { locale: es })}
                   </span>
                 </div>
               )}
