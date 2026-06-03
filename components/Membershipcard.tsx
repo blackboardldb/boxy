@@ -93,9 +93,9 @@ export function MembershipCard({
       {/* Barra de progreso + fechas — solo active y no unlimited */}
       {planStatus === "active" && !isUnlimited && (
         <div className=" pt-3">
-          <div className="w-full bg-zinc-700/50 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
             <div
-              className="bg-lime-500 h-full rounded-full transition-all duration-500 ease-out"
+              className="bg-gradient-to-r from-lime-400 to-green-400 h-full rounded-full transition-all duration-500 ease-out"
               style={{ width: `${Math.min(100, (currentMonthStats.classesAttended / classLimit) * 100)}%` }}
             />
           </div>

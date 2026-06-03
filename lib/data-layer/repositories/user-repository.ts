@@ -142,7 +142,13 @@ async function promoteScheduledIfReady(
 
     await prisma.membershipRenewal.update({
       where: { id: scheduledRenewal.id },
-      data:  { status: "approved", processedAt: now },
+      data:  {
+        status: "approved",
+        processedAt: now,
+        // Persistir startDate relacional para que periodsCompleted en /api/users/[id]/stats lo cuente
+        // (el filtro excluye renewals con startDate IS NULL)
+        startDate: details.startDate ? new Date((details.startDate as string) + "T00:00:00") : null,
+      },
     });
 
     console.log(
