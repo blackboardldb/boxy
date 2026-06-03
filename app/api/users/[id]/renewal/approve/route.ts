@@ -161,6 +161,18 @@ export async function POST(
           amount: planData.price, // ← monto guardado para historial
           organizationId: user.organizationId, // ← denormalización para RLS e índices
           notes: `Aprobado. Período: ${periodStart} → ${periodEnd}`,
+          startDate: new Date(periodStart + "T00:00:00"), // ← fix: necesario para historial y periodsCompleted
+          renewalDetails: {
+            // Preservar datos originales de la solicitud
+            ...((pendingRenewal.renewalDetails as object) ?? {}),
+            // Agregar fechas calculadas y datos del plan aprobado
+            startDate: periodStart,
+            endDate: periodEnd,
+            requestedPlanName: planData.name,
+            requestedPlanPrice: planData.price,
+            requestedPlanDuration: planData.durationInMonths,
+            requestedPlanClassLimit: planData.classLimit,
+          },
         },
       }),
     ]);
