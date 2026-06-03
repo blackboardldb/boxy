@@ -144,6 +144,41 @@ export async function GET() {
           console.log(
             `[/api/me] UserMembership (legacy) promoted to active for user ${dbUser.id}`
           );
+
+          // Crear renewal approved si no existe (Flujo 3)
+          const existingRenewal = await prisma.membershipRenewal.findFirst({
+            where: {
+              userId: dbUser.id,
+              status: 'approved',
+              startDate: {
+                gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
+                lt: new Date(startDate.toISOString().split('T')[0] + "T23:59:59"),
+              }
+            }
+          });
+
+          if (!existingRenewal) {
+            await prisma.membershipRenewal.create({
+              data: {
+                userId: dbUser.id,
+                organizationId: promoted.organizationId,
+                status: 'approved',
+                requestedPlanId: promoted.planId ?? null,
+                currentPlanId: promoted.planId ?? null,
+                startDate: startDate,
+                processedAt: now,
+                amount: promoted.monthlyPrice,
+                renewalDetails: {
+                  requestedPlanName: promoted.membershipType,
+                  requestedPlanPrice: promoted.monthlyPrice,
+                  requestedPlanClassLimit: promoted.classLimit,
+                  requestedPlanDuration: 1,
+                  startDate: startDate.toISOString().split('T')[0],
+                }
+              }
+            });
+            console.log(`[/api/me] Renewal created automatically for legacy promoted plan user ${dbUser.id}`);
+          }
         }
       }
     }

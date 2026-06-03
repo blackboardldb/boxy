@@ -167,6 +167,42 @@ async function promoteScheduledIfReady(
       console.log(
         `[user-repository] UserMembership (legacy) promoted → active for user ${userId}`
       );
+
+      // Crear renewal approved si no existe (Flujo 2)
+      const existingRenewal = await prisma.membershipRenewal.findFirst({
+        where: {
+          userId,
+          status: 'approved',
+          startDate: {
+            gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
+            lt: new Date(startDate.toISOString().split('T')[0] + "T23:59:59"),
+          }
+        }
+      });
+
+      if (!existingRenewal) {
+        await prisma.membershipRenewal.create({
+          data: {
+            userId,
+            organizationId: promoted.organizationId,
+            status: 'approved',
+            requestedPlanId: promoted.planId ?? null,
+            currentPlanId: promoted.planId ?? null,
+            startDate: startDate,
+            processedAt: new Date(),
+            amount: promoted.monthlyPrice,
+            renewalDetails: {
+              requestedPlanName: promoted.membershipType,
+              requestedPlanPrice: promoted.monthlyPrice,
+              requestedPlanClassLimit: promoted.classLimit,
+              requestedPlanDuration: 1,
+              startDate: startDate.toISOString().split('T')[0],
+            }
+          }
+        });
+        console.log(`[user-repository] Renewal created automatically for legacy promoted plan user ${userId}`);
+      }
+
       return promoted;
     }
   }
@@ -283,7 +319,7 @@ export class PrismaUserRepository implements IUserRepository {
     // Obtener organizationId actual del usuario (fuente de verdad)
     const existing = await this.prisma.user.findUnique({
       where:  { id },
-      select: { organizationId: true },
+      select: { organizationId: true, userMembership: true },
     });
     const orgId = existing?.organizationId ?? "org_blacksheep_001";
 
@@ -335,11 +371,54 @@ export class PrismaUserRepository implements IUserRepository {
       } else {
         // Plan inmediato → upsert normal en UserMembership
         const upsertData = membershipToUpsertData(m, orgId);
-        await this.prisma.userMembership.upsert({
+        const promoted = await this.prisma.userMembership.upsert({
           where:  { userId: id },
           create: { userId: id, ...upsertData },
           update: upsertData,
         });
+
+        // Crear renewal approved solo si el periodo cambió o el status pasó a activo (Flujo 1)
+        const oldStart = existing?.userMembership?.currentPeriodStart?.getTime() ?? 0;
+        const newStart = startDate?.getTime() ?? 0;
+        const isNewPeriod = oldStart !== newStart;
+        const becameActive = existing?.userMembership?.status !== 'active' && m.status === 'active';
+
+        if (m.status === 'active' && startDate && (isNewPeriod || becameActive)) {
+          const existingRenewal = await this.prisma.membershipRenewal.findFirst({
+            where: {
+              userId: id,
+              status: 'approved',
+              startDate: {
+                gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
+                lt: new Date(startDate.toISOString().split('T')[0] + "T23:59:59"),
+              }
+            }
+          });
+
+          if (!existingRenewal) {
+            await this.prisma.membershipRenewal.create({
+              data: {
+                userId: id,
+                organizationId: orgId,
+                status: 'approved',
+                requestedPlanId: m.planId ?? null,
+                currentPlanId: m.planId ?? null,
+                startDate: startDate,
+                processedAt: new Date(),
+                paymentMethod: (data as any).formaDePago ?? null,
+                amount: typeof m.monthlyPrice === "number" ? m.monthlyPrice : null,
+                renewalDetails: {
+                  membershipType: m.membershipType,
+                  monthlyPrice: m.monthlyPrice,
+                  classLimit: m.planConfig?.classLimit ?? 0,
+                  startDate: startDate.toISOString().split('T')[0],
+                  endDate: m.currentPeriodEnd ? m.currentPeriodEnd.toISOString().split('T')[0] : null,
+                }
+              }
+            });
+            console.log(`[user-repository] Renewal created automatically for active plan user ${id}`);
+          }
+        }
       }
     }
 
