@@ -96,13 +96,15 @@ export async function GET(
       return 0;
     });
 
-    // Deduplicar por (status + planName + startDate):
-    // — scheduled y approved del mismo plan son entradas distintas (hasta que se promueve)
-    // — dos approved del mismo plan (post-promoción) se deduplicar normalmente
+    // Deduplicar por (planName + startDate):
+    // — El sort anterior pone scheduled primero, así que si hay un scheduled y un
+    //   approved para el mismo plan, el scheduled gana (se muestra con badge Programado)
+    //   y el approved se descarta como duplicado.
+    // — Post-promoción (scheduled → approved), ambos son approved y el de requestedAt
+    //   más reciente (el pago, creado después) gana y muestra el monto correcto.
     const seen = new Set<string>();
     const deduplicated = data.filter((item) => {
-      const statusKey = item.status === "scheduled" ? "scheduled" : "approved";
-      const key = `${statusKey}|${item.planName}|${item.startDate ?? ""}`;
+      const key = `${item.planName}|${item.startDate ?? ""}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
