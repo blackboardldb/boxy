@@ -746,7 +746,9 @@ const handleStartDateChange = (newDate: string) => {
                   ) : planHistory.length > 0 ? (
                     <div className="space-y-2 pt-1">
                       {planHistory.map((renewal) => {
+                        const isScheduled = renewal.status === "scheduled";
                         const isCurrent =
+                          !isScheduled &&
                           renewal.planName === student?.membership?.membershipType &&
                           renewal.startDate?.substring(0, 10) ===
                             student?.membership?.currentPeriodStart?.substring(0, 10);
@@ -755,7 +757,9 @@ const handleStartDateChange = (newDate: string) => {
                           <div
                             key={renewal.id}
                             className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 border ${
-                              isCurrent
+                              isScheduled
+                                ? "bg-blue-50 border-blue-100"
+                                : isCurrent
                                 ? "bg-emerald-50 border-emerald-100"
                                 : "bg-zinc-50 border-zinc-100"
                             }`}
@@ -778,6 +782,11 @@ const handleStartDateChange = (newDate: string) => {
                               {renewal.amount != null && (
                                 <span className="text-xs font-semibold text-zinc-500">
                                   ${renewal.amount.toLocaleString("es-CL")}
+                                </span>
+                              )}
+                              {isScheduled && (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                                  Programado
                                 </span>
                               )}
                               {isCurrent && (

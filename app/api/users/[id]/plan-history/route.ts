@@ -28,17 +28,19 @@ export async function GET(
       where: {
         userId,
         organizationId, // tenant scoping — filtra en SQL, no en JS
-        status: "approved",
+        status: { in: ["approved", "scheduled"] },
       },
       select: {
         id: true,
+        status: true,
         requestedAt: true,
         processedAt: true,
         amount: true,
         paymentMethod: true,
         renewalDetails: true,
       },
-      orderBy: { requestedAt: "desc" },
+      // scheduled primero, luego approved por fecha desc
+      orderBy: [{ requestedAt: "desc" }],
     });
 
     // Mapear renewalDetails (JSONB) a campos planos — nunca exponer el JSON crudo al cliente.
@@ -77,6 +79,7 @@ export async function GET(
 
       return {
         id:            r.id,
+        status:        r.status,
         planName,
         startDate:     details?.startDate ?? null,
         endDate,
@@ -86,13 +89,20 @@ export async function GET(
       };
     });
 
-    // Deduplicar por (planName + startDate) — si el admin editó el mismo plan varias
-    // veces, se generan múltiples renewals aprobados con idénticos datos.
-    // La query ya viene ordenada por requestedAt desc, así que el primero de cada
-    // grupo es el más reciente y es el que queremos conservar.
+    // Ordenar: scheduled al tope, luego el resto por requestedAt desc
+    data.sort((a, b) => {
+      if (a.status === "scheduled" && b.status !== "scheduled") return -1;
+      if (a.status !== "scheduled" && b.status === "scheduled") return 1;
+      return 0;
+    });
+
+    // Deduplicar por (status + planName + startDate):
+    // — scheduled y approved del mismo plan son entradas distintas (hasta que se promueve)
+    // — dos approved del mismo plan (post-promoción) se deduplicar normalmente
     const seen = new Set<string>();
     const deduplicated = data.filter((item) => {
-      const key = `${item.planName}|${item.startDate ?? ""}`;
+      const statusKey = item.status === "scheduled" ? "scheduled" : "approved";
+      const key = `${statusKey}|${item.planName}|${item.startDate ?? ""}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

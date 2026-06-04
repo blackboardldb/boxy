@@ -3,6 +3,7 @@ import { fetchClient } from "@/lib/api-client";
 
 export interface PlanHistoryItem {
   id:            string;
+  status:        string;   // "approved" | "scheduled"
   planName:      string;
   startDate:     string | null;
   endDate:       string | null;

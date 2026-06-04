@@ -367,6 +367,7 @@ export class PrismaUserRepository implements IUserRepository {
         await this.prisma.membershipRenewal.create({
           data: {
             userId: id,
+            organizationId: orgId,  // necesario para que el filtro de tenant en plan-history lo incluya
             currentPlanId: m.planId ?? null,
             requestedPlanId: m.planId ?? null,
             status: 'scheduled',
