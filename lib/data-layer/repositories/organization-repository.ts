@@ -73,10 +73,20 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   }
 
   async create(data: CreateData<Organization>): Promise<Organization> {
+    const generatedSlug = data.name
+      ? data.name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "")
+      : "centro-" + Math.floor(Math.random() * 1000000);
+
     const created = await this.prisma.organization.create({
       data: {
         id: data.id,
         name: data.name,
+        slug: generatedSlug,
         isActive: true,
         settings: {
           ...(data.settings as Record<string, unknown> || {}),

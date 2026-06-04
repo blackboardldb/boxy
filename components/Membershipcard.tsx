@@ -143,7 +143,7 @@ export function MembershipCard({
               <AlertCircle size={16} />
               <p className="text-sm sm:text-base">Tu plan ya no está vigente</p>
             </div>
-            <Link href="/app/renovar-plan">
+            <Link href="/alumnos/renovar-plan">
               <Button variant="secondary" className="bg-orange-500 text-white hover:bg-orange-600">
                 Renovar
               </Button>

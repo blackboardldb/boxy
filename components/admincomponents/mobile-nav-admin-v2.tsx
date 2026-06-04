@@ -30,18 +30,18 @@ import {
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const primaryNavItems = [
-  { name: "Dashboard", href: "/admin",          icon: LayoutDashboard, roles: ["admin", "coach"] },
-  { name: "Clases",    href: "/admin/clases",    icon: ClipboardList,   roles: ["admin", "coach"] },
-  { name: "Alumnos",   href: "/admin/alumnos",   icon: Users,           roles: ["admin", "coach"] },
-  { name: "Alertas",   href: "/admin/alertas",   icon: Bell,            roles: ["admin", "coach"], hasDot: true },
+  { name: "Dashboard", href: "/centros",          icon: LayoutDashboard, roles: ["admin", "coach"] },
+  { name: "Clases",    href: "/centros/clases",    icon: ClipboardList,   roles: ["admin", "coach"] },
+  { name: "Alumnos",   href: "/centros/alumnos",   icon: Users,           roles: ["admin", "coach"] },
+  { name: "Alertas",   href: "/centros/alertas",   icon: Bell,            roles: ["admin", "coach"], hasDot: true },
 ];
 
 const secondaryNavItems = [
-  { name: "Horarios",      href: "/admin/horarios",        icon: Calendar,       roles: ["admin", "coach"] },
-  { name: "Planes",        href: "/admin/planes",          icon: CreditCard,     roles: ["admin"] },
-  { name: "Instructores",  href: "/admin/instructores",    icon: GraduationCap,  roles: ["admin", "coach"] },
-  { name: "Finanzas",      href: "/admin/finanzas",        icon: LayoutDashboard,roles: ["admin"] },
-  { name: "Configuración", href: "/admin/configuraciones", icon: Settings,       roles: ["admin"] },
+  { name: "Horarios",      href: "/centros/horarios",        icon: Calendar,       roles: ["admin", "coach"] },
+  { name: "Planes",        href: "/centros/planes",          icon: CreditCard,     roles: ["admin"] },
+  { name: "Instructores",  href: "/centros/instructores",    icon: GraduationCap,  roles: ["admin", "coach"] },
+  { name: "Finanzas",      href: "/centros/finanzas",        icon: LayoutDashboard,roles: ["admin"] },
+  { name: "Configuración", href: "/centros/configuraciones", icon: Settings,       roles: ["admin"] },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export function MobileAdminNav({ role }: { role: string }) {
   }
 
   const isActive = (href: string) =>
-    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+    href === "/centros" ? pathname === "/centros" : pathname.startsWith(href);
 
   const secondaryActive = secondaryNavItems.some((i) => isActive(i.href));
 

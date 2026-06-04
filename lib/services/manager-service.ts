@@ -80,7 +80,7 @@ export const managerService = {
       where: { id },
       include: {
         members: {
-          include: { user: { select: { email: true, name: true } } },
+          include: { user: { select: { email: true, firstName: true, lastName: true } } },
           orderBy: { joinedAt: "desc" },
         },
         payments: { orderBy: { paidAt: "desc" }, take: 50 },
@@ -105,7 +105,10 @@ export const managerService = {
         role: m.role,
         status: m.status,
         joinedAt: m.joinedAt,
-        user: m.user,
+        user: {
+          email: m.user.email,
+          name: `${m.user.firstName} ${m.user.lastName}`.trim(),
+        },
       })),
       payments: org.payments,
       events: org.events,

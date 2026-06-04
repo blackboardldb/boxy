@@ -31,17 +31,12 @@ export default function LoginPage() {
       return;
     }
 
-    // Leer el rol desde la tabla profiles
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
+    const role = data.user.app_metadata?.role;
 
-    if (profile?.role === "admin") {
-      window.location.href = "/admin";
+    if (role === "ADMIN" || role === "COACH") {
+      window.location.href = "/centros";
     } else {
-      window.location.href = "/app";
+      window.location.href = "/alumnos";
     }
   }
 

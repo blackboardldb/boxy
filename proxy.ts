@@ -30,13 +30,19 @@ function extractSlug(hostname: string): string | null {
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, hostname, searchParams } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
 
+  // En desarrollo local Next.js puede reescribir nextUrl.hostname a localhost
+  // Es más seguro extraer el hostname desde el header "host"
+  const headerHost = requestHeaders.get("host") || hostname;
+  
   // ── Soporte de desarrollo: ?tenant=slug simula subdominio ────────────────
   const devTenantSlug = searchParams.get("tenant");
-  const slug = extractSlug(hostname) ?? devTenantSlug;
+  const slug = extractSlug(headerHost) ?? devTenantSlug;
+
+  console.log(`[PROXY] Request: ${request.method} ${pathname} | HeaderHost: ${headerHost} | Slug: ${slug}`);
 
   // ── Rutas que siempre pasan sin resolución de tenant ─────────────────────
   const isManagerRoute = pathname.startsWith("/manager");
@@ -120,7 +126,7 @@ export async function middleware(request: NextRequest) {
 
   const isLoginRoute = pathname === "/login";
   const isProtectedRoute =
-    pathname.startsWith("/alumnos") || pathname.startsWith("/centro");
+    pathname.startsWith("/alumnos") || pathname.startsWith("/centros");
 
   // Sin sesión → redirigir a login del tenant
   if (!user && isProtectedRoute) {
@@ -132,15 +138,31 @@ export async function middleware(request: NextRequest) {
   if (user && isLoginRoute) {
     const role = user.app_metadata?.role as string | undefined;
     if (role === "ADMIN" || role === "COACH") {
-      return NextResponse.redirect(new URL("/centro", request.url));
+      return NextResponse.redirect(new URL("/centros", request.url));
     }
     return NextResponse.redirect(new URL("/alumnos", request.url));
   }
 
-  // Proteger /centro — solo ADMIN y COACH
-  if (user && pathname.startsWith("/centro")) {
+  // Proteger /centros — solo ADMIN y COACH
+  if (user && pathname.startsWith("/centros")) {
     const role = user.app_metadata?.role as string | undefined;
     if (role !== "ADMIN" && role !== "COACH") {
+      return NextResponse.redirect(new URL("/alumnos", request.url));
+    }
+  }
+
+  // Redirigir la raíz del tenant (/) a su dashboard correspondiente
+  if (pathname === "/") {
+    console.log(`[PROXY] Hit root path with user: ${!!user}`);
+    if (!user) {
+      console.log(`[PROXY] Redirecting to /login`);
+      return NextResponse.redirect(new URL("/login", request.url));
+    } else {
+      const role = user.app_metadata?.role as string | undefined;
+      console.log(`[PROXY] User role: ${role}`);
+      if (role === "ADMIN" || role === "COACH") {
+        return NextResponse.redirect(new URL("/centros", request.url));
+      }
       return NextResponse.redirect(new URL("/alumnos", request.url));
     }
   }
@@ -149,7 +171,7 @@ export async function middleware(request: NextRequest) {
   if (user && pathname.startsWith("/alumnos")) {
     const role = user.app_metadata?.role as string | undefined;
     if (role === "ADMIN" || role === "COACH") {
-      return NextResponse.redirect(new URL("/centro", request.url));
+      return NextResponse.redirect(new URL("/centros", request.url));
     }
   }
 
@@ -228,6 +250,6 @@ export const config = {
      * Excluir archivos estáticos de Next.js y rutas internas.
      * Incluir todo lo demás para la resolución de tenant.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

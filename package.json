@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "prisma generate && next build",
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--max-old-space-size=4096' next dev",
     "lint": "next lint",
     "start": "next start",
     "fix:lint": "node scripts/fix-lint-errors.js",

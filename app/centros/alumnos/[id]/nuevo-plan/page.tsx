@@ -202,7 +202,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
           });
         }
         toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });
-        router.push(`/admin/alumnos/${student.id}`);
+        router.push(`/centros/alumnos/${student.id}`);
       } else {
         toast({ title: "Error", description: "Hubo un problema al asignar el plan.", variant: "destructive" });
       }
@@ -220,7 +220,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   return (
     <div className="p-4 md:p-8 space-y-4 max-w-4xl mx-auto flex flex-col min-h-screen">
       <div className=" space-y-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/alumnos/${student.id}`)} className="shrink-0 bg-zinc-100 rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => router.push(`/centros/alumnos/${student.id}`)} className="shrink-0 bg-zinc-100 rounded-full">
           <ArrowLeft className="h-7 w-7" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -380,7 +380,7 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row justify-end pt-2 gap-3">
-              <Button type="button" variant="outline" className="w-full sm:w-auto h-11 rounded-xl" onClick={() => router.push(`/admin/alumnos/${student.id}`)}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto h-11 rounded-xl" onClick={() => router.push(`/centros/alumnos/${student.id}`)}>
                 Cancelar Operación
               </Button>
               <Button 

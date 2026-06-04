@@ -326,7 +326,7 @@ const handleStartDateChange = (newDate: string) => {
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto flex flex-col min-h-screen">
       <div className=" space-y-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/admin/alumnos")} className="shrink-0 bg-zinc-100 rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => router.push("/centros/alumnos")} className="shrink-0 bg-zinc-100 rounded-full">
           <ArrowLeft className="h-7 w-7" />
         </Button>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -575,7 +575,7 @@ const handleStartDateChange = (newDate: string) => {
                       <Button 
                         variant="default" 
                         className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
-                        onClick={() => router.push('/admin/alertas')}
+                        onClick={() => router.push('/centros/alertas')}
                       >
                          <Bell className="w-4 h-4 mr-2" /> Validar Solicitud de Plan
                       </Button>
@@ -583,7 +583,7 @@ const handleStartDateChange = (newDate: string) => {
                     <Button 
                       variant="default" 
                       className="w-full bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl"
-                      onClick={() => router.push(`/admin/alumnos/${student.id}/nuevo-plan`)}
+                      onClick={() => router.push(`/centros/alumnos/${student.id}/nuevo-plan`)}
                     >
                       <Ticket className="w-4 h-4 mr-2" /> Activar Nuevo Plan
                     </Button>

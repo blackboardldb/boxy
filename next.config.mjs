@@ -10,15 +10,16 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
-  experimental: {
-    optimizePackageImports: ["lucide-react"],
-  },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
     // NOTE: script-src mantiene 'unsafe-inline' temporalmente por compatibilidad con Next.js
     // inline scripts (HMR en dev, hydration chunks). El worker-src blob: resuelve el error
     // "Creating a worker from blob URL violates CSP" detectado en Lighthouse.
     // La migración completa a nonces se gestiona en middleware.ts.
+    // Obtenemos el host de Supabase dinámicamente de la variable de entorno
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xkibqawnrolrnnxaxmze.supabase.co";
+    const supabaseHost = new URL(supabaseUrl).host;
+
     const cspHeader = `
       default-src 'self';
       script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
@@ -30,7 +31,7 @@ const nextConfig = {
       form-action 'self';
       frame-ancestors 'none';
       worker-src blob: 'self';
-      connect-src 'self' https://xkibqawnrolrnnxaxmze.supabase.co wss://xkibqawnrolrnnxaxmze.supabase.co https://*.sentry.io;
+      connect-src 'self' https://${supabaseHost} wss://${supabaseHost} https://*.sentry.io;
     `.replace(/\n/g, " ").trim();
 
     return [

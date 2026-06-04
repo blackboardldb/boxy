@@ -15,7 +15,7 @@ export default async function CentroDetailPage({
     where: { id },
     include: {
       members: {
-        include: { user: { select: { email: true, name: true } } },
+        include: { user: { select: { email: true, firstName: true, lastName: true } } },
         orderBy: { joinedAt: "desc" },
       },
       payments: { orderBy: { paidAt: "desc" }, take: 20 },
@@ -58,10 +58,10 @@ export default async function CentroDetailPage({
             {org.members.length === 0 ? (
               <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin miembros</p>
             ) : (
-              org.members.map((m) => (
+              org.members.map((m: any) => (
                 <div key={m.id} className="px-4 py-3 flex items-center justify-between text-sm">
                   <div>
-                    <p className="font-medium">{m.user.name}</p>
+                    <p className="font-medium">{m.user.firstName} {m.user.lastName}</p>
                     <p className="text-zinc-500">{m.user.email}</p>
                   </div>
                   <div className="text-right">
@@ -83,7 +83,7 @@ export default async function CentroDetailPage({
             {org.events.length === 0 ? (
               <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin eventos</p>
             ) : (
-              org.events.map((e) => (
+              org.events.map((e: any) => (
                 <div key={e.id} className="px-4 py-3 text-xs">
                   <p className="font-mono text-zinc-400">{e.type}</p>
                   <p className="text-zinc-500 mt-0.5">{e.message}</p>
@@ -113,7 +113,7 @@ export default async function CentroDetailPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {org.payments.map((p) => (
+              {org.payments.map((p: any) => (
                 <tr key={p.id}>
                   <td className="px-4 py-3 text-zinc-400">{new Date(p.paidAt).toLocaleDateString("es-CL")}</td>
                   <td className="px-4 py-3 font-mono">{(p.amount / 100).toLocaleString("es-CL")} {p.currency}</td>

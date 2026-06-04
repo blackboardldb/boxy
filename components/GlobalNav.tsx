@@ -16,7 +16,7 @@ export default function GlobalNav() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === "/app") return pathname === "/app";
+    if (path === "/alumnos") return pathname === "/alumnos";
     return pathname.startsWith(path);
   };
 
@@ -29,25 +29,25 @@ export default function GlobalNav() {
 
   const navItems: NavItem[] = [
     {
-      href: "/app",
+      href: "/alumnos",
       icon: <House className="w-6 h-6 mx-auto" />,
       label: "Inicio",
       extraClass: "w-14 h-12 block",
     },
     {
-      href: "/app/calendar",
+      href: "/alumnos/calendar",
       icon: <Calendar className="w-6 h-6 mx-auto" />,
       label: "Clases",
       extraClass: "w-14 h-12 block",
     },
     {
-      href: "/app/recursos",
+      href: "/alumnos/recursos",
       icon: <CalculatorIcon className="w-6 h-6 mx-auto" />,
       label: "Recursos",
       extraClass: "w-14 h-12 block",
     },
     {
-      href: "/app/profile",
+      href: "/alumnos/profile",
       icon: <CircleUser className="w-6 h-6 mx-auto" />,
       label: "Perfil",
       extraClass: "w-14 h-12 block",

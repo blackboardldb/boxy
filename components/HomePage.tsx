@@ -185,7 +185,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   Tu plan ya no está vigente
                 </p>
               </div>
-              <Link href="/app/renovar-plan">
+              <Link href="/alumnos/renovar-plan">
                 <Button
                   variant={"secondary"}
                   className="bg-orange-500 text-white hover:bg-orange-600"
@@ -226,7 +226,7 @@ const HomePage: React.FC<HomePageProps> = ({
       <div className="flex justify-between items-center mb-2">
         <p className=" uppercase text-white/80 text-xs">Clases inscritas</p>
         {planStatus === "active" ? (
-          <Link href="app/calendar">
+          <Link href="/alumnos/calendar">
             <Button
               variant="link"
               className="text-lime-400 text-sm font-semibold px-0"
@@ -239,7 +239,7 @@ const HomePage: React.FC<HomePageProps> = ({
             por validar
           </span>
         ) : (
-          <Link href="/app/renovar-plan">
+          <Link href="/alumnos/renovar-plan">
             <Button
               variant="link"
               className="text-orange-400 text-sm font-semibold px-0"
