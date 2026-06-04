@@ -29,8 +29,71 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    /* ── Boxy Tenant Theme ─────────────────────────────────────────────── */
+    /* Overridden per-org via inline style on the layout root div          */
+    --color-primary: #6366f1;
+    --color-primary-light: color-mix(in srgb, var(--color-primary) 15%, transparent);
+    --color-primary-hover: color-mix(in srgb, var(--color-primary) 85%, black);
+    --tenant-radius: 0.5rem;
+    --tenant-spacing: 1rem;
   }
 }
+
+/* ── Boxy Theme Variants ──────────────────────────────────────────────────── */
+/* Each variant defines border-radius and spacing density                     */
+
+[data-variant="1"] {
+  --tenant-radius: 0.25rem;     /* Sharp — minimal, corporate */
+  --tenant-spacing: 0.875rem;
+}
+
+[data-variant="2"] {
+  --tenant-radius: 0.625rem;    /* Rounded — balanced, modern */
+  --tenant-spacing: 1rem;
+}
+
+[data-variant="3"] {
+  --tenant-radius: 1rem;        /* Soft — friendly, approachable */
+  --tenant-spacing: 1.125rem;
+}
+
+[data-variant="4"] {
+  --tenant-radius: 1.5rem;      /* Pill — playful, energetic */
+  --tenant-spacing: 1.25rem;
+}
+
+/* ── Tenant-aware utility classes ────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--tenant-radius);
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.card-tenant {
+  border-radius: var(--tenant-radius);
+  padding: var(--tenant-spacing);
+}
+
+.accent-primary {
+  color: var(--color-primary);
+}
+
+.bg-primary-light {
+  background-color: var(--color-primary-light);
+}
+
+
 
 @layer base {
   * {
