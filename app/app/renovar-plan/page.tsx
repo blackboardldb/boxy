@@ -36,8 +36,16 @@ export default function RenewPlanPage() {
   });
 
   const [selectedPlanId, setSelectedPlanId] = useState<string>(
-    currentUser?.membership.planId || ""
+    currentUser?.membership?.planId || ""
   );
+
+  // Sync selectedPlanId when currentUser loads asynchronously
+  // (useState initial value only runs once on mount)
+  useEffect(() => {
+    if (currentUser?.membership?.planId && !selectedPlanId) {
+      setSelectedPlanId(currentUser.membership.planId);
+    }
+  }, [currentUser]);
   const [selectedPayment, setSelectedPayment] = useState<
     PendingRenewalRequest["requestedPaymentMethod"] | null
   >(null);

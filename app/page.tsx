@@ -1,6 +1,8 @@
 import Logo from "@/components/Logo";
 import Link from "next/link";
 
+// Evita que Safari cachee la landing — fuerza revalidación en cada visita
+export const dynamic = "force-dynamic";
 
 export default function Page() {
   return (

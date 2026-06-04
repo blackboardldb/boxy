@@ -2,9 +2,9 @@
 // SERVICE WORKER PARA BLACKSHEEP CROSSFIT
 // ========================================================================================
 
-const CACHE_NAME = "blacksheep-v1.0.0";
-const STATIC_CACHE = "blacksheep-static-v1.0.0";
-const DYNAMIC_CACHE = "blacksheep-dynamic-v1.0.0";
+const CACHE_NAME = "blacksheep-v1.2.0";
+const STATIC_CACHE = "blacksheep-static-v1.2.0";
+const DYNAMIC_CACHE = "blacksheep-dynamic-v1.2.0";
 
 // Archivos estáticos para cache inmediato
 const STATIC_ASSETS = [
@@ -99,23 +99,26 @@ self.addEventListener("fetch", (event) => {
 async function handleGetRequest(request) {
   const url = new URL(request.url);
 
-  // 1. Navegación de página (HTML) - Stale-While-Revalidate
-  // Si ya tenemos el HTML cacheado, lo servimos de inmediato y actualizamos en background.
-  // Si no hay caché (primera visita o caché limpiado), cae al networkFirst normal.
+  // 1. Navegación de página (HTML) - Network first, caché solo si no hay red.
+  // Con conexión: siempre va al servidor → el middleware corre → sesión y
+  // redirecciones funcionan correctamente. Sin conexión: sirve el caché como
+  // fallback para mantener la experiencia PWA offline.
   if (request.mode === "navigate") {
-    const cached = await caches.match(request);
-    if (cached) {
-      // Revalidar en background sin bloquear al usuario
-      fetch(request)
-        .then((resp) => {
-          if (resp && resp.ok) {
-            caches.open(DYNAMIC_CACHE).then((c) => c.put(request, resp));
-          }
-        })
-        .catch(() => {}); // sin conexión → seguir usando el caché
-      return cached;
+    try {
+      const networkResponse = await fetch(request);
+      // Guardar en caché solo para uso offline (fallback)
+      if (networkResponse.ok) {
+        const cache = await caches.open(DYNAMIC_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    } catch {
+      // Sin red → intentar caché como fallback offline
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      // Último recurso: página principal cacheada en install
+      return caches.match("/");
     }
-    return networkFirst(request, DYNAMIC_CACHE);
   }
 
   // 2. API requests - Network first, fallback to cache

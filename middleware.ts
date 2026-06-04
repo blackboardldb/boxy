@@ -43,12 +43,13 @@ export async function middleware(request: NextRequest) {
 
   // 2. Con sesión → Manejo de roles y redirecciones
   if (user) {
+    const isRootRoute = pathname === "/";
     const isLoginRoute = pathname === "/login";
     const isAdminRoute = pathname.startsWith("/admin");
     const isAppRoute = pathname.startsWith("/app");
 
     // Solo consultar el rol si estamos en rutas que dependen de él
-    if (isLoginRoute || isAdminRoute || isAppRoute) {
+    if (isRootRoute || isLoginRoute || isAdminRoute || isAppRoute) {
       // Leer el rol desde app_metadata — siempre presente gracias al trigger SQL.
       // No se realiza ninguna consulta a la base de datos en el middleware.
       const role = user.app_metadata?.role as string | undefined;
@@ -59,6 +60,14 @@ export async function middleware(request: NextRequest) {
       }
 
       // --- Lógica de Redirecciones ---
+
+      // Z. Redirección desde root si ya hay sesión activa
+      if (isRootRoute) {
+        if (role === "admin" || role === "coach") {
+          return NextResponse.redirect(new URL("/admin", request.url));
+        }
+        return NextResponse.redirect(new URL("/app", request.url));
+      }
 
       // A. Redirección desde login
       if (isLoginRoute) {
@@ -97,6 +106,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/app/:path*",
     "/admin/:path*",
     "/login",

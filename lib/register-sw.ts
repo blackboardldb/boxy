@@ -9,27 +9,23 @@ export async function registerServiceWorker() {
   }
 
   try {
+    // Recargar automáticamente cuando un SW nuevo toma el control.
+    // El nuevo SW llama a clients.claim() → dispara controllerchange →
+    // la página recarga → el usuario ve la versión actualizada sin intervención.
+    // La bandera 'refreshing' evita bucles infinitos.
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     const registration = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
     });
 
     console.log("[SW] Service Worker registrado:", registration);
-
-    // Manejar actualizaciones del service worker
-    registration.addEventListener("updatefound", () => {
-      const newWorker = registration.installing;
-      if (newWorker) {
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            // Nueva versión disponible
-            showUpdateNotification();
-          }
-        });
-      }
-    });
 
     return registration;
   } catch (error) {
