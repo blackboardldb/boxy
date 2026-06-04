@@ -62,6 +62,13 @@ function mapUserMembershipRow(um: NonNullable<UserWithMembership["userMembership
   } as FitCenterMembership;
 }
 
+// ─── Helper: Date | string → "YYYY-MM-DD" (nunca llama .toISOString en un string) ──
+function toDateStr(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value.substring(0, 10);
+  return value.toISOString().split("T")[0];
+}
+
 // ─── Helper: membership shape → UserMembership upsert data ──────────────────
 // Usado en create() y update() para el dual-write Phase 3.
 function membershipToUpsertData(m: any, organizationId: string) {
@@ -418,8 +425,8 @@ export class PrismaUserRepository implements IUserRepository {
                   membershipType: m.membershipType,
                   monthlyPrice: m.monthlyPrice,
                   classLimit: m.planConfig?.classLimit ?? 0,
-                  startDate: startDate.toISOString().split('T')[0],
-                  endDate: m.currentPeriodEnd ? m.currentPeriodEnd.toISOString().split('T')[0] : null,
+                  startDate: toDateStr(startDate),
+                  endDate:   toDateStr(m.currentPeriodEnd),
                 }
               }
             });
