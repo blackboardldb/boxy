@@ -35,6 +35,15 @@ interface MemberListItem {
   currentPeriodEnd: string | null;
 }
 
+const WHATSAPP_EXPIRED_MESSAGE = `🗓️ *Tu plan ha finalizado. Recuerda que:*
+
+•  Reservas vía app, activación manual.
+•  Renueva enviando tu comprobante. Pago por transferencia o presencial (efectivo o tarjetas)
+
+💡 Si estarás de vacaciones, recuerda que contamos con un plan lite de 6 clases mensuales por $22.000.
+
+🚨*Recordar que las clases no son acumulativas al mes siguiente.*`;
+
 export function AdminDashboard({ role }: { role: string }) {
   const [expiringSkip, setExpiringSkip] = useState(0);
   const [expiredSkip, setExpiredSkip] = useState(0);
@@ -320,7 +329,7 @@ export function AdminDashboard({ role }: { role: string }) {
                       <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
+                      <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-2 rounded-xl hover:bg-zinc-100" />
                       <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
                         Ver Perfil
                       </Link>
@@ -365,7 +374,7 @@ export function AdminDashboard({ role }: { role: string }) {
                       <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <WhatsAppLink phone={u.phone} className="p-2 rounded-xl hover:bg-zinc-100" />
+                      <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-2 rounded-xl hover:bg-zinc-100" />
                       <Link href={`/admin/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
                         Ver Perfil
                       </Link>

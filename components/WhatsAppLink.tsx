@@ -9,6 +9,7 @@ interface WhatsAppLinkProps {
   label?: string;
   className?: string;
   showIcon?: boolean;
+  message?: string;
 }
 
 /**
@@ -20,17 +21,21 @@ export function WhatsAppLink({
   phone,
   label,
   className,
-  showIcon = true
+  showIcon = true,
+  message
 }: WhatsAppLinkProps) {
   // Solo se muestra si tiene un número válido de al menos 11 dígitos (56 + 9 dígitos).
   // Si phone es null, undefined o una cadena menor a 11 dígitos, no renderiza nada.
   if (!phone || phone.replace(/\D/g, "").length < 11) return null;
 
   const cleanPhone = phone.replace(/\D/g, "");
+  const url = message 
+    ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}` 
+    : `https://wa.me/${cleanPhone}`;
 
   return (
     <Link
-      href={`https://wa.me/${cleanPhone}`}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
