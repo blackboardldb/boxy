@@ -395,7 +395,11 @@ export class PrismaUserRepository implements IUserRepository {
         const newStart = startDate?.getTime() ?? 0;
         const isNewPeriod = oldStart !== newStart;
         const becameActive = existing?.userMembership?.status !== 'active' && m.status === 'active';
-        const shouldRegisterPayment = (data as any).registerPayment !== false;
+        // skipAutomaticRenewal: enviado por /nuevo-plan cuando ya crea el renewal
+        // explícito via POST /renewal. Evita el doble registro financiero.
+        const shouldRegisterPayment =
+          (data as any).registerPayment !== false &&
+          !(data as any).skipAutomaticRenewal;
 
         if (m.status === 'active' && startDate && (isNewPeriod || becameActive) && shouldRegisterPayment) {
           const existingRenewal = await this.prisma.membershipRenewal.findFirst({
