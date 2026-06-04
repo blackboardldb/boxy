@@ -10,306 +10,6 @@ datasource db {
   schemas   = ["auth", "public"]
 }
 
-model User {
-  id                 String              @id @default(cuid())
-  firstName          String
-  lastName           String
-  email              String              @unique
-  authId             String?             @unique  // UUID de Supabase Auth — FK formal entre public.users y auth.users
-  phone              String?
-  role               String              @default("user")
-  organizationId     String              @default("org_blacksheep_001")
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  // HAL-01 COMPLETO: membership Json? eliminado. Fuente de verdad → UserMembership (user_memberships).
-  dateOfBirth        DateTime?
-  emergencyContact   String?
-  gender             String?
-  formaDePago        String?
-  deletedAt          DateTime?           // Soft delete — ver user-service.ts deleteUser()
-  classRegistrations ClassRegistration[]
-  membershipRenewals MembershipRenewal[]
-  userMembership     UserMembership?
-  userLifts          UserLift[]
-  monthlyStats       UserMonthlyStat[]
-
-  @@index([email])
-  @@index([role])
-  @@index([organizationId])
-  @@index([deletedAt])                   // Índice para filtro O(log n) en listados
-  @@map("users")
-  @@schema("public")
-}
-
-// HAL-03 COMPLETO: registeredParticipantsIds y waitlistParticipantsIds eliminados.
-// Fuente de verdad → ClassRegistration (class_registrations). DROP ejecutado 2026-04-26.
-model ClassSession {
-  id             String              @id @default(cuid())
-  organizationId String
-  disciplineId   String
-  name           String
-  dateTime       DateTime
-  durationMinutes Int
-  instructorId   String
-  capacity       Int
-  status         String              @default("scheduled")
-  notes          String?
-  isGenerated    Boolean             @default(false)
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  registrations  ClassRegistration[]
-  discipline     Discipline          @relation(fields: [disciplineId], references: [id])
-  instructor     Instructor          @relation(fields: [instructorId], references: [id])
-
-  @@index([dateTime])
-  @@index([disciplineId])
-  @@index([instructorId])
-  @@index([status])
-  @@index([organizationId])
-  @@map("class_sessions")
-  @@schema("public")
-}
-
-model Discipline {
-  id                String         @id @default(cuid())
-  organizationId    String
-  name              String
-  description       String?
-  color             String         @default("#3b82f6")
-  isActive          Boolean        @default(true)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  schedule          Json?
-  cancellationRules Json?
-  capacity          Int            @default(15)
-  durationMinutes   Int            @default(60)
-  classes           ClassSession[]
-
-  @@unique([organizationId, name])
-  @@index([isActive])
-  @@index([organizationId])
-  @@map("disciplines")
-  @@schema("public")
-}
-
-model Instructor {
-  id        String         @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String         @unique
-  phone     String?
-  role      String         @default("instructor")
-  isActive  Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  profile   Json?
-  classes   ClassSession[]
-
-  @@index([email])
-  @@index([isActive])
-  @@index([role])
-  @@map("instructors")
-  @@schema("public")
-}
-
-model MembershipPlan {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  description     String?
-  price           Float
-  duration        Int
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  features        Json?
-  config          Json?
-  userMemberships UserMembership[]
-
-  @@index([isActive])
-  @@index([price])
-  @@map("membership_plans")
-  @@schema("public")
-}
-
-/// HAL-01 — Reemplaza el JSONB User.membership con columnas relacionales.
-/// Fase de migración: tabla creada en Fase 1, poblada en Fase 2,
-/// capa de datos actualizada en Fase 3. JSONB eliminado en Fase 4.
-model UserMembership {
-  id                 String          @id @default(cuid())
-  userId             String          @unique
-  organizationId     String
-  planId             String?
-
-  // Estado operativo
-  status             String          @default("pending")
-  startDate          DateTime?
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-  monthlyPrice       Float?
-  membershipType     String?
-
-  // Config del plan (copiada en el momento de asignación)
-  classLimit         Int             @default(0)
-  disciplineAccess   String          @default("all")
-  allowedDisciplines String[]        @default([])
-  canFreeze          Boolean         @default(false)
-  freezeDurationDays Int             @default(0)
-  autoRenews         Boolean         @default(false)
-
-  // Config del centro aplicada a esta membresía
-  allowCancellation  Boolean         @default(true)
-  cancellationHours  Int             @default(6)
-  maxBookingsPerDay  Int             @default(3)
-  autoWaitlist       Boolean         @default(true)
-
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-
-  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan               MembershipPlan? @relation(fields: [planId], references: [id])
-
-  @@index([userId])
-  @@index([organizationId])
-  @@index([status])
-  @@index([currentPeriodEnd])
-  @@map("user_memberships")
-  @@schema("public")
-}
-
-model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  settings  Json?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("organizations")
-  @@schema("public")
-}
-
-model ClassRegistration {
-  id           String       @id @default(cuid())
-  userId       String
-  classId      String
-  status       String       @default("registered")
-  registeredAt DateTime     @default(now())
-  cancelledAt  DateTime?
-  notes        String?
-  class        ClassSession @relation(fields: [classId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, classId])
-  @@index([userId])
-  @@index([classId])
-  @@index([status])
-  @@map("class_registrations")
-  @@schema("public")
-}
-
-model MembershipRenewal {
-  id              String    @id @default(cuid())
-  userId          String
-  currentPlanId   String?
-  requestedPlanId String?
-  status          String    @default("pending")
-  paymentMethod   String?
-  requestedAt     DateTime  @default(now())
-  processedAt     DateTime?
-  startDate       DateTime?
-  notes           String?
-  renewalDetails  Json?
-  amount          Float?
-  organizationId  String?
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([requestedAt])
-  @@index([userId, startDate, status])
-  @@map("membership_renewals")
-  @@schema("public")
-}
-
-
-model UserLift {
-  id             String   @id @default(cuid())
-  userId         String
-  organizationId String
-  exerciseKey    String
-  weight         Float
-  unit           String   // 'kg' | 'lbs'
-  recordedAt     DateTime @default(now())
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, exerciseKey, recordedAt])
-  @@map("user_lifts")
-  @@schema("public")
-}
-
-/// Historial consolidado de períodos cerrados por alumno.
-/// Una fila por período real de plan (no mes calendario).
-/// Se escribe cuando el plan pasa a approved y existe un nuevo plan activo.
-model UserMonthlyStat {
-  id              String   @id @default(cuid())
-  userId          String
-  organizationId  String
-  periodStart     DateTime @db.Date
-  periodEnd       DateTime @db.Date
-  classesAttended Int      @default(0)
-  classesLimit    Int      @default(0)
-  planName        String?
-  createdAt       DateTime @default(now())
-
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, periodStart])
-  @@index([userId, periodStart(sort: Desc)])
-  @@index([organizationId])
-  @@map("user_monthly_stats")
-  @@schema("public")
-}
-
-model Expense {
-  id        String   @id @default(cuid())
-  motivo    String
-  fecha     DateTime
-  monto     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([fecha])
-  @@index([createdAt])
-  @@map("expenses")
-  @@schema("public")
-}
-
-model InAppAlert {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  type      String
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([startDate, endDate])
-  @@map("in_app_alerts")
-  @@schema("public")
-}
-
-model PushSubscription {
-  id           String   @id @default(cuid())
-  userId       String
-  subscription Json
-  createdAt    DateTime @default(now())
-
-  @@map("push_subscriptions")
-  @@schema("public")
-}
-
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model audit_log_entries {
@@ -748,10 +448,12 @@ model users {
   sessions                    sessions[]
   webauthn_challenges         webauthn_challenges[]
   webauthn_credentials        webauthn_credentials[]
-  profiles                    profiles?
 
   @@index([instance_id])
   @@index([is_anonymous])
+  @@index([created_at(sort: Desc)], map: "idx_users_created_at_desc")
+  @@index([email], map: "idx_users_email")
+  @@index([last_sign_in_at(sort: Desc)], map: "idx_users_last_sign_in_at_desc")
   @@schema("auth")
 }
 
@@ -789,17 +491,6 @@ model webauthn_credentials {
 
   @@index([user_id])
   @@schema("auth")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model profiles {
-  id         String    @id @db.Uuid
-  role       String    @default("alumno")
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users     @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@schema("public")
 }
 
 enum aal_level {
@@ -871,3 +562,128 @@ enum one_time_token_type {
 
   @@schema("auth")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOXY — Multi-tenant SaaS Models (schema: public)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// El tenant central. Cada centro deportivo es una Organization.
+model Organization {
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique // "micentro" → subdominio micentro.boxy.app
+  status            OrgStatus @default(TRIAL)
+  managerRole       String    @default("owner")
+  themePrimaryColor String    @default("#6366f1")
+  themeVariant      Int       @default(1) // 1|2|3|4
+  createdAt         DateTime  @default(now())
+  suspendedAt       DateTime?
+  suspendedReason   String?
+
+  members  OrganizationMember[]
+  payments OrganizationPayment[]
+  events   SystemEvent[]
+
+  @@schema("public")
+}
+
+enum OrgStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+
+  @@schema("public")
+}
+
+/// Identidad global de un usuario en Boxy (espejo de auth.users).
+model User {
+  id        String   @id @default(cuid())
+  authId    String   @unique // UUID de auth.users
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  memberships OrganizationMember[]
+
+  @@index([authId])
+  @@schema("public")
+}
+
+/// La relación alumno↔centro. Un usuario puede pertenecer a múltiples centros.
+model OrganizationMember {
+  id             String     @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MemberRole @default(ALUMNO)
+  status         String     @default("active")
+  joinedAt       DateTime   @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId]) // un alumno no puede estar dos veces en el mismo centro
+  @@index([organizationId])
+  @@index([userId])
+  @@schema("public")
+}
+
+enum MemberRole {
+  ALUMNO
+  COACH
+  ADMIN
+
+  @@schema("public")
+}
+
+/// Pagos del centro hacia Boxy (historial de facturación del SaaS).
+model OrganizationPayment {
+  id             String   @id @default(cuid())
+  organizationId String
+  amount         Int // en centavos
+  currency       String   @default("CLP")
+  paidAt         DateTime
+  method         String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@schema("public")
+}
+
+/// Log operativo por centro: errores de auth, fallos de sync, etc.
+model SystemEvent {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String // auth_failure | sync_error | payment_failed
+  message        String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+/// Victor y futuros roles de soporte — acceso al panel /manager.
+model ManagerUser {
+  id        String      @id @default(cuid())
+  authId    String      @unique // UUID de auth.users
+  email     String      @unique
+  role      ManagerRole @default(SUPPORT)
+  createdAt DateTime    @default(now())
+
+  @@index([authId])
+  @@schema("public")
+}
+
+enum ManagerRole {
+  OWNER // acceso total
+  SUPPORT // solo lectura + resolver estados
+
+  @@schema("public")
+}
+
