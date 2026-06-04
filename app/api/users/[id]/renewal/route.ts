@@ -45,14 +45,26 @@ export async function POST(
       }
     }
 
-    // Validar que el usuario existe
+    // Validar que el usuario existe (incluir membresía para consolidar período anterior en autoApprove)
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, organizationId: true, userMembership: { select: { planId: true } } },
+      select: {
+        id: true,
+        organizationId: true,
+        userMembership: {
+          select: {
+            planId: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+            membershipType: true,
+            classLimit: true,
+          },
+        },
+      },
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 } );
     }
 
     // Verificar que el plan existe
@@ -142,6 +154,46 @@ export async function POST(
         },
       },
     });
+
+    // Consolidar período anterior en user_monthly_stats cuando el admin asigna un nuevo plan directamente.
+    // Fire-and-forget: no bloquea la respuesta ni falla la operación si hay error.
+    if (autoApprove && user.userMembership?.currentPeriodStart && user.userMembership?.currentPeriodEnd) {
+      const prevPeriodStart = user.userMembership.currentPeriodStart;
+      const prevPeriodEnd   = user.userMembership.currentPeriodEnd;
+      const prevPlanName    = user.userMembership.membershipType ?? "Plan";
+      const prevClassLimit  = user.userMembership.classLimit ?? 0;
+      const orgId           = user.organizationId ?? "org_blacksheep_001";
+
+      prisma.classRegistration.count({
+        where: {
+          userId,
+          status: "registered",
+          class: { dateTime: { gte: prevPeriodStart, lte: prevPeriodEnd } },
+        },
+      }).then((classesAttended) =>
+        prisma.userMonthlyStat.upsert({
+          where: { userId_periodStart: { userId, periodStart: prevPeriodStart } },
+          create: {
+            id: `stat_${Date.now()}_${userId.slice(-6)}`,
+            userId,
+            organizationId: orgId,
+            periodStart: prevPeriodStart,
+            periodEnd: prevPeriodEnd,
+            classesAttended,
+            classesLimit: prevClassLimit,
+            planName: prevPlanName,
+          },
+          update: {
+            periodEnd: prevPeriodEnd,
+            classesAttended,
+            classesLimit: prevClassLimit,
+            planName: prevPlanName,
+          },
+        })
+      ).catch((err) => {
+        console.warn("[renewal POST autoApprove] No se pudo consolidar user_monthly_stats:", err.message);
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -55,13 +55,14 @@ function NumberCard({ value, label }: { value: number; label: string }) {
   );
 }
 
-// ─── Card "Miembro desde" ─────────────────────────────────────────────────────
+// ─── Card "Tu horario fav" ───────────────────────────────────────────────────
 
-function MemberSinceCard({ memberSince }: { memberSince: string }) {
+function FavoriteTimeCard() {
   return (
     <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
-      <span className="text-sm font-bold text-white leading-tight text-center capitalize">{memberSince}</span>
-      <span className="text-xs text-zinc-400 text-center">miembro desde</span>
+      <span className="text-3xl leading-none">🌅</span>
+      <span className="text-sm font-bold text-white leading-tight text-center">Mañana</span>
+      <span className="text-xs text-zinc-400 text-center">tu horario fav</span>
     </div>
   );
 }
@@ -125,7 +126,7 @@ function PeriodChart({ periods }: { periods: PeriodHistory[] }) {
   return (
     <div className="bg-white/5 rounded-xl p-4 space-y-4">
       <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-        Historial de clases
+        Historial de planes
       </p>
 
       {/* Chart de barras */}
@@ -151,6 +152,9 @@ function PeriodChart({ periods }: { periods: PeriodHistory[] }) {
               <span className="text-[9px] text-zinc-500 capitalize whitespace-nowrap">
                 {formatPeriodLabel(period.periodStart)}
               </span>
+              <span className="text-[9px] text-zinc-500 whitespace-nowrap truncate max-w-full">
+                {period.planName}
+              </span>
             </div>
           );
         })}
@@ -166,7 +170,7 @@ export function StatsDrawer({ userId, isOpen, onClose }: StatsDrawerProps) {
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="bg-zinc-950 border-zinc-800 max-h-[90vh] overflow-y-auto">
+      <DrawerContent className="bg-zinc-950 border-zinc-800 max-h-[90vh] flex flex-col">
         <DrawerHeader className="pb-2">
           <DrawerTitle className="text-white text-lg font-bold">
             Tus estadísticas
@@ -182,41 +186,12 @@ export function StatsDrawer({ userId, isOpen, onClose }: StatsDrawerProps) {
         )}
 
         {data && (
-          <div className="space-y-3 px-4 pb-10">
-            {/* Sección 1 — Clases + Miembro desde (solo si hay datos limpios) */}
-            {data.memberSince ? (
-              <div className="grid grid-cols-2 gap-3">
-                <NumberCard value={data.totalClasses} label="clases completadas" />
-                <MemberSinceCard memberSince={data.memberSince} />
-              </div>
-            ) : (
+          <div className="space-y-3 px-4 pb-10 overflow-y-auto flex-1">
+            {/* Sección 1 — Clases + Horario fav */}
+            <div className="grid grid-cols-2 gap-3">
               <NumberCard value={data.totalClasses} label="clases completadas" />
-            )}
-
-            {/* Sección 2 — Hábitos */}
-            {(data.favoriteDiscipline || data.favoriteTime) && (
-              <div className="bg-white/5 rounded-xl p-4 text-center">
-                <p className="text-sm text-zinc-300 leading-relaxed">
-                  {data.favoriteDiscipline && (
-                    <>
-                      Tu disciplina favorita es{" "}
-                      <span className="text-white font-semibold">
-                        {data.favoriteDiscipline}
-                      </span>
-                    </>
-                  )}
-                  {data.favoriteDiscipline && data.favoriteTime && " · "}
-                  {data.favoriteTime && (
-                    <>
-                      Te gusta entrenar por la{" "}
-                      <span className="text-white font-semibold">
-                        {data.favoriteTime === "AM" ? "mañana" : "tarde"}
-                      </span>
-                    </>
-                  )}
-                </p>
-              </div>
-            )}
+              <FavoriteTimeCard />
+            </div>
 
             {/* Sección 3 — Logros */}
             {data.achievements.length > 0 && (

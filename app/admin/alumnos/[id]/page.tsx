@@ -759,8 +759,6 @@ const handleStartDateChange = (newDate: string) => {
                             className={`rounded-xl px-4 py-3 flex items-center justify-between gap-3 border ${
                               isScheduled
                                 ? "bg-blue-50 border-blue-100"
-                                : isCurrent
-                                ? "bg-emerald-50 border-emerald-100"
                                 : "bg-zinc-50 border-zinc-100"
                             }`}
                           >

@@ -177,6 +177,55 @@ export async function POST(
       }),
     ]);
 
+    // 5c. Consolidar el período anterior en user_monthly_stats (fire-and-forget)
+    // Se ejecuta fuera de la transacción para no bloquearla. Si falla, no afecta la aprobación.
+    const prevMembership = user.userMembership;
+    if (prevMembership?.currentPeriodStart && prevMembership?.currentPeriodEnd) {
+      const prevPeriodStart = prevMembership.currentPeriodStart;
+      const prevPeriodEnd   = prevMembership.currentPeriodEnd;
+      const prevPlanName    = prevMembership.membershipType ?? "Plan";
+      const prevClassLimit  = prevMembership.classLimit ?? 0;
+      const orgId           = user.organizationId ?? "org_blacksheep_001";
+
+      // Contar clases reales del período anterior
+      prisma.classRegistration.count({
+        where: {
+          userId,
+          status: "registered",
+          class: {
+            dateTime: {
+              gte: prevPeriodStart,
+              lte: prevPeriodEnd,
+            },
+          },
+        },
+      }).then((classesAttended) => {
+        return prisma.userMonthlyStat.upsert({
+          where: { userId_periodStart: { userId, periodStart: prevPeriodStart } },
+          create: {
+            id: `stat_${Date.now()}_${userId.slice(-6)}`,
+            userId,
+            organizationId: orgId,
+            periodStart: prevPeriodStart,
+            periodEnd: prevPeriodEnd,
+            classesAttended,
+            classesLimit: prevClassLimit,
+            planName: prevPlanName,
+          },
+          update: {
+            periodEnd: prevPeriodEnd,
+            classesAttended,
+            classesLimit: prevClassLimit,
+            planName: prevPlanName,
+          },
+        });
+      }).catch((err) => {
+        console.warn("[renewal/approve] No se pudo consolidar user_monthly_stats:", err.message);
+      });
+    }
+
+
+
     // 6. Emitir evento WebSocket
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     try {
