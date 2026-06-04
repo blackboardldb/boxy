@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { ExpensesManager } from "@/components/admincomponents/expenses-manager";
 import { AdminPagination } from "@/components/admincomponents/admin-pagination";
-import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
 
 export default function FinanzasPage() {
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -90,7 +90,7 @@ export default function FinanzasPage() {
       </div>
 
       {/* Cards de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8">
         <Card className="rounded-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -187,6 +187,34 @@ export default function FinanzasPage() {
                 </p>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Card 4: Formas de Pago */}
+        <Card className="rounded-xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Medios de Pago</CardTitle>
+            <CreditCard className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-2 mt-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-4 w-full bg-zinc-100 animate-pulse rounded" />
+                ))}
+              </div>
+            ) : !financesData?.ingresos.byPaymentMethod?.length ? (
+              <p className="text-xs text-muted-foreground mt-1">Sin datos</p>
+            ) : (
+              <div className="space-y-2 mt-1">
+                {financesData.ingresos.byPaymentMethod.map((item) => (
+                  <div key={item.method} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground capitalize truncate">{item.method}</span>
+                    <span className="text-xs font-semibold shrink-0">${item.total.toLocaleString("es-CL")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

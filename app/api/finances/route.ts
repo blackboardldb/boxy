@@ -32,45 +32,56 @@ export async function GET(request: NextRequest) {
     const endDate   = new Date(Date.UTC(year, month, 1));
 
     // Ingresos — _sum nativo
-    const ingresosAgg = await prisma.membershipRenewal.aggregate({
-      _sum: { amount: true },
-      _count: { id: true },
-      where: {
-        OR: [
-          { organizationId: auth.organizationId },
-          { organizationId: null },
-        ],
-        status: "approved",
-        amount: { not: null }, // excluir registros legacy sin monto
-        processedAt: {
-          gte: startDate,
-          lt: endDate,
+    const [ingresosAgg, ingresosList, methodsAgg] = await Promise.all([
+      prisma.membershipRenewal.aggregate({
+        _sum: { amount: true },
+        _count: { id: true },
+        where: {
+          OR: [
+            { organizationId: auth.organizationId },
+            { organizationId: null },
+          ],
+          status: "approved",
+          amount: { not: null },
+          processedAt: { gte: startDate, lt: endDate },
         },
-      },
-    });
+      }),
 
-    const ingresosList = await prisma.membershipRenewal.findMany({
-      where: {
-        OR: [
-          { organizationId: auth.organizationId },
-          { organizationId: null },
-        ],
-        status: "approved",
-        amount: { not: null }, // excluir registros legacy sin monto
-        processedAt: {
-          gte: startDate,
-          lt: endDate,
+      prisma.membershipRenewal.findMany({
+        where: {
+          OR: [
+            { organizationId: auth.organizationId },
+            { organizationId: null },
+          ],
+          status: "approved",
+          amount: { not: null },
+          processedAt: { gte: startDate, lt: endDate },
         },
-      },
-      include: {
-        user: {
-          select: { firstName: true, lastName: true },
+        include: {
+          user: { select: { firstName: true, lastName: true } },
         },
-      },
-      orderBy: { processedAt: "desc" },
-      skip,
-      take: limit,
-    });
+        orderBy: { processedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+
+      // Desglose por forma de pago — una sola query GROUP BY en SQL
+      prisma.membershipRenewal.groupBy({
+        by: ["paymentMethod"],
+        _sum: { amount: true },
+        _count: { id: true },
+        where: {
+          OR: [
+            { organizationId: auth.organizationId },
+            { organizationId: null },
+          ],
+          status: "approved",
+          amount: { not: null },
+          processedAt: { gte: startDate, lt: endDate },
+        },
+        orderBy: { _sum: { amount: "desc" } },
+      }),
+    ]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // ⚠️  TODO(Multi-Tenant) — LEER ANTES DE TOCAR ESTAS QUERIES
@@ -163,6 +174,12 @@ export async function GET(request: NextRequest) {
       1
     );
 
+    const mappedMethods = methodsAgg.map((m) => ({
+      method: m.paymentMethod ?? "otro",
+      total: m._sum.amount ?? 0,
+      count: m._count.id,
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
@@ -170,6 +187,7 @@ export async function GET(request: NextRequest) {
           total: totalIngresos,
           count: countIngresos,
           items: mappedIngresos,
+          byPaymentMethod: mappedMethods,
         },
         egresos: {
           total: totalEgresos,

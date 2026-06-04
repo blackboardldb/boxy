@@ -9,6 +9,12 @@ interface FinanceItem {
   processedAt: string;
 }
 
+interface PaymentMethodItem {
+  method: string;
+  total: number;
+  count: number;
+}
+
 interface ExpenseItem {
   id: string;
   concept: string;
@@ -21,6 +27,7 @@ export interface FinancesResponse {
     total: number;
     count: number;
     items: FinanceItem[];
+    byPaymentMethod: PaymentMethodItem[];
   };
   egresos: {
     total: number;
