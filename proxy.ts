@@ -137,10 +137,18 @@ export async function proxy(request: NextRequest) {
   // Con sesión → redirigir desde login según rol
   if (user && isLoginRoute) {
     const role = user.app_metadata?.role as string | undefined;
+    if (role) requestHeaders.set("x-user-role", role.toLowerCase());
+    
     if (role === "ADMIN" || role === "COACH") {
       return NextResponse.redirect(new URL("/centros", request.url));
     }
     return NextResponse.redirect(new URL("/alumnos", request.url));
+  }
+
+  // Setear x-user-role siempre si hay usuario
+  if (user) {
+    const role = user.app_metadata?.role as string | undefined;
+    if (role) requestHeaders.set("x-user-role", role.toLowerCase());
   }
 
   // Proteger /centros — solo ADMIN y COACH

@@ -30,6 +30,7 @@ import {
 } from "@/lib/utils";
 import type { MembershipPlan } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMe } from "@/lib/react-query/hooks/useMe";
 import {
   Plus,
   Edit,
@@ -101,6 +102,7 @@ export default function PlansManager() {
   const [error, setError] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+  const { data: currentUser } = useMe();
 
   // ── Filtros y búsqueda ────────────────────────────────────────────────────
 
@@ -219,6 +221,11 @@ export default function PlansManager() {
       return;
     }
 
+    if (!currentUser?.organizationId) {
+      setError("Error de sesión: No se pudo determinar la organización. Por favor, recarga la página.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -235,7 +242,7 @@ export default function PlansManager() {
         freezeDurationDays: Number(planForm.freezeDurationDays),
         autoRenews: planForm.autoRenews,
         isActive: planForm.isActive,
-        organizationId: "org_blacksheep_001",
+        organizationId: currentUser.organizationId,
       };
 
       if (editingPlan) {

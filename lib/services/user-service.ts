@@ -29,6 +29,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     search?: string;
     role?: string;
     status?: string;
+    organizationId?: string;
   }): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     const findParams: any = {
       page: params?.page || 1,
@@ -40,6 +41,10 @@ export class UserService extends BaseService<FitCenterUserProfile> {
 
     if (params?.role) {
       conditions.push({ role: params.role });
+    }
+
+    if (params?.organizationId) {
+      conditions.push({ organizationId: params.organizationId });
     }
 
     if (params?.status) {
@@ -361,7 +366,7 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   }
 
   // Get user statistics
-  async getUserStats(): Promise<
+  async getUserStats(organizationId?: string): Promise<
     ApiResponse<{
       total: number;
       active: number;
@@ -371,10 +376,11 @@ export class UserService extends BaseService<FitCenterUserProfile> {
       frozen: number;
     }>
   > {
+    const cacheKey = organizationId ? `user_stats_${organizationId}` : "user_stats";
     return this.withCache(
-      "user_stats",
+      cacheKey,
       async () => {
-        const stats = await this.userRepository.getUserStats();
+        const stats = await (this.userRepository as any).getUserStats(organizationId);
         return this.createSuccessResponse(stats);
       },
       2 * 60 * 1000 // Cache for 2 minutes

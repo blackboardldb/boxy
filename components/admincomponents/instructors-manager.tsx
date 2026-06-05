@@ -52,6 +52,7 @@ import {
   useToggleInstructorStatus,
 } from "@/lib/react-query/hooks/useInstructors";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
+import { useMe } from "@/lib/react-query/hooks/useMe";
 
 // ─── InstructorForm — componente independiente para evitar re-mount ──────────
 // Definido FUERA de InstructorsManager para que React no lo desmonte al
@@ -81,6 +82,7 @@ function InstructorForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: currentUser } = useMe();
 
   // Sincronizar cuando cambie el instructor recibido
   useEffect(() => {
@@ -105,12 +107,17 @@ function InstructorForm({
       return;
     }
 
+    if (!currentUser?.organizationId) {
+      setError("Error de sesión: No se pudo determinar la organización. Por favor, recarga la página.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     const instructorData = {
       ...formData,
-      organizationId: "org_blacksheep_001",
+      organizationId: currentUser.organizationId,
     };
 
     try {

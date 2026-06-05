@@ -19,6 +19,9 @@ export async function POST(
   try {
     const { id: userId } = await params;  // Next.js 15: params es una Promise
 
+    const auth = await requireAdmin();
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
     const parsed = approveRenewalSchema.safeParse(
       await request.json().catch(() => ({}))
     );
@@ -142,7 +145,7 @@ export async function POST(
         },
         create: {
           userId,
-          organizationId: user.organizationId ?? "org_blacksheep_001",
+          organizationId: user.organizationId,
           status: "active",
           planId: planData.id || null,
           membershipType: planData.name,
@@ -185,7 +188,8 @@ export async function POST(
       const prevPeriodEnd   = prevMembership.currentPeriodEnd;
       const prevPlanName    = prevMembership.membershipType ?? "Plan";
       const prevClassLimit  = prevMembership.classLimit ?? 0;
-      const orgId           = user.organizationId ?? "org_blacksheep_001";
+      const orgId           = user.organizationId;
+      if (!orgId) throw new Error("organizationId is required");
 
       // Contar clases reales del período anterior
       prisma.classRegistration.count({

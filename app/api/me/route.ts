@@ -1,19 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 // HAL-01 Fase 4 Sprint 1.5: La promoción scheduled→active ya no lee ni escribe
 // en el JSONB membership. Opera directamente sobre la tabla UserMembership.
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
+    const auth = await requireAuth();
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const user = auth.user;
+    const organizationId = auth.organizationId;
 
     // 1. Buscar en public.users (alumnos/clientes)
     let dbUser: any = await prisma.user.findFirst({
@@ -89,7 +85,7 @@ export async function GET() {
 
       // Construir datos de upsert desde el renewal
       const promotionData = {
-        organizationId:    dbUser.userMembership?.organizationId ?? "org_blacksheep_001",
+        organizationId:    organizationId,
         planId:            scheduledRenewal.requestedPlanId ?? null,
         status:            "active",
         startDate:         details.startDate  ? new Date(details.startDate)  : null,

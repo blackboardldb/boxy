@@ -153,9 +153,11 @@ export class PrismaInstructorRepository implements IInstructorRepository {
 
   private mapToEntity(prismaInstructor: InstructorRow): Instructor {
     const profile = (prismaInstructor.profile as InstructorProfile) || {};
+    const orgId = (prismaInstructor as unknown as { organizationId?: string }).organizationId;
+    if (!orgId) throw new Error("organizationId is required for instructor");
     return {
       id: prismaInstructor.id,
-      organizationId: (prismaInstructor as unknown as { organizationId?: string }).organizationId ?? "org_blacksheep_001",
+      organizationId: orgId,
       firstName: prismaInstructor.firstName,
       lastName: prismaInstructor.lastName,
       email: prismaInstructor.email,

@@ -117,7 +117,7 @@ export async function generateClassesFromSchedules(
 
             classesToCreate.push({
               id: classId,
-              organizationId: (discipline as { organizationId?: string }).organizationId || "org_blacksheep_001",
+              organizationId: (discipline as { organizationId?: string }).organizationId!,
               disciplineId: discipline.id,
               name: discipline.name,
               dateTime: new Date(localToUTC(date, time)),

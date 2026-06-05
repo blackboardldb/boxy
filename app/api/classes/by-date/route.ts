@@ -4,6 +4,7 @@ import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
 import { getChileOffset, localToUTC } from "@/lib/utils";
 import { getDataProvider } from "@/lib/data-layer/provider-factory";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 
 /**
  * Genera clases para un día específico basado en los horarios de las disciplinas.
@@ -14,8 +15,10 @@ function generateClassesForDay(
   disciplines: Array<{
     id: string;
     name: string;
+    organizationId: string;
     schedule?: any; // Usamos any para manejar el JSON de Prisma localmente
-  }>
+  }>,
+  organizationId: string
 ): ClassSession[] {
   const dayMapping: DayOfWeek[] = [
     "dom",
@@ -48,7 +51,7 @@ function generateClassesForDay(
 
           generatedClasses.push({
             id: `gen_${discipline.id}_${dateString}_${time.replace(":", "-")}`,
-            organizationId: "org_blacksheep_001",
+            organizationId,
             disciplineId: discipline.id,
             name: discipline.name,
             dateTime: dateTimeStr,
@@ -72,13 +75,14 @@ function generateClassesForDay(
 function generateClassesForDateRange(
   startDate: Date,
   endDate: Date,
-  disciplines: any[]
+  disciplines: any[],
+  organizationId: string
 ): ClassSession[] {
   const allClasses: ClassSession[] = [];
   const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
 
   daysInRange.forEach((day) => {
-    const dayClasses = generateClassesForDay(day, disciplines);
+    const dayClasses = generateClassesForDay(day, disciplines, organizationId);
     allClasses.push(...dayClasses);
   });
 
@@ -86,6 +90,11 @@ function generateClassesForDateRange(
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth();
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const organizationId = auth.organizationId;
+  if (!organizationId) return NextResponse.json({ error: "organizationId is required" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date"); // Para compatibilidad con un solo día
   const startDate = searchParams.get("startDate"); // Para rango de fechas
@@ -123,6 +132,7 @@ export async function GET(request: NextRequest) {
     // falle silenciosamente en la comparación y retorne []. Consistente con classService.getClasses.
     const realClassesResult = await provider.classes.findMany({
       where: {
+        organizationId,
         dateTime: {
           gte: targetStartDate,
           lte: targetEndDate,
@@ -135,7 +145,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Obtener disciplinas activas via repositorio
     const disciplinesResult = await provider.disciplines.findMany({
-      where: { isActive: true },
+      where: { isActive: true, organizationId },
       limit: 100,
     });
     const disciplines = disciplinesResult.items;
@@ -144,7 +154,8 @@ export async function GET(request: NextRequest) {
     const allGeneratedClasses = generateClassesForDateRange(
       targetStartDate,
       targetEndDate,
-      disciplines
+      disciplines,
+      organizationId
     );
 
     // 4. Combinar clases, dando prioridad a las reales sobre las generadas.

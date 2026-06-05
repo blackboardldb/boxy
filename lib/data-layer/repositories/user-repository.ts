@@ -129,8 +129,10 @@ async function promoteScheduledIfReady(
 
   if (scheduledRenewal) {
     const details = scheduledRenewal.renewalDetails as Record<string, unknown>;
+    if (!userMembership?.organizationId) throw new Error("organizationId is required for promotion");
+
     const promotionData = {
-      organizationId:     userMembership?.organizationId ?? "org_blacksheep_001",
+      organizationId:     userMembership.organizationId,
       planId:             scheduledRenewal.requestedPlanId ?? null,
       status:             "active",
       startDate:          details.startDate ? new Date(details.startDate as string) : null,
@@ -289,7 +291,8 @@ export class PrismaUserRepository implements IUserRepository {
   // Dual-write Phase 3: escribe en JSONB (backward-compat) Y en UserMembership.
   // El JSONB se elimina en Phase 4.
   async create(data: CreateData<FitCenterUserProfile>): Promise<FitCenterUserProfile> {
-    const orgId = data.organizationId ?? "org_blacksheep_001";
+    const orgId = data.organizationId;
+    if (!orgId) throw new Error("organizationId is required");
 
     const created = await this.prisma.user.create({
       data: {
@@ -334,7 +337,8 @@ export class PrismaUserRepository implements IUserRepository {
       where:  { id },
       select: { organizationId: true, userMembership: true },
     });
-    const orgId = existing?.organizationId ?? "org_blacksheep_001";
+    const orgId = existing?.organizationId;
+    if (!orgId) throw new Error("organizationId is required");
 
     await this.prisma.user.update({
       where: { id },
@@ -515,13 +519,20 @@ export class PrismaUserRepository implements IUserRepository {
   // ── getUserStats ──────────────────────────────────────────────────────────
   // ANTES: 5 queries separadas con JSONB path → 5 Full Table Scans
   // AHORA: 1 groupBy en UserMembership           → 1 query con índice btree
-  async getUserStats(): Promise<{
+  async getUserStats(organizationId?: string): Promise<{
     total: number; active: number; pending: number;
     expired: number; inactive: number; frozen: number;
   }> {
+    const where: any = {};
+    if (organizationId) {
+      where.organizationId = organizationId;
+    } else {
+      throw new Error("organizationId is required");
+    }
+
     const results = await this.prisma.userMembership.groupBy({
       by:    ["status"],
-      where: { organizationId: "org_blacksheep_001" },
+      where,
       _count: { status: true },
     });
 

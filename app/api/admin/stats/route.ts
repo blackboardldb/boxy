@@ -18,13 +18,17 @@ import { prisma } from "@/lib/prisma";
 // consolidaron en un solo CTE para eliminar 2 roundtrips al connection pooler.
 // Latencia objetivo: < 500ms (vs ~5s original con 3 queries seriales).
 
-export async function GET() {
+import { NextRequest } from "next/server";
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { organizationId } = auth;
+    const { organizationId: authOrgId } = auth;
+
+    // Use header injected by proxy for multi-tenant context, fallback to auth's org
+    const organizationId = request.headers.get("x-organization-id") || authOrgId;
 
     // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
     const today            = new Date();
@@ -49,8 +53,8 @@ export async function GET() {
       WITH
         membership_counts AS (
           SELECT
-            COUNT(*)                                                                     AS "totalMembers",
-            SUM(CASE WHEN um.status = 'pending' THEN 1 ELSE 0 END)                         AS "pendingFromMemberships",
+            COUNT(u.id)                                                                  AS "totalMembers",
+            SUM(CASE WHEN um.status = 'pending' THEN 1 ELSE 0 END)                       AS "pendingFromMemberships",
             SUM(CASE WHEN um.status = 'active' AND um."currentPeriodStart" > ${today}
                      THEN 1 ELSE 0 END)                                                  AS "scheduledMembers",
             SUM(CASE WHEN um.status = 'active'
@@ -58,14 +62,15 @@ export async function GET() {
                           AND um."currentPeriodEnd"   >= ${today}
                      THEN 1 ELSE 0 END)                                                  AS "activeMembers",
             SUM(CASE
+                  WHEN um.status IS NULL THEN 1
                   WHEN um.status NOT IN ('active', 'pending') THEN 1
                   WHEN um.status = 'active' AND um."currentPeriodEnd" < ${today} THEN 1
                   ELSE 0
                 END)                                                                     AS "inactiveMembers",
-            SUM(CASE WHEN um."startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)             AS "newThisMonth"
-          FROM "user_memberships" um
-          JOIN "users" u ON um."userId" = u.id
-          WHERE um."organizationId" = ${organizationId}
+            SUM(CASE WHEN um."startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)           AS "newThisMonth"
+          FROM "users" u
+          LEFT JOIN "user_memberships" um ON um."userId" = u.id
+          WHERE u."organizationId" = ${organizationId}
             AND u."deletedAt" IS NULL
             AND u.role = 'user'
         ),

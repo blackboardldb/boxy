@@ -42,9 +42,12 @@ export async function requireAuth(): Promise<AuthResult> {
     role = profile?.role;
   }
 
-  // Default organization if none found (fallback to BlackSheep)
+  // Normalizar el rol a minúsculas
+  role = role?.toLowerCase();
+
+  // Default organization if none found
   if (!organizationId) {
-    organizationId = "org_blacksheep_001";
+    return { error: "Token sin organizationId. Contacte al administrador.", status: 403 };
   }
 
   return { user, role: role || "alumno", organizationId };

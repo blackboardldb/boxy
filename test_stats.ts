@@ -5,7 +5,8 @@ async function test() {
   const start = Date.now()
   const today = new Date()
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-  const baseWhere = { organizationId: 'org_blacksheep_001' }
+  const orgId = process.argv[2] || 'org_blacksheep_001'
+  const baseWhere = { organizationId: orgId }
 
   console.time('Queries')
   const [
@@ -37,7 +38,7 @@ async function test() {
       SUM(CASE WHEN "startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END) as "new",
       SUM(CASE WHEN status = 'active' AND "currentPeriodStart" >= ${firstOfMonth} AND "currentPeriodStart" <= ${today} THEN "monthlyPrice" ELSE 0 END) as "revenue"
     FROM "user_memberships"
-    WHERE "organizationId" = 'org_blacksheep_001'
+    WHERE "organizationId" = ${orgId}
   `
   console.timeEnd('Raw')
 

@@ -93,10 +93,11 @@ export class PrismaClassRepository implements IClassRepository {
   }
 
   async create(data: CreateData<ClassSession>): Promise<ClassSession> {
+    if (!data.organizationId) throw new Error("organizationId is required");
     const created = await this.prisma.classSession.create({
       data: {
         id: data.id,
-        organizationId: data.organizationId || "org_blacksheep_001",
+        organizationId: data.organizationId,
         disciplineId: data.disciplineId,
         name: data.name,
         dateTime: new Date(data.dateTime),

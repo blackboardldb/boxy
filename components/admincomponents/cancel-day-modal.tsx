@@ -48,10 +48,15 @@ export function CancelDayModal({ isOpen, onClose, date }: CancelDayModalProps) {
   const handleCancelDay = async () => {
     if (!dateStr) return;
 
+    if (!currentUser?.organizationId) {
+      toast.error("Error de sesión: No se pudo determinar la organización. Por favor, recarga la página.");
+      return;
+    }
+
     try {
       await cancelDay.mutateAsync({
         date: dateStr,
-        organizationId: currentUser?.organizationId || "org_blacksheep_001",
+        organizationId: currentUser.organizationId,
         generatedClasses: generatedClasses,
       });
       

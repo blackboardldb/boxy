@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { organizationId } = auth;
+    const { organizationId: authOrgId } = auth;
+    const organizationId = request.headers.get("x-organization-id") || authOrgId;
     const status = request.nextUrl.searchParams.get("status") || "pending";
     const take = Math.min(
       parseInt(request.nextUrl.searchParams.get("take") || "50"),

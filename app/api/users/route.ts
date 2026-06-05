@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role") || "";
     const status = searchParams.get("status") || "";
+    
+    // Multi-tenant: extraer el organizationId
+    const organizationId = request.headers.get("x-organization-id");
 
     // Use UserService to get users with filters
     const response = await userService.getUsers({
@@ -28,6 +31,7 @@ export async function GET(request: NextRequest) {
       search: search || undefined,
       role: role || undefined,
       status: status || undefined,
+      organizationId: organizationId || undefined,
     });
 
     // Return standardized response
@@ -68,7 +72,8 @@ export async function POST(request: NextRequest) {
         {
           firstName: body.firstName,
           lastName: body.lastName,
-        }
+        },
+        auth.organizationId
       );
     } catch (authError: any) {
       // Si el error es que ya existe en Auth, no bloqueamos la creación en Prisma
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Crear el perfil de usuario en Prisma (public.users) — con authId vinculado
-    const response = await userService.createUser({ ...body, authId: authId ?? null });
+    const response = await userService.createUser({ ...body, authId: authId ?? null, organizationId: auth.organizationId });
 
     // Return standardized response
     return NextResponse.json(response, {

@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     );
     const skip = parseInt(request.nextUrl.searchParams.get("skip") || "0");
 
-    const { organizationId } = auth;
+    const { organizationId: authOrgId } = auth;
+    const organizationId = request.headers.get("x-organization-id") || authOrgId;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);

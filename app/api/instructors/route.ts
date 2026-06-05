@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { createInstructorSchema } from "@/lib/schemas";
 
 
@@ -48,6 +49,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const parsed = createInstructorSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -68,7 +75,7 @@ export async function POST(request: NextRequest) {
       await createAuthUser(body.email, authRole, {
         firstName: body.firstName,
         lastName: body.lastName,
-      });
+      }, auth.organizationId);
     } catch (authError: any) {
       const msg = authError?.message ?? "";
       if (!msg.includes("already")) {

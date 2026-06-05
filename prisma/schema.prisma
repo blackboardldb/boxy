@@ -15,24 +15,24 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id                 String              @id @default(cuid())
-  firstName          String
-  lastName           String
-  email              String              @unique
-  authId             String?             @unique // UUID de Supabase Auth — FK formal entre public.users y auth.users
-  phone              String?
-  role               String              @default("user")
-  organizationId     String              @default("org_blacksheep_001")
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt @default(now())
-  dateOfBirth        DateTime?
-  emergencyContact   String?
-  gender             String?
-  formaDePago        String?
-  deletedAt          DateTime?           // Soft delete — ver user-service.ts deleteUser()
+  id               String    @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String    @unique
+  authId           String?   @unique // UUID de Supabase Auth — FK formal entre public.users y auth.users
+  phone            String?
+  role             String    @default("user")
+  organizationId   String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+  dateOfBirth      DateTime?
+  emergencyContact String?
+  gender           String?
+  formaDePago      String?
+  deletedAt        DateTime? // Soft delete — ver user-service.ts deleteUser()
 
   // SaaS Relation
-  memberships        OrganizationMember[]
+  memberships OrganizationMember[]
 
   // Business Relations
   classRegistrations ClassRegistration[]
@@ -139,13 +139,13 @@ model MembershipPlan {
 }
 
 model UserMembership {
-  id                 String          @id @default(cuid())
-  userId             String          @unique
-  organizationId     String
-  planId             String?
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  organizationId String
+  planId         String?
 
   // Estado operativo
-  status             String          @default("pending")
+  status             String    @default("pending")
   startDate          DateTime?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
@@ -153,24 +153,24 @@ model UserMembership {
   membershipType     String?
 
   // Config del plan
-  classLimit         Int             @default(0)
-  disciplineAccess   String          @default("all")
-  allowedDisciplines String[]        @default([])
-  canFreeze          Boolean         @default(false)
-  freezeDurationDays Int             @default(0)
-  autoRenews         Boolean         @default(false)
+  classLimit         Int      @default(0)
+  disciplineAccess   String   @default("all")
+  allowedDisciplines String[] @default([])
+  canFreeze          Boolean  @default(false)
+  freezeDurationDays Int      @default(0)
+  autoRenews         Boolean  @default(false)
 
   // Config del centro
-  allowCancellation  Boolean         @default(true)
-  cancellationHours  Int             @default(6)
-  maxBookingsPerDay  Int             @default(3)
-  autoWaitlist       Boolean         @default(true)
+  allowCancellation Boolean @default(true)
+  cancellationHours Int     @default(6)
+  maxBookingsPerDay Int     @default(3)
+  autoWaitlist      Boolean @default(true)
 
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan               MembershipPlan? @relation(fields: [planId], references: [id])
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan MembershipPlan? @relation(fields: [planId], references: [id])
 
   @@index([userId])
   @@index([organizationId])
@@ -189,18 +189,18 @@ model Organization {
   themePrimaryColor String    @default("#6366f1")
   themeVariant      Int       @default(1) // 1|2|3|4
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt @default(now())
+  updatedAt         DateTime  @default(now()) @updatedAt
   suspendedAt       DateTime?
   suspendedReason   String?
 
   // Original settings column for mapper compatibility
-  settings          Json?
-  isActive          Boolean   @default(true)
+  settings Json?
+  isActive Boolean @default(true)
 
   // SaaS Relations
-  members           OrganizationMember[]
-  payments          OrganizationPayment[]
-  events            SystemEvent[]
+  members  OrganizationMember[]
+  payments OrganizationPayment[]
+  events   SystemEvent[]
 
   @@map("organizations")
   @@schema("public")
@@ -255,10 +255,10 @@ model UserLift {
   organizationId String
   exerciseKey    String
   weight         Float
-  unit           String   // 'kg' | 'lbs'
+  unit           String // 'kg' | 'lbs'
   recordedAt     DateTime @default(now())
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, exerciseKey, recordedAt])
   @@map("user_lifts")
@@ -276,7 +276,7 @@ model UserMonthlyStat {
   planName        String?
   createdAt       DateTime @default(now())
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, periodStart])
   @@index([userId, periodStart(sort: Desc)])
@@ -349,7 +349,7 @@ model OrganizationMember {
 model OrganizationPayment {
   id             String   @id @default(cuid())
   organizationId String
-  amount         Int      // en centavos
+  amount         Int // en centavos
   currency       String   @default("CLP")
   paidAt         DateTime
   method         String?
@@ -366,7 +366,7 @@ model OrganizationPayment {
 model SystemEvent {
   id             String   @id @default(cuid())
   organizationId String
-  type           String   // auth_failure | sync_error | payment_failed
+  type           String // auth_failure | sync_error | payment_failed
   message        String
   metadata       Json?
   createdAt      DateTime @default(now())

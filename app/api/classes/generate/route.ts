@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { localToUTC } from "@/lib/utils";
 import { z } from "zod";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 
 const generateClassesSchema = z.object({
   startDate:   z.string().min(1, "startDate es requerido"),
@@ -15,6 +16,11 @@ const generateClassesSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth();
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const organizationId = auth.organizationId;
+    if (!organizationId) return NextResponse.json({ error: "organizationId is required" }, { status: 403 });
+
     const parsed = generateClassesSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
         const newClass = await prisma.classSession.create({
           data: {
             id: classId,
-            organizationId: discipline.organizationId || "org_blacksheep_001",
+            organizationId,
             disciplineId,
             name: `Class ${time}`,
             dateTime: classDateTimeObj,

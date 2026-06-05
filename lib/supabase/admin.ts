@@ -69,7 +69,8 @@ const DEFAULT_PASSWORDS: Record<"alumno" | "coach" | "admin", string> = {
 export async function createAuthUser(
   email: string,
   role: "alumno" | "coach" | "admin",
-  metadata?: { firstName?: string; lastName?: string }
+  metadata?: { firstName?: string; lastName?: string },
+  organizationId?: string
 ): Promise<string> {
   const supabase = createAdminClient();
 
@@ -93,6 +94,18 @@ export async function createAuthUser(
   }
 
   const authUserId = data.user.id;
+
+  if (organizationId) {
+    const { error: updateError } = await supabase.auth.admin.updateUserById(authUserId, {
+      app_metadata: {
+        organizationId,
+        role,
+      }
+    });
+    if (updateError) {
+      console.error("[createAuthUser] Error updating app_metadata:", updateError);
+    }
+  }
 
   // 2. Insertar (o actualizar) el perfil en public.profiles
   const { error: profileError } = await supabase.from("profiles").upsert(

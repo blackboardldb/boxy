@@ -31,6 +31,7 @@ import {
 } from "@/lib/utils";
 import { MembershipDatePicker } from "./membership-date-picker";
 import { format } from "date-fns";
+import { useMe } from "@/lib/react-query/hooks/useMe";
 
 interface AddStudentModalProps {
   onAddStudent: (student: Omit<FitCenterUserProfile, "id">) => Promise<FitCenterUserProfile | null>;
@@ -57,6 +58,7 @@ const createStudentData = (
     nextPayment: string;
   },
   selectedPlan: MembershipPlan,
+  organizationId: string,
   initialStudent?: FitCenterUserProfile
 ): Omit<FitCenterUserProfile, "id"> => {
   return {
@@ -64,14 +66,14 @@ const createStudentData = (
     lastName: formData.lastName,
     email: formData.email,
     phone: formData.phone,
-    organizationId: initialStudent?.organizationId ?? "org_blacksheep_001",
+    organizationId: initialStudent?.organizationId ?? organizationId,
     // Remover campos undefined para evitar problemas de validación
     ...(formData.formaDePago && { formaDePago: formData.formaDePago }),
     avatarId: "avatar_default",
     role: "user",
     membership: {
       id: initialStudent?.membership?.id || `mem_${Date.now()}`,
-      organizationId: "org_blacksheep_001",
+      organizationId: initialStudent?.membership?.organizationId ?? organizationId,
       organizationName: "BlackSheep CrossFit",
       status: formData.status as MembershipStatus,
       membershipType: selectedPlan.name,
@@ -135,6 +137,7 @@ export function AddStudentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrarIngreso, setRegistrarIngreso] = useState(true);
+  const { data: currentUser } = useMe();
 
   const createInitialFormData = (student?: FitCenterUserProfile) => ({
     firstName: student?.firstName || "",
@@ -265,9 +268,16 @@ export function AddStudentModal({
     setIsSubmitting(true);
     setError(null);
 
+    if (!currentUser?.organizationId) {
+      setError("Error de sesión: No se pudo determinar la organización. Por favor, recarga la página.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const studentData = createStudentData(
       formData,
       selectedPlan,
+      currentUser.organizationId,
       initialStudent
     );
 

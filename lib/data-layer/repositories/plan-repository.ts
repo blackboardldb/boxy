@@ -161,9 +161,10 @@ export class PrismaPlanRepository implements IPlanRepository {
 
   private mapToEntity(p: PlanRow): MembershipPlan {
     const config = (p.config as PlanConfig) || {};
+    if (!config.organizationId) throw new Error("organizationId is required in plan config");
     return {
       id: p.id,
-      organizationId: config.organizationId || "org_blacksheep_001",
+      organizationId: config.organizationId,
       name: p.name,
       description: p.description || "",
       price: p.price,

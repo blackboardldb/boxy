@@ -72,10 +72,12 @@ export class PrismaDisciplineRepository implements IDisciplineRepository {
   }
 
   async create(data: CreateData<Discipline>): Promise<Discipline> {
+    const orgId = (data as { organizationId?: string }).organizationId;
+    if (!orgId) throw new Error("organizationId is required");
     const created = await this.prisma.discipline.create({
       data: {
         id: data.id,
-        organizationId: (data as { organizationId?: string }).organizationId || "org_blacksheep_001",
+        organizationId: orgId,
         name: data.name,
         description: data.description,
         color: data.color || "#3b82f6",

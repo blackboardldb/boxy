@@ -8,13 +8,15 @@ import { prisma } from "@/lib/prisma";
 // Se mantiene como endpoint separado para que el dashboard principal
 // no dependa de esta query al momento de renderizar.
 
-export async function GET() {
+import { NextRequest } from "next/server";
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { organizationId } = auth;
+    const { organizationId: authOrgId } = auth;
+    const organizationId = request.headers.get("x-organization-id") || authOrgId;
 
     // ⚠️ Siempre UTC — evita discrepancias localhost vs Vercel
     const today              = new Date();

@@ -162,7 +162,8 @@ export async function POST(
       const prevPeriodEnd   = user.userMembership.currentPeriodEnd;
       const prevPlanName    = user.userMembership.membershipType ?? "Plan";
       const prevClassLimit  = user.userMembership.classLimit ?? 0;
-      const orgId           = user.organizationId ?? "org_blacksheep_001";
+      const orgId           = user.organizationId;
+      if (!orgId) throw new Error("organizationId is required");
 
       prisma.classRegistration.count({
         where: {
