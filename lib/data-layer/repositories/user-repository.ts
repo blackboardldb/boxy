@@ -246,7 +246,7 @@ export class PrismaUserRepository implements IUserRepository {
         orderBy: params?.orderBy,
         take:    limit,
         skip,
-        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -268,6 +268,7 @@ export class PrismaUserRepository implements IUserRepository {
       where:   params.where as Prisma.UserWhereUniqueInput,
       include: {
         userMembership: true,
+        memberships: true,
         membershipRenewals: {
           where:   { status: { in: ["pending", "scheduled"] } }, // OPT-01: solo accionables
           orderBy: { requestedAt: "desc" },
@@ -302,14 +303,21 @@ export class PrismaUserRepository implements IUserRepository {
         email:            data.email,
         authId:           (data as any).authId ?? null,  // UUID de Supabase Auth
         phone:            data.phone ?? undefined,
-        role:             data.role || "user",
-        organizationId:   orgId,
         gender:           data.gender           ?? undefined,
         dateOfBirth:      data.dateOfBirth       ? new Date(data.dateOfBirth) : undefined,
         emergencyContact: data.emergencyContact  ?? undefined,
-        formaDePago:      data.formaDePago       ?? undefined,
-        // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del create
       },
+    });
+
+    // Crear OrganizationMember
+    await this.prisma.organizationMember.create({
+      data: {
+        userId: created.id,
+        organizationId: orgId,
+        role: (data.role?.toUpperCase() || "ALUMNO") as import("@prisma/client").MemberRole,
+        formaDePago: data.formaDePago ?? undefined,
+        status: "active",
+      }
     });
 
     // Si viene membership en el payload, persistir en UserMembership (tabla relacional)
@@ -324,20 +332,19 @@ export class PrismaUserRepository implements IUserRepository {
     // Re-fetch con relación para que mapToEntity lea desde UserMembership
     const withMembership = await this.prisma.user.findUnique({
       where:   { id: created.id },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
-    return this.mapToEntity(withMembership!);
+    return this.mapToEntity(withMembership as any);
   }
 
   // ── update ────────────────────────────────────────────────────────────────
   // Dual-write Phase 3: actualiza JSONB + upsert en UserMembership.
   async update(id: string, data: UpdateData<FitCenterUserProfile>): Promise<FitCenterUserProfile> {
-    // Obtener organizationId actual del usuario (fuente de verdad)
     const existing = await this.prisma.user.findUnique({
       where:  { id },
-      select: { organizationId: true, userMembership: true },
+      include: { memberships: true, userMembership: true },
     });
-    const orgId = existing?.organizationId;
+    const orgId = existing?.memberships[0]?.organizationId;
     if (!orgId) throw new Error("organizationId is required");
 
     await this.prisma.user.update({
@@ -347,14 +354,24 @@ export class PrismaUserRepository implements IUserRepository {
         lastName:         data.lastName,
         email:            data.email,
         phone:            data.phone       ?? undefined,
-        role:             data.role,
         gender:           data.gender,
         dateOfBirth:      data.dateOfBirth  ? new Date(data.dateOfBirth) : undefined,
         emergencyContact: data.emergencyContact,
-        formaDePago:      data.formaDePago,
-        // HAL-01 Fase 4 Sprint 4: membership JSONB eliminado del update
       },
     });
+
+    if (orgId && (data.role || data.formaDePago)) {
+      const om = existing?.memberships.find(m => m.organizationId === orgId);
+      if (om) {
+        await this.prisma.organizationMember.update({
+          where: { id: om.id },
+          data: {
+            role: (data.role ? data.role.toUpperCase() : undefined) as import("@prisma/client").MemberRole | undefined,
+            formaDePago: data.formaDePago,
+          }
+        });
+      }
+    }
 
     // Si viene membership en el payload, bifurcar según fecha de inicio:
     //   Fecha futura  → crear MembershipRenewal { status: 'scheduled' } — NO tocar UserMembership
@@ -448,17 +465,16 @@ export class PrismaUserRepository implements IUserRepository {
     // Re-fetch con relación
     const updated = await this.prisma.user.findUnique({
       where:   { id },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
-    return this.mapToEntity(updated!);
+    return this.mapToEntity(updated as any);
   }
 
   // ── delete ────────────────────────────────────────────────────────────────
   async delete(id: string): Promise<FitCenterUserProfile> {
-    // Leer antes de borrar para poder retornar el entity (CASCADE borra UserMembership)
     const toDelete = await this.prisma.user.findUnique({
       where:   { id },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
     if (!toDelete) throw new Error(`User ${id} not found`);
     const entity = this.mapToEntity(toDelete);
@@ -476,9 +492,9 @@ export class PrismaUserRepository implements IUserRepository {
 
     const withMembership = await this.prisma.user.findUnique({
       where:   { id },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
-    return this.mapToEntity(withMembership!);
+    return this.mapToEntity(withMembership as any);
   }
 
   // ── count ─────────────────────────────────────────────────────────────────
@@ -491,16 +507,15 @@ export class PrismaUserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
       where:   { email },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },    // ← HAL-01
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
     return user ? this.mapToEntity(user) : null;
   }
 
-  // ── findByRole ────────────────────────────────────────────────────────────
   async findByRole(role: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
-      where:   { role, deletedAt: null },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },    // ← HAL-01
+      where:   { memberships: { some: { role: role.toUpperCase() as import("@prisma/client").MemberRole } }, deletedAt: null },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
     return users.map((u) => this.mapToEntity(u));
   }
@@ -511,7 +526,7 @@ export class PrismaUserRepository implements IUserRepository {
   async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
     const users = await this.prisma.user.findMany({
       where:   { userMembership: { status }, deletedAt: null },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
     return users.map((u) => this.mapToEntity(u));
   }
@@ -565,18 +580,20 @@ export class PrismaUserRepository implements IUserRepository {
 
     const updated = await this.prisma.user.findUnique({
       where:   { id: userId },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
+      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
     });
-    return this.mapToEntity(updated!);
+    return this.mapToEntity(updated as any);
   }
 
   // ── mapToEntity ───────────────────────────────────────────────────────────
   // HAL-01 Fase 4 Sprint 4: Lee exclusivamente desde userMembership (tabla relacional).
   // El fallback JSONB fue eliminado — la columna membership se dropeará en Sprint 4.
-  private mapToEntity(prismaUser: UserWithMembership): FitCenterUserProfile {
+  private mapToEntity(prismaUser: any): FitCenterUserProfile {
     const membership = prismaUser.userMembership
       ? mapUserMembershipRow(prismaUser.userMembership)
       : undefined;
+
+    const orgMember = prismaUser.memberships?.[0];
 
     return {
       id:               prismaUser.id,
@@ -585,14 +602,14 @@ export class PrismaUserRepository implements IUserRepository {
       email:            prismaUser.email,
       authId:           prismaUser.authId ?? null,
       phone:            prismaUser.phone,
-      role:             prismaUser.role,
-      organizationId:   prismaUser.organizationId,
+      role:             orgMember?.role?.toLowerCase() || "user",
+      organizationId:   orgMember?.organizationId || "",
       gender:           prismaUser.gender           ?? undefined,
       dateOfBirth:      prismaUser.dateOfBirth
         ? new Date(prismaUser.dateOfBirth).toISOString().split("T")[0]
         : undefined,
       emergencyContact: prismaUser.emergencyContact ?? undefined,
-      formaDePago:      prismaUser.formaDePago      ?? undefined,
+      formaDePago:      orgMember?.formaDePago      ?? undefined,
       membership:       membership as import("../../types").FitCenterUserProfile["membership"],
       membershipRenewals: prismaUser.membershipRenewals,
     } as FitCenterUserProfile;

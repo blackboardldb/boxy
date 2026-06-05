@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const renewals = await prisma.membershipRenewal.findMany({
       where: {
         status,
-        user: { organizationId },
+        user: { memberships: { some: { organizationId } } },
       },
       include: {
         user: {

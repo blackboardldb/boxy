@@ -38,8 +38,9 @@ export async function POST(
     // 1. Verificar que el usuario existe y tiene una UserMembership
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { userMembership: true },
+      include: { userMembership: true, memberships: { select: { organizationId: true }, take: 1 } },
     });
+    const orgId = user?.memberships?.[0]?.organizationId;
 
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -145,7 +146,7 @@ export async function POST(
         },
         create: {
           userId,
-          organizationId: user.organizationId,
+          organizationId: orgId!,
           status: "active",
           planId: planData.id || null,
           membershipType: planData.name,
@@ -162,7 +163,7 @@ export async function POST(
           status: "approved",
           processedAt: new Date(),
           amount: planData.price, // ← monto guardado para historial
-          organizationId: user.organizationId, // ← denormalización para RLS e índices
+          organizationId: orgId!, // ← denormalización para RLS e índices
           notes: `Aprobado. Período: ${periodStart} → ${periodEnd}`,
           startDate: new Date(periodStart + "T00:00:00"), // ← fix: necesario para historial y periodsCompleted
           renewalDetails: {
@@ -188,7 +189,6 @@ export async function POST(
       const prevPeriodEnd   = prevMembership.currentPeriodEnd;
       const prevPlanName    = prevMembership.membershipType ?? "Plan";
       const prevClassLimit  = prevMembership.classLimit ?? 0;
-      const orgId           = user.organizationId;
       if (!orgId) throw new Error("organizationId is required");
 
       // Contar clases reales del período anterior
@@ -237,7 +237,7 @@ export async function POST(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          room: `org_${user.organizationId}`,
+          room: `org_${orgId}`,
           event: "membership-status-changed",
           data: {
             userId,

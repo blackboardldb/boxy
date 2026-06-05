@@ -50,7 +50,10 @@ export async function POST(
       where: { id: userId },
       select: {
         id: true,
-        organizationId: true,
+        memberships: {
+          select: { organizationId: true },
+          take: 1,
+        },
         userMembership: {
           select: {
             planId: true,
@@ -142,7 +145,7 @@ export async function POST(
         startDate:   startDateAsDate,
         // Solo registrar monto y organizationId si es una transacción real (autoApprove + precio > 0)
         amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
-        organizationId: autoApprove ? user.organizationId : null,
+        organizationId: autoApprove ? (user.memberships?.[0]?.organizationId || null) : null,
         notes: notes ?? null,
         renewalDetails: {
           requestedPlanName:       effectiveName,
@@ -162,7 +165,7 @@ export async function POST(
       const prevPeriodEnd   = user.userMembership.currentPeriodEnd;
       const prevPlanName    = user.userMembership.membershipType ?? "Plan";
       const prevClassLimit  = user.userMembership.classLimit ?? 0;
-      const orgId           = user.organizationId;
+      const orgId           = user.memberships?.[0]?.organizationId;
       if (!orgId) throw new Error("organizationId is required");
 
       prisma.classRegistration.count({

@@ -86,16 +86,14 @@ async function main() {
         email: CENTER_EMAIL,
         firstName: "Admin",
         lastName: "BSFit",
-        role: "admin",
         authId: adminAuthId,
-        organizationId: org.id
       }
     });
     console.log(`✅ Usuario Admin creado en BD: ${CENTER_EMAIL}`);
   } else {
     await prisma.user.update({
       where: { id: adminUser.id },
-      data: { authId: adminAuthId, organizationId: org.id }
+      data: { authId: adminAuthId }
     });
   }
 
@@ -107,16 +105,14 @@ async function main() {
         email: STUDENT_EMAIL,
         firstName: "Sole",
         lastName: "Villarroel",
-        role: "user",
         authId: studentAuthId,
-        organizationId: org.id
       }
     });
     console.log(`✅ Usuario Alumno creado en BD: ${STUDENT_EMAIL}`);
   } else {
     await prisma.user.update({
       where: { id: studentUser.id },
-      data: { authId: studentAuthId, organizationId: org.id }
+      data: { authId: studentAuthId }
     });
   }
 

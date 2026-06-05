@@ -85,11 +85,7 @@ async function createAuthUser(
     return "error";
   }
 
-  // Insertar profile
-  await supabase.from("profiles").upsert(
-    { id: data.user.id, role },
-    { onConflict: "id" }
-  );
+
 
   return "created";
 }
@@ -124,7 +120,7 @@ async function main() {
   console.log(`📋  ALUMNOS → contraseña por defecto: "${PASS_ALUMNO}"\n`);
 
   const allUsers = await prisma.user.findMany({
-    select: { email: true, firstName: true, lastName: true, role: true },
+    select: { email: true, firstName: true, lastName: true, memberships: { select: { role: true }, take: 1 } },
   });
 
   let uCreated = 0, uUpdated = 0, uSkipped = 0, uError = 0;
@@ -133,7 +129,7 @@ async function main() {
     const email = user.email.toLowerCase();
 
     // Nunca tocar al admin del sistema
-    if (PROTECTED_EMAILS.has(email) || user.role === "admin") {
+    if (PROTECTED_EMAILS.has(email) || user.memberships?.[0]?.role?.toLowerCase() === "admin") {
       console.log(`  🔒  ${email} — admin protegido, se omite`);
       uSkipped++;
       continue;

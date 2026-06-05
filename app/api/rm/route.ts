@@ -22,6 +22,7 @@ export async function POST(req: Request) {
 
     const dbUser = await prisma.user.findFirst({
       where: { email: { equals: user.email, mode: "insensitive" } },
+      include: { memberships: { select: { organizationId: true }, take: 1 } },
     });
 
     if (!dbUser) {
@@ -29,7 +30,10 @@ export async function POST(req: Request) {
     }
 
     const userId = dbUser.id;
-    const organizationId = dbUser.organizationId;
+    const organizationId = dbUser.memberships?.[0]?.organizationId;
+    if (!organizationId) {
+      return NextResponse.json({ error: "User has no organization" }, { status: 400 });
+    }
 
     const body = await req.json();
     const result = createLiftSchema.safeParse(body);

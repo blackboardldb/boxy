@@ -105,7 +105,7 @@ export async function GET(
       where: { email: auth.user.email! },
       select: {
         id: true,
-        organizationId: true,
+        memberships: { select: { organizationId: true }, take: 1 },
         userMembership: {
           select: { startDate: true },
         },
@@ -116,7 +116,7 @@ export async function GET(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
-    const organizationId = dbUser.organizationId;
+    const organizationId = dbUser.memberships?.[0]?.organizationId;
 
 
     // ─── 1. Registros de clase del alumno ────────────────────────────────────

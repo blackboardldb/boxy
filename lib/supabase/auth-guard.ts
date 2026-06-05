@@ -28,29 +28,23 @@ export async function requireAuth(): Promise<AuthResult> {
     return { error: "No autenticado", status: 401 };
   }
 
-  // 1. Intentar obtener el rol y la organización de los metadatos (rápido y evita RLS)
+  // 1. Intentar obtener el rol y la organización de los metadatos
   let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
   let organizationId = (user.app_metadata?.organizationId as string) || (user.user_metadata?.organizationId as string);
 
-  // 2. Si no hay el rol en metadatos, fallback a la tabla profiles
-  if (!role) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    role = profile?.role;
+  // Superadmin: no requiere organizationId
+  if (role === "OWNER" || role === "SUPPORT") {
+    return { user, role, organizationId: "" };
   }
 
-  // Normalizar el rol a minúsculas
-  role = role?.toLowerCase();
+  // Normalizar a mayúsculas para emparejar con los enums
+  role = role?.toUpperCase() || "ALUMNO";
 
-  // Default organization if none found
   if (!organizationId) {
     return { error: "Token sin organizationId. Contacte al administrador.", status: 403 };
   }
 
-  return { user, role: role || "alumno", organizationId };
+  return { user, role, organizationId };
 }
 
 /**
@@ -64,9 +58,19 @@ export async function requireAdmin(): Promise<AuthResult> {
     return auth;
   }
 
-  if (!["admin", "coach"].includes(auth.role)) {
+  if (!["ADMIN", "COACH"].includes(auth.role)) {
     return { error: "Sin permisos", status: 403 };
   }
 
+  return auth;
+}
+
+// Guard exclusivo para /manager
+export async function requireManager(): Promise<AuthResult> {
+  const auth = await requireAuth();
+  if ("error" in auth) return auth;
+  if (!["OWNER", "SUPPORT"].includes(auth.role)) {
+    return { error: "Sin permisos", status: 403 };
+  }
   return auth;
 }

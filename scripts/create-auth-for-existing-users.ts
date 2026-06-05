@@ -66,7 +66,7 @@ async function run() {
 
   // 2. Traer todos los activos sin authId desde Prisma
   const users = await prisma.user.findMany({
-    where: { deletedAt: null, authId: null },
+    where: { deletedAt: null, authId: "" },
     select: { id: true, email: true, firstName: true, lastName: true },
     orderBy: { email: "asc" },
   });
@@ -110,11 +110,7 @@ async function run() {
       continue;
     }
 
-    // Crear perfil en public.profiles
-    await supabase.from("profiles").upsert(
-      { id: data.user.id, role: "alumno" },
-      { onConflict: "id" }
-    );
+
 
     // Persistir authId en Prisma
     await prisma.user.update({
@@ -134,7 +130,7 @@ async function run() {
 
   // ── Verificación final ────────────────────────────────────────────────────
   const sinAuthIdActivos = await prisma.user.count({
-    where: { authId: null, deletedAt: null },
+    where: { authId: "", deletedAt: null },
   });
 
   console.log(`\n── Verificación ─────────────────────────`);

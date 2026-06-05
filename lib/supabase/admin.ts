@@ -107,21 +107,6 @@ export async function createAuthUser(
     }
   }
 
-  // 2. Insertar (o actualizar) el perfil en public.profiles
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      id: authUserId,
-      role,
-    },
-    { onConflict: "id" }
-  );
-
-  if (profileError) {
-    console.error("[createAuthUser] Error creating profile:", profileError);
-    // No lanzar error aquí — el usuario auth ya fue creado correctamente
-    // El middleware leerá profiles pero el login fallará gracefully si falta
-  }
-
   return authUserId;
 }
 

@@ -74,6 +74,69 @@ export const managerService = {
     }));
   },
 
+  /** Crea un centro y su primer admin. */
+  async createOrganization(
+    data: { name: string; slug: string },
+    adminData: { email: string; firstName: string; lastName: string }
+  ) {
+    const { createAuthUser } = await import("@/lib/supabase/admin");
+
+    // 1. Crear organización primero (para obtener ID)
+    const org = await prisma.organization.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        status: "TRIAL",
+        themePrimaryColor: "#6366f1",
+      },
+    });
+
+    // 2. Crear admin en Supabase Auth
+    let authId: string;
+    try {
+      authId = await createAuthUser(
+        adminData.email,
+        "admin", // minúscula para createAuthUser
+        { firstName: adminData.firstName, lastName: adminData.lastName },
+        org.id
+      );
+    } catch (error) {
+      // Rollback org
+      await prisma.organization.delete({ where: { id: org.id } });
+      throw error;
+    }
+
+    // 3. Crear perfil de usuario y membresía de admin
+    try {
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            authId,
+            email: adminData.email,
+            firstName: adminData.firstName,
+            lastName: adminData.lastName,
+          },
+        });
+
+        await tx.organizationMember.create({
+          data: {
+            userId: user.id,
+            organizationId: org.id,
+            role: "ADMIN",
+            status: "active",
+          },
+        });
+      });
+    } catch (error) {
+      // Rollback Auth y Org
+      await import("@/lib/supabase/admin").then((m) => m.deleteAuthUser(authId));
+      await prisma.organization.delete({ where: { id: org.id } });
+      throw error;
+    }
+
+    return org;
+  },
+
   /** Detalle completo de un centro. */
   async getById(id: string): Promise<OrgDetail | null> {
     const org = await prisma.organization.findUnique({
