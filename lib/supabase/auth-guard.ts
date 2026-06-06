@@ -1,4 +1,5 @@
 import { createClient } from "./server";
+import { prisma } from "@/lib/prisma";
 
 interface AuthSuccess {
   user: any;
@@ -41,7 +42,18 @@ export async function requireAuth(): Promise<AuthResult> {
   role = role?.toUpperCase() || "ALUMNO";
 
   if (!organizationId) {
-    return { error: "Token sin organizationId. Contacte al administrador.", status: 403 };
+    // Resolver desde organization_members si no está en el token
+    const member = await prisma.organizationMember.findFirst({
+      where: { user: { authId: user.id } },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!member) {
+      return { error: "Sin membresía activa en ningún centro.", status: 403 };
+    }
+
+    organizationId = member.organizationId;
+    role = member.role;
   }
 
   return { user, role, organizationId };

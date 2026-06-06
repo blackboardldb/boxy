@@ -70,22 +70,21 @@ export async function GET(request: NextRequest) {
             SUM(CASE WHEN um."startDate" >= ${firstOfMonth} THEN 1 ELSE 0 END)           AS "newThisMonth"
           FROM "users" u
           LEFT JOIN "user_memberships" um ON um."userId" = u.id
-          WHERE u."organizationId" = ${organizationId}
+          JOIN "organization_members" om ON om."userId" = u.id
+          WHERE om."organizationId" = ${organizationId}
+            AND om.role = 'ALUMNO'
             AND u."deletedAt" IS NULL
-            AND u.role = 'user'
         ),
         renewal_pending AS (
           SELECT COUNT(*) AS cnt
           FROM "membership_renewals" mr
-          JOIN "users" u ON mr."userId" = u.id
           WHERE mr.status = 'pending'
-            AND u."organizationId" = ${organizationId}
+            AND mr."organizationId" = ${organizationId}
         ),
         revenue AS (
           SELECT COALESCE(SUM(mr.amount), 0)::float AS "monthlyRevenue"
           FROM "membership_renewals" mr
-          JOIN "users" u ON mr."userId" = u.id
-          WHERE u."organizationId" = ${organizationId}
+          WHERE mr."organizationId" = ${organizationId}
             AND mr.status  = 'approved'
             AND mr.amount  IS NOT NULL
             AND mr."processedAt" >= ${firstOfMonth}

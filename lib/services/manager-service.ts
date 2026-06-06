@@ -11,6 +11,8 @@ export interface OrgSummary {
   createdAt: Date;
   memberCount: number;
   lastPayment: Date | null;
+  billingCycle: string | null;
+  billingPeriodEnd: Date | null;
 }
 
 export interface OrgDetail {
@@ -23,6 +25,15 @@ export interface OrgDetail {
   themePrimaryColor: string;
   themeVariant: number;
   createdAt: Date;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  ownerName: string | null;
+  ownerLastName: string | null;
+  ownerRut: string | null;
+  billingPlan: string | null;
+  billingCycle: string | null;
+  billingPeriodEnd: Date | null;
   members: {
     id: string;
     role: string;
@@ -44,6 +55,26 @@ export interface OrgDetail {
     message: string;
     createdAt: Date;
   }[];
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): Date {
+  const d = new Date(fromDate);
+  const currentDay = d.getDate();
+  const targetDay = cycle === 'B' ? 25 : 10;
+  
+  if (currentDay <= targetDay) {
+    // Vence este mes
+    d.setDate(targetDay);
+  } else {
+    // Vence el próximo mes
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(targetDay);
+  }
+  // Al final del día
+  d.setHours(23, 59, 59, 999);
+  return d;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -71,15 +102,29 @@ export const managerService = {
       createdAt: org.createdAt,
       memberCount: org._count.members,
       lastPayment: org.payments[0]?.paidAt ?? null,
+      billingCycle: org.billingCycle,
+      billingPeriodEnd: org.billingPeriodEnd,
     }));
   },
 
   /** Crea un centro y su primer admin. */
   async createOrganization(
-    data: { name: string; slug: string },
+    data: { 
+      name: string; 
+      slug: string; 
+      billingCycle: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      ownerName?: string;
+      ownerLastName?: string;
+      ownerRut?: string;
+    },
     adminData: { email: string; firstName: string; lastName: string }
   ) {
     const { createAuthUser } = await import("@/lib/supabase/admin");
+
+    const billingPeriodEnd = calculateBillingPeriodEnd(data.billingCycle);
 
     // 1. Crear organización primero (para obtener ID)
     const org = await prisma.organization.create({
@@ -88,6 +133,14 @@ export const managerService = {
         slug: data.slug,
         status: "TRIAL",
         themePrimaryColor: "#6366f1",
+        billingCycle: data.billingCycle,
+        billingPeriodEnd,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        ownerName: data.ownerName,
+        ownerLastName: data.ownerLastName,
+        ownerRut: data.ownerRut,
       },
     });
 
@@ -163,6 +216,15 @@ export const managerService = {
       themePrimaryColor: org.themePrimaryColor,
       themeVariant: org.themeVariant,
       createdAt: org.createdAt,
+      email: org.email,
+      phone: org.phone,
+      address: org.address,
+      ownerName: org.ownerName,
+      ownerLastName: org.ownerLastName,
+      ownerRut: org.ownerRut,
+      billingPlan: org.billingPlan,
+      billingCycle: org.billingCycle,
+      billingPeriodEnd: org.billingPeriodEnd,
       members: org.members.map((m) => ({
         id: m.id,
         role: m.role,
@@ -184,12 +246,23 @@ export const managerService = {
     status: OrgStatus,
     reason?: string
   ): Promise<void> {
+    const org = await prisma.organization.findUnique({ where: { id } });
+    if (!org) throw new Error("Centro no encontrado");
+
+    let billingPeriodEnd = org.billingPeriodEnd;
+    
+    // Si se activa manualmente (TRIAL->ACTIVE o SUSPENDED->ACTIVE), recalculamos el próximo vencimiento
+    if (status === 'ACTIVE' && org.status !== 'ACTIVE') {
+       billingPeriodEnd = calculateBillingPeriodEnd(org.billingCycle ?? 'A');
+    }
+
     await prisma.organization.update({
       where: { id },
       data: {
         status,
-        suspendedAt: status === "SUSPENDED" ? new Date() : null,
-        suspendedReason: status === "SUSPENDED" ? (reason ?? null) : null,
+        suspendedAt: (status === "SUSPENDED" || status === "CANCELED") ? new Date() : null,
+        suspendedReason: status === "SUSPENDED" ? (reason ?? null) : (status === "CANCELED" ? "canceled" : null),
+        billingPeriodEnd,
       },
     });
 
@@ -197,11 +270,13 @@ export const managerService = {
     await prisma.systemEvent.create({
       data: {
         organizationId: id,
-        type: status === "SUSPENDED" ? "org_suspended" : "org_activated",
+        type: status === "SUSPENDED" ? "org_suspended" : (status === "CANCELED" ? "org_canceled" : "org_activated"),
         message:
           status === "SUSPENDED"
             ? `Centro suspendido. Razón: ${reason ?? "sin especificar"}`
-            : "Centro reactivado por el manager.",
+            : status === "CANCELED"
+            ? "Centro cancelado definitivamente."
+            : `Centro reactivado/activado por el manager. Razón: ${reason ?? "sin especificar"}`,
       },
     });
   },
@@ -217,15 +292,45 @@ export const managerService = {
       paidAt?: Date;
     }
   ) {
-    return prisma.organizationPayment.create({
-      data: {
-        organizationId,
-        amount: data.amount,
-        currency: data.currency ?? "CLP",
-        method: data.method,
-        notes: data.notes,
-        paidAt: data.paidAt ?? new Date(),
-      },
+    return prisma.$transaction(async (tx) => {
+      const payment = await tx.organizationPayment.create({
+        data: {
+          organizationId,
+          amount: data.amount,
+          currency: data.currency ?? "CLP",
+          method: data.method,
+          notes: data.notes,
+          paidAt: data.paidAt ?? new Date(),
+        },
+      });
+
+      const org = await tx.organization.findUnique({ where: { id: organizationId } });
+      if (org) {
+        const cycle = org.billingCycle ?? 'A';
+        const newBillingEnd = calculateBillingPeriodEnd(cycle, data.paidAt ?? new Date());
+
+        const isSuspended = org.status === 'SUSPENDED';
+
+        await tx.organization.update({
+          where: { id: organizationId },
+          data: {
+            billingPeriodEnd: newBillingEnd,
+            ...(isSuspended ? { status: 'ACTIVE', suspendedAt: null, suspendedReason: null } : {})
+          }
+        });
+
+        if (isSuspended) {
+          await tx.systemEvent.create({
+            data: {
+              organizationId,
+              type: "org_activated",
+              message: "Centro reactivado automáticamente por registro de pago.",
+            }
+          });
+        }
+      }
+
+      return payment;
     });
   },
 };

@@ -200,6 +200,7 @@ model Organization {
   // Billing con Boxy
   billingPlan      String?    // 'boxy_base' por ahora
   billingPeriodEnd DateTime?  // vencimiento del trial o período pagado
+  billingCycle     String?    // 'A' (día 1) o 'B' (día 15)
 
   // Original settings column for mapper compatibility
   settings Json?

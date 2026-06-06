@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const org = await managerService.createOrganization(
-      { name: body.name, slug: body.slug },
+      { name: body.name, slug: body.slug, billingCycle: "A" },
       { email: body.adminEmail, firstName: body.adminFirstName, lastName: body.adminLastName }
     );
 

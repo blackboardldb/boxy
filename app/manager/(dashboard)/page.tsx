@@ -1,6 +1,7 @@
 import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { PaymentModal } from "./centros/components/payment-modal";
 
 export default async function ManagerPage() {
   await requireManager();
@@ -26,9 +27,17 @@ export default async function ManagerPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Centros</h1>
-        <span className="text-zinc-500 text-sm">{organizations.length} centros registrados</span>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Centros</h1>
+          <span className="text-zinc-500 text-sm">{organizations.length} centros registrados</span>
+        </div>
+        <Link
+          href="/manager/centros/nuevo"
+          className="bg-white text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
+        >
+          Crear nuevo centro
+        </Link>
       </div>
 
       {organizations.length === 0 ? (
@@ -63,7 +72,8 @@ export default async function ManagerPage() {
                   <td className="px-4 py-3 text-zinc-500">
                     {new Date(org.createdAt).toLocaleDateString("es-CL")}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-right space-x-3">
+                    <PaymentModal organizationId={org.id} />
                     <Link
                       href={`/manager/centros/${org.id}`}
                       className="text-zinc-400 hover:text-white transition-colors text-xs underline underline-offset-2"

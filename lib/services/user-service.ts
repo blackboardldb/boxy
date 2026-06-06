@@ -39,12 +39,17 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     // Build where clause
     const conditions: any[] = [];
 
-    if (params?.role) {
-      conditions.push({ role: params.role });
-    }
-
-    if (params?.organizationId) {
-      conditions.push({ organizationId: params.organizationId });
+    if (params?.organizationId || params?.role) {
+      conditions.push({
+        memberships: {
+          some: {
+            ...(params.organizationId && { organizationId: params.organizationId }),
+            ...(params.role && { 
+              role: params.role === 'user' ? 'ALUMNO' : params.role.toUpperCase() 
+            }),
+          }
+        }
+      });
     }
 
     if (params?.status) {

@@ -2,6 +2,8 @@ import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { PaymentModal } from "../components/payment-modal";
+import { StatusSwitch } from "../components/status-switch";
 
 export default async function CentroDetailPage({
   params,
@@ -41,11 +43,11 @@ export default async function CentroDetailPage({
             ← Volver
           </Link>
           <h1 className="text-2xl font-bold mt-2">{org.name}</h1>
-          <p className="text-zinc-500 font-mono text-sm">{org.slug} · {org.id}</p>
+          <p className="text-zinc-500 font-mono text-sm">
+            {org.slug} · Ciclo {org.billingCycle || "A"} · Vence: {org.billingPeriodEnd ? new Date(org.billingPeriodEnd).toLocaleDateString("es-CL") : "N/A"}
+          </p>
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${statusColors[org.status] ?? ""}`}>
-          {org.status}
-        </span>
+        <StatusSwitch organizationId={org.id} currentStatus={org.status} />
       </div>
 
       {/* Tabs (static — Fase 5 full implementation) */}
@@ -98,8 +100,9 @@ export default async function CentroDetailPage({
 
       {/* Pagos */}
       <div className="border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
-          💳 Historial de pagos
+        <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 flex items-center justify-between">
+          <span>💳 Historial de pagos</span>
+          <PaymentModal organizationId={org.id} />
         </div>
         {org.payments.length === 0 ? (
           <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin pagos registrados</p>

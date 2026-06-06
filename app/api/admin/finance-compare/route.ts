@@ -36,8 +36,7 @@ export async function GET(request: NextRequest) {
         current_revenue AS (
           SELECT COALESCE(SUM(mr.amount), 0)::float AS val
           FROM "membership_renewals" mr
-          JOIN "users" u ON mr."userId" = u.id
-          WHERE u."organizationId" = ${organizationId}
+          WHERE mr."organizationId" = ${organizationId}
             AND mr.status      = 'approved'
             AND mr.amount      IS NOT NULL
             AND mr."processedAt" >= ${firstOfMonth}
@@ -46,8 +45,7 @@ export async function GET(request: NextRequest) {
         prev_revenue AS (
           SELECT COALESCE(SUM(mr.amount), 0)::float AS val
           FROM "membership_renewals" mr
-          JOIN "users" u ON mr."userId" = u.id
-          WHERE u."organizationId" = ${organizationId}
+          WHERE mr."organizationId" = ${organizationId}
             AND mr.status      = 'approved'
             AND mr.amount      IS NOT NULL
             AND mr."processedAt" >= ${firstOfPrevMonth}
