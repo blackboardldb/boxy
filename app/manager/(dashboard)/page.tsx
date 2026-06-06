@@ -21,6 +21,7 @@ export default async function ManagerPage() {
     TRIAL: "bg-yellow-500/20 text-yellow-400",
     ACTIVE: "bg-green-500/20 text-green-400",
     SUSPENDED: "bg-red-500/20 text-red-400",
+    CANCELED: "bg-zinc-500/20 text-zinc-400",
   };
 
   return (

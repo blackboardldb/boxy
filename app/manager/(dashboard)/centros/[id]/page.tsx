@@ -29,6 +29,7 @@ export default async function CentroDetailPage({
     TRIAL: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     ACTIVE: "bg-green-500/20 text-green-400 border-green-500/30",
     SUSPENDED: "bg-red-500/20 text-red-400 border-red-500/30",
+    CANCELED: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
   };
 
   return (

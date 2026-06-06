@@ -180,13 +180,26 @@ model Organization {
   name              String
   slug              String    @unique // "micentro" → subdominio micentro.boxy.app
   status            OrgStatus @default(TRIAL)
-  managerRole       String    @default("owner")
   themePrimaryColor String    @default("#6366f1")
   themeVariant      Int       @default(1) // 1|2|3|4
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @default(now()) @updatedAt
   suspendedAt       DateTime?
   suspendedReason   String?
+
+  // Datos de contacto del centro
+  email         String?
+  phone         String?
+  address       String?
+
+  // Datos del dueño
+  ownerName     String?
+  ownerLastName String?
+  ownerRut      String?
+
+  // Billing con Boxy
+  billingPlan      String?    // 'boxy_base' por ahora
+  billingPeriodEnd DateTime?  // vencimiento del trial o período pagado
 
   // Original settings column for mapper compatibility
   settings Json?
@@ -345,7 +358,7 @@ model OrganizationMember {
 model OrganizationPayment {
   id             String   @id @default(cuid())
   organizationId String
-  amount         Int // en centavos
+  amount         Int // en centavos — CLP: multiplicar x100 al guardar, dividir x100 al mostrar
   currency       String   @default("CLP")
   paidAt         DateTime
   method         String?
@@ -395,6 +408,7 @@ enum OrgStatus {
   TRIAL
   ACTIVE
   SUSPENDED
+  CANCELED
 
   @@schema("public")
 }
