@@ -20,15 +20,15 @@ import { createClient } from "@/lib/supabase/client";
 import { useNotificationCount } from "@/lib/hooks/useNotificationCount";
 
 const navigationItems = [
-  { name: "Dashboard", href: "/centros", icon: LayoutDashboard, roles: ["admin", "coach"] },
-  { name: "Clases", href: "/centros/clases", icon: ClipboardList, roles: ["admin", "coach"] },
-  { name: "Alumnos", href: "/centros/alumnos", icon: Users, roles: ["admin", "coach"] },
-  { name: "Alertas", href: "/centros/alertas", icon: Bell, roles: ["admin", "coach"], hasDot: true },
-  { name: "Horarios", href: "/centros/horarios", icon: Calendar, roles: ["admin", "coach"] },
-  { name: "Planes", href: "/centros/planes", icon: CreditCard, roles: ["admin"] },
-  { name: "Instructores", href: "/centros/instructores", icon: GraduationCap, roles: ["admin", "coach"] },
-  { name: "Finanzas", href: "/centros/finanzas", icon: LayoutDashboard, roles: ["admin"] },
-  { name: "Configuración", href: "/centros/configuraciones", icon: Settings, roles: ["admin"] },
+  { name: "Dashboard", href: "/hub", icon: LayoutDashboard, roles: ["admin", "coach"] },
+  { name: "Clases", href: "/hub/clases", icon: ClipboardList, roles: ["admin", "coach"] },
+  { name: "Alumnos", href: "/hub/alumnos", icon: Users, roles: ["admin", "coach"] },
+  { name: "Alertas", href: "/hub/alertas", icon: Bell, roles: ["admin", "coach"], hasDot: true },
+  { name: "Horarios", href: "/hub/horarios", icon: Calendar, roles: ["admin", "coach"] },
+  { name: "Planes", href: "/hub/planes", icon: CreditCard, roles: ["admin"] },
+  { name: "Instructores", href: "/hub/instructores", icon: GraduationCap, roles: ["admin", "coach"] },
+  { name: "Finanzas", href: "/hub/finanzas", icon: LayoutDashboard, roles: ["admin"] },
+  { name: "Configuración", href: "/hub/configuraciones", icon: Settings, roles: ["admin"] },
 ];
 
 export function Navigation({ role, onNavigate }: { role: string, onNavigate?: () => void }) {

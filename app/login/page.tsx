@@ -34,7 +34,7 @@ export default function LoginPage() {
     const role = data.user.app_metadata?.role;
 
     if (role === "ADMIN" || role === "COACH") {
-      window.location.href = "/centros";
+      window.location.href = "/hub";
     } else {
       window.location.href = "/alumnos";
     }

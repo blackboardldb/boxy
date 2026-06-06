@@ -113,7 +113,7 @@ export default function AlumnosPage() {
   };
 
   const handleEditStudent = (student: FitCenterUserProfile) => {
-    router.push(`/centros/alumnos/${student.id}`);
+    router.push(`/hub/alumnos/${student.id}`);
   };
 
   const handleDeleteStudent = async (id: string) => {

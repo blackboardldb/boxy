@@ -27,7 +27,7 @@ export default async function AdminLayout({
         <aside className="lg:flex flex-col w-full h-full bg-white shrink-0 rounded-xl 
         overflow-hidden border border-zinc-100 shadow-xl">
           <div className="p-8 border-b border-zinc-50 text-black">
-            <Link href="/centros" className="text-black">
+            <Link href="/hub" className="text-black">
               <Logo size={160} />
             </Link>
           </div>

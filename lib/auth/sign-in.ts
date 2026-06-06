@@ -98,7 +98,7 @@ export async function signIn(
 
   // 5. Redirigir según rol
   if (member.role === "ADMIN" || member.role === "COACH") {
-    redirect("/centros");
+    redirect("/hub");
   }
 
   redirect("/alumnos");
