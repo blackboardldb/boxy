@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PaymentModal } from "../components/payment-modal";
 import { StatusSwitch } from "../components/status-switch";
+import { MembersList } from "../components/members-list";
 
 export default async function CentroDetailPage({
   params,
@@ -53,29 +54,7 @@ export default async function CentroDetailPage({
       {/* Tabs (static — Fase 5 full implementation) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Alumnos */}
-        <div className="lg:col-span-2 border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
-            👥 Miembros ({org.members.length})
-          </div>
-          <div className="divide-y divide-zinc-800">
-            {org.members.length === 0 ? (
-              <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin miembros</p>
-            ) : (
-              org.members.map((m: any) => (
-                <div key={m.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{m.user.firstName} {m.user.lastName}</p>
-                    <p className="text-zinc-500">{m.user.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-zinc-400 text-xs">{m.role}</span>
-                    <p className="text-zinc-600 text-xs">{m.status}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <MembersList members={org.members} />
 
         {/* Eventos */}
         <div className="border border-zinc-800 rounded-xl overflow-hidden">
