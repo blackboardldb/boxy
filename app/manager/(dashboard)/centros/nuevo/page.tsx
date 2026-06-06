@@ -129,6 +129,7 @@ export default function NuevoCentroPage() {
                 onChange={handleChange}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
               />
+              <p className="text-xs text-zinc-500">Opcional. El email de acceso se define abajo.</p>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-zinc-300">Teléfono</label>
@@ -169,7 +170,10 @@ export default function NuevoCentroPage() {
 
         {/* Administrador */}
         <div className="space-y-6">
-          <h2 className="text-lg font-medium border-b border-zinc-800 pb-2">2. Administrador Principal</h2>
+          <div className="border-b border-zinc-800 pb-2">
+            <h2 className="text-lg font-medium">2. Administrador Principal</h2>
+            <p className="text-sm text-zinc-500 mt-1">Este usuario tendrá acceso completo al panel del centro.</p>
+          </div>
           
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1">

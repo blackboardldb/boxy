@@ -240,6 +240,39 @@ export const managerService = {
     };
   },
 
+  /** Actualiza datos de contacto, dueño y billing del centro. */
+  async updateInfo(
+    id: string,
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      ownerName?: string;
+      ownerLastName?: string;
+      ownerRut?: string;
+      billingPlan?: string;
+      billingCycle?: string;
+    }
+  ): Promise<void> {
+    const org = await prisma.organization.findUnique({ where: { id } });
+    if (!org) throw new Error("Centro no encontrado");
+    await prisma.organization.update({
+      where: { id },
+      data: {
+        ...(data.name         && { name: data.name }),
+        ...(data.email        !== undefined && { email: data.email }),
+        ...(data.phone        !== undefined && { phone: data.phone }),
+        ...(data.address      !== undefined && { address: data.address }),
+        ...(data.ownerName    !== undefined && { ownerName: data.ownerName }),
+        ...(data.ownerLastName !== undefined && { ownerLastName: data.ownerLastName }),
+        ...(data.ownerRut     !== undefined && { ownerRut: data.ownerRut }),
+        ...(data.billingPlan  !== undefined && { billingPlan: data.billingPlan }),
+        ...(data.billingCycle !== undefined && { billingCycle: data.billingCycle }),
+      },
+    });
+  },
+
   /** Activa o suspende un centro. */
   async setStatus(
     id: string,
