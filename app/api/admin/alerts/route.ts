@@ -4,12 +4,14 @@ import { requireAdmin } from "@/lib/supabase/auth-guard";
 import webpush from "web-push";
 import { createInAppAlertSchema } from "@/lib/schemas";
 
-// Configurar web-push
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || "mailto:victor@blacksheep.com",
-  process.env.VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
+// Configurar web-push (solo si existen las llaves para evitar quebrar el build de Vercel)
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL || "mailto:victor@blacksheep.com",
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export async function GET() {
   try {
