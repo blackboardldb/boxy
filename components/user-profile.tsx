@@ -1,7 +1,7 @@
 // components/user-profile.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit3, ChevronRight, Lock, Bell, Medal } from "lucide-react";
+import { Edit3, ChevronRight, Lock, Bell, Medal, History } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { FitCenterUserProfile } from "@/lib/types";
@@ -44,6 +44,14 @@ export function UserProfile() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+
+  // Historial de planes — desplegable + paginación
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const historyInitialized = useRef(false);
 
   // Estados para cambio de contraseña
   const [newPassword, setNewPassword] = useState("");
@@ -367,6 +375,177 @@ export function UserProfile() {
             </div>
           </div>
         )}
+
+        {/* Historial de planes contratados — desplegable */}
+        {(() => {
+          const initialApproved = (userData.membershipRenewals ?? []).filter(
+            (r: any) => r.status === 'approved'
+          );
+          if (initialApproved.length === 0 && !historyHasMore) return null;
+
+          const handleOpen = async () => {
+            if (historyOpen) { setHistoryOpen(false); return; }
+            setHistoryOpen(true);
+            if (!historyInitialized.current) {
+              historyInitialized.current = true;
+              setHistoryLoading(true);
+              try {
+                const res = await fetch('/api/me/history?limit=5');
+                const json = await res.json();
+                if (json.success) {
+                  setHistoryItems(json.data ?? []);
+                  setHistoryCursor(json.nextCursor ?? null);
+                  setHistoryHasMore(!!json.nextCursor);
+                }
+              } finally {
+                setHistoryLoading(false);
+              }
+            }
+          };
+
+          const loadMore = async () => {
+            if (historyLoading || !historyHasMore) return;
+            setHistoryLoading(true);
+            try {
+              const url = historyCursor
+                ? `/api/me/history?limit=5&cursor=${encodeURIComponent(historyCursor)}`
+                : '/api/me/history?limit=5';
+              const res = await fetch(url);
+              const json = await res.json();
+              if (json.success) {
+                setHistoryItems(prev => [...prev, ...(json.data ?? [])]);
+                setHistoryCursor(json.nextCursor ?? null);
+                setHistoryHasMore(!!json.nextCursor);
+              }
+            } finally {
+              setHistoryLoading(false);
+            }
+          };
+
+          const displayItems = historyInitialized.current ? historyItems : initialApproved;
+
+          const formatShort = (raw: string | Date | null | undefined) => {
+            if (!raw) return null;
+            try {
+              return format(
+                typeof raw === "string" ? parseISO(raw.toString().substring(0, 10)) : raw,
+                "dd MMM yyyy",
+                { locale: es }
+              );
+            } catch { return null; }
+          };
+
+          const totalCount = initialApproved.length;
+
+          return (
+            <div className="bg-white/5 rounded-xl overflow-hidden">
+              <button
+                id="plan-history-toggle"
+                onClick={handleOpen}
+                className="w-full flex items-center justify-between p-4 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-zinc-400" />
+                  <span className="text-lg font-semibold text-white">Historial de planes</span>
+                  {totalCount > 0 && (
+                    <span className="text-xs bg-white/10 text-zinc-400 px-2 py-0.5 rounded-full">
+                      {totalCount}+
+                    </span>
+                  )}
+                </div>
+                <ChevronRight
+                  className={`w-5 h-5 text-zinc-400 transition-transform duration-200 ${
+                    historyOpen ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {historyOpen && (
+                <div className="px-4 pb-4">
+                  {historyLoading && displayItems.length === 0 ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="flex items-center gap-3 py-3 border-t border-white/5 first:border-0 first:pt-0">
+                          <div className="w-2 h-2 rounded-full bg-zinc-700 flex-shrink-0" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3 bg-zinc-700 rounded w-1/3 animate-pulse" />
+                            <div className="h-2.5 bg-zinc-800 rounded w-1/2 animate-pulse" />
+                          </div>
+                          <div className="h-3 bg-zinc-700 rounded w-16 animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : displayItems.length === 0 ? (
+                    <p className="text-zinc-500 text-sm py-2">Sin planes registrados.</p>
+                  ) : (
+                    <div className="space-y-0">
+                      {displayItems.map((renewal: any, idx: number) => {
+                        const details = (renewal.renewalDetails as any) ?? {};
+                        const planName =
+                          details.requestedPlanName ??
+                          details.membershipType ??
+                          "Plan";
+                        const price =
+                          renewal.amount ??
+                          details.requestedPlanPrice ??
+                          details.monthlyPrice;
+                        const startRaw = renewal.startDate ?? details.startDate ?? renewal.requestedAt;
+                        const endRaw = details.endDate;
+                        const formattedStart = formatShort(startRaw);
+                        const formattedEnd = formatShort(endRaw);
+
+                        return (
+                          <div
+                            key={renewal.id ?? idx}
+                            className="flex items-start gap-3 py-3 border-t border-white/5 first:border-0 first:pt-0"
+                          >
+                            <div className="flex flex-col items-center mt-1.5 flex-shrink-0">
+                              <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                              {idx < displayItems.length - 1 && (
+                                <div className="w-px flex-1 min-h-5 bg-zinc-700/60 mt-1" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium text-sm">{planName}</p>
+                              {(formattedStart || formattedEnd) && (
+                                <p className="text-zinc-400 text-xs mt-0.5">
+                                  {formattedStart ?? "—"}{formattedEnd ? ` › ${formattedEnd}` : ""}
+                                </p>
+                              )}
+                            </div>
+                            {price != null && (
+                              <p className="text-zinc-300 text-sm font-medium flex-shrink-0 tabular-nums">
+                                ${new Intl.NumberFormat("es-CL").format(price)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {historyHasMore && (
+                        <button
+                          id="plan-history-load-more"
+                          onClick={loadMore}
+                          disabled={historyLoading}
+                          className="w-full mt-3 py-2 text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {historyLoading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <span className="w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin" />
+                              Cargando...
+                            </span>
+                          ) : (
+                            "Cargar más planes"
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Estadísticas — card de entrada */}
         {userData.id && (() => {
