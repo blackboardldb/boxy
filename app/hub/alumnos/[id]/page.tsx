@@ -53,10 +53,14 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
 
   // Estado del acordeón de historial — controla la carga diferida
   const [planesOpen, setPlanesOpen] = useState(true); // abierto por defecto (defaultValue=["planes"])
-  const { data: planHistory = [], isLoading: historyLoading } = usePlanHistory(
-    resolvedParams.id,
-    planesOpen
-  );
+  const {
+    data: planHistoryData,
+    isLoading: historyLoading,
+    fetchNextPage: fetchNextPlanHistory,
+    hasNextPage: hasNextPlanHistory,
+    isFetchingNextPage: isFetchingNextPlanHistory,
+  } = usePlanHistory(resolvedParams.id, planesOpen);
+  const planHistory = planHistoryData?.pages.flatMap((page) => page.data) ?? [];
 
   // Password reset state
   const [resetPasswordStatus, setResetPasswordStatus] = useState<"idle" | "loading" | "done">("idle");
@@ -796,6 +800,27 @@ const handleStartDateChange = (newDate: string) => {
                           </div>
                         );
                       })}
+                      
+                      {hasNextPlanHistory && (
+                        <div className="pt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fetchNextPlanHistory()}
+                            disabled={isFetchingNextPlanHistory}
+                            className="w-full text-zinc-600 hover:text-zinc-900 border border-zinc-200 bg-white"
+                          >
+                            {isFetchingNextPlanHistory ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                                <span>Cargando...</span>
+                              </div>
+                            ) : (
+                              "Cargar más planes"
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ) : student?.membership ? (
                     /* Fallback: plan activo sin MembershipRenewal (activado antes del sistema de historial) */

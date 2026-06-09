@@ -85,12 +85,62 @@ export async function GET(request: Request) {
     });
 
     const hasMore = renewals.length > limit;
-    const items = hasMore ? renewals.slice(0, limit) : renewals;
+    const itemsRaw = hasMore ? renewals.slice(0, limit) : renewals;
     const nextCursor = hasMore
-      ? items[items.length - 1].requestedAt.toISOString()
+      ? itemsRaw[itemsRaw.length - 1].requestedAt.toISOString()
       : null;
 
-    return NextResponse.json({ success: true, data: items, nextCursor });
+    const data = itemsRaw.map((r) => {
+      const details = r.renewalDetails as {
+        // Formato A
+        requestedPlanName?:       string;
+        requestedPlanPrice?:      number;
+        requestedPlanDuration?:   number;
+        // Formato B
+        membershipType?:          string;
+        monthlyPrice?:            number;
+        endDate?:                 string | null;
+        // Común a ambos
+        startDate?:               string | null;
+      } | null;
+
+      const planName  = details?.requestedPlanName  ?? details?.membershipType  ?? "Plan";
+      const planPrice = details?.requestedPlanPrice ?? details?.monthlyPrice    ?? null;
+
+      // endDate: disponible en formato B directo, o calculada desde duration en formato A
+      let endDate: string | null = details?.endDate ?? null;
+      if (!endDate && details?.startDate && details?.requestedPlanDuration) {
+        try {
+          const start = new Date(details.startDate + "T00:00:00");
+          start.setMonth(start.getMonth() + Number(details.requestedPlanDuration));
+          start.setDate(start.getDate() - 1); // último día del período
+          endDate = start.toISOString().split("T")[0];
+        } catch {
+          endDate = null;
+        }
+      }
+
+      return {
+        id:            r.id,
+        status:        r.status,
+        planName,
+        startDate:     details?.startDate ?? r.startDate?.toISOString()?.split("T")?.[0] ?? null,
+        endDate,
+        amount:        r.amount ?? planPrice,
+        processedAt:   r.processedAt?.toISOString() ?? null,
+      };
+    });
+
+    // Deduplicar por (planName + startDate):
+    const seen = new Set<string>();
+    const deduplicated = data.filter((item) => {
+      const key = `${item.planName}|${item.startDate ?? ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return NextResponse.json({ success: true, data: deduplicated, nextCursor });
   } catch (error) {
     console.error("[/api/me/history] Error:", error);
     return NextResponse.json(

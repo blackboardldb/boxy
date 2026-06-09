@@ -378,11 +378,6 @@ export function UserProfile() {
 
         {/* Historial de planes contratados — desplegable */}
         {(() => {
-          const initialApproved = (userData.membershipRenewals ?? []).filter(
-            (r: any) => r.status === 'approved'
-          );
-          if (initialApproved.length === 0 && !historyHasMore) return null;
-
           const handleOpen = async () => {
             if (historyOpen) { setHistoryOpen(false); return; }
             setHistoryOpen(true);
@@ -422,13 +417,10 @@ export function UserProfile() {
             }
           };
 
-          // Usar items del servidor si ya se cargaron, si no usar los locales
-          const rawItems = historyInitialized.current ? historyItems : initialApproved;
-          
           // Asegurar orden estricto del más reciente al más antiguo
-          const displayItems = [...rawItems].sort((a: any, b: any) => {
-            const dateA = new Date(a.startDate || a.requestedAt).getTime();
-            const dateB = new Date(b.startDate || b.requestedAt).getTime();
+          const displayItems = [...historyItems].sort((a: any, b: any) => {
+            const dateA = new Date(a.startDate || a.requestedAt || a.processedAt || 0).getTime();
+            const dateB = new Date(b.startDate || b.requestedAt || b.processedAt || 0).getTime();
             return dateB - dateA; // Orden descendente (más reciente primero)
           });
 
@@ -443,7 +435,8 @@ export function UserProfile() {
             } catch { return null; }
           };
 
-          const totalCount = initialApproved.length;
+          // Si ya inicializamos y no hay items, ocultamos toda la sección
+          if (historyInitialized.current && historyItems.length === 0) return null;
 
           return (
             <div className="bg-white/5 rounded-xl overflow-hidden">
@@ -455,11 +448,6 @@ export function UserProfile() {
                 <div className="flex items-center gap-2">
                   <History className="w-5 h-5 text-zinc-400" />
                   <span className="text-lg font-semibold text-white">Historial de planes</span>
-                  {totalCount > 0 && (
-                    <span className="text-xs bg-white/10 text-zinc-400 px-2 py-0.5 rounded-full">
-                      {totalCount}+
-                    </span>
-                  )}
                 </div>
                 <ChevronRight
                   className={`w-5 h-5 text-zinc-400 transition-transform duration-200 ${
@@ -488,19 +476,9 @@ export function UserProfile() {
                   ) : (
                     <div className="space-y-0">
                       {displayItems.map((renewal: any, idx: number) => {
-                        const details = (renewal.renewalDetails as any) ?? {};
-                        const planName =
-                          details.requestedPlanName ??
-                          details.membershipType ??
-                          "Plan";
-                        const price =
-                          renewal.amount ??
-                          details.requestedPlanPrice ??
-                          details.monthlyPrice;
-                        const startRaw = renewal.startDate ?? details.startDate ?? renewal.requestedAt;
-                        const endRaw = details.endDate;
-                        const formattedStart = formatShort(startRaw);
-                        const formattedEnd = formatShort(endRaw);
+                        const { planName, amount, startDate, endDate } = renewal;
+                        const formattedStart = formatShort(startDate);
+                        const formattedEnd = formatShort(endDate);
 
                         return (
                           <div
@@ -521,9 +499,9 @@ export function UserProfile() {
                                 </p>
                               )}
                             </div>
-                            {price != null && (
+                            {amount != null && (
                               <p className="text-zinc-300 text-sm font-medium flex-shrink-0 tabular-nums">
-                                ${new Intl.NumberFormat("es-CL").format(price)}
+                                ${new Intl.NumberFormat("es-CL").format(amount)}
                               </p>
                             )}
                           </div>

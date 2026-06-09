@@ -24,11 +24,19 @@ export async function GET(
     const { id: userId } = await params;
     const { organizationId } = auth;
 
+    const { searchParams } = new URL(_request.url);
+    const cursorRaw = searchParams.get("cursor");
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") ?? "5", 10),
+      50
+    );
+
     const renewals = await prisma.membershipRenewal.findMany({
       where: {
         userId,
         organizationId, // tenant scoping — filtra en SQL, no en JS
         status: { in: ["approved", "scheduled"] },
+        ...(cursorRaw ? { requestedAt: { lt: new Date(cursorRaw) } } : {}),
       },
       select: {
         id: true,
@@ -41,13 +49,14 @@ export async function GET(
       },
       // scheduled primero, luego approved por fecha desc
       orderBy: [{ requestedAt: "desc" }],
+      take: limit + 1,
     });
 
-    // Mapear renewalDetails (JSONB) a campos planos — nunca exponer el JSON crudo al cliente.
-    // Existen dos formatos según el origen del renewal:
-    //   A) Creado por /api/users/[id]/renewal → { requestedPlanName, requestedPlanPrice, requestedPlanDuration, startDate }
-    //   B) Creado por user-repository (plan futuro) → { membershipType, monthlyPrice, startDate, endDate }
-    const data = renewals.map((r) => {
+    const hasMore = renewals.length > limit;
+    const itemsRaw = hasMore ? renewals.slice(0, limit) : renewals;
+    const nextCursor = hasMore ? itemsRaw[itemsRaw.length - 1].requestedAt.toISOString() : null;
+
+    const data = itemsRaw.map((r) => {
       const details = r.renewalDetails as {
         // Formato A
         requestedPlanName?:       string;
@@ -110,7 +119,7 @@ export async function GET(
       return true;
     });
 
-    return NextResponse.json({ success: true, data: deduplicated });
+    return NextResponse.json({ success: true, data: deduplicated, nextCursor });
   } catch (error) {
     console.error("[GET /api/users/[id]/plan-history]", error);
     return NextResponse.json(

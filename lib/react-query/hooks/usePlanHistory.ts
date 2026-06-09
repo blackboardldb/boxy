@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 
 export interface PlanHistoryItem {
@@ -15,6 +15,7 @@ export interface PlanHistoryItem {
 interface PlanHistoryResponse {
   success: boolean;
   data: PlanHistoryItem[];
+  nextCursor: string | null;
 }
 
 export const planHistoryKeys = {
@@ -26,17 +27,18 @@ export const planHistoryKeys = {
  *
  * La carga es diferida: solo fetcha cuando `enabled` es true
  * (es decir, cuando el admin abre el acordeón "Historial de Planes").
- * Las siguientes aperturas reutilizan el caché — sin petición adicional.
  */
 export function usePlanHistory(userId: string, enabled: boolean) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: planHistoryKeys.history(userId),
-    queryFn:  () =>
-      fetchClient<PlanHistoryResponse>(`/users/${userId}/plan-history`).then(
-        (res) => res.data
-      ),
-    enabled:   enabled && Boolean(userId),
-    staleTime: 1000 * 60 * 10, // 10 min — el historial no cambia frecuentemente
-    gcTime:    1000 * 60 * 30,
+    queryFn: ({ pageParam = null }: { pageParam?: string | null }) => {
+      const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}&limit=5` : `?limit=5`;
+      return fetchClient<PlanHistoryResponse>(`/users/${userId}/plan-history${query}`);
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: null,
+    enabled: enabled && Boolean(userId),
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 }
