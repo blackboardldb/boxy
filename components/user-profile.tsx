@@ -1,7 +1,7 @@
 // components/user-profile.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,7 @@ export function UserProfile() {
   const [historyCursor, setHistoryCursor] = useState<string | null>(null);
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const historyInitialized = useRef(false);
+  const [historyReady, setHistoryReady] = useState(false);
 
   // Estados para cambio de contraseña
   const [newPassword, setNewPassword] = useState("");
@@ -138,6 +138,25 @@ export function UserProfile() {
       setEditableEmergencyContact(currentUser.emergencyContact || "");
     }
   }, [currentUser]);
+
+  // Al montar: fetch eager del historial, sin esperar interacción del usuario
+  useEffect(() => {
+    if (!userData?.id) return;
+    setHistoryLoading(true);
+    fetch('/api/me/history?limit=5')
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          setHistoryItems(json.data ?? []);
+          setHistoryCursor(json.nextCursor ?? null);
+          setHistoryHasMore(!!json.nextCursor);
+        }
+      })
+      .finally(() => {
+        setHistoryLoading(false);
+        setHistoryReady(true);
+      });
+  }, [userData?.id]);
 
   const saveNameInfo = async () => {
     if (!userData) return;
@@ -378,24 +397,11 @@ export function UserProfile() {
 
         {/* Historial de planes contratados — desplegable */}
         {(() => {
-          const handleOpen = async () => {
-            if (historyOpen) { setHistoryOpen(false); return; }
-            setHistoryOpen(true);
-            if (!historyInitialized.current) {
-              historyInitialized.current = true;
-              setHistoryLoading(true);
-              try {
-                const res = await fetch('/api/me/history?limit=5');
-                const json = await res.json();
-                if (json.success) {
-                  setHistoryItems(json.data ?? []);
-                  setHistoryCursor(json.nextCursor ?? null);
-                  setHistoryHasMore(!!json.nextCursor);
-                }
-              } finally {
-                setHistoryLoading(false);
-              }
-            }
+          // Solo renderizar si el fetch completó y hay datos
+          if (!historyReady || historyItems.length === 0) return null;
+
+          const handleOpen = () => {
+            setHistoryOpen(!historyOpen);
           };
 
           const loadMore = async () => {
@@ -435,8 +441,7 @@ export function UserProfile() {
             } catch { return null; }
           };
 
-          // Si ya inicializamos y no hay items, ocultamos toda la sección
-          if (historyInitialized.current && historyItems.length === 0) return null;
+          // (La validación de historyReady ya se hace arriba)
 
           return (
             <div className="bg-white/5 rounded-xl overflow-hidden">
