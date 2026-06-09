@@ -422,7 +422,15 @@ export function UserProfile() {
             }
           };
 
-          const displayItems = historyInitialized.current ? historyItems : initialApproved;
+          // Usar items del servidor si ya se cargaron, si no usar los locales
+          const rawItems = historyInitialized.current ? historyItems : initialApproved;
+          
+          // Asegurar orden estricto del más reciente al más antiguo
+          const displayItems = [...rawItems].sort((a: any, b: any) => {
+            const dateA = new Date(a.startDate || a.requestedAt).getTime();
+            const dateB = new Date(b.startDate || b.requestedAt).getTime();
+            return dateB - dateA; // Orden descendente (más reciente primero)
+          });
 
           const formatShort = (raw: string | Date | null | undefined) => {
             if (!raw) return null;
