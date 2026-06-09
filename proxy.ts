@@ -126,7 +126,7 @@ export async function proxy(request: NextRequest) {
 
   const isLoginRoute = pathname === "/login";
   const isProtectedRoute =
-    pathname.startsWith("/alumnos") || pathname.startsWith("/centros");
+    pathname.startsWith("/alumnos") || pathname.startsWith("/hub");
 
   // Sin sesión → redirigir a login del tenant
   if (!user && isProtectedRoute) {
@@ -140,7 +140,7 @@ export async function proxy(request: NextRequest) {
     if (role) requestHeaders.set("x-user-role", role.toLowerCase());
     
     if (role === "ADMIN" || role === "COACH") {
-      return NextResponse.redirect(new URL("/centros", request.url));
+      return NextResponse.redirect(new URL("/hub", request.url));
     }
     return NextResponse.redirect(new URL("/alumnos", request.url));
   }
@@ -151,8 +151,8 @@ export async function proxy(request: NextRequest) {
     if (role) requestHeaders.set("x-user-role", role.toLowerCase());
   }
 
-  // Proteger /centros — solo ADMIN y COACH
-  if (user && pathname.startsWith("/centros")) {
+  // Proteger /hub — solo ADMIN y COACH
+  if (user && pathname.startsWith("/hub")) {
     const role = user.app_metadata?.role as string | undefined;
     if (role !== "ADMIN" && role !== "COACH") {
       return NextResponse.redirect(new URL("/alumnos", request.url));
@@ -169,7 +169,7 @@ export async function proxy(request: NextRequest) {
       const role = user.app_metadata?.role as string | undefined;
       console.log(`[PROXY] User role: ${role}`);
       if (role === "ADMIN" || role === "COACH") {
-        return NextResponse.redirect(new URL("/centros", request.url));
+        return NextResponse.redirect(new URL("/hub", request.url));
       }
       return NextResponse.redirect(new URL("/alumnos", request.url));
     }
@@ -179,7 +179,7 @@ export async function proxy(request: NextRequest) {
   if (user && pathname.startsWith("/alumnos")) {
     const role = user.app_metadata?.role as string | undefined;
     if (role === "ADMIN" || role === "COACH") {
-      return NextResponse.redirect(new URL("/centros", request.url));
+      return NextResponse.redirect(new URL("/hub", request.url));
     }
   }
 
