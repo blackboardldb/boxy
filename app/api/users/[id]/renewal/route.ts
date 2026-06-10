@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
+import { toMidnightUTC } from "@/lib/utils/dates";
 
 // HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
 // Ya no escribe en el JSONB membership.pendingRenewal.
@@ -80,41 +81,25 @@ export async function POST(
       return NextResponse.json({ error: "Plan not found" }, { status: 404 });
     }
 
-    // Construir startDate como Date local si viene en el payload
-    let startDateAsDate: Date | null = null;
-    if (startDate) {
-      const [y, m, d] = startDate.split("-").map(Number);
-      startDateAsDate = new Date(y, m - 1, d); // medianoche local, no UTC
-    }
+    // Construir startDate como medianoche UTC para que la comparación con la DB
+    // sea exacta sin importar la zona horaria del servidor (desarrollo UTC-4 vs Vercel UTC+0).
+    const startDateNormalized = toMidnightUTC(startDate ?? null);
 
     // Usar paymentDate para processedAt si viene (manual admin)
-    let processedAtDate: Date | null = autoApprove ? new Date() : null;
+    let processedAtDate: Date = autoApprove ? new Date() : new Date();
     if (autoApprove && paymentDate) {
-      const [py, pm, pd] = paymentDate.split("-").map(Number);
-      processedAtDate = new Date(py, pm - 1, pd);
+      processedAtDate = toMidnightUTC(paymentDate) ?? new Date();
     }
+
+    // organizationId siempre desde el contexto de autenticación (memberships[0]),
+    // nunca desde el body del request.
+    const orgId = user.memberships?.[0]?.organizationId ?? null;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
       where: { userId, status: "pending" },
       data: { status: "cancelled" },
     });
-
-    // Si hay startDate y autoApprove, cancelar approved previos del mismo periodo
-    // para que el nuevo reemplace sin acumular
-    if (startDateAsDate && autoApprove) {
-      await prisma.membershipRenewal.updateMany({
-        where: {
-          userId,
-          status: "approved",
-          startDate: startDateAsDate,
-        },
-        data: {
-          status: "cancelled",
-          notes: "Reemplazado por renovación posterior del administrador",
-        },
-      });
-    }
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
     const currentPlanIdRaw = user.userMembership?.planId ?? null;
@@ -133,30 +118,62 @@ export async function POST(
     const effectiveDuration   = planDuration   ?? plan.duration;
     const effectiveName       = planName       ?? plan.name;
 
-    // Crear el registro de renovación
-    const renewal = await prisma.membershipRenewal.create({
-      data: {
-        userId,
-        currentPlanId,
-        requestedPlanId: planId,
+    // ── Lógica de upsert en autoApprove ────────────────────────────────────────────
+    // REGLA DE NEGOCIO: si ya existe un renewal aprobado para este
+    // (userId, organizationId, startDate), actualizarlo en lugar de crear uno nuevo.
+    // Solo se crea cuando no existe ninguno para ese período + centro.
+    const renewalData = {
+      currentPlanId,
+      requestedPlanId: planId,
+      paymentMethod,
+      status:      autoApprove ? "approved" : "pending",
+      processedAt: processedAtDate,
+      startDate:   startDateNormalized,
+      amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
+      organizationId: autoApprove ? orgId : null,
+      notes: notes ?? null,
+      renewalDetails: {
+        requestedPlanName:       effectiveName,
+        requestedPlanPrice:      effectivePrice,
+        requestedPlanClassLimit: effectiveClassLimit,
+        requestedPlanDuration:   effectiveDuration,
         paymentMethod,
-        status:      autoApprove ? "approved" : "pending",
-        processedAt: processedAtDate,
-        startDate:   startDateAsDate,
-        // Solo registrar monto y organizationId si es una transacción real (autoApprove + precio > 0)
-        amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
-        organizationId: autoApprove ? (user.memberships?.[0]?.organizationId || null) : null,
-        notes: notes ?? null,
-        renewalDetails: {
-          requestedPlanName:       effectiveName,
-          requestedPlanPrice:      effectivePrice,
-          requestedPlanClassLimit: effectiveClassLimit,
-          requestedPlanDuration:   effectiveDuration,
-          paymentMethod,
-          startDate: startDate ?? null,
-        },
+        startDate: startDate ?? null,
       },
-    });
+    };
+
+    let renewal;
+    if (autoApprove && startDateNormalized && orgId) {
+      // Buscar renewal existente por clave de negocio (userId, organizationId, startDate)
+      const existingApproved = await prisma.membershipRenewal.findFirst({
+        where: {
+          userId,
+          organizationId: orgId,
+          status: { in: ['approved', 'superseded'] },
+          startDate: startDateNormalized,
+        },
+      });
+
+      if (existingApproved) {
+        // Existe → actualizar. Nunca acumular un registro nuevo.
+        renewal = await prisma.membershipRenewal.update({
+          where: { id: existingApproved.id },
+          data: renewalData,
+        });
+        console.log(`[renewal POST autoApprove] Renewal updated for user ${userId}, orgId ${orgId}`);
+      } else {
+        // No existe para este período + centro → crear
+        renewal = await prisma.membershipRenewal.create({
+          data: { userId, ...renewalData },
+        });
+        console.log(`[renewal POST autoApprove] Renewal created for user ${userId}, orgId ${orgId}`);
+      }
+    } else {
+      // Flujo sin autoApprove (alumno solicita renovación) → siempre crear
+      renewal = await prisma.membershipRenewal.create({
+        data: { userId, ...renewalData },
+      });
+    }
 
     // Consolidar período anterior en user_monthly_stats cuando el admin asigna un nuevo plan directamente.
     // Fire-and-forget: no bloquea la respuesta ni falla la operación si hay error.

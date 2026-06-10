@@ -117,11 +117,15 @@ function formatPeriodFull(periodStart: string): string {
 function PeriodChart({ periods }: { periods: PeriodHistory[] }) {
   if (periods.length === 0) return null;
 
-  const maxClasses = Math.max(...periods.map((p) => p.classesAttended));
-  // Si todos los períodos tienen 0 clases (fallback sin datos), usar altura uniforme
+  // Solo los períodos cerrados determinan la escala del gráfico
+  // para que la barra "En curso" no distorsione las alturas.
+  const closedPeriods = periods.filter((p) => !p.isCurrent);
+  const maxClasses = closedPeriods.length > 0
+    ? Math.max(...closedPeriods.map((p) => p.classesAttended))
+    : 0;
   const hasClassData = maxClasses > 0;
-  // Mostrar en orden cronológico en el chart (más antiguo a la izquierda)
-  const chartPeriods = [...periods].reverse();
+  // El array llega ordenado ASC desde el endpoint (más antiguo a la izquierda)
+  // y el período activo ya viene al final — no revertir.
 
   return (
     <div className="bg-white/5 rounded-xl p-4 space-y-4">
@@ -131,13 +135,47 @@ function PeriodChart({ periods }: { periods: PeriodHistory[] }) {
 
       {/* Chart de barras */}
       <div className="flex items-end gap-2 h-28 pt-2">
-        {chartPeriods.map((period, i) => {
+        {periods.map((period) => {
+          if (period.isCurrent) {
+            return (
+              <div
+                key={`chart-current-${period.periodStart}`}
+                className="flex-1 flex flex-col items-center justify-end gap-1 h-full"
+              >
+                {/* Conteo real de clases ya asistidas en el período activo */}
+                {period.classesAttended > 0 ? (
+                  <span className="text-[10px] font-semibold text-lime-400 mb-0.5">
+                    {period.classesAttended}
+                  </span>
+                ) : (
+                  // Ping animado cuando aún no hay clases en el período
+                  <span className="relative flex h-2 w-2 mb-0.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500" />
+                  </span>
+                )}
+                {/* Barra con borde punteado lime */}
+                <div
+                  className="w-full rounded-sm border border-dashed border-lime-400/50 bg-lime-400/10 transition-all duration-300"
+                  style={{ height: "30%" }}
+                />
+                <span className="text-[9px] text-zinc-500 capitalize whitespace-nowrap">
+                  {formatPeriodLabel(period.periodStart)}
+                </span>
+                <span className="text-[9px] text-lime-400/70 whitespace-nowrap truncate max-w-full font-medium">
+                  En curso
+                </span>
+              </div>
+            );
+          }
+
+          // Barra normal — período cerrado y consolidado
           const heightPct = hasClassData
             ? Math.max((period.classesAttended / maxClasses) * 60, 6)
-            : 50; // altura uniforme cuando no hay conteo de clases
+            : 50;
           return (
             <div
-              key={`chart-${i}-${period.periodStart}`}
+              key={`chart-${period.periodStart}`}
               className="flex-1 flex flex-col items-center justify-end gap-1 h-full"
             >
               {period.classesAttended > 0 && (

@@ -18,6 +18,8 @@ export interface PeriodHistory {
   periodEnd: string | null;
   planName: string;
   classesAttended: number;
+  /** true solo para el período activo en curso — no consolidado en user_monthly_stats */
+  isCurrent?: boolean;
 }
 
 export interface UserStatsResponse {
@@ -107,7 +109,13 @@ export async function GET(
         id: true,
         memberships: { select: { organizationId: true }, take: 1 },
         userMembership: {
-          select: { startDate: true },
+          select: {
+            startDate: true,
+            status: true,
+            membershipType: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+          },
         },
       },
     });
@@ -292,7 +300,7 @@ export async function GET(
         FROM user_monthly_stats
         WHERE "userId" = ${userId}
           AND "organizationId" = ${organizationId}
-        ORDER BY "periodStart" DESC
+        ORDER BY "periodStart" ASC
         LIMIT 12
       `;
     } catch {
@@ -308,9 +316,42 @@ export async function GET(
         periodEnd: toDateString(s.periodEnd),
         planName: s.planName ?? "Plan",
         classesAttended: s.classesAttended,
+        isCurrent: false,
       }));
     } else {
       periodHistory = [];
+    }
+
+    // Barra "En curso" — período activo sin consolidar.
+    // Usa el array de registrations ya en memoria (sin query adicional).
+    // organizationId ya está aplicado en el filtro de registrations (línea 137).
+    // No afecta periodsCompleted ni logros — es puramente visual.
+    const um = dbUser.userMembership;
+    if (um?.status === "active" && um.currentPeriodStart) {
+      const activePeriodStart = toDateString(um.currentPeriodStart) ?? "";
+      // Evitar duplicar si user_monthly_stats ya consolidó este período
+      const alreadyConsolidated = periodHistory.some(
+        (p) => p.periodStart === activePeriodStart
+      );
+      if (!alreadyConsolidated) {
+        // Calcular clases ya asistidas en el período activo filtrando en memoria
+        // (registrations ya está filtrado por organizationId y clase pasada)
+        const periodStartMs = um.currentPeriodStart.getTime();
+        const periodEndMs   = um.currentPeriodEnd ? um.currentPeriodEnd.getTime() : Infinity;
+        const currentClassesCount = registrations.filter((r) => {
+          const t = new Date(r.class.dateTime).getTime();
+          return t >= periodStartMs && t <= periodEndMs;
+        }).length;
+
+        // push al final — array ASC, período activo queda a la derecha en el gráfico
+        periodHistory.push({
+          periodStart: activePeriodStart,
+          periodEnd:   toDateString(um.currentPeriodEnd),
+          planName:    um.membershipType ?? "Plan activo",
+          classesAttended: currentClassesCount,
+          isCurrent: true,
+        });
+      }
     }
 
     // ─── Respuesta ────────────────────────────────────────────────────────────

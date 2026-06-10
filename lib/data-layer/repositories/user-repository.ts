@@ -2,6 +2,7 @@ import { UserRepository as IUserRepository, FindManyParams, FindUniqueParams, Cr
 import { FitCenterUserProfile, FitCenterMembership, MembershipStatus } from "../../types";
 import { prisma } from "../../prisma";
 import { Prisma } from "@prisma/client";
+import { toMidnightUTC, toDateString } from "../../utils/dates";
 
 // Tipo inferido de Prisma para un User con su UserMembership incluido.
 type UserWithMembership = Prisma.UserGetPayload<{ include: { userMembership: true, membershipRenewals: true } }>;
@@ -62,12 +63,9 @@ function mapUserMembershipRow(um: NonNullable<UserWithMembership["userMembership
   } as FitCenterMembership;
 }
 
-// ─── Helper: Date | string → "YYYY-MM-DD" (nunca llama .toISOString en un string) ──
-function toDateStr(value: Date | string | null | undefined): string | null {
-  if (!value) return null;
-  if (typeof value === "string") return value.substring(0, 10);
-  return value.toISOString().split("T")[0];
-}
+// ─── Helper: Date | string → "YYYY-MM-DD" ────────────────────────────────────
+// Re-exportado desde lib/utils/dates para compatibilidad interna.
+const toDateStr = toDateString;
 
 // ─── Helper: membership shape → UserMembership upsert data ──────────────────
 // Usado en create() y update() para el dual-write Phase 3.
@@ -82,13 +80,11 @@ function membershipToUpsertData(m: any, organizationId: string) {
     organizationId,
     planId:             safePlanId(m.planId),
     status:             m.status || "inactive",
-    startDate:          m.startDate 
-      ? new Date(m.startDate) 
-      : m.currentPeriodStart 
-        ? new Date(m.currentPeriodStart) 
-        : null,
-    currentPeriodStart: m.currentPeriodStart ? new Date(m.currentPeriodStart) : null,
-    currentPeriodEnd:   m.currentPeriodEnd   ? new Date(m.currentPeriodEnd)   : null,
+    // Normalizar a medianoche UTC para que el timestamp guardado en DB sea
+    // invariante entre entornos (desarrollo UTC-4 vs Vercel UTC+0).
+    startDate:          toMidnightUTC(m.startDate ?? m.currentPeriodStart),
+    currentPeriodStart: toMidnightUTC(m.currentPeriodStart),
+    currentPeriodEnd:   toMidnightUTC(m.currentPeriodEnd),
     monthlyPrice:       typeof m.monthlyPrice === "number" ? m.monthlyPrice : null,
     membershipType:     m.membershipType?.trim() || null,
     classLimit:         typeof m.planConfig?.classLimit === "number" ? m.planConfig.classLimit : 0,
@@ -184,18 +180,39 @@ async function promoteScheduledIfReady(
       );
 
       // Crear renewal approved si no existe (Flujo 2)
+      // Normalizar a medianoche UTC para comparación exacta (evita offset UTC/local)
+      const startDateNormalized = toMidnightUTC(startDate)!;
+
       const existingRenewal = await prisma.membershipRenewal.findFirst({
         where: {
           userId,
-          status: 'approved',
-          startDate: {
-            gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
-            lt: new Date(startDate.toISOString().split('T')[0] + "T23:59:59"),
-          }
+          organizationId: promoted.organizationId,  // scope al centro
+          status: { in: ['approved', 'superseded'] },
+          startDate: startDateNormalized,
         }
       });
 
-      if (!existingRenewal) {
+      if (existingRenewal?.status === 'approved') {
+        // Ya existe un renewal aprobado para este período — actualizarlo
+        await prisma.membershipRenewal.update({
+          where: { id: existingRenewal.id },
+          data: {
+            requestedPlanId: promoted.planId ?? null,
+            currentPlanId:   promoted.planId ?? null,
+            amount:          promoted.monthlyPrice,
+            startDate:       startDateNormalized,
+            renewalDetails: {
+              requestedPlanName:       promoted.membershipType,
+              requestedPlanPrice:      promoted.monthlyPrice,
+              requestedPlanClassLimit: promoted.classLimit,
+              requestedPlanDuration:   1,
+              startDate: toDateString(startDateNormalized),
+            }
+          }
+        });
+        console.log(`[user-repository] Renewal updated (legacy promotion) for user ${userId}`);
+      } else if (!existingRenewal) {
+        // No existe ninguno para este período — crear
         await prisma.membershipRenewal.create({
           data: {
             userId,
@@ -203,15 +220,15 @@ async function promoteScheduledIfReady(
             status: 'approved',
             requestedPlanId: promoted.planId ?? null,
             currentPlanId: promoted.planId ?? null,
-            startDate: startDate,
+            startDate: startDateNormalized,
             processedAt: new Date(),
             amount: promoted.monthlyPrice,
             renewalDetails: {
-              requestedPlanName: promoted.membershipType,
-              requestedPlanPrice: promoted.monthlyPrice,
+              requestedPlanName:       promoted.membershipType,
+              requestedPlanPrice:      promoted.monthlyPrice,
               requestedPlanClassLimit: promoted.classLimit,
-              requestedPlanDuration: 1,
-              startDate: startDate.toISOString().split('T')[0],
+              requestedPlanDuration:   1,
+              startDate: toDateString(startDateNormalized),
             }
           }
         });
@@ -378,9 +395,13 @@ export class PrismaUserRepository implements IUserRepository {
     //   Fecha hoy/pasada → upsert normal en UserMembership
     if (data.membership) {
       const m = data.membership as any;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startDate = m.currentPeriodStart ? new Date(m.currentPeriodStart) : null;
+
+      // Normalizar startDate a medianoche UTC — invariante entre entornos.
+      // Esto garantiza que el timestamp guardado en DB y el usado en búsquedas
+      // sean idénticos sin importar la zona horaria del servidor.
+      const startDate = toMidnightUTC(m.currentPeriodStart);
+
+      const today = toMidnightUTC(new Date())!;
       const isScheduledPlan = startDate !== null && startDate > today;
 
       if (isScheduledPlan) {
@@ -388,14 +409,14 @@ export class PrismaUserRepository implements IUserRepository {
         await this.prisma.membershipRenewal.create({
           data: {
             userId: id,
-            organizationId: orgId,  // necesario para que el filtro de tenant en plan-history lo incluya
-            currentPlanId: m.planId ?? null,
+            organizationId: orgId,
+            currentPlanId:   m.planId ?? null,
             requestedPlanId: m.planId ?? null,
-            status: 'scheduled',
-            paymentMethod: (data as any).formaDePago ?? null,
+            status:          'scheduled',
+            paymentMethod:   (data as any).formaDePago ?? null,
             renewalDetails: {
-              startDate:      m.currentPeriodStart,
-              endDate:        m.currentPeriodEnd,
+              startDate:      toDateString(startDate),
+              endDate:        toDateString(m.currentPeriodEnd),
               monthlyPrice:   m.monthlyPrice,
               classLimit:     m.planConfig?.classLimit ?? 0,
               membershipType: m.membershipType,
@@ -404,59 +425,83 @@ export class PrismaUserRepository implements IUserRepository {
         });
         console.log(`[user-repository] Plan futuro registrado en MembershipRenewal (scheduled) para user ${id}`);
       } else {
-        // Plan inmediato → upsert normal en UserMembership
+        // Plan inmediato → upsert en UserMembership
         const upsertData = membershipToUpsertData(m, orgId);
-        const promoted = await this.prisma.userMembership.upsert({
+        await this.prisma.userMembership.upsert({
           where:  { userId: id },
           create: { userId: id, ...upsertData },
           update: upsertData,
         });
 
-        // Crear renewal approved solo si el periodo cambió o el status pasó a activo (Flujo 1)
-        const oldStart = existing?.userMembership?.currentPeriodStart?.getTime() ?? 0;
-        const newStart = startDate?.getTime() ?? 0;
-        const isNewPeriod = oldStart !== newStart;
-        const becameActive = existing?.userMembership?.status !== 'active' && m.status === 'active';
-        // skipAutomaticRenewal: enviado por /nuevo-plan cuando ya crea el renewal
-        // explícito via POST /renewal. Evita el doble registro financiero.
+        // ── Lógica de renewal: upsert por (userId, organizationId, startDate) ──
+        //
+        // REGLA DE NEGOCIO: Editar cualquier campo del plan vigente sobreescribe
+        // el registro existente. Solo se crea uno nuevo si no existe ninguno
+        // para este período + centro.
+        //
+        // skipAutomaticRenewal: enviado por /nuevo-plan cuando el renewal ya fue
+        // creado explícitamente via POST /renewal. Evita el doble registro.
         const shouldRegisterPayment =
           (data as any).registerPayment !== false &&
           !(data as any).skipAutomaticRenewal;
 
-        if (m.status === 'active' && startDate && (isNewPeriod || becameActive) && shouldRegisterPayment) {
+        if (m.status === 'active' && startDate && shouldRegisterPayment) {
+          // Buscar renewal existente con clave exacta (userId, organizationId, startDate)
+          // incluyendo 'superseded' para poder reactivarlo si fue marcado antes.
           const existingRenewal = await this.prisma.membershipRenewal.findFirst({
             where: {
               userId: id,
-              status: 'approved',
-              startDate: {
-                gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
-                lt: new Date(startDate.toISOString().split('T')[0] + "T23:59:59"),
-              }
-            }
+              organizationId: orgId,   // ← scope al centro — nunca buscar sin esto
+              status: { in: ['approved', 'superseded'] },
+              startDate,               // comparación exacta con valor normalizado
+            },
           });
 
-          if (!existingRenewal) {
+          if (existingRenewal) {
+            // Existe → actualizar. Nunca crear un duplicado.
+            await this.prisma.membershipRenewal.update({
+              where: { id: existingRenewal.id },
+              data: {
+                status:          'approved',
+                requestedPlanId: m.planId ?? null,
+                currentPlanId:   m.planId ?? null,
+                startDate,
+                processedAt:     new Date(),
+                paymentMethod:   (data as any).formaDePago ?? existingRenewal.paymentMethod,
+                amount:          typeof m.monthlyPrice === 'number' ? m.monthlyPrice : null,
+                renewalDetails: {
+                  membershipType: m.membershipType,
+                  monthlyPrice:   m.monthlyPrice,
+                  classLimit:     m.planConfig?.classLimit ?? 0,
+                  startDate:      toDateString(startDate),
+                  endDate:        toDateString(m.currentPeriodEnd),
+                },
+              },
+            });
+            console.log(`[user-repository] Renewal updated (upsert) for user ${id}, orgId ${orgId}`);
+          } else {
+            // No existe para este período + centro → crear
             await this.prisma.membershipRenewal.create({
               data: {
                 userId: id,
                 organizationId: orgId,
-                status: 'approved',
+                status:          'approved',
                 requestedPlanId: m.planId ?? null,
-                currentPlanId: m.planId ?? null,
-                startDate: startDate,
-                processedAt: new Date(),
-                paymentMethod: (data as any).formaDePago ?? null,
-                amount: typeof m.monthlyPrice === "number" ? m.monthlyPrice : null,
+                currentPlanId:   m.planId ?? null,
+                startDate,
+                processedAt:     new Date(),
+                paymentMethod:   (data as any).formaDePago ?? null,
+                amount:          typeof m.monthlyPrice === 'number' ? m.monthlyPrice : null,
                 renewalDetails: {
                   membershipType: m.membershipType,
-                  monthlyPrice: m.monthlyPrice,
-                  classLimit: m.planConfig?.classLimit ?? 0,
-                  startDate: toDateStr(startDate),
-                  endDate:   toDateStr(m.currentPeriodEnd),
-                }
-              }
+                  monthlyPrice:   m.monthlyPrice,
+                  classLimit:     m.planConfig?.classLimit ?? 0,
+                  startDate:      toDateString(startDate),
+                  endDate:        toDateString(m.currentPeriodEnd),
+                },
+              },
             });
-            console.log(`[user-repository] Renewal created automatically for active plan user ${id}`);
+            console.log(`[user-repository] Renewal created for user ${id}, orgId ${orgId}`);
           }
         }
       }
