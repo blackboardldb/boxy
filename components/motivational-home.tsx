@@ -22,7 +22,7 @@ export function MotivationalHome() {
   }, []);
 
   return (
-    <p className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-md mb-6 sm:mb-12 transition-opacity duration-500 text-pretty">
+    <p className="text-white text-2xl sm:text-3xl font font-semibold text-balance max-w-80 md:max-w-md mb-6 transition-opacity duration-500 ">
       {phrase}
     </p>
   );
