@@ -54,6 +54,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     const created = await this.prisma.instructor.create({
       data: {
         id: data.id,
+        organizationId: data.organizationId, // MT-02: columna directa
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -153,11 +154,9 @@ export class PrismaInstructorRepository implements IInstructorRepository {
 
   private mapToEntity(prismaInstructor: InstructorRow): Instructor {
     const profile = (prismaInstructor.profile as InstructorProfile) || {};
-    const orgId = (prismaInstructor as unknown as { organizationId?: string }).organizationId;
-    if (!orgId) throw new Error("organizationId is required for instructor");
     return {
       id: prismaInstructor.id,
-      organizationId: orgId,
+      organizationId: prismaInstructor.organizationId, // MT-02: columna directa
       firstName: prismaInstructor.firstName,
       lastName: prismaInstructor.lastName,
       email: prismaInstructor.email,

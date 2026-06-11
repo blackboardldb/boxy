@@ -28,10 +28,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use PlanService to get plans with filters
+    // MT-01: Filtrar planes por organizationId del tenant autenticado
     const response = await planService.getPlans({
       page,
       limit,
+      organizationId: auth.organizationId,
       search: search || undefined,
       isActive:
         isActive && isActive !== "todos" ? isActive === "true" : undefined,
@@ -64,8 +65,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use PlanService to create plan with validation
-    const response = await planService.createPlan(parsed.data);
+    // MT-01: Inyectar organizationId del admin autenticado al crear el plan
+    const response = await planService.createPlan({
+      ...parsed.data,
+      organizationId: auth.organizationId,
+    });
 
     // Return standardized response
     return NextResponse.json(response, {

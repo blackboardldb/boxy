@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { organizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 import { updateOrganizationSchema } from "@/lib/schemas";
 
 
@@ -30,12 +30,21 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    // MT-04: Requerir admin autenticado — el target es siempre la org del admin
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const rawBody = await request.json();
-    const { id, ...data } = rawBody;
+    // MT-04: Ignorar el `id` del body — usamos auth.organizationId como fuente de verdad.
+    // Si el cliente envía un id diferente, lo descartamos silenciosamente.
+    const { id: _ignored, ...data } = rawBody;
+    const id = auth.organizationId;
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "ID de organización requerido" },
+        { success: false, error: "No se pudo determinar la organización del administrador." },
         { status: 400 }
       );
     }

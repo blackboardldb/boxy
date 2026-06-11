@@ -9,8 +9,20 @@ import { createClassSessionSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   try {
+    // MT-06: Proteger el endpoint — requerir usuario autenticado
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    if (!authUser) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+
+    // Obtener el organizationId del guard para filtrar por tenant (MT-06)
+    const { requireAuth } = await import("@/lib/supabase/auth-guard");
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -22,10 +34,11 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "100"); // Aumentar límite para listados
 
-    // 1. Obtener clases del servicio
+    // 1. Obtener clases del servicio — filtradas por organizationId del tenant
     const response: any = await classService.getClasses({
       page,
       limit,
+      organizationId: auth.organizationId,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       disciplineId: disciplineId || undefined,
@@ -85,6 +98,7 @@ export async function GET(request: NextRequest) {
     });
   }
 }
+
 
 export async function POST(request: NextRequest) {
   try {

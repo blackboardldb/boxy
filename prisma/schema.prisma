@@ -95,18 +95,22 @@ model Discipline {
 }
 
 model Instructor {
-  id        String         @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String         @unique
-  phone     String?
-  role      String         @default("instructor")
-  isActive  Boolean        @default(true)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  profile   Json?
-  classes   ClassSession[]
+  id             String         @id @default(cuid())
+  organizationId String
+  firstName      String
+  lastName       String
+  email          String         @unique
+  phone          String?
+  role           String         @default("instructor")
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  profile        Json?
+  classes        ClassSession[]
 
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@index([email])
   @@index([isActive])
   @@index([role])
@@ -115,18 +119,23 @@ model Instructor {
 }
 
 model MembershipPlan {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  description     String?
-  price           Float
-  duration        Int
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  features        Json?
-  config          Json?
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  price          Float
+  duration       Int
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  features       Json?
+  config         Json?
   userMemberships UserMembership[]
 
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
   @@index([isActive])
   @@index([price])
   @@map("membership_plans")
@@ -203,13 +212,20 @@ model Organization {
   billingCycle     String?    // 'A' (día 1) o 'B' (día 15)
 
   // Original settings column for mapper compatibility
+  // Keys activos: timezone, operatingHours, defaultCancellationHours, description, type, branding
   settings Json?
   isActive Boolean @default(true)
 
   // SaaS Relations
-  members  OrganizationMember[]
-  payments OrganizationPayment[]
-  events   SystemEvent[]
+  members           OrganizationMember[]
+  payments          OrganizationPayment[]
+  events            SystemEvent[]
+  expenses          Expense[]
+  membershipPlans   MembershipPlan[]
+  instructors       Instructor[]
+  membershipRenewals MembershipRenewal[]
+  inAppAlerts       InAppAlert[]
+  pushSubscriptions PushSubscription[]
 
   @@map("organizations")
   @@schema("public")
@@ -235,22 +251,24 @@ model ClassRegistration {
 }
 
 model MembershipRenewal {
-  id              String    @id @default(cuid())
+  id              String       @id @default(cuid())
   userId          String
+  organizationId  String
   currentPlanId   String?
   requestedPlanId String?
-  status          String    @default("pending")
+  status          String       @default("pending")
   paymentMethod   String?
-  requestedAt     DateTime  @default(now())
+  requestedAt     DateTime     @default(now())
   processedAt     DateTime?
   startDate       DateTime?
   notes           String?
   renewalDetails  Json?
   amount          Float?
-  organizationId  String?
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@index([userId])
+  @@index([organizationId])
   @@index([status])
   @@index([requestedAt])
   @@index([userId, startDate, status])
@@ -295,13 +313,17 @@ model UserMonthlyStat {
 }
 
 model Expense {
-  id        String   @id @default(cuid())
-  motivo    String
-  fecha     DateTime
-  monto     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(cuid())
+  organizationId String
+  motivo         String
+  fecha          DateTime
+  monto          Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@index([fecha])
   @@index([createdAt])
   @@map("expenses")
@@ -309,26 +331,34 @@ model Expense {
 }
 
 model InAppAlert {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  type      String
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  organizationId String?   // null = alerta global del sistema; string = alerta específica del centro
+  title          String
+  content        String
+  type           String
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
   @@index([startDate, endDate])
   @@map("in_app_alerts")
   @@schema("public")
 }
 
 model PushSubscription {
-  id           String   @id @default(cuid())
-  userId       String
-  subscription Json
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  subscription   Json
+  createdAt      DateTime @default(now())
 
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([userId, organizationId])
   @@map("push_subscriptions")
   @@schema("public")
 }

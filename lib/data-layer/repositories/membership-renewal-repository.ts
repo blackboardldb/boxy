@@ -60,6 +60,8 @@ export class PrismaMembershipRenewalRepository implements IMembershipRenewalRepo
       data: {
         id: data.id,
         userId: data.requestedBy,
+        // MT-05: organizationId ahora es NOT NULL — requiere valor
+        organizationId: (data as any).organizationId || "",
         requestedPlanId: data.requestedPlanId,
         status: data.status,
         paymentMethod: data.requestedPaymentMethod,

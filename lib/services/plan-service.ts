@@ -22,6 +22,7 @@ export class PlanService extends BaseService<MembershipPlan> {
   async getPlans(params?: {
     page?: number;
     limit?: number;
+    organizationId?: string;
     search?: string;
     isActive?: boolean;
   }): Promise<PaginatedApiResponse<MembershipPlan>> {
@@ -32,6 +33,11 @@ export class PlanService extends BaseService<MembershipPlan> {
 
     // Build where clause
     const where: any = {};
+
+    // MT-01: Filtrar siempre por organizationId del tenant
+    if (params?.organizationId) {
+      where.organizationId = params.organizationId;
+    }
 
     if (params?.isActive !== undefined) {
       where.isActive = params.isActive;
@@ -122,14 +128,20 @@ export class PlanService extends BaseService<MembershipPlan> {
       throw new ValidationError("Plan price must be greater than 0", "price");
     }
 
-    // Check for duplicate names
-    const existingPlans = await this.planRepository.findMany();
+    if (!data.organizationId) {
+      throw new ValidationError("organizationId is required to create a plan", "organizationId");
+    }
+
+    // MT-01: Check for duplicate names scoped to this organization
+    const existingPlans = await this.planRepository.findMany({
+      where: { organizationId: data.organizationId },
+    });
     const duplicateName = existingPlans.items.find(
       (p) => p.name.toLowerCase() === data.name.toLowerCase()
     );
 
     if (duplicateName) {
-      throw new ValidationError("A plan with this name already exists", "name");
+      throw new ValidationError("A plan with this name already exists in this organization", "name");
     }
   }
 
@@ -142,16 +154,19 @@ export class PlanService extends BaseService<MembershipPlan> {
     const updateSchema = generatedSchemas.membershipPlan.partial();
     validateWithSchema(updateSchema, data);
 
-    // Check for duplicate names if name is being changed
+    // MT-01: Check for duplicate names scoped to same organization
     if (data.name && data.name !== existingRecord.name) {
-      const existingPlans = await this.planRepository.findMany();
+      const orgId = existingRecord.organizationId;
+      const existingPlans = await this.planRepository.findMany({
+        where: { organizationId: orgId },
+      });
       const duplicateName = existingPlans.items.find(
         (p) => p.id !== id && p.name.toLowerCase() === data.name.toLowerCase()
       );
 
       if (duplicateName) {
         throw new ValidationError(
-          "A plan with this name already exists",
+          "A plan with this name already exists in this organization",
           "name"
         );
       }

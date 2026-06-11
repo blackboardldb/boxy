@@ -21,6 +21,7 @@ export class ClassService extends BaseService<ClassSession> {
   async getClasses(params?: {
     page?: number;
     limit?: number;
+    organizationId?: string;
     startDate?: string;
     endDate?: string;
     disciplineId?: string;
@@ -39,6 +40,11 @@ export class ClassService extends BaseService<ClassSession> {
 
     // Build where clause
     const where: Record<string, unknown> = {};
+
+    // MT-06: Filtrar por tenant — obligatorio para aislar clases por centro
+    if (params?.organizationId) {
+      where.organizationId = params.organizationId;
+    }
 
     if (params?.disciplineId) {
       where.disciplineId = params.disciplineId;

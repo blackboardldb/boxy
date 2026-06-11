@@ -5,7 +5,7 @@ import { prisma } from "../../prisma";
 import { Prisma } from "@prisma/client";
 
 type PlanRow = Prisma.MembershipPlanGetPayload<Record<string, never>>;
-type PlanConfig = { organizationId?: string; classLimit?: number; disciplineAccess?: string; allowedDisciplines?: string[]; canFreeze?: boolean; freezeDurationDays?: number; autoRenews?: boolean };
+type PlanConfig = { classLimit?: number; disciplineAccess?: string; allowedDisciplines?: string[]; canFreeze?: boolean; freezeDurationDays?: number; autoRenews?: boolean };
 
 export class PrismaPlanRepository implements IPlanRepository {
   private get prisma() {
@@ -53,13 +53,13 @@ export class PrismaPlanRepository implements IPlanRepository {
     const created = await this.prisma.membershipPlan.create({
       data: {
         id: data.id,
+        organizationId: data.organizationId, // MT-01: columna directa
         name: data.name,
         description: data.description,
         price: data.price,
         duration: data.durationInMonths,
         isActive: data.isActive ?? true,
         config: {
-          organizationId: data.organizationId,
           classLimit: data.classLimit,
           disciplineAccess: data.disciplineAccess,
           allowedDisciplines: data.allowedDisciplines,
@@ -86,7 +86,6 @@ export class PrismaPlanRepository implements IPlanRepository {
         isActive: data.isActive,
         config: {
           ...currentConfig,
-          organizationId: data.organizationId !== undefined ? data.organizationId : currentConfig.organizationId,
           classLimit: data.classLimit !== undefined ? data.classLimit : currentConfig.classLimit,
           disciplineAccess: data.disciplineAccess !== undefined ? data.disciplineAccess : currentConfig.disciplineAccess,
           allowedDisciplines: data.allowedDisciplines !== undefined ? data.allowedDisciplines : currentConfig.allowedDisciplines,
@@ -161,10 +160,9 @@ export class PrismaPlanRepository implements IPlanRepository {
 
   private mapToEntity(p: PlanRow): MembershipPlan {
     const config = (p.config as PlanConfig) || {};
-    if (!config.organizationId) throw new Error("organizationId is required in plan config");
     return {
       id: p.id,
-      organizationId: config.organizationId,
+      organizationId: p.organizationId, // MT-01: leer desde columna directa
       name: p.name,
       description: p.description || "",
       price: p.price,

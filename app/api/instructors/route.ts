@@ -8,6 +8,12 @@ import { createInstructorSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   try {
+    // MT-02: Requerir admin autenticado — filtrar instructores por tenant
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
@@ -25,10 +31,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use InstructorService to get instructors with filters
+    // Use InstructorService to get instructors filtered by tenant
     const response = await instructorService.getInstructors({
       page,
       limit,
+      organizationId: auth.organizationId,
       search: search || undefined,
       role: role && role !== "todos" ? role : undefined,
       isActive:
@@ -97,7 +104,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Crear el registro del instructor en Prisma (public.instructors)
-    const response = await instructorService.createInstructor(body);
+    // MT-02: Inyectar organizationId del admin autenticado
+    const response = await instructorService.createInstructor({
+      ...body,
+      organizationId: auth.organizationId,
+    });
 
     // Return standardized response
     return NextResponse.json(response, {

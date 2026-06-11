@@ -37,10 +37,7 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true },
         _count: { id: true },
         where: {
-          OR: [
-            { organizationId: auth.organizationId },
-            { organizationId: null },
-          ],
+          organizationId: auth.organizationId, // MT-05: organizationId NOT NULL, sin OR null
           status: "approved",
           amount: { not: null },
           processedAt: { gte: startDate, lt: endDate },
@@ -49,10 +46,7 @@ export async function GET(request: NextRequest) {
 
       prisma.membershipRenewal.findMany({
         where: {
-          OR: [
-            { organizationId: auth.organizationId },
-            { organizationId: null },
-          ],
+          organizationId: auth.organizationId,
           status: "approved",
           amount: { not: null },
           processedAt: { gte: startDate, lt: endDate },
@@ -71,10 +65,7 @@ export async function GET(request: NextRequest) {
         _sum: { amount: true },
         _count: { id: true },
         where: {
-          OR: [
-            { organizationId: auth.organizationId },
-            { organizationId: null },
-          ],
+          organizationId: auth.organizationId,
           status: "approved",
           amount: { not: null },
           processedAt: { gte: startDate, lt: endDate },
@@ -83,56 +74,24 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ⚠️  TODO(Multi-Tenant) — LEER ANTES DE TOCAR ESTAS QUERIES
-    // ─────────────────────────────────────────────────────────────────────────
-    // PROBLEMA:
-    //   El modelo `Expense` en schema.prisma no tiene `organizationId`, a
-    //   diferencia de `MembershipRenewal` que sí filtra por organización
-    //   (ver query de ingresos más arriba). Estas queries devuelven egresos
-    //   de TODAS las organizaciones globalmente.
-    //
-    // IMPACTO ACTUAL:
-    //   Bajo — hay una sola organización en producción. Los números cuadran.
-    //
-    // IMPACTO FUTURO (multi-sucursal):
-    //   Crítico — cada sucursal vería los egresos de las demás. Los reportes
-    //   financieros serían incorrectos y habría fuga de datos entre organizaciones.
-    //
-    // PARA RESOLVERLO (no hacerlo a medias):
-    //   1. En schema.prisma, agregar al modelo Expense:
-    //        organizationId String?
-    //        organization   Organization? @relation(fields: [organizationId], references: [id])
-    //
-    //   2. Correr `prisma migrate dev` con nombre descriptivo,
-    //      ej: "add-organization-to-expense".
-    //
-    //   3. Hacer backfill manual en producción — asignar el organizationId real
-    //      a todos los registros existentes. NO usar @default() hardcodeado.
-    //
-    //   4. Agregar el filtro en ambas queries de egresos (aggregate y findMany):
-    //        where: {
-    //          organizationId: auth.organizationId,
-    //          fecha: { gte: startDate, lt: endDate },
-    //        }
-    //
-    //   5. Repetir el mismo fix en cualquier otro endpoint que consulte `Expense`.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // Egresos — misma lógica
+    // Egresos — filtrados por organización (mismo patrón que MembershipRenewal arriba)
     const egresosAgg = await prisma.expense.aggregate({
       _sum: { monto: true },
       _count: { id: true },
       where: {
+        organizationId: auth.organizationId,
         fecha: {
           gte: startDate,
           lt: endDate,
         },
       },
     });
+    const totalEgresos  = egresosAgg._sum?.monto ?? 0;
+    const countEgresos  = egresosAgg._count?.id  ?? 0;
 
     const egresosList = await prisma.expense.findMany({
       where: {
+        organizationId: auth.organizationId,
         fecha: {
           gte: startDate,
           lt: endDate,
@@ -143,15 +102,15 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    const totalIngresos = ingresosAgg._sum.amount || 0;
-    const totalEgresos = egresosAgg._sum.monto || 0;
+    const totalIngresos = ingresosAgg._sum?.amount ?? 0;
+    const countIngresos = ingresosAgg._count?.id ?? 0;
     
     // Mapeo limpio sin as any
     const mappedIngresos = ingresosList.map((r) => {
       const details = r.renewalDetails as Record<string, unknown> | null;
       return {
         userId: r.userId,
-        userName: `${r.user?.firstName || ""} ${r.user?.lastName || ""}`.trim() || "Sin nombre",
+        userName: `${(r as any).user?.firstName || ""} ${(r as any).user?.lastName || ""}`.trim() || "Sin nombre",
         planName: (details?.requestedPlanName as string) ?? "—",
         amount: r.amount ?? 0,
         processedAt: r.processedAt?.toISOString(),
@@ -165,9 +124,6 @@ export async function GET(request: NextRequest) {
       date: e.fecha.toISOString(),
     }));
 
-    const countIngresos = ingresosAgg._count.id;
-    const countEgresos = egresosAgg._count.id;
-
     const totalPages = Math.max(
       Math.ceil(countIngresos / limit),
       Math.ceil(countEgresos / limit),
@@ -176,8 +132,8 @@ export async function GET(request: NextRequest) {
 
     const mappedMethods = methodsAgg.map((m) => ({
       method: m.paymentMethod ?? "otro",
-      total: m._sum.amount ?? 0,
-      count: m._count.id,
+      total: m._sum?.amount ?? 0,
+      count: m._count?.id ?? 0,
     }));
 
     return NextResponse.json({

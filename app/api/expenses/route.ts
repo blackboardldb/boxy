@@ -6,14 +6,13 @@ import { createExpenseSchema } from "@/lib/schemas";
 // Tipo para el egreso
 export type Expense = {
   id: string;
+  organizationId: string;
   motivo: string;
   fecha: string; // ISO date
   monto: number;
   createdAt?: string;
   updatedAt?: string;
 };
-
-// El mock storage se ha movido/eliminado para usar solo Prisma
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +27,6 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get("month");
 
     try {
-      // Intentar usar Prisma primero
       let dbExpenses;
 
       if (year && month) {
@@ -41,9 +39,10 @@ export async function GET(request: NextRequest) {
 
         dbExpenses = await prisma.expense.findMany({
           where: {
+            organizationId: auth.organizationId,
             fecha: {
               gte: startDate,
-              lt: endDate,  // límite exclusivo: primer día del mes siguiente
+              lt: endDate,
             },
           },
           orderBy: {
@@ -52,6 +51,9 @@ export async function GET(request: NextRequest) {
         });
       } else {
         dbExpenses = await prisma.expense.findMany({
+          where: {
+            organizationId: auth.organizationId,
+          },
           orderBy: {
             fecha: "desc",
           },
@@ -117,9 +119,9 @@ export async function POST(request: NextRequest) {
     const { motivo, fecha, monto } = parsed.data;
 
     try {
-      // Intentar usar Prisma primero
       const newExpense = await prisma.expense.create({
         data: {
+          organizationId: auth.organizationId, // ← Siempre desde el auth-guard
           motivo: motivo.trim(),
           fecha: new Date(fecha),
           monto: Number(monto),
@@ -166,4 +168,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

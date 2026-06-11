@@ -42,9 +42,12 @@ export async function requireAuth(): Promise<AuthResult> {
   role = role?.toUpperCase() || "ALUMNO";
 
   if (!organizationId) {
-    // Resolver desde organization_members si no está en el token
+    // MT-08: Resolver desde organization_members si no está en el token.
+    // Ordenar por joinedAt DESC para resolver al centro más reciente de forma determinista
+    // si el alumno pertenece a múltiples centros.
     const member = await prisma.organizationMember.findFirst({
       where: { user: { authId: user.id } },
+      orderBy: { joinedAt: "desc" },
       select: { organizationId: true, role: true }
     });
 

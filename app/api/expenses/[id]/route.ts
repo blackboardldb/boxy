@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { updateExpenseSchema } from "@/lib/schemas";
 
 export async function DELETE(
@@ -7,6 +8,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 0. Autenticación y Autorización (faltaba en la versión anterior)
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id } = await params;
 
     if (!id) {
@@ -22,7 +29,35 @@ export async function DELETE(
       );
     }
 
-    // Intentar eliminar del DB (Prisma)
+    // Verificar que el egreso pertenece a la organización del admin (evita borrado cross-tenant)
+    const existing = await prisma.expense.findUnique({
+      where: { id },
+      select: { organizationId: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "Egreso no encontrado",
+            details: `No se encontró un egreso con ID: ${id}`,
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    if (existing.organizationId !== auth.organizationId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: "No autorizado" },
+        },
+        { status: 403 }
+      );
+    }
+
     try {
       const deletedExpense = await prisma.expense.delete({
         where: { id },
@@ -34,7 +69,6 @@ export async function DELETE(
         message: "Egreso eliminado exitosamente",
       });
     } catch (dbError: any) {
-      // Prisma error for not found (P2025)
       if (dbError.code === "P2025") {
         return NextResponse.json(
           {
@@ -69,6 +103,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 0. Autenticación y Autorización
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id } = await params;
 
     if (!id) {
@@ -92,6 +132,35 @@ export async function PUT(
       );
     }
     const { motivo, fecha, monto } = parsed.data;
+
+    // Verificar que el egreso pertenece a la organización del admin (evita mutación cross-tenant)
+    const existing = await prisma.expense.findUnique({
+      where: { id },
+      select: { organizationId: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "Egreso no encontrado",
+            details: `No se encontró un egreso con ID: ${id}`,
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    if (existing.organizationId !== auth.organizationId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: "No autorizado" },
+        },
+        { status: 403 }
+      );
+    }
 
     // Actualizar en DB
     try {

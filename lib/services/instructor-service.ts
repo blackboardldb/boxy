@@ -22,6 +22,7 @@ export class InstructorService extends BaseService<Instructor> {
   async getInstructors(params?: {
     page?: number;
     limit?: number;
+    organizationId?: string;
     search?: string;
     role?: string;
     isActive?: boolean;
@@ -34,6 +35,11 @@ export class InstructorService extends BaseService<Instructor> {
 
     // Build where clause
     const where: any = {};
+
+    // MT-02: Filtrar por organizationId del tenant
+    if (params?.organizationId) {
+      where.organizationId = params.organizationId;
+    }
 
     if (params?.role && params.role !== "todos") {
       where.role = params.role;
@@ -193,7 +199,11 @@ export class InstructorService extends BaseService<Instructor> {
       throw new ValidationError("Valid email is required", "email");
     }
 
-    // Check for duplicate email
+    if (!data.organizationId) {
+      throw new ValidationError("organizationId is required", "organizationId");
+    }
+
+    // MT-02: Check for duplicate email — global (email sigue siendo @unique global)
     const existingInstructors = await this.instructorRepository.findMany();
     const duplicateEmail = existingInstructors.items.find(
       (i) => i.email.toLowerCase() === data.email.toLowerCase()

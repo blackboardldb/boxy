@@ -130,7 +130,8 @@ export async function POST(
       processedAt: processedAtDate,
       startDate:   startDateNormalized,
       amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
-      organizationId: autoApprove ? orgId : null,
+      // MT-05: organizationId es NOT NULL en la BD — usar orgId o cadena vacía como fallback
+      organizationId: orgId ?? "",
       notes: notes ?? null,
       renewalDetails: {
         requestedPlanName:       effectiveName,

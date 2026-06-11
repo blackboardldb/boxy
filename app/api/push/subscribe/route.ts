@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     await prisma.pushSubscription.create({
       data: {
         userId,
+        organizationId: auth.organizationId, // MT-07: scope subscriptions by tenant
         subscription: subscription as import("@prisma/client").Prisma.InputJsonValue,
       },
     });

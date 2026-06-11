@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role") || "";
     const status = searchParams.get("status") || "";
     
-    // Multi-tenant: extraer el organizationId
-    const organizationId = request.headers.get("x-organization-id");
+    // Multi-tenant: usar organizationId del guard autenticado (MT-03)
+    const organizationId = auth.organizationId;
 
     // Use UserService to get users with filters
     const response = await userService.getUsers({
