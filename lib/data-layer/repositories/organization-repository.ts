@@ -3,8 +3,45 @@ import { Organization } from "../../types";
 import { prisma } from "../../prisma";
 import { Prisma } from "@prisma/client";
 
-type OrgRow = { id: string; name: string; settings: Prisma.JsonValue };
+// MT-10: columnas tipadas — ya no se lee desde el JSONB settings
+type OrgRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  orgType: string;
+  timezone: string;
+  operatingHours: Prisma.JsonValue;
+  defaultCancellationHours: number;
+  themePrimaryColor: string;
+};
 
+const ORG_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  orgType: true,
+  timezone: true,
+  operatingHours: true,
+  defaultCancellationHours: true,
+  themePrimaryColor: true,
+} as const;
+
+// DECISIÓN (MT-10, cierre): este repositorio expone solo los campos de
+// configuración operativa del centro (timezone, horarios, branding visual,
+// descripción). Los campos de gestión SaaS — slug, status, billingPlan,
+// billingPeriodEnd, datos de contacto/dueño — viven fuera de este tipo
+// `Organization` y se leen vía Prisma directo en /manager y en
+// /api/organization/route.ts.
+//
+// Son dos vistas del mismo modelo Organization con propósitos distintos:
+// esta es la vista "configuración del centro" (consumida por el contexto
+// de tenant en requireAuth/operación diaria), la otra es la vista
+// "administración SaaS" (consumida por /manager).
+//
+// Si en el futuro /manager necesita leer timezone/operatingHours, o el
+// contexto de tenant necesita leer billingPlan/status, evaluar si conviene
+// unificar en un solo tipo o mantener la separación. Por ahora la separación
+// es intencional, no accidental.
 export class PrismaOrganizationRepository implements IOrganizationRepository {
   private get prisma() {
     return prisma;
@@ -21,13 +58,9 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         orderBy: params?.orderBy,
         take: limit,
         skip,
-        select: {
-          id: true,
-          name: true,
-          settings: true,
-        }
+        select: ORG_SELECT,
       }),
-      this.prisma.organization.count({ where: params?.where })
+      this.prisma.organization.count({ where: params?.where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -41,7 +74,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         totalPages,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
-      }
+      },
     };
   }
 
@@ -51,11 +84,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     }
     const organization = await this.prisma.organization.findUnique({
       where: params.where as Prisma.OrganizationWhereUniqueInput,
-      select: {
-        id: true,
-        name: true,
-        settings: true,
-      }
+      select: ORG_SELECT,
     });
     return organization ? this.mapToEntity(organization) : null;
   }
@@ -63,11 +92,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   async findFirst(): Promise<Organization | null> {
     const result = await this.prisma.organization.findFirst({
       take: 1,
-      select: {
-        id: true,
-        name: true,
-        settings: true,
-      }
+      select: ORG_SELECT,
     });
     return result ? this.mapToEntity(result) : null;
   }
@@ -87,34 +112,32 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         id: data.id,
         name: data.name,
         slug: generatedSlug,
-        isActive: true,
-        settings: {
-          ...(data.settings as Record<string, unknown> || {}),
-          description: data.description,
-          type: data.type,
-          branding: data.branding,
-        },
+        description: data.description,
+        orgType: data.type ?? "gym",
+        timezone: data.settings?.timezone ?? "America/Santiago",
+        operatingHours: data.settings?.operatingHours ?? [],
+        defaultCancellationHours: data.settings?.defaultCancellationHours ?? 6,
+        themePrimaryColor: data.branding?.primaryColor ?? "#6366f1",
       },
+      select: ORG_SELECT,
     });
     return this.mapToEntity(created);
   }
 
   async update(id: string, data: UpdateData<Organization>): Promise<Organization> {
-    const existing = await this.prisma.organization.findUnique({ where: { id } });
-    const currentSettings = (existing?.settings as Record<string, unknown>) || {};
-
+    // Prisma omite campos undefined automáticamente — no se necesita findUnique previo
     const updated = await this.prisma.organization.update({
       where: { id },
       data: {
         name: data.name,
-        settings: {
-          ...currentSettings,
-          ...(data.settings as Record<string, unknown> || {}),
-          ...(data.description !== undefined && { description: data.description }),
-          ...(data.type !== undefined && { type: data.type }),
-          ...(data.branding !== undefined && { branding: data.branding }),
-        } as Prisma.InputJsonValue,
+        description: data.description,
+        orgType: data.type,
+        timezone: data.settings?.timezone,
+        operatingHours: data.settings?.operatingHours,
+        defaultCancellationHours: data.settings?.defaultCancellationHours,
+        themePrimaryColor: data.branding?.primaryColor,
       },
+      select: ORG_SELECT,
     });
     return this.mapToEntity(updated);
   }
@@ -122,6 +145,7 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
   async delete(id: string): Promise<Organization> {
     const deleted = await this.prisma.organization.delete({
       where: { id },
+      select: ORG_SELECT,
     });
     return this.mapToEntity(deleted);
   }
@@ -132,37 +156,31 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
     });
   }
 
+  // MT-10: filtro en DB, no en JS (antes era full table scan en Node)
   async findByType(type: string): Promise<Organization[]> {
     const organizations = await this.prisma.organization.findMany({
-      select: {
-        id: true,
-        name: true,
-        settings: true,
-      }
+      where: { orgType: type },
+      select: ORG_SELECT,
     });
-    return organizations
-      .map((o) => this.mapToEntity(o))
-      .filter(o => o.type === type);
+    return organizations.map((o) => this.mapToEntity(o));
   }
 
-  // Mapper
+  // Mapper limpio — sin castings desde JSONB
   private mapToEntity(prismaOrg: OrgRow): Organization {
-    const settings = (prismaOrg.settings as Record<string, unknown>) || {};
-
-    // Tarea 2: Mantener settings solo con timezone, operatingHours, defaultCancellationHours
-    const filteredSettings = {
-      timezone: settings.timezone || "America/Santiago",
-      operatingHours: settings.operatingHours || [],
-      defaultCancellationHours: settings.defaultCancellationHours || 6,
-    };
-
     return {
       id: prismaOrg.id,
       name: prismaOrg.name,
-      description: (settings.description as string) || "",
-      type: (settings.type as string) || "gym",
-      branding: (settings.branding as Organization["branding"]) || { primaryColor: "#3b82f6", secondaryColor: "#10b981" },
-      settings: filteredSettings as Organization["settings"],
+      description: prismaOrg.description ?? "",
+      type: prismaOrg.orgType,
+      branding: {
+        primaryColor: prismaOrg.themePrimaryColor,
+        secondaryColor: "#10b981", // themeVariant controla variantes, secondaryColor es fijo por ahora
+      },
+      settings: {
+        timezone: prismaOrg.timezone,
+        operatingHours: (prismaOrg.operatingHours as Organization["settings"]["operatingHours"]) ?? [],
+        defaultCancellationHours: prismaOrg.defaultCancellationHours,
+      },
     };
   }
 }

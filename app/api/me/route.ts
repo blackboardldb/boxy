@@ -11,6 +11,12 @@ export async function GET() {
     const user = auth.user;
     const organizationId = auth.organizationId;
 
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true }
+    });
+    const organizationName = org?.name ?? "Centro";
+
     // 1. Buscar en public.users (alumnos/clientes)
     let dbUser: any = await prisma.user.findFirst({
       where: { email: { equals: user.email!, mode: "insensitive" } },
@@ -187,6 +193,7 @@ export async function GET() {
       ? {
           id: um.id,
           organizationId: um.organizationId,
+          organizationName: organizationName,
           status: um.status,
           membershipType: um.membershipType ?? "",
           planId: um.planId ?? undefined,
@@ -249,6 +256,7 @@ export async function GET() {
         ? new Date(dbUser.dateOfBirth).toISOString().split("T")[0]
         : undefined,
       emergencyContact: dbUser.emergencyContact ?? undefined,
+      organizationName,
       membership,
       membershipRenewals: dbUser.membershipRenewals,
     };

@@ -211,10 +211,12 @@ model Organization {
   billingPeriodEnd DateTime?  // vencimiento del trial o período pagado
   billingCycle     String?    // 'A' (día 1) o 'B' (día 15)
 
-  // Original settings column for mapper compatibility
-  // Keys activos: timezone, operatingHours, defaultCancellationHours, description, type, branding
-  settings Json?
-  isActive Boolean @default(true)
+  // Configuración operativa del centro (ex-settings JSONB — MT-10)
+  description              String?
+  orgType                  String   @default("gym")
+  timezone                 String   @default("America/Santiago")
+  operatingHours           Json?
+  defaultCancellationHours Int      @default(6)
 
   // SaaS Relations
   members           OrganizationMember[]

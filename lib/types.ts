@@ -15,6 +15,8 @@ export interface FitCenterUserProfile {
   dateOfBirth?: string; // "1990-05-15" (ISO 8601)
   gender?: string; // "Femenino"
   avatarId?: string; // "avatar_1"
+  organizationName?: string; // Nombre del centro resoluble
+
 
   // NUEVO: Rol del usuario (admin, coach, user/alumno)
   /**
@@ -173,16 +175,10 @@ export interface Organization {
     logoSquareSvg?: string;
   };
 
-  // Configuración operacional del centro (similar a center_config JSONB en la tabla organizations)
+  // Configuración operacional del centro
   settings: {
     timezone: string; // "America/Santiago"
-    currency: string; // "CLP"
-    language: string; // "es"
-
     defaultCancellationHours: number; // 6
-    maxBookingsPerDay: number; // 3
-    waitlistEnabled: boolean; // true
-
     operatingHours: Array<{
       day: DayOfWeek;
       open: string; // "06:00" (HH:mm)
