@@ -62,7 +62,7 @@ export default function CalendarPage() {
 
 
 
-  const { data: disciplinesData } = useDisciplines();
+  const { data: disciplinesData } = useDisciplines({ isActive: "true" });
   const disciplines = disciplinesData ?? [];
   const { data: instructors = [] } = useInstructorsMinimal();
   const registerClass = useRegisterClass();

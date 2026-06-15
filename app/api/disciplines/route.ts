@@ -28,8 +28,15 @@ export async function GET(request: NextRequest) {
       search: search || undefined,
     });
 
-    // Return standardized response
-    return NextResponse.json(response);
+    // Alumnos piden isActive=true → caché 10 min en CDN
+    // Admin pide todas → sin caché
+    const cacheHeader = isActive === "true"
+      ? "public, s-maxage=600, stale-while-revalidate=60"
+      : "no-store";
+
+    return NextResponse.json(response, {
+      headers: { "Cache-Control": cacheHeader },
+    });
   } catch (error) {
     // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
