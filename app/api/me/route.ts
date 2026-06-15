@@ -18,8 +18,8 @@ export async function GET() {
     const organizationName = org?.name ?? "Centro";
 
     // 1. Buscar en public.users (alumnos/clientes)
-    let dbUser: any = await prisma.user.findFirst({
-      where: { email: { equals: user.email!, mode: "insensitive" } },
+    let dbUser: any = await prisma.user.findUnique({
+      where: { email: user.email!.toLowerCase() },
       select: {
         id: true,
         firstName: true,
@@ -31,7 +31,7 @@ export async function GET() {
         emergencyContact: true,
         userMembership: true,    // ← HAL-01: fuente de verdad relacional
         membershipRenewals: {
-          where: { status: { in: ['pending', 'scheduled', 'approved'] } },
+          where: { status: { in: ['pending', 'scheduled'] } },
           orderBy: { requestedAt: 'desc' },
           take: 5,
         },
@@ -40,8 +40,8 @@ export async function GET() {
 
     // 2. Si no es alumno, buscar en public.instructors
     if (!dbUser) {
-      const instructor = await prisma.instructor.findFirst({
-        where: { email: { equals: user.email!, mode: "insensitive" } },
+      const instructor = await prisma.instructor.findUnique({
+        where: { email: user.email!.toLowerCase() },
         select: {
           id: true,
           firstName: true,
