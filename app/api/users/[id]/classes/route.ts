@@ -69,6 +69,7 @@ export async function GET(
         id: true,
         status: true,
         registeredAt: true,
+        classId: true,
         class: {
           select: {
             id: true,
@@ -79,23 +80,30 @@ export async function GET(
             disciplineId: true,
             capacity: true,
             status: true,
-            _count: {
-              select: { registrations: { where: { status: 'registered' } } }
-            }
           }
         }
       },
       orderBy: { class: { dateTime: 'desc' } }
     });
 
+    // Una query agregada para todos los enrolledCounts — elimina N subqueries
+    const classIds = registrationsWithDetails.map(r => r.classId);
+    const enrolledCounts = await prisma.classRegistration.groupBy({
+      by: ['classId'],
+      where: { classId: { in: classIds }, status: 'registered' },
+      _count: { classId: true },
+    });
+    const enrolledCountMap = new Map(
+      enrolledCounts.map(e => [e.classId, e._count.classId])
+    );
+
     const result = registrationsWithDetails.map((reg: any) => ({
       ...reg.class,
       registrationStatus: reg.status,
       registeredAt: reg.registeredAt,
       dateTime: reg.class.dateTime.toISOString(),
-      // Optimization: Send only necessary info for list view
-      enrolledCount: reg.class._count.registrations,
-      isUserRegistered: true
+      enrolledCount: enrolledCountMap.get(reg.classId) ?? 0,
+      isUserRegistered: true,
     }));
 
     return NextResponse.json({
