@@ -179,7 +179,9 @@ export async function POST(
     // Consolidar período anterior en user_monthly_stats cuando el admin asigna un nuevo plan directamente.
     // Fire-and-forget: no bloquea la respuesta ni falla la operación si hay error.
     if (autoApprove && user.userMembership?.currentPeriodStart && user.userMembership?.currentPeriodEnd) {
-      const prevPeriodStart = user.userMembership.currentPeriodStart;
+      const prevPeriodStart = toMidnightUTC(
+        user.userMembership.currentPeriodStart.toISOString().split("T")[0]
+      )!;
       const prevPeriodEnd   = user.userMembership.currentPeriodEnd;
       const prevPlanName    = user.userMembership.membershipType ?? "Plan";
       const prevClassLimit  = user.userMembership.classLimit ?? 0;
