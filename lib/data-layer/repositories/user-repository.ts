@@ -317,7 +317,7 @@ export class PrismaUserRepository implements IUserRepository {
         id:               data.id,
         firstName:        data.firstName,
         lastName:         data.lastName,
-        email:            data.email,
+        email:            data.email.toLowerCase(),
         authId:           (data as any).authId ?? null,  // UUID de Supabase Auth
         phone:            data.phone ?? undefined,
         gender:           data.gender           ?? undefined,
@@ -369,7 +369,7 @@ export class PrismaUserRepository implements IUserRepository {
       data: {
         firstName:        data.firstName,
         lastName:         data.lastName,
-        email:            data.email,
+        email:            data.email ? data.email.toLowerCase() : undefined,
         phone:            data.phone       ?? undefined,
         gender:           data.gender,
         dateOfBirth:      data.dateOfBirth  ? new Date(data.dateOfBirth) : undefined,

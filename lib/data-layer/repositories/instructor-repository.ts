@@ -57,7 +57,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
         organizationId: data.organizationId, // MT-02: columna directa
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email: data.email.toLowerCase(),
         phone: data.phone,
         role: data.role || "coach",
         isActive: data.isActive ?? true,
@@ -79,7 +79,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email: data.email ? data.email.toLowerCase() : undefined,
         phone: data.phone,
         role: data.role,
         isActive: data.isActive,

@@ -32,11 +32,14 @@ model User {
   memberships OrganizationMember[]
 
   // Business Relations
-  classRegistrations ClassRegistration[]
-  membershipRenewals MembershipRenewal[]
-  userMembership     UserMembership?
-  userLifts          UserLift[]
-  monthlyStats       UserMonthlyStat[]
+  classRegistrations        ClassRegistration[]
+  membershipRenewals        MembershipRenewal[]
+  userMembership            UserMembership?
+  userLifts                 UserLift[]
+  monthlyStats              UserMonthlyStat[]
+  routineTemplatesCreated   RoutineTemplate[]         @relation("RoutineTemplatesCreated")
+  routineAssignmentsCreated RoutineAssignment[]       @relation("RoutineAssignmentsCreated")
+  routineAssignmentMembers  RoutineAssignmentMember[] @relation("RoutineAssignmentMembers")
 
   @@index([email])
   @@index([deletedAt])
@@ -119,17 +122,17 @@ model Instructor {
 }
 
 model MembershipPlan {
-  id             String           @id @default(cuid())
-  organizationId String
-  name           String
-  description    String?
-  price          Float
-  duration       Int
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  features       Json?
-  config         Json?
+  id              String           @id @default(cuid())
+  organizationId  String
+  name            String
+  description     String?
+  price           Float
+  duration        Int
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  features        Json?
+  config          Json?
   userMemberships UserMembership[]
 
   organization Organization @relation(fields: [organizationId], references: [id])
@@ -197,9 +200,9 @@ model Organization {
   suspendedReason   String?
 
   // Datos de contacto del centro
-  email         String?
-  phone         String?
-  address       String?
+  email   String?
+  phone   String?
+  address String?
 
   // Datos del dueño
   ownerName     String?
@@ -207,27 +210,29 @@ model Organization {
   ownerRut      String?
 
   // Billing con Boxy
-  billingPlan      String?    // 'boxy_base' por ahora
-  billingPeriodEnd DateTime?  // vencimiento del trial o período pagado
-  billingCycle     String?    // 'A' (día 1) o 'B' (día 15)
+  billingPlan      String? // boxy_base | boxy_pt
+  billingPeriodEnd DateTime? // vencimiento del trial o período pagado
+  billingCycle     String? // 'A' (día 1) o 'B' (día 15)
 
   // Configuración operativa del centro (ex-settings JSONB — MT-10)
   description              String?
-  orgType                  String   @default("gym")
-  timezone                 String   @default("America/Santiago")
+  orgType                  String  @default("HUB") // HUB | PERSONAL_TRAINING
+  timezone                 String  @default("America/Santiago")
   operatingHours           Json?
-  defaultCancellationHours Int      @default(6)
+  defaultCancellationHours Int     @default(6)
 
   // SaaS Relations
-  members           OrganizationMember[]
-  payments          OrganizationPayment[]
-  events            SystemEvent[]
-  expenses          Expense[]
-  membershipPlans   MembershipPlan[]
-  instructors       Instructor[]
+  members            OrganizationMember[]
+  payments           OrganizationPayment[]
+  events             SystemEvent[]
+  expenses           Expense[]
+  membershipPlans    MembershipPlan[]
+  instructors        Instructor[]
   membershipRenewals MembershipRenewal[]
-  inAppAlerts       InAppAlert[]
-  pushSubscriptions PushSubscription[]
+  inAppAlerts        InAppAlert[]
+  pushSubscriptions  PushSubscription[]
+  routineTemplates   RoutineTemplate[]
+  routineAssignments RoutineAssignment[]
 
   @@map("organizations")
   @@schema("public")
@@ -315,15 +320,15 @@ model UserMonthlyStat {
 }
 
 model Expense {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   motivo         String
   fecha          DateTime
   monto          Float
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([fecha])
@@ -333,15 +338,15 @@ model Expense {
 }
 
 model InAppAlert {
-  id             String    @id @default(cuid())
-  organizationId String?   // null = alerta global del sistema; string = alerta específica del centro
+  id             String   @id @default(cuid())
+  organizationId String? // null = alerta global del sistema; string = alerta específica del centro
   title          String
   content        String
   type           String
   startDate      DateTime
   endDate        DateTime
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id])
 
@@ -430,6 +435,93 @@ model ManagerUser {
 
   @@index([authId])
   @@map("manager_users")
+  @@schema("public")
+}
+
+model Exercise {
+  id             String   @id @default(cuid())
+  name           String
+  category       String? // fuerza | cardio | movilidad | potencia | gimnasia | otro
+  muscleGroup    String? // piernas | espalda | pecho | hombros | brazos | core | full_body
+  description    String?
+  isCustom       Boolean  @default(false) // false = global Boxy, true = creado por el centro
+  organizationId String? // null = global, string = ejercicio propio del centro
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([category])
+  @@index([muscleGroup])
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("exercises")
+  @@schema("public")
+}
+
+model RoutineTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  content        Json // estructura de bloques — ver spec abajo
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  createdByUserId String
+  createdBy       User                @relation("RoutineTemplatesCreated", fields: [createdByUserId], references: [id])
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignments     RoutineAssignment[]
+
+  @@index([organizationId])
+  @@index([createdByUserId])
+  @@index([isActive])
+  @@map("routine_templates")
+  @@schema("public")
+}
+
+model RoutineAssignment {
+  id             String   @id @default(cuid())
+  organizationId String
+  assignedDate   DateTime @db.Date
+  content        Json // snapshot inmutable del contenido al publicar
+  location       String? // texto libre: "Box principal", "Domicilio Juan", "Al aire libre"
+  notes          String? // nota general del día, opcional
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  templateId      String?
+  template        RoutineTemplate?          @relation(fields: [templateId], references: [id])
+  createdByUserId String
+  createdBy       User                      @relation("RoutineAssignmentsCreated", fields: [createdByUserId], references: [id])
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members         RoutineAssignmentMember[]
+
+  @@index([organizationId])
+  @@index([assignedDate])
+  @@index([organizationId, assignedDate])
+  @@index([templateId])
+  @@index([createdByUserId])
+  @@map("routine_assignments")
+  @@schema("public")
+}
+
+model RoutineAssignmentMember {
+  id           String    @id @default(cuid())
+  assignmentId String
+  userId       String
+  completedAt  DateTime?
+  memberNotes  String? // nota del alumno al completar
+  createdAt    DateTime  @default(now())
+
+  assignment RoutineAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User              @relation("RoutineAssignmentMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+  @@index([userId])
+  @@index([assignmentId])
+  @@index([userId, completedAt])
+  @@map("routine_assignment_members")
   @@schema("public")
 }
 
