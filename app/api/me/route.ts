@@ -256,7 +256,9 @@ export async function GET() {
         ? new Date(dbUser.dateOfBirth).toISOString().split("T")[0]
         : undefined,
       emergencyContact: dbUser.emergencyContact ?? undefined,
+      organizationId,
       organizationName,
+      role: auth.role,
       membership,
       membershipRenewals: dbUser.membershipRenewals,
     };
