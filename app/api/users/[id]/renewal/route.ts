@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 import { toMidnightUTC } from "@/lib/utils/dates";
+import { calcularFechaTerminoMembresia } from "@/lib/utils";
 
 // HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
 // Ya no escribe en el JSONB membership.pendingRenewal.
@@ -163,12 +164,59 @@ export async function POST(
         });
         console.log(`[renewal POST autoApprove] Renewal updated for user ${userId}, orgId ${orgId}`);
       } else {
-        // No existe para este período + centro → crear
         renewal = await prisma.membershipRenewal.create({
           data: { userId, ...renewalData },
         });
         console.log(`[renewal POST autoApprove] Renewal created for user ${userId}, orgId ${orgId}`);
       }
+
+      // IMPORTANTE: Al aprobar automáticamente, también debemos activar la UserMembership del usuario!
+      const startDateStr = startDate ?? new Date().toISOString().split("T")[0];
+      const periodEndStr = calcularFechaTerminoMembresia(startDateStr, effectiveDuration || 1);
+      const periodEnd = toMidnightUTC(periodEndStr);
+      const planConfig = plan.config as any;
+
+      await prisma.userMembership.upsert({
+        where: { userId },
+        update: {
+          status: "active",
+          planId: planId,
+          membershipType: effectiveName,
+          monthlyPrice: effectivePrice,
+          currentPeriodStart: startDateNormalized,
+          currentPeriodEnd: periodEnd,
+          classLimit: effectiveClassLimit,
+          ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
+          ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
+          ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
+          ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
+          ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
+          ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
+          ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
+          ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
+          ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
+        },
+        create: {
+          userId,
+          organizationId: orgId,
+          status: "active",
+          planId: planId,
+          membershipType: effectiveName,
+          monthlyPrice: effectivePrice,
+          currentPeriodStart: startDateNormalized,
+          currentPeriodEnd: periodEnd,
+          classLimit: effectiveClassLimit,
+          ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
+          ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
+          ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
+          ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
+          ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
+          ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
+          ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
+          ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
+          ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
+        },
+      });
     } else {
       // Flujo sin autoApprove (alumno solicita renovación) → siempre crear
       renewal = await prisma.membershipRenewal.create({
