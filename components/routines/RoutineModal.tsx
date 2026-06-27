@@ -61,7 +61,17 @@ async function submitAssignment(payload: unknown) {
   })
   if (!res.ok) {
     const err = await res.json()
-    throw new Error(err.error ?? 'Error al guardar rutina')
+    let errorMessage = err.error ?? 'Error al guardar rutina'
+    if (typeof errorMessage === 'object') {
+      if (errorMessage.fieldErrors) {
+        errorMessage = Object.values(errorMessage.fieldErrors).flat().join(', ')
+      } else if (errorMessage.formErrors && errorMessage.formErrors.length > 0) {
+        errorMessage = errorMessage.formErrors.join(', ')
+      } else {
+        errorMessage = JSON.stringify(errorMessage)
+      }
+    }
+    throw new Error(errorMessage)
   }
   return res.json()
 }
@@ -381,6 +391,11 @@ export function RoutineModal({
       return
     }
 
+    const sanitizeBlocks = (blocks: RoutineBlock[]) => blocks.map(b => ({
+      ...b,
+      title: b.title?.trim() ? b.title : (b.kind === 'exercise' ? (b.exerciseName || 'Ejercicio') : 'Texto')
+    }))
+
     if (mode === 'day') {
       if (dayContent.blocks.length === 0) {
         setError('Agrega al menos un bloque a la rutina.')
@@ -389,7 +404,7 @@ export function RoutineModal({
       submitMutation.mutate({
         mode: 'day',
         assignedDate: dayContent.assignedDate,
-        content: { blocks: dayContent.blocks },
+        content: { blocks: sanitizeBlocks(dayContent.blocks) },
         location: dayContent.location,
         notes: dayContent.notes,
         memberUserIds: selectedMemberIds,
@@ -409,7 +424,7 @@ export function RoutineModal({
       mode: 'week',
       days: daysWithContent.map((d) => ({
         assignedDate: d.assignedDate,
-        content: { blocks: d.blocks },
+        content: { blocks: sanitizeBlocks(d.blocks) },
         location: d.location,
         notes: d.notes,
       })),
