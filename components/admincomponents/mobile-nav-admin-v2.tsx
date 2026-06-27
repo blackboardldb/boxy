@@ -15,6 +15,7 @@ import {
   MoreHorizontal,
   LogOut,
   X,
+  Dumbbell,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -33,6 +34,7 @@ const primaryNavItems = [
   { name: "Dashboard", href: "/hub",          icon: LayoutDashboard, roles: ["admin", "coach"] },
   { name: "Clases",    href: "/hub/clases",    icon: ClipboardList,   roles: ["admin", "coach"] },
   { name: "Alumnos",   href: "/hub/alumnos",   icon: Users,           roles: ["admin", "coach"] },
+  { name: "Rutinas",   href: "/hub/rutinas",   icon: Dumbbell,        roles: ["admin", "coach"] },
   { name: "Alertas",   href: "/hub/alertas",   icon: Bell,            roles: ["admin", "coach"], hasDot: true },
 ];
 

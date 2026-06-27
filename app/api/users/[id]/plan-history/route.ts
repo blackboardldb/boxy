@@ -35,7 +35,10 @@ export async function GET(
       where: {
         userId,
         organizationId, // tenant scoping — filtra en SQL, no en JS
-        status: { in: ["approved", "scheduled"] },
+        OR: [
+          { status: "approved" },
+          { status: "scheduled", startDate: { not: null } },
+        ],
         ...(cursorRaw ? { requestedAt: { lt: new Date(cursorRaw) } } : {}),
       },
       select: {

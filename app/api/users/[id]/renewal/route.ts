@@ -97,7 +97,7 @@ export async function POST(
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
-      where: { userId, status: "pending" },
+      where: { userId, status: { in: ["pending", "scheduled"] } },
       data: { status: "cancelled" },
     });
 

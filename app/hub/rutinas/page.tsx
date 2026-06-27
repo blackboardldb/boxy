@@ -6,6 +6,7 @@ import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval } from 'dat
 import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, CheckCircle, Circle, MapPin } from 'lucide-react'
 import { RoutineAssignmentFull, RoutineContent } from '@/lib/types/routine'
+import { RoutineModal } from '@/components/routines/RoutineModal'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FETCHERS
@@ -265,13 +266,13 @@ export default function AdminRutinasPage() {
         </div>
       )}
 
-      {/* Modal de creación — Paso 16 */}
-      {/* {selectedDate && (
+      {/* Modal de creación */}
+      {selectedDate && (
         <RoutineModal
-          date={selectedDate}
+          initialDate={selectedDate}
           onClose={() => setSelectedDate(null)}
         />
-      )} */}
+      )}
     </div>
   )
 }

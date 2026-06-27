@@ -404,7 +404,9 @@ export class PrismaUserRepository implements IUserRepository {
       const today = toMidnightUTC(new Date())!;
       const isScheduledPlan = startDate !== null && startDate > today;
 
-      if (isScheduledPlan) {
+      const skipScheduled = !!(data as any).skipAutomaticRenewal;
+
+      if (isScheduledPlan && !skipScheduled) {
         // Plan futuro → staging en MembershipRenewal (UserMembership no se toca)
         await this.prisma.membershipRenewal.create({
           data: {
@@ -414,6 +416,7 @@ export class PrismaUserRepository implements IUserRepository {
             requestedPlanId: m.planId ?? null,
             status:          'scheduled',
             paymentMethod:   (data as any).formaDePago ?? null,
+            startDate:       startDate, // Fix #2: campo relacional para promoteScheduledIfReady
             renewalDetails: {
               startDate:      toDateString(startDate),
               endDate:        toDateString(m.currentPeriodEnd),

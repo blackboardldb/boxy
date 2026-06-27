@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Settings,
   LogOut,
+  Dumbbell,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -23,6 +24,7 @@ const navigationItems = [
   { name: "Dashboard", href: "/hub", icon: LayoutDashboard, roles: ["admin", "coach"] },
   { name: "Clases", href: "/hub/clases", icon: ClipboardList, roles: ["admin", "coach"] },
   { name: "Alumnos", href: "/hub/alumnos", icon: Users, roles: ["admin", "coach"] },
+  { name: "Rutinas", href: "/hub/rutinas", icon: Dumbbell, roles: ["admin", "coach"] },
   { name: "Alertas", href: "/hub/alertas", icon: Bell, roles: ["admin", "coach"], hasDot: true },
   { name: "Horarios", href: "/hub/horarios", icon: Calendar, roles: ["admin", "coach"] },
   { name: "Planes", href: "/hub/planes", icon: CreditCard, roles: ["admin"] },
