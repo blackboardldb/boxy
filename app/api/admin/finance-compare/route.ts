@@ -56,12 +56,14 @@ export async function GET(request: NextRequest) {
           FROM "expenses"
           WHERE fecha >= ${firstOfMonth}
             AND fecha <  ${firstOfNextMonth}
+            AND "organizationId" = ${organizationId}
         ),
         prev_egresos AS (
           SELECT COALESCE(SUM(monto), 0)::float AS val
           FROM "expenses"
           WHERE fecha >= ${firstOfPrevMonth}
             AND fecha <  ${firstOfMonth}
+            AND "organizationId" = ${organizationId}
         )
       SELECT
         cr.val  AS "currentRevenue",

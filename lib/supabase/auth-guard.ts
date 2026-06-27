@@ -1,5 +1,7 @@
 import { createClient } from "./server";
 import { prisma } from "@/lib/prisma";
+import { jwtVerify } from "jose";
+import { supabaseJWKS } from "./jwks";
 
 interface AuthSuccess {
   user: any;
@@ -17,21 +19,47 @@ export type AuthResult = AuthSuccess | AuthError;
 /**
  * Helper para requerir solo autenticación básica (cualquier usuario logueado).
  * Útil para rutas como /api/me o funcionalidades de alumno.
+ *
+ * Estrategia:
+ *   1. supabase.auth.getSession() lee la cookie local — SIN llamada de red.
+ *   2. jwtVerify() verifica la firma con JWKS de Supabase (singleton cacheado).
+ *      Primera llamada: fetch del JWKS. Siguientes: verificación local en memoria.
+ *   3. El fallback a DB solo ocurre si organizationId no está en el JWT.
  */
 export async function requireAuth(): Promise<AuthResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  // getSession() lee la cookie sin hacer ninguna llamada de red a Supabase Auth
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
     return { error: "No autenticado", status: 401 };
   }
 
-  // 1. Intentar obtener el rol y la organización de los metadatos
-  let role = (user.app_metadata?.role as string) || (user.user_metadata?.role as string);
-  let organizationId = (user.app_metadata?.organizationId as string) || (user.user_metadata?.organizationId as string);
+  let payload;
+  try {
+    // supabaseJWKS es un singleton cacheado — compatible con ECC P-256 y HS256 legacy
+    const verified = await jwtVerify(session.access_token, supabaseJWKS);
+    payload = verified.payload;
+  } catch {
+    return { error: "Token inválido o expirado", status: 401 };
+  }
+
+  const app_metadata = (payload.app_metadata as any) || {};
+  const user_metadata = (payload.user_metadata as any) || {};
+
+  const user = {
+    id: payload.sub as string,
+    email: payload.email as string,
+    app_metadata,
+    user_metadata,
+  };
+
+  // 1. Intentar obtener el rol y la organización de los metadatos del JWT
+  let role = (app_metadata.role as string) || (user_metadata.role as string);
+  let organizationId = (app_metadata.organizationId as string) || (user_metadata.organizationId as string);
 
   // Superadmin: no requiere organizationId
   if (role === "OWNER" || role === "SUPPORT") {
@@ -43,12 +71,10 @@ export async function requireAuth(): Promise<AuthResult> {
 
   if (!organizationId) {
     // MT-08: Resolver desde organization_members si no está en el token.
-    // Ordenar por joinedAt DESC para resolver al centro más reciente de forma determinista
-    // si el alumno pertenece a múltiples centros.
     const member = await prisma.organizationMember.findFirst({
       where: { user: { authId: user.id } },
       orderBy: { joinedAt: "desc" },
-      select: { organizationId: true, role: true }
+      select: { organizationId: true, role: true },
     });
 
     if (!member) {

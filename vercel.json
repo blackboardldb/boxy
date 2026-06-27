@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-classes",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/manager/api/cron/billing",
+      "schedule": "0 2 * * *"
     }
   ]
 }

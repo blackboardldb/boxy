@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
           FROM "expenses"
           WHERE fecha >= ${firstOfMonth}
             AND fecha <  ${firstOfNextMonth}
+            AND "organizationId" = ${organizationId}
         )
       SELECT
         mc."totalMembers",

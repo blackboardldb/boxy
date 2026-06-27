@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
-    // Proteger la ruta — solo manager puede lanzarlo manualmente por ahora.
-    // (En un futuro si se engancha a Vercel Cron, se debe usar un header de autorización secreto).
-    await requireManager();
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const hoy = new Date();
     
