@@ -42,9 +42,9 @@ interface ExerciseOption {
 async function fetchMembers(): Promise<Member[]> {
   const res = await fetch('/api/users?role=ALUMNO&status=active&limit=200')
   if (!res.ok) throw new Error('Error al cargar alumnos')
-  const data = await res.json()
-  // GET /api/users devuelve { users: [], total, page, ... }
-  return Array.isArray(data) ? data : (data.users ?? [])
+  const body = await res.json()
+  // GET /api/users devuelve PaginatedApiResponse { success: true, data: [...], pagination: {...} }
+  return Array.isArray(body) ? body : (body.data ?? [])
 }
 
 async function searchExercises(q: string): Promise<ExerciseOption[]> {
