@@ -1,31 +1,12 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns'
+import { useState, useMemo, useCallback } from 'react'
+import { format, startOfWeek, endOfWeek, startOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, CheckCircle, Circle, MapPin, User } from 'lucide-react'
+import { CheckCircle, Circle, MapPin, User } from 'lucide-react'
+import WeeklyDatePicker from "@/components/weekly-date-picker"
+import { useRoutines, useCompleteRoutine } from "@/lib/react-query/hooks/useRoutines"
 import { RoutineAssignmentForMember, RoutineContent, RoutineBlock } from '@/lib/types/routine'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FETCHERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function fetchMyRoutines(from: string, to: string): Promise<RoutineAssignmentForMember[]> {
-  const res = await fetch(`/api/routines?from=${from}&to=${to}`)
-  if (!res.ok) throw new Error('Error al cargar rutinas')
-  return res.json()
-}
-
-async function completeRoutine(assignmentId: string, memberNotes?: string) {
-  const res = await fetch(`/api/routines/${assignmentId}/complete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ memberNotes }),
-  })
-  if (!res.ok) throw new Error('Error al marcar como completado')
-  return res.json()
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE BLOQUE — renderiza un bloque individual de la rutina
@@ -215,107 +196,92 @@ function RoutineCard({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RutinasPage() {
-  const queryClient = useQueryClient()
-  const [weekOffset, setWeekOffset] = useState(0)
+  const today = startOfDay(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(() => today)
   const [completingId, setCompletingId] = useState<string | null>(null)
 
-  const today = new Date()
-  const weekStart = startOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 1 })
-  const weekEnd   = endOfWeek(addWeeks(today, weekOffset), { weekStartsOn: 1 })
+  const weekStart = format(startOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd")
+  const weekEnd = format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "yyyy-MM-dd")
+  const dayStart = format(selectedDate, "yyyy-MM-dd")
 
-  const from = format(weekStart, 'yyyy-MM-dd')
-  const to   = format(weekEnd, 'yyyy-MM-dd')
+  // React Query - fetch semana actual
+  const { data: routines = [], isLoading } = useRoutines({ startDate: weekStart, endDate: weekEnd })
+  const completeMutation = useCompleteRoutine()
 
-  const { data: routines = [], isLoading } = useQuery({
-    queryKey: ['my-routines', from, to],
-    queryFn:  () => fetchMyRoutines(from, to),
-  })
+  // Filtrar rutinas por día seleccionado
+  const currentRoutines = useMemo(() => {
+    return routines.filter((routine) => {
+      const routineDateStr = (typeof routine.assignedDate === 'string'
+          ? routine.assignedDate
+          : (routine.assignedDate as Date).toISOString()
+        ).slice(0, 10);
+      return routineDateStr === dayStart;
+    })
+  }, [routines, dayStart])
 
-  const completeMutation = useMutation({
-    mutationFn: ({ id }: { id: string }) => completeRoutine(id),
-    onMutate: ({ id }) => setCompletingId(id),
-    onSettled: () => setCompletingId(null),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-routines', from, to] })
-    },
-  })
-
-  // Si no hay rutinas en ninguna semana, la sección no debería aparecer en el sidebar
-  // Esta página solo es accesible si el centro tiene rutinas activas
-  if (!isLoading && routines.length === 0 && weekOffset === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-muted-foreground text-sm">
-          No tienes rutinas asignadas esta semana.
-        </p>
-      </div>
-    )
-  }
+  const handleDateSelect = useCallback((date: Date) => {
+    setSelectedDate(date)
+  }, [])
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Navegación de semana */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setWeekOffset(weekOffset - 1)}
-          className="rounded-lg border border-border p-2 hover:bg-muted"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        <div className="text-center">
-          <p className="text-sm font-semibold text-foreground">
-            {weekOffset === 0
-              ? 'Esta semana'
-              : weekOffset === -1
-              ? 'Semana pasada'
-              : weekOffset === 1
-              ? 'Próxima semana'
-              : format(weekStart, "'Semana del' d MMM", { locale: es })
-            }
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {format(weekStart, 'd MMM', { locale: es })} — {format(weekEnd, 'd MMM yyyy', { locale: es })}
-          </p>
+    <>
+      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-black">
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-white rounded-t-xl">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-xl font-bold text-gray-900 pb-3 hidden sm:block">
+              Mis Rutinas
+            </h1>
+          </div>
         </div>
-
-        <button
-          onClick={() => setWeekOffset(weekOffset + 1)}
-          className="rounded-lg border border-border p-2 hover:bg-muted"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white rounded-b-xl">
+          <WeeklyDatePicker
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            className=""
+          />
+        </div>
       </div>
 
-      {/* Loading */}
-      {isLoading && (
-        <div className="flex flex-col gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />
-          ))}
-        </div>
-      )}
+      <div className="bg-black min-h-screen pb-28">
+        <div className="max-w-4xl mx-auto px-4 pt-4 md:px-6">
+          {/* Loading */}
+          {isLoading && (
+            <div className="flex flex-col gap-3 mt-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 rounded-xl bg-muted/20 animate-pulse" />
+              ))}
+            </div>
+          )}
 
-      {/* Lista de rutinas */}
-      {!isLoading && routines.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {routines.map((routine) => (
-            <RoutineCard
-              key={routine.id}
-              routine={routine}
-              onComplete={(id) => completeMutation.mutate({ id })}
-              isCompleting={completingId === routine.id}
-            />
-          ))}
-        </div>
-      )}
+          {/* Lista de rutinas del día */}
+          {!isLoading && currentRoutines.length > 0 && (
+            <div className="flex flex-col gap-4 mt-4">
+              {currentRoutines.map((routine) => (
+                <RoutineCard
+                  key={routine.id}
+                  routine={routine}
+                  onComplete={(id) => {
+                    setCompletingId(id)
+                    completeMutation.mutate({ id }, {
+                      onSettled: () => setCompletingId(null)
+                    })
+                  }}
+                  isCompleting={completingId === routine.id}
+                />
+              ))}
+            </div>
+          )}
 
-      {/* Semana sin rutinas — no es la semana actual */}
-      {!isLoading && routines.length === 0 && weekOffset !== 0 && (
-        <p className="text-center text-sm text-muted-foreground py-10">
-          Sin rutinas para esta semana.
-        </p>
-      )}
-    </div>
+          {/* Sin rutinas */}
+          {!isLoading && currentRoutines.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-muted-foreground text-sm">
+                No tienes rutinas asignadas para este día.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
