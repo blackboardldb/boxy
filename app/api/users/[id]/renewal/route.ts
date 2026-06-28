@@ -40,11 +40,15 @@ export async function POST(
     const { planId, paymentMethod, notes, autoApprove, planName, planPrice, planClassLimit, planDuration, startDate, paymentDate } = parsed.data;
 
     // Si autoApprove, requerir autenticación de admin antes de continuar
+    // Guardamos la referencia al auth para usar organizationId como fallback si el alumno
+    // aún no tiene memberships registradas (race condition en flujo de creación).
+    let adminOrgId: string | null = null;
     if (autoApprove) {
       const auth = await requireAdmin();
       if ("error" in auth) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
       }
+      adminOrgId = auth.organizationId;
     }
 
     // Validar que el usuario existe (incluir membresía para consolidar período anterior en autoApprove)
@@ -92,9 +96,10 @@ export async function POST(
       processedAtDate = toMidnightUTC(paymentDate) ?? new Date();
     }
 
-    // organizationId siempre desde el contexto de autenticación (memberships[0]),
-    // nunca desde el body del request.
-    const orgId = user.memberships?.[0]?.organizationId ?? null;
+    // organizationId: preferir la de memberships del usuario, pero usar
+    // adminOrgId como fallback seguro para el caso de alumno recién creado
+    // que aún no tiene OrganizationMember commiteado (race condition).
+    const orgId = user.memberships?.[0]?.organizationId ?? adminOrgId ?? null;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({

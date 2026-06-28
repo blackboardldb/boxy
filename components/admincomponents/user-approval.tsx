@@ -132,6 +132,9 @@ export function UserApproval() {
 
 
   // Función para aprobar usuario
+  // IMPORTANTE: llama al endpoint dedicado /renewal/approve que actualiza UserMembership
+  // y MembershipRenewal en una sola transacción. NO usar updateUserMutation con membership
+  // anidado — el backend ignora ese campo desde HAL-01 Fase 4.
   const handleApproveUser = async (user: PendingUser) => {
     if (!user || !user.id) {
       toast({
@@ -142,35 +145,35 @@ export function UserApproval() {
       return;
     }
 
-    // Corregimos el bug de timezone calculando la fecha local YYYY-MM-DD
+    // Calcular fecha local YYYY-MM-DD sin bug de timezone
     const hoy = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const hoyStr = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
 
-    const updatedUserData = {
-      membership: {
-        ...user.membership,
-        status: "active" as const,
-        currentPeriodStart: hoyStr,
-        currentPeriodEnd: calcularFechaTerminoMembresia(hoyStr, 1),
-      },
-      notes:
-        (user?.notes ?? "") +
-        " - Approved on " +
-        hoy.toLocaleDateString(),
-    };
+    try {
+      const res = await fetch(`/api/users/${user.id}/renewal/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate: hoyStr }),
+      });
+      const json = await res.json();
 
-    const result = await updateUserMutation.mutateAsync({ id: user.id, data: updatedUserData });
-    if (result) {
+      if (!res.ok) {
+        throw new Error(json.error ?? "Error al aprobar el usuario");
+      }
+
+      // Invalidar caché para que la lista se refresque
+      await updateUserMutation.mutateAsync({ id: user.id, data: {} });
+
       toast({
         title: "Usuario aprobado",
         description: `${user.firstName} ${user.lastName} ha sido aprobado exitosamente.`,
       });
       setShowDetails(false);
-    } else {
+    } catch (err: any) {
       toast({
         title: "Error",
-        description: "Error al aprobar el usuario",
+        description: err.message ?? "Error al aprobar el usuario",
         variant: "destructive",
       });
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { House, Calendar, CircleUser, CalculatorIcon } from "lucide-react";
+import { House, Calendar, CircleUser, CalculatorIcon, Dumbbell } from "lucide-react";
 import React from "react";
 import Link from "next/link";
 
@@ -38,6 +38,12 @@ export default function GlobalNav() {
       href: "/alumnos/calendar",
       icon: <Calendar className="w-6 h-6 mx-auto" />,
       label: "Clases",
+      extraClass: "w-14 h-12 block",
+    },
+    {
+      href: "/alumnos/rutinas",
+      icon: <Dumbbell className="w-6 h-6 mx-auto" />,
+      label: "Rutinas",
       extraClass: "w-14 h-12 block",
     },
     {

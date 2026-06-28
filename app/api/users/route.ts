@@ -5,6 +5,7 @@ import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { createUserSchema } from "@/lib/schemas";
+import { toMidnightUTC } from "@/lib/utils/dates";
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,6 +82,20 @@ export async function POST(request: NextRequest) {
       }
 
       // Caso B — email ya existe en users pero no en este centro
+      //
+      // Resolución de plan: si viene planId, buscar el plan para tener precio y duración
+      let planDataB: { id: string; name: string; price: number; duration: number; config: unknown } | null = null;
+      if (body.planId) {
+        planDataB = await prisma.membershipPlan.findUnique({
+          where: { id: body.planId },
+          select: { id: true, name: true, price: true, duration: true, config: true },
+        });
+      }
+
+      const membershipStartB = toMidnightUTC(body.startDate ?? null) ?? new Date();
+      const membershipEndB = toMidnightUTC(body.endDate ?? null);
+      const planConfigB = (planDataB?.config ?? {}) as Record<string, unknown>;
+
       await prisma.$transaction([
         prisma.user.update({
           where: { id: existingUser.id },
@@ -106,7 +121,16 @@ export async function POST(request: NextRequest) {
           data: {
             userId: existingUser.id,
             organizationId: auth.organizationId,
-            status: "pending",
+            // Si viene planId, crear la membresía activa con todos los datos del plan
+            status: planDataB ? "active" : "pending",
+            ...(planDataB && {
+              planId: planDataB.id,
+              membershipType: planDataB.name,
+              monthlyPrice: planDataB.price,
+              currentPeriodStart: membershipStartB,
+              currentPeriodEnd: membershipEndB ?? undefined,
+              classLimit: (planConfigB?.classLimit as number | undefined) ?? 0,
+            }),
           }
         })
       ]);
@@ -144,6 +168,27 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Operación atómica: crear User, OrganizationMember, UserMembership
+    //
+    // Si viene planId, resolvemos el plan ANTES de la transacción para no mezclar
+    // queries de lectura dentro de la transacción de escritura.
+    let planData: { id: string; name: string; price: number; duration: number; config: unknown } | null = null;
+    if (body.planId) {
+      planData = await prisma.membershipPlan.findUnique({
+        where: { id: body.planId },
+        select: { id: true, name: true, price: true, duration: true, config: true },
+      });
+      if (!planData) {
+        return NextResponse.json(
+          { success: false, error: `Plan con id '${body.planId}' no encontrado.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const membershipStart = toMidnightUTC(body.startDate ?? null) ?? new Date();
+    const membershipEnd   = toMidnightUTC(body.endDate ?? null);
+    const planConfig      = (planData?.config ?? {}) as Record<string, unknown>;
+
     try {
       const newUser = await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
@@ -169,11 +214,21 @@ export async function POST(request: NextRequest) {
           }
         });
 
+        // UserMembership: si viene planId lo asignamos con todos los datos del plan;
+        // si no, queda en pending para asignación posterior.
         await tx.userMembership.create({
           data: {
             userId: user.id,
             organizationId: auth.organizationId,
-            status: "pending",
+            status: planData ? "active" : "pending",
+            ...(planData && {
+              planId: planData.id,
+              membershipType: planData.name,
+              monthlyPrice: planData.price,
+              currentPeriodStart: membershipStart,
+              currentPeriodEnd: membershipEnd ?? undefined,
+              classLimit: (planConfig?.classLimit as number | undefined) ?? 0,
+            }),
           }
         });
 

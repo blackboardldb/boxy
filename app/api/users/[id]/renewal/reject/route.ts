@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 // HAL-01 Fase 4 Sprint 1.4: Rechaza la renovación pendiente actualizando directamente
@@ -16,6 +17,13 @@ export async function POST(
 ) {
   try {
     const userId = (await params).id;  // Next.js 15: params es una Promise
+
+    // Guard de autenticación — solo admins pueden rechazar renovaciones
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const orgId = auth.organizationId;
 
     const parsed = rejectRenewalSchema.safeParse(
       await request.json().catch(() => ({}))
@@ -34,11 +42,12 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Buscar la renovación pendiente más reciente en la tabla relacional
+    // Buscar la renovación pendiente más reciente SCOPED al centro del admin
     const pendingRenewal = await prisma.membershipRenewal.findFirst({
       where: {
         userId,
         status: "pending",
+        organizationId: orgId,
       },
       orderBy: { requestedAt: "desc" },
     });

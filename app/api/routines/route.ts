@@ -44,17 +44,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(assignments)
     }
 
-    // Alumno — solo ve las suyas
-    // Obtenemos el ID interno de Prisma
-    const dbUser = await prisma.user.findUnique({
+    // Alumno — solo ve las suyas.
+    // Buscamos el ID interno de Prisma por authId primero, con fallback por email.
+    // El fallback es necesario para alumnos creados por el admin cuyo authId
+    // aún no fue sincronizado, o si hay desfase entre auth.users y public.users.
+    let dbUser = await prisma.user.findUnique({
       where: { authId: user.id },
       select: { id: true }
     })
+
+    if (!dbUser && user.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: user.email.toLowerCase() },
+        select: { id: true }
+      })
+    }
     
     if (!dbUser) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
+    // Nota: NO filtramos por organizationId del alumno para las rutinas.
+    // Las rutinas se asignan con el organizationId del admin que las crea, y el
+    // token del alumno puede tener un organizationId diferente si hay desfase
+    // en el JWT. La seguridad está garantizada por el userId del alumno.
     const assignments = await routineService.getAssignmentsForMember(
       organizationId,
       dbUser.id,

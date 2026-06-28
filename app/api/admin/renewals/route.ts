@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { organizationId: authOrgId } = auth;
-    const organizationId = request.headers.get("x-organization-id") || authOrgId;
+    const { organizationId } = auth;  // siempre desde el token del admin — nunca desde headers del cliente
     const status = request.nextUrl.searchParams.get("status") || "pending";
     const take = Math.min(
       parseInt(request.nextUrl.searchParams.get("take") || "50"),

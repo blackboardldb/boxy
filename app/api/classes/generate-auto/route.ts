@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateClassesFromSchedules } from "@/lib/utils/class-generator";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 const generateAutoSchema = z.object({
@@ -9,6 +10,12 @@ const generateAutoSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const { organizationId } = auth;
+
     const parsed = generateAutoSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -18,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
     const { startDate, endDate } = parsed.data;
 
-    const generatedClasses = await generateClassesFromSchedules(startDate, endDate);
+    const generatedClasses = await generateClassesFromSchedules(organizationId, startDate, endDate);
 
     return NextResponse.json(
       {

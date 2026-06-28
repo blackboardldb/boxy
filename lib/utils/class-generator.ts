@@ -14,10 +14,14 @@ const dayMap: { [key: string]: number } = {
 
 
 /**
- * Genera clases automáticamente masivamente usando createMany (ultra rápido).
+ * Genera clases automáticamente para un único centro (organizationId).
  * Ventana por defecto: 15 días (Hoy inclusive + 14 días futuros).
+ *
+ * MULTICENTRO: organizationId es obligatorio para garantizar aislamiento entre centros.
+ * El cron diario debe invocar esta función en un loop sobre cada centro activo.
  */
 export async function generateClassesFromSchedules(
+  organizationId: string,
   startDate?: string | Date,
   endDate?: string | Date,
   specificDisciplineId?: string
@@ -32,18 +36,22 @@ export async function generateClassesFromSchedules(
   }
   end.setHours(23, 59, 59, 999);
   
-  console.log(`[ClassGenerator] Proyectando ventana: ${start.toISOString()} -> ${end.toISOString()}`);
+  console.log(`[ClassGenerator][${organizationId}] Ventana: ${start.toISOString()} -> ${end.toISOString()}`);
 
-  // Fetch real disciplines and instructors from the DB
+  // 2. Disciplines y instructors SCOPED al centro — nunca mezclar entre centros
   const disciplines = await prisma.discipline.findMany({
     where: { 
+      organizationId,           // ← filtro multicentro
       isActive: true,
-      ...(specificDisciplineId ? { id: specificDisciplineId } : {})
+      ...(specificDisciplineId ? { id: specificDisciplineId } : {}),
     },
   });
   
   const instructors = await prisma.instructor.findMany({
-    where: { isActive: true },
+    where: {
+      organizationId,           // ← filtro multicentro
+      isActive: true,
+    },
   });
 
   const classesToCreate: any[] = [];
@@ -52,7 +60,7 @@ export async function generateClassesFromSchedules(
   for (const discipline of disciplines) {
     if (!discipline.schedule) continue;
 
-    let scheduleArray = typeof discipline.schedule === "string" 
+    const scheduleArray = typeof discipline.schedule === "string" 
       ? JSON.parse(discipline.schedule) 
       : (discipline.schedule as { day: import("../types").DayOfWeek; times: string[] }[]);
 
@@ -80,20 +88,20 @@ export async function generateClassesFromSchedules(
       });
     }
 
-    // 2. Fallback explícito: Instructor Administrador/Maestro
+    // 2. Fallback explícito: Instructor Administrador/Maestro del mismo centro
     if (!instructor) {
       instructor = instructors.find((inst) => inst.role === "admin");
     }
 
-    // 3. Fallback final (red de seguridad por orden de DB)
+    // 3. Fallback final (red de seguridad — mismo centro)
     if (!instructor && instructors.length > 0) {
-      console.warn(`[class-generator] Alerta: Fallback a instructors[0] para disciplina ${discipline.id} porque no hay instructor especializado ni rol "admin".`);
+      console.warn(`[ClassGenerator][${organizationId}] Fallback a instructors[0] para disciplina ${discipline.id}`);
       instructor = instructors[0];
     }
 
-    // 4. Omisión si no existen instructores activos en absoluto
+    // 4. Omisión si no hay instructores en este centro
     if (!instructor) {
-      console.warn(`[class-generator] Omisión: No hay ningún instructor disponible en la BD para asignar a la disciplina ${discipline.id}`);
+      console.warn(`[ClassGenerator][${organizationId}] Sin instructor disponible para disciplina ${discipline.id}`);
       continue;
     }
 
@@ -113,11 +121,12 @@ export async function generateClassesFromSchedules(
               String(date.getDate()).padStart(2, "0")
             ].join("-");
             const timeStr = time.replace(":", "");
-            const classId = `cls_${dateStr}_${timeStr}_${discipline.id}`;
+            // El classId incluye el organizationId para evitar colisiones entre centros
+            const classId = `cls_${organizationId.slice(-6)}_${dateStr}_${timeStr}_${discipline.id}`;
 
             classesToCreate.push({
               id: classId,
-              organizationId: (discipline as { organizationId?: string }).organizationId!,
+              organizationId,                          // ← siempre el del centro actual
               disciplineId: discipline.id,
               name: discipline.name,
               dateTime: new Date(localToUTC(date, time)),
@@ -135,13 +144,14 @@ export async function generateClassesFromSchedules(
   }
 
   if (classesToCreate.length > 0) {
-    // Bulk create skipping already existing ones (by ID)
     const result = await prisma.classSession.createMany({
       data: classesToCreate,
       skipDuplicates: true,
     });
-    console.log(`[ClassGenerator] Proceso masivo completado. Creadas ${result.count} nuevas clases.`);
+    console.log(`[ClassGenerator][${organizationId}] Creadas ${result.count} nuevas clases.`);
   }
 
   return classesToCreate;
 }
+
+

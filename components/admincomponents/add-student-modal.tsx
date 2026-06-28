@@ -56,11 +56,12 @@ const createStudentData = (
     formaDePago?: "contado" | "transferencia" | "debito" | "credito";
     joinDate: string;
     nextPayment: string;
+    planId: string;
   },
   selectedPlan: MembershipPlan,
   organizationId: string,
   initialStudent?: FitCenterUserProfile
-): Omit<FitCenterUserProfile, "id"> => {
+): Omit<FitCenterUserProfile, "id"> & { planId?: string; startDate?: string; endDate?: string } => {
   return {
     firstName: formData.firstName,
     lastName: formData.lastName,
@@ -71,6 +72,11 @@ const createStudentData = (
     ...(formData.formaDePago && { formaDePago: formData.formaDePago }),
     avatarId: "avatar_default",
     role: "user",
+    // Campos de plan a nivel superior — el backend los usa para crear el UserMembership
+    // con todos los datos del plan de forma atómica en la misma transacción
+    planId: selectedPlan.id,
+    startDate: formData.joinDate,
+    endDate: formData.nextPayment,
     membership: {
       id: initialStudent?.membership?.id || `mem_${Date.now()}`,
       organizationId: initialStudent?.membership?.organizationId ?? organizationId,

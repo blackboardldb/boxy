@@ -35,20 +35,27 @@ export async function POST(
     // startDate: la fecha de inicio del nuevo período (la envía el admin desde el modal)
     const startDate: string | undefined = parsed.data?.startDate;
 
-    // 1. Verificar que el usuario existe y tiene una UserMembership
+    // 1. Buscar usuario con datos de membresía (necesario para consolidar período anterior en stats)
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { userMembership: true, memberships: { select: { organizationId: true }, take: 1 } },
     });
-    const orgId = user?.memberships?.[0]?.organizationId;
 
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // 2. Buscar la renovación pendiente más reciente
+    // orgId: la fuente de verdad es el admin autenticado — nunca el usuario.
+    // Fallback a memberships[0] del alumno para el caso multi-centro.
+    const orgId = auth.organizationId ?? user.memberships?.[0]?.organizationId;
+    if (!orgId) {
+      return NextResponse.json({ error: "No se pudo determinar el organizationId" }, { status: 400 });
+    }
+
+    // 2. Buscar la renovación pendiente más reciente SCOPED al centro del admin.
+    //    Sin este filtro, un admin de Centro A podría aprobar solicitudes de Centro B.
     const pendingRenewal = await prisma.membershipRenewal.findFirst({
-      where: { userId, status: "pending" },
+      where: { userId, status: "pending", organizationId: orgId },
       orderBy: { requestedAt: "desc" },
     });
 
@@ -133,7 +140,7 @@ export async function POST(
           monthlyPrice: planData.price,
           currentPeriodStart: new Date(periodStart + "T00:00:00"),
           currentPeriodEnd: new Date(periodEnd + "T23:59:59"),
-          classLimit: planData.classLimit ? planData.classLimit * (planData.durationInMonths || 1) : 0,
+          classLimit: planData.classLimit,  // classLimit ya viene calculado desde config.classLimit — NO multiplicar por durationInMonths
           ...(planData.disciplineAccess ? { disciplineAccess: planData.disciplineAccess } : {}),
           ...(planData.allowedDisciplines ? { allowedDisciplines: planData.allowedDisciplines } : {}),
           ...(typeof planData.canFreeze === "boolean" ? { canFreeze: planData.canFreeze } : {}),

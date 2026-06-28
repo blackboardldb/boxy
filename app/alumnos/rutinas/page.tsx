@@ -142,7 +142,15 @@ function RoutineCard({
               : <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
             }
             <span className="text-sm font-medium text-foreground">
-              {format(new Date(routine.assignedDate), "EEEE d 'de' MMMM", { locale: es })}
+              {/* ⚠️ parseISO del slice(0,10) — NO new Date(): evita shift UTC→local en Chile */}
+              {format(
+                new Date((typeof routine.assignedDate === 'string'
+                  ? routine.assignedDate
+                  : (routine.assignedDate as Date).toISOString()
+                ).slice(0, 10) + 'T12:00:00'),
+                "EEEE d 'de' MMMM",
+                { locale: es }
+              )}
             </span>
           </div>
 

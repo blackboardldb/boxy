@@ -193,9 +193,15 @@ export default function AdminRutinasPage() {
   })
 
   // Agrupar assignments por fecha
+  // ⚠️ NO usar new Date(a.assignedDate): la DB devuelve "2026-06-28T00:00:00.000Z" y al
+  // instanciar un Date en Chile (UTC-4) se desplaza a "2026-06-27T20:00:00", rompiendo la clave.
+  // Solución: extraer los primeros 10 chars del string ISO — siempre la fecha local correcta.
   const byDate = assignments.reduce<Record<string, RoutineAssignmentFull[]>>(
     (acc, a) => {
-      const key = format(new Date(a.assignedDate), 'yyyy-MM-dd')
+      const key = (typeof a.assignedDate === 'string'
+        ? a.assignedDate
+        : (a.assignedDate as Date).toISOString()
+      ).slice(0, 10)
       if (!acc[key]) acc[key] = []
       acc[key].push(a)
       return acc

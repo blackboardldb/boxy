@@ -134,20 +134,23 @@ export class RoutineService {
     })
   }
 
-  // Para alumno — solo ve sus assignments con su propia completion
+  // Para alumno — solo ve sus assignments con su propia completion.
+  // Seguridad: el filtro por userId garantiza que solo ve sus rutinas.
+  // NO filtramos por organizationId porque el token del alumno puede tener un
+  // orgId diferente al que usó el admin al crear la rutina (desfase de JWT →
+  // la query devolvería vacío aunque el alumno tenga rutinas asignadas).
   async getAssignmentsForMember(
-    organizationId: string,
+    _organizationId: string,
     userId: string,
     query: GetRoutinesQueryInput
   ) {
-    const from = new Date(query.from)
-    const to   = new Date(query.to)
+    const from = new Date(query.from + 'T00:00:00')
+    const to   = new Date(query.to   + 'T23:59:59')
 
     const members = await prisma.routineAssignmentMember.findMany({
       where: {
         userId,
         assignment: {
-          organizationId,
           assignedDate: { gte: from, lte: to },
         },
       },

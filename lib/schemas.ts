@@ -70,6 +70,10 @@ export const createUserSchema = z.object({
   role: z.enum(["user", "admin", "coach"]).default("user"),
   membership: z.unknown().optional(),
   skipAutomaticRenewal: z.boolean().optional(),
+  // Campos de plan — permiten asignar membresía desde el mismo request de creación
+  planId: z.string().optional(),
+  startDate: z.string().optional(), // YYYY-MM-DD — inicio del período de membresía
+  endDate: z.string().optional(),   // YYYY-MM-DD — fin del período de membresía
 });
 
 export const updateUserSchema = createUserSchema.partial();
