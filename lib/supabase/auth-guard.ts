@@ -3,8 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { supabaseJWKS } from "./jwks";
 
+interface AuthUser {
+  id: string;
+  email: string;
+  app_metadata: Record<string, any>;
+}
+
 interface AuthSuccess {
-  user: any;
+  user: AuthUser;
   role: string;
   organizationId: string;
 }
@@ -57,17 +63,16 @@ export async function requireAuth(): Promise<AuthResult> {
     app_metadata,
   };
 
-  // 1. Intentar obtener el rol y la organización desde app_metadata
-  let role           = app_metadata.role           as string;
-  let organizationId = app_metadata.organizationId as string;
-
-  // Superadmin: no requiere organizationId
-  if (role === "OWNER" || role === "SUPPORT") {
-    return { user, role, organizationId: organizationId ?? "" };
+  // DAR-01: Fuente de verdad única para Superadmin = isManager (boolean).
+  // La rama role === "OWNER" | "SUPPORT" fue eliminada — era código muerto
+  // (create-manager.ts nunca escribe app_metadata.role; confirmado por auditoría).
+  if (app_metadata.isManager === true) {
+    return { user, role: "MANAGER", organizationId: "" };
   }
 
-  // Normalizar a mayúsculas para emparejar con los enums
-  role = role?.toUpperCase() || "";
+  // A partir de acá: flujo normal de organization_members (ADMIN / COACH / ALUMNO)
+  let role           = (app_metadata.role as string)?.toUpperCase() || "";
+  let organizationId = app_metadata.organizationId as string;
 
   if (!organizationId || !role) {
     // MT-08 / BUG-ROLE-02: Resolver desde organization_members si app_metadata está
@@ -84,7 +89,7 @@ export async function requireAuth(): Promise<AuthResult> {
     }
 
     organizationId = organizationId || member.organizationId;
-    role           = role           || member.role;
+    role           = role           || member.role?.toUpperCase() || "";
   }
 
   return { user, role, organizationId };
@@ -108,12 +113,3 @@ export async function requireAdmin(): Promise<AuthResult> {
   return auth;
 }
 
-// Guard exclusivo para /manager
-export async function requireManager(): Promise<AuthResult> {
-  const auth = await requireAuth();
-  if ("error" in auth) return auth;
-  if (!["OWNER", "SUPPORT"].includes(auth.role)) {
-    return { error: "Sin permisos", status: 403 };
-  }
-  return auth;
-}
