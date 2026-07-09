@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { jwtVerify } from "jose";
 import { supabaseJWKS } from "@/lib/supabase/jwks";
 import { prisma } from "@/lib/prisma";
+import { cache } from "react";
 
 export interface ManagerContext {
   authId: string;
@@ -17,8 +18,13 @@ export interface ManagerContext {
  *    Primera llamada: fetch del JWKS. Siguientes: verificación local en memoria.
  * 3. Confirma que el authId existe en manager_users (autorización real, 1 query a tu DB).
  * Redirige a /manager/login si no está autenticado o no es manager.
+ *
+ * React.cache(): deduplica invocaciones dentro del mismo render SSR.
+ * Si layout.tsx y page.tsx ambos llaman a requireManager() en el mismo request,
+ * solo se ejecuta 1 vez — jwtVerify() + manager_users query. Cero costo extra.
+ * El caché se resetea automáticamente entre requests (React lo gestiona).
  */
-export async function requireManager(): Promise<ManagerContext> {
+export const requireManager = cache(async (): Promise<ManagerContext> => {
   const supabase = await createClient();
 
   // getSession() lee la cookie sin hacer ninguna llamada de red a Supabase Auth
@@ -54,4 +60,4 @@ export async function requireManager(): Promise<ManagerContext> {
     email: manager.email,
     role: manager.role as "OWNER" | "SUPPORT",
   };
-}
+});

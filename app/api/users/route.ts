@@ -6,6 +6,30 @@ import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { createUserSchema } from "@/lib/schemas";
 import { toMidnightUTC } from "@/lib/utils/dates";
+import type { MemberRole } from "@prisma/client";
+
+// Whitelist: valores permitidos en body.role → enum MemberRole de Prisma.
+// Solo ADMIN y COACH pueden crear usuarios (requireAdmin lo garantiza), pero
+// solo un ADMIN puede asignar el rol ADMIN a otro usuario.
+// Por ahora la regla de negocio es: cualquier ADMIN puede asignar cualquier rol.
+// Si se necesita restricción OWNER-only para rol ADMIN, agregar guard adicional aquí.
+const ROLE_MAP: Record<string, MemberRole> = {
+  user:  "ALUMNO",
+  alumno: "ALUMNO",
+  coach: "COACH",
+  admin: "ADMIN",
+};
+
+/** Convierte el rol del body al enum MemberRole. Default: ALUMNO. */
+function toMemberRole(role?: string): MemberRole {
+  return (role && ROLE_MAP[role.toLowerCase()]) || "ALUMNO";
+}
+
+/** Convierte el rol del body al literal que usa createAuthUser (lowercase). */
+function toAuthRole(role?: string): "alumno" | "coach" | "admin" {
+  const memberRole = toMemberRole(role);
+  return memberRole.toLowerCase() as "alumno" | "coach" | "admin";
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -112,7 +136,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: existingUser.id,
             organizationId: auth.organizationId,
-            role: "ALUMNO",
+            role: toMemberRole(body.role), // BUG-ROLE-01 fix: respetar el rol enviado por el admin
             formaDePago: body.formaDePago,
             status: "active"
           }
@@ -146,7 +170,7 @@ export async function POST(request: NextRequest) {
       console.log("[POST /api/users] Creando usuario en Supabase Auth:", body.email);
       authId = await createAuthUser(
         body.email,
-        "alumno", // Enum para createAuthUser en minúscula
+        toAuthRole(body.role), // BUG-ROLE-01 fix: contraseña por defecto según rol real
         {
           firstName: body.firstName,
           lastName: body.lastName,
@@ -208,7 +232,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             organizationId: auth.organizationId,
-            role: "ALUMNO",
+            role: toMemberRole(body.role), // BUG-ROLE-01 fix: respetar el rol enviado por el admin
             formaDePago: body.formaDePago,
             status: "active"
           }

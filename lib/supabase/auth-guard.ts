@@ -48,41 +48,43 @@ export async function requireAuth(): Promise<AuthResult> {
   }
 
   const app_metadata = (payload.app_metadata as any) || {};
-  const user_metadata = (payload.user_metadata as any) || {};
+  // BUG-ROLE-02 fix: eliminado fallback a user_metadata (editable por el cliente).
+  // Fuente de verdad: app_metadata (service role only) → organization_members (DB).
 
   const user = {
-    id: payload.sub as string,
+    id:    payload.sub as string,
     email: payload.email as string,
     app_metadata,
-    user_metadata,
   };
 
-  // 1. Intentar obtener el rol y la organización de los metadatos del JWT
-  let role = (app_metadata.role as string) || (user_metadata.role as string);
-  let organizationId = (app_metadata.organizationId as string) || (user_metadata.organizationId as string);
+  // 1. Intentar obtener el rol y la organización desde app_metadata
+  let role           = app_metadata.role           as string;
+  let organizationId = app_metadata.organizationId as string;
 
   // Superadmin: no requiere organizationId
   if (role === "OWNER" || role === "SUPPORT") {
-    return { user, role, organizationId: "" };
+    return { user, role, organizationId: organizationId ?? "" };
   }
 
   // Normalizar a mayúsculas para emparejar con los enums
-  role = role?.toUpperCase() || "ALUMNO";
+  role = role?.toUpperCase() || "";
 
-  if (!organizationId) {
-    // MT-08: Resolver desde organization_members si no está en el token.
+  if (!organizationId || !role) {
+    // MT-08 / BUG-ROLE-02: Resolver desde organization_members si app_metadata está
+    // incompleto (token recién emitido, primer login, error de escritura en app_metadata).
+    // Cubre tanto organizationId como role ausentes — ambos se leen de la DB en bloque.
     const member = await prisma.organizationMember.findFirst({
-      where: { user: { authId: user.id } },
+      where:   { user: { authId: user.id } },
       orderBy: { joinedAt: "desc" },
-      select: { organizationId: true, role: true },
+      select:  { organizationId: true, role: true },
     });
 
     if (!member) {
       return { error: "Sin membresía activa en ningún centro.", status: 403 };
     }
 
-    organizationId = member.organizationId;
-    role = member.role;
+    organizationId = organizationId || member.organizationId;
+    role           = role           || member.role;
   }
 
   return { user, role, organizationId };

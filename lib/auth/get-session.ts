@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { jwtVerify } from "jose";
 import { supabaseJWKS } from "@/lib/supabase/jwks";
 import type { MemberRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export interface SessionContext {
   authId: string;
@@ -39,17 +40,34 @@ export async function getSession(): Promise<SessionContext | null> {
     return null;
   }
 
+  // BUG-ROLE-02 fix: leer exclusivamente desde app_metadata (solo escribible por service role).
+  // user_metadata es editable por el cliente — nunca usarlo como fuente de autorización.
+  // Nota: get-session.ts maneja el contexto de centros (MemberRole: ALUMNO/COACH/ADMIN).
+  // Los managers (OWNER/SUPPORT) usan require-manager.ts con su propio flujo.
   const app_metadata = (payload.app_metadata as any) || {};
-  const user_metadata = (payload.user_metadata as any) || {};
 
-  const organizationId = (app_metadata.organizationId || user_metadata.organizationId) as string | undefined;
-  const role = (app_metadata.role || user_metadata.role) as MemberRole | undefined;
+  let organizationId = app_metadata.organizationId as string | undefined;
+  let role           = app_metadata.role           as MemberRole | undefined;
+
+  // Fallback a DB: app_metadata puede estar vacío si el usuario fue creado
+  // recientemente y aún no hizo login (condición de carrera entre creación y
+  // escritura de app_metadata). La DB es la única fuente de verdad válida.
+  if (!organizationId || !role) {
+    const member = await prisma.organizationMember.findFirst({
+      where:   { user: { authId: payload.sub as string } },
+      orderBy: { joinedAt: "desc" },
+      select:  { organizationId: true, role: true },
+    });
+    if (!member) return null;
+    organizationId = organizationId ?? member.organizationId;
+    role           = (role ?? member.role) as MemberRole;
+  }
 
   if (!organizationId || !role) return null;
 
   return {
     authId: payload.sub as string,
-    email: (payload.email as string) ?? "",
+    email:  (payload.email as string) ?? "",
     organizationId,
     role,
   };
