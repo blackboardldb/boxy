@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
     );
     const skip = parseInt(request.nextUrl.searchParams.get("skip") || "0");
 
-    const { organizationId: authOrgId } = auth;
-    const organizationId = request.headers.get("x-organization-id") || authOrgId;
+    const { organizationId } = auth;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -28,6 +27,7 @@ export async function GET(request: NextRequest) {
       where: {
         organizationId,
         currentPeriodEnd: { lt: today },
+        user: { is: { deletedAt: null } },
       },
       include: {
         user: {
@@ -44,16 +44,18 @@ export async function GET(request: NextRequest) {
       skip,
     });
 
-    const data = memberships.map((um) => ({
-      id: um.user.id,
-      firstName: um.user.firstName,
-      lastName: um.user.lastName,
-      phone: um.user.phone,
-      membershipType: um.membershipType,
-      currentPeriodEnd: um.currentPeriodEnd
-        ? um.currentPeriodEnd.toISOString().split("T")[0]
-        : null,
-    }));
+    const data = memberships
+      .filter((um) => um.user !== null)
+      .map((um) => ({
+        id: um.user!.id,
+        firstName: um.user!.firstName,
+        lastName: um.user!.lastName,
+        phone: um.user!.phone,
+        membershipType: um.membershipType,
+        currentPeriodEnd: um.currentPeriodEnd
+          ? um.currentPeriodEnd.toISOString().split("T")[0]
+          : null,
+      }));
 
     const response = NextResponse.json({ success: true, data });
     response.headers.set(

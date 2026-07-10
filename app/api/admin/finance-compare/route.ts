@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { organizationId: authOrgId } = auth;
-    const organizationId = request.headers.get("x-organization-id") || authOrgId;
+    const { organizationId } = auth;
 
     // ⚠️ Siempre UTC — evita discrepancias localhost vs Vercel
     const today              = new Date();

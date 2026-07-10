@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 export async function GET(request: NextRequest) {
   try {
-    // Use UserService to get user stats
-    const organizationId = request.headers.get("x-organization-id");
-    const response = await userService.getUserStats(organizationId || undefined);
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const { organizationId } = auth;
 
-    // Return standardized response
+    const response = await userService.getUserStats(organizationId);
     return NextResponse.json(response);
   } catch (error) {
-    // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
       operation: "getUserStats",
       resource: "users",
