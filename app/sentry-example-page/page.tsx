@@ -53,7 +53,7 @@ export default function Page() {
           <a
             target="_blank"
             rel="noopener"
-            href="https://blacksheepla.sentry.io/issues/?project=4511193070239744"
+            href="https://boxy-0g.sentry.io/issues/?project=4511509174026240"
           >
             Issues Page
           </a>

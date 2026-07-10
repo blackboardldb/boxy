@@ -53,7 +53,8 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/_next") ||
       pathname.startsWith("/api/") ||
       pathname.startsWith("/favicon") ||
-      pathname.startsWith("/public"));
+      pathname.startsWith("/public") ||
+      pathname.startsWith("/sentry-example-page"));
 
   if (isRootPublic) {
     return NextResponse.next({ request: { headers: requestHeaders } });
