@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const renewals = await prisma.membershipRenewal.findMany({
       where: {
         status,
-        user: { memberships: { some: { organizationId } } },
+        organizationId,
       },
       include: {
         user: {
