@@ -21,7 +21,11 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    // [BUG-ALERT-03] Filtrar por organizationId — sin esto el admin veía alertas de todos los centros.
+    // organizationId es String? en el schema (null = alerta global del sistema);
+    // el panel de gestión solo muestra las del propio centro.
     const alerts = await prisma.inAppAlert.findMany({
+      where: { organizationId: auth.organizationId },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(alerts);
@@ -48,6 +52,8 @@ export async function POST(req: NextRequest) {
     }
     const { title, content, type, startDate, endDate, sendPush } = parsed.data;
 
+    // [BUG-ALERT-02] Guardar organizationId para aislar la alerta al centro que la publica.
+    // Sin esto queda null y el filtro del GET no puede discriminar por tenant.
     const alert = await prisma.inAppAlert.create({
       data: {
         title,
@@ -55,6 +61,7 @@ export async function POST(req: NextRequest) {
         type,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
+        organizationId: auth.organizationId,
       },
     });
 
@@ -64,8 +71,10 @@ export async function POST(req: NextRequest) {
 
     if (shouldSendPush) {
       try {
-        // 1. Obtener todas las suscripciones — solo los campos necesarios para enviar el push
+        // 1. Obtener suscripciones del propio centro — [BUG-ALERT-02] sin este filtro
+        // se enviaban push a alumnos de otros centros.
         const subscriptions = await prisma.pushSubscription.findMany({
+          where: { organizationId: auth.organizationId },
           select: { id: true, subscription: true },
         });
 
@@ -92,9 +101,9 @@ export async function POST(req: NextRequest) {
           }
         });
 
-        // No bloqueamos completamente el retorno de la API si las push tardan un poco
-        // Pero usamos settle para asegurar que intentamos todas
-        Promise.allSettled(pushPromises);
+        // [BUG-ALERT-02] await es obligatorio en Serverless (Vercel) — sin él la función
+        // se cierra antes de que los envíos se resuelvan y se pierden notificaciones.
+        await Promise.allSettled(pushPromises);
       } catch (pushErr) {
         console.error("Error en flujo de Push Notifications:", pushErr);
       }
