@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const data = renewals.map((r) => {
       const plan = r.requestedPlanId ? planMap[r.requestedPlanId] : null;
       const details = r.renewalDetails as { requestedPlanName?: string; requestedPlanPrice?: number; requestedPlanClassLimit?: number; requestedPlanDuration?: number; } | null;
-      const currentPeriodEnd = r.user.userMembership?.currentPeriodEnd;
+      const currentPeriodEnd = r.user.userMembership?.[0]?.currentPeriodEnd;
       const daysUntilExpiration = currentPeriodEnd
         ? Math.ceil(
             (new Date(currentPeriodEnd).getTime() - Date.now()) /

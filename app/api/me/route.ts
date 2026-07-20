@@ -104,10 +104,11 @@ export async function GET() {
       };
 
       const promoted = await prisma.userMembership.upsert({
-        where:  { userId: dbUser.id },
+        where:  { userId_organizationId: { userId: dbUser.id, organizationId } },
         create: { userId: dbUser.id, ...promotionData },
         update: promotionData,
       });
+
 
       // Marcar el renewal como approved
       await prisma.membershipRenewal.update({
@@ -140,7 +141,7 @@ export async function GET() {
 
         if (isReadyToActivate) {
           const promoted = await prisma.userMembership.update({
-            where: { userId: dbUser.id },
+            where: { userId_organizationId: { userId: dbUser.id, organizationId: um.organizationId } },
             data:  { status: "active" },
           });
           dbUser.userMembership = promoted;

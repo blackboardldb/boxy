@@ -6,6 +6,7 @@ import { ValidationError } from "../errors/types";
 import { getChileOffset } from "../utils";
 import { prisma } from "../prisma";
 import { ValidationService } from "../validation-service";
+import { withErrorHandling } from "../errors/handler";
 
 export class ClassService extends BaseService<ClassSession> {
   protected repositoryName = "classes" as const;
@@ -40,6 +41,7 @@ export class ClassService extends BaseService<ClassSession> {
 
     // Build where clause
     const where: Record<string, unknown> = {};
+
 
     // MT-06: Filtrar por tenant — obligatorio para aislar clases por centro
     if (params?.organizationId) {
@@ -117,17 +119,16 @@ export class ClassService extends BaseService<ClassSession> {
     userId: string, 
     options: { isAdmin?: boolean } = {}
   ): Promise<ApiResponse<ClassSession>> {
-    const { withErrorHandling } = require("../errors/handler");
-    
     return withErrorHandling(
       async () => {
         const provider = this.dataProvider;
         
-        // 1. Fetch data
-        const [classSession, user] = await Promise.all([
-          provider.classes.findUnique({ where: { id: classId } }),
-          provider.users.findUnique({ where: { id: userId } })
-        ]);
+        // 1. Fetch data secuencial para inyectar organizationId
+        const classSession = await provider.classes.findUnique({ where: { id: classId } });
+        const user = await provider.users.findUnique(
+          { where: { id: userId } },
+          classSession?.organizationId ?? ""
+        );
 
         if (!classSession) throw new ValidationError("Clase no encontrada");
         if (!user) throw new ValidationError("Usuario no encontrado");
@@ -193,15 +194,15 @@ export class ClassService extends BaseService<ClassSession> {
    * Universal cancellation method
    */
   async cancelRegistration(classId: string, userId: string): Promise<ApiResponse<ClassSession>> {
-    const { withErrorHandling } = require("../errors/handler");
-
     return withErrorHandling(
       async () => {
         const provider = this.dataProvider;
-        const [classSession, user] = await Promise.all([
-          provider.classes.findUnique({ where: { id: classId } }),
-          provider.users.findUnique({ where: { id: userId } })
-        ]);
+        // Fetch data secuencial para inyectar organizationId
+        const classSession = await provider.classes.findUnique({ where: { id: classId } });
+        const user = await provider.users.findUnique(
+          { where: { id: userId } },
+          classSession?.organizationId ?? ""
+        );
 
         if (!classSession) throw new ValidationError("Clase no encontrada");
         if (!user) throw new ValidationError("Usuario no encontrado");

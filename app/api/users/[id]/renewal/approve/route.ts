@@ -132,7 +132,7 @@ export async function POST(
     const [updatedMembership] = await prisma.$transaction([
       // 5a. Actualizar la membresía del usuario
       prisma.userMembership.upsert({
-        where: { userId },
+        where: { userId_organizationId: { userId, organizationId: orgId! } },
         update: {
           status: "active",
           planId: planData.id || null,
@@ -190,7 +190,7 @@ export async function POST(
 
     // 5c. Consolidar el período anterior en user_monthly_stats (fire-and-forget)
     // Se ejecuta fuera de la transacción para no bloquearla. Si falla, no afecta la aprobación.
-    const prevMembership = user.userMembership;
+    const prevMembership = user.userMembership?.[0];
     if (prevMembership?.currentPeriodStart && prevMembership?.currentPeriodEnd) {
       const prevPeriodStart = prevMembership.currentPeriodStart;
       const prevPeriodEnd   = prevMembership.currentPeriodEnd;

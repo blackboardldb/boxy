@@ -71,14 +71,18 @@ export interface Repository<T extends BaseEntity> {
 // Specific repository interfaces
 export interface UserRepository
   extends Repository<import("../types").FitCenterUserProfile> {
+  // HAL-BOXY-17: organizationId asegura aislamiento cross-tenant.
+  // Obligatorio en la práctica para lecturas scoped — el parámetro es opcional en la interfaz
+  // solo para mantener compatibilidad con la firma base del Repository genérico.
+  // La implementación lanza error si se omite en contexto que lo requiere.
+  findUnique(params: FindUniqueParams, organizationId?: string): Promise<import("../types").FitCenterUserProfile | null>;
+  // findUniqueGlobalScope: SOLO para callers que necesitan scope global por diseño (ej. soft-delete).
+  findUniqueGlobalScope(params: FindUniqueParams): Promise<import("../types").FitCenterUserProfile | null>;
   findByEmail(
     email: string
   ): Promise<import("../types").FitCenterUserProfile | null>;
   findByRole(role: string): Promise<import("../types").FitCenterUserProfile[]>;
-  findByMembershipStatus(
-    status: string
-  ): Promise<import("../types").FitCenterUserProfile[]>;
-  getUserStats(): Promise<{
+  getUserStats(organizationId?: string): Promise<{
     total: number;
     active: number;
     pending: number;
@@ -86,7 +90,6 @@ export interface UserRepository
     inactive: number;
     frozen: number;
   }>;
-  updateMembershipStatus(userId: string, status: string): Promise<import("../types").FitCenterUserProfile>;
   softDelete(id: string): Promise<import("../types").FitCenterUserProfile>;
 }
 

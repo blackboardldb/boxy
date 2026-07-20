@@ -153,8 +153,9 @@ export class UserService extends BaseService<FitCenterUserProfile> {
   async deleteUser(id: string): Promise<ApiResponse<FitCenterUserProfile>> {
     return this.withErrorHandling(async () => {
 
-      // 1. Obtener el usuario (sin filtro de deletedAt — findUnique lo ve)
-      const existingUser = await this.userRepository.findUnique({ where: { id } });
+      // 1. Obtener el usuario (sin filtro de deletedAt — findUniqueGlobalScope lo ve)
+      // scope global intencional: soft-delete cross-tenant (necesitamos saber si tiene membresía en cualquier centro)
+      const existingUser = await this.userRepository.findUniqueGlobalScope({ where: { id } });
       if (!existingUser) {
         throw new NotFoundError("User", id);
       }
@@ -163,13 +164,12 @@ export class UserService extends BaseService<FitCenterUserProfile> {
       // Usamos el nuevo método dedicado softDelete
       const updatedUser = await this.userRepository.softDelete(id);
 
-      // 3. Desactivar membresía y detener auto-renovación
+      // 3. Desactivar membresías y detener auto-renovación en TODOS los centros
+      // updateMany cross-tenant: un usuario eliminado debe quedar inactivo en todos sus centros.
       if (existingUser.membership) {
-        await this.userRepository.updateMembershipStatus(id, "inactive");
-        // updateMembershipStatus solo cambia status — desactivar autoRenews por separado
-        await prisma.userMembership.update({
+        await prisma.userMembership.updateMany({
           where: { userId: id },
-          data: { autoRenews: false },
+          data:  { status: "inactive", autoRenews: false },
         });
       }
 
@@ -269,106 +269,9 @@ export class UserService extends BaseService<FitCenterUserProfile> {
     });
   }
 
-  // Get users with expiring memberships
-  async getUsersWithExpiringMemberships(
-    days: number = 7
-  ): Promise<ApiResponse<FitCenterUserProfile[]>> {
-    return this.withErrorHandling(async () => {
-      const users = await this.userRepository.findMany();
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() + days);
-      const cutoffString = cutoffDate.toISOString().split("T")[0];
 
-      const expiringUsers = users.items.filter((user) => {
-        if (!user.membership || user.membership.status !== "active") {
-          return false;
-        }
-        return user.membership.currentPeriodEnd <= cutoffString;
-      });
 
-      return this.createSuccessResponse(expiringUsers);
-    });
-  }
 
-  // Approve pending user
-  // HAL-01 Phase 3B: status es ciudadano de primera clase — sin spread del JSONB
-  async approveUser(
-    userId: string
-  ): Promise<ApiResponse<FitCenterUserProfile>> {
-    return this.withErrorHandling(async () => {
-      const user = await this.userRepository.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundError("User", userId);
-      }
-
-      if (!user.membership || user.membership.status !== "pending") {
-        throw new ValidationError("User is not pending approval");
-      }
-
-      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
-      const updatedUser = await this.userRepository.updateMembershipStatus(userId, "active");
-
-      await this.afterUserApproval(updatedUser);
-
-      return this.createSuccessResponse(updatedUser);
-    });
-  }
-
-  // Reject pending user
-  // HAL-01 Phase 3B: status es ciudadano de primera clase — sin spread del JSONB.
-  // rejectionInfo eliminado: no tenía columna en Prisma y nunca se persistía realmente.
-  async rejectUser(
-    userId: string,
-    reason: string,
-    rejectedBy: string
-  ): Promise<ApiResponse<FitCenterUserProfile>> {
-    return this.withErrorHandling(async () => {
-      const user = await this.userRepository.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundError("User", userId);
-      }
-
-      if (!user.membership || user.membership.status !== "pending") {
-        throw new ValidationError("User is not pending approval");
-      }
-
-      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
-      const updatedUser = await this.userRepository.updateMembershipStatus(userId, "inactive");
-
-      await this.afterUserRejection(updatedUser, reason);
-
-      return this.createSuccessResponse(updatedUser);
-    });
-  }
-
-  // Update membership status
-  // HAL-01 Phase 3B: delega directamente al repositorio — sin spread del JSONB
-  async updateMembershipStatus(
-    userId: string,
-    status: string
-  ): Promise<ApiResponse<FitCenterUserProfile>> {
-    return this.withErrorHandling(async () => {
-      const user = await this.userRepository.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        throw new NotFoundError("User", userId);
-      }
-
-      if (!user.membership) {
-        throw new ValidationError("User has no membership to update");
-      }
-
-      // Escribe directamente en UserMembership + dual-write JSONB (Phase 3)
-      const updatedUser = await this.userRepository.updateMembershipStatus(userId, status);
-
-      return this.createSuccessResponse(updatedUser);
-    });
-  }
 
   // Get user statistics
   async getUserStats(organizationId?: string): Promise<

@@ -46,7 +46,7 @@ export async function GET(
       lastName: reg.user.lastName,
       email: reg.user.email,
       phone: reg.user.phone,
-      membershipType: reg.user.userMembership?.membershipType ?? "Sin plan",
+      membershipType: reg.user.userMembership?.[0]?.membershipType ?? "Sin plan",
       bookedAt: reg.registeredAt.toISOString(),
     }));
 

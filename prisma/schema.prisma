@@ -34,7 +34,7 @@ model User {
   // Business Relations
   classRegistrations        ClassRegistration[]
   membershipRenewals        MembershipRenewal[]
-  userMembership            UserMembership?
+  userMembership            UserMembership[]
   userLifts                 UserLift[]
   monthlyStats              UserMonthlyStat[]
   routineTemplatesCreated   RoutineTemplate[]         @relation("RoutineTemplatesCreated")
@@ -147,7 +147,7 @@ model MembershipPlan {
 
 model UserMembership {
   id             String  @id @default(cuid())
-  userId         String  @unique
+  userId         String
   organizationId String
   planId         String?
 
@@ -179,6 +179,7 @@ model UserMembership {
   user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan MembershipPlan? @relation(fields: [planId], references: [id])
 
+  @@unique([userId, organizationId])
   @@index([userId])
   @@index([organizationId])
   @@index([status])

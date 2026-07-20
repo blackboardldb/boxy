@@ -6,12 +6,14 @@ import { toMidnightUTC, toDateString } from "../../utils/dates";
 
 // Tipo inferido de Prisma para un User con su UserMembership incluido.
 type UserWithMembership = Prisma.UserGetPayload<{ include: { userMembership: true, membershipRenewals: true } }>;
+// Tipo de un único elemento del array de membresías
+type SingleUserMembership = UserWithMembership["userMembership"][number];
 
 // ─── Helper: UserMembership row → FitCenterMembership shape ─────────────────
 // HAL-01 Fase 3A: La fuente de verdad es ahora la tabla user_memberships.
 // Los campos @deprecated de centerStats se devuelven como 0 — se calculan
 // en tiempo real desde ClassRegistration (HAL-09, sprint futuro).
-function mapUserMembershipRow(um: NonNullable<UserWithMembership["userMembership"]>): FitCenterMembership | undefined {
+function mapUserMembershipRow(um: SingleUserMembership): FitCenterMembership | undefined {
   if (!um) return undefined;
 
   const toISODate = (d: Date | null | undefined): string =>
@@ -70,8 +72,6 @@ const toDateStr = toDateString;
 // ─── Helper: membership shape → UserMembership upsert data ──────────────────
 // Usado en create() y update() para el dual-write Phase 3.
 function membershipToUpsertData(m: any, organizationId: string) {
-  console.log('[DEBUG membershipToUpsertData] status recibido:', m.status);
-  console.log('[DEBUG membershipToUpsertData] currentPeriodStart:', m.currentPeriodStart);
   
   const safePlanId = (v: string | null | undefined): string | null =>
     v && v.trim() !== "" ? v : null;
@@ -106,9 +106,9 @@ function membershipToUpsertData(m: any, organizationId: string) {
 // Costo: 0 escrituras si no hay nada que promover.
 async function promoteScheduledIfReady(
   userId: string,
-  userMembership: UserWithMembership["userMembership"],
+  userMembership: SingleUserMembership | undefined,
   membershipRenewals: UserWithMembership["membershipRenewals"]
-): Promise<UserWithMembership["userMembership"]> {
+): Promise<SingleUserMembership | undefined> {
   const now = new Date();
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Santiago",
@@ -140,7 +140,7 @@ async function promoteScheduledIfReady(
     };
 
     const promoted = await prisma.userMembership.upsert({
-      where:  { userId },
+      where:  { userId_organizationId: { userId, organizationId: userMembership.organizationId } },
       create: { userId, ...promotionData },
       update: promotionData,
     });
@@ -172,7 +172,7 @@ async function promoteScheduledIfReady(
 
     if (isReady) {
       const promoted = await prisma.userMembership.update({
-        where: { userId },
+        where: { userId_organizationId: { userId, organizationId: userMembership.organizationId } },
         data:  { status: "active" },
       });
       console.log(
@@ -279,15 +279,42 @@ export class PrismaUserRepository implements IUserRepository {
     };
   }
 
-  // ── findUnique ────────────────────────────────────────────────────────────
-  async findUnique(params: FindUniqueParams): Promise<FitCenterUserProfile | null> {
+  // ── findUniqueGlobalScope ─────────────────────────────────────────────────
+  // SOLO para callers que necesitan scope global cross-tenant por diseño.
+  // Ejemplo: soft-delete de usuario (desactiva membresías en TODOS los centros).
+  // No usar para lecturas scoped a un centro — usar findUnique(params, orgId).
+  async findUniqueGlobalScope(params: FindUniqueParams): Promise<FitCenterUserProfile | null> {
     const user = await this.prisma.user.findUnique({
       where:   params.where as Prisma.UserWhereUniqueInput,
       include: {
-        userMembership: true,
+        userMembership: true,   // scope global intencional: cross-tenant
         memberships: true,
         membershipRenewals: {
-          where:   { status: { in: ["pending", "scheduled"] } }, // OPT-01: solo accionables
+          where:   { status: { in: ["pending", "scheduled"] } },
+          orderBy: { requestedAt: "desc" },
+        },
+      },
+    });
+    if (!user) return null;
+    return this.mapToEntity(user);
+  }
+
+  // ── findUnique ────────────────────────────────────────────────────────────
+  // organizationId es obligatorio: garantiza que solo se lea la membresía del
+  // centro correcto y nunca se crucen datos entre tenants.
+  async findUnique(params: FindUniqueParams, organizationId?: string): Promise<FitCenterUserProfile | null> {
+    if (!organizationId) {
+      // Caller no proporcionó organizationId — usar scope global como fallback
+      // para compatibilidad. Prefer findUniqueGlobalScope() explicitamente cuando sea intencional.
+      return this.findUniqueGlobalScope(params);
+    }
+    const user = await this.prisma.user.findUnique({
+      where:   params.where as Prisma.UserWhereUniqueInput,
+      include: {
+        userMembership: { where: { organizationId } },
+        memberships: true,
+        membershipRenewals: {
+          where:   { status: { in: ["pending", "scheduled"] } },
           orderBy: { requestedAt: "desc" },
         },
       },
@@ -296,11 +323,16 @@ export class PrismaUserRepository implements IUserRepository {
 
     // BUG-02 Propuesta A: promover scheduled → active antes de mapear.
     // Si no hay nada que promover, esta función retorna sin escribir en DB.
-    user.userMembership = await promoteScheduledIfReady(
+    const umRaw = Array.isArray(user.userMembership) ? user.userMembership[0] : user.userMembership;
+    const promoted = await promoteScheduledIfReady(
       user.id,
-      user.userMembership,
+      umRaw,
       user.membershipRenewals
     );
+    // promoteScheduledIfReady retorna el objeto actualizado o el original — lo reasignamos
+    if (promoted !== umRaw) {
+      (user as any).userMembership = [promoted];
+    }
 
     return this.mapToEntity(user);
   }
@@ -340,7 +372,7 @@ export class PrismaUserRepository implements IUserRepository {
     // Si viene membership en el payload, persistir en UserMembership (tabla relacional)
     if (data.membership) {
       await this.prisma.userMembership.upsert({
-        where:  { userId: created.id },
+        where:  { userId_organizationId: { userId: created.id, organizationId: orgId } },
         create: { userId: created.id, ...membershipToUpsertData(data.membership, orgId) },
         update: {},  // ya existe → no sobreescribir
       });
@@ -431,7 +463,7 @@ export class PrismaUserRepository implements IUserRepository {
         // Plan inmediato → upsert en UserMembership
         const upsertData = membershipToUpsertData(m, orgId);
         await this.prisma.userMembership.upsert({
-          where:  { userId: id },
+          where:  { userId_organizationId: { userId: id, organizationId: orgId } },
           create: { userId: id, ...upsertData },
           update: upsertData,
         });
@@ -568,16 +600,7 @@ export class PrismaUserRepository implements IUserRepository {
     return users.map((u) => this.mapToEntity(u));
   }
 
-  // ── findByMembershipStatus ────────────────────────────────────────────────
-  // ANTES: membership: { path: ["status"], equals: status } → Full Table Scan JSONB
-  // AHORA: userMembership: { status }                       → índice btree O(log n)
-  async findByMembershipStatus(status: string): Promise<FitCenterUserProfile[]> {
-    const users = await this.prisma.user.findMany({
-      where:   { userMembership: { status }, deletedAt: null },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
-    });
-    return users.map((u) => this.mapToEntity(u));
-  }
+
 
   // ── getUserStats ──────────────────────────────────────────────────────────
   // ANTES: 5 queries separadas con JSONB path → 5 Full Table Scans
@@ -608,38 +631,20 @@ export class PrismaUserRepository implements IUserRepository {
     return stats;
   }
 
-  // ── updateMembershipStatus ────────────────────────────────────────────────
-  // ANTES: Lee JSONB, muta el objeto, escribe JSONB
-  // AHORA: Escribe en UserMembership (tabla) + dual-write JSONB para Phase 3
-  async updateMembershipStatus(userId: string, status: string): Promise<FitCenterUserProfile> {
-    const user = await this.prisma.user.findUnique({
-      where:   { id: userId },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } } },
-    });
-    if (!user) throw new Error("User not found");
-    if (!user.userMembership) throw new Error("UserMembership not found for user");
 
-    // HAL-01 Fase 4 Sprint 4: Dual-write JSONB eliminado.
-    // Solo se actualiza UserMembership (tabla relacional).
-    await this.prisma.userMembership.update({
-      where: { userId },
-      data:  { status },
-    });
-
-    const updated = await this.prisma.user.findUnique({
-      where:   { id: userId },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: 'desc' } }, memberships: true },
-    });
-    return this.mapToEntity(updated as any);
-  }
 
   // ── mapToEntity ───────────────────────────────────────────────────────────
   // HAL-01 Fase 4 Sprint 4: Lee exclusivamente desde userMembership (tabla relacional).
   // El fallback JSONB fue eliminado — la columna membership se dropeará en Sprint 4.
   private mapToEntity(prismaUser: any): FitCenterUserProfile {
-    const membership = prismaUser.userMembership
-      ? mapUserMembershipRow(prismaUser.userMembership)
-      : undefined;
+    // HAL-BOXY-17: userMembership ahora es un array (relación 1:N por tenant).
+    // Tomamos el primer elemento — en todas las lecturas filtradas por organizationId
+    // solo habrá uno. Array.isArray es defensivo para compatibilidad con cualquier
+    // caller que no haya sido migrado aún.
+    const umRaw = Array.isArray(prismaUser.userMembership)
+      ? prismaUser.userMembership[0]
+      : prismaUser.userMembership;
+    const membership = umRaw ? mapUserMembershipRow(umRaw) : undefined;
 
     const orgMember = prismaUser.memberships?.[0];
 

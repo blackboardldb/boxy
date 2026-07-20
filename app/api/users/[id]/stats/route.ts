@@ -178,7 +178,7 @@ export async function GET(
 
     // "Miembro desde" — usa la misma fuente que el perfil: userMembership.startDate
     // para que ambas pantallas muestren exactamente el mismo valor.
-    const membershipStartDate = dbUser.userMembership?.startDate ?? null;
+    const membershipStartDate = dbUser.userMembership?.[0]?.startDate ?? null;
     const memberSince: string | null = membershipStartDate
       ? new Date(membershipStartDate).toLocaleDateString("es-CL", {
           month: "long",
@@ -326,7 +326,7 @@ export async function GET(
     // Usa el array de registrations ya en memoria (sin query adicional).
     // organizationId ya está aplicado en el filtro de registrations (línea 137).
     // No afecta periodsCompleted ni logros — es puramente visual.
-    const um = dbUser.userMembership;
+    const um = dbUser.userMembership?.[0];
     if (um?.status === "active" && um.currentPeriodStart) {
       const activePeriodStart = toDateString(um.currentPeriodStart) ?? "";
       // Evitar duplicar si user_monthly_stats ya consolidó este período

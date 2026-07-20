@@ -110,7 +110,7 @@ export class ValidationService {
     }
 
     const userMembership = await prisma.userMembership.findUnique({
-      where: { userId },
+      where: { userId_organizationId: { userId, organizationId: classSession.organizationId } },
     });
 
     if (!userMembership) {
@@ -338,7 +338,7 @@ export class ValidationService {
 
     // 3. Verificar política de cancelación
     const userMembership = await prisma.userMembership.findUnique({
-      where: { userId },
+      where: { userId_organizationId: { userId, organizationId: classSession.organizationId } },
     });
     const cancellationHours = userMembership?.cancellationHours || 2;
     const cancellationDeadline = addHours(classStart, -cancellationHours);

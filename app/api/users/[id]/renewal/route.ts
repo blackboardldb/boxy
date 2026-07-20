@@ -108,7 +108,7 @@ export async function POST(
     });
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
-    const currentPlanIdRaw = user.userMembership?.planId ?? null;
+    const currentPlanIdRaw = user.userMembership?.[0]?.planId ?? null;
     let currentPlanId: string | null = null;
     if (currentPlanIdRaw) {
       const exists = await prisma.membershipPlan.findUnique({
@@ -182,7 +182,7 @@ export async function POST(
       const planConfig = plan.config as any;
 
       await prisma.userMembership.upsert({
-        where: { userId },
+        where: { userId_organizationId: { userId, organizationId: orgId } },
         update: {
           status: "active",
           planId: planId,
@@ -231,13 +231,13 @@ export async function POST(
 
     // Consolidar período anterior en user_monthly_stats cuando el admin asigna un nuevo plan directamente.
     // Fire-and-forget: no bloquea la respuesta ni falla la operación si hay error.
-    if (autoApprove && user.userMembership?.currentPeriodStart && user.userMembership?.currentPeriodEnd) {
+    if (autoApprove && user.userMembership?.[0]?.currentPeriodStart && user.userMembership?.[0]?.currentPeriodEnd) {
       const prevPeriodStart = toMidnightUTC(
-        user.userMembership.currentPeriodStart.toISOString().split("T")[0]
+        user.userMembership[0].currentPeriodStart.toISOString().split("T")[0]
       )!;
-      const prevPeriodEnd   = user.userMembership.currentPeriodEnd;
-      const prevPlanName    = user.userMembership.membershipType ?? "Plan";
-      const prevClassLimit  = user.userMembership.classLimit ?? 0;
+      const prevPeriodEnd   = user.userMembership[0].currentPeriodEnd;
+      const prevPlanName    = user.userMembership[0].membershipType ?? "Plan";
+      const prevClassLimit  = user.userMembership[0].classLimit ?? 0;
       const orgId           = user.memberships?.[0]?.organizationId;
       if (!orgId) throw new Error("organizationId is required");
 

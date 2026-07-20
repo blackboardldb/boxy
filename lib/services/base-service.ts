@@ -529,6 +529,11 @@ export abstract class BaseService<T extends import("../data-layer/types").BaseEn
   // NOTA: Las keys de caché no incluyen organizationId.
   // En single-tenant (actual) esto es seguro. Con múltiples tenants,
   // agregar organizationId a cada key antes de activar el segundo tenant.
+  // ⚠️ NOTA: withCache() usa un Map en memoria de instancia. En Vercel serverless,
+  // cada invocación puede correr en un worker distinto sin memoria compartida,
+  // por lo que este caché NO persiste de forma confiable entre requests.
+  // Usado hoy por: discipline-service, instructor-service, plan-service, user-service.
+  // No eliminar sin antes decidir un reemplazo (caché real, ej. Redis/Upstash).
   private cache = new Map<
     string,
     { data: unknown; timestamp: number; ttl: number }
