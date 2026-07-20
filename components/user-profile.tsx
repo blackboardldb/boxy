@@ -20,7 +20,7 @@ import { FitCenterUserProfile } from "@/lib/types";
 import { SkeletonUserProfile } from "@/components/ui/skeleton";
 import { PhoneInputCL } from "./PhoneInputCL";
 import { WhatsAppLink } from "./WhatsAppLink";
-import { StatsDrawer } from "./StatsDrawer";
+import { UserStatsBlock } from "./UserStatsBlock";
 import { useUserStats } from "@/lib/hooks/useUserStats";
 import {
   MEMBERSHIP_STATUS_LABELS,
@@ -43,7 +43,6 @@ export function UserProfile() {
   const [editableEmergencyContact, setEditableEmergencyContact] = useState("");
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   // Historial de planes — desplegable + paginación
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -538,35 +537,10 @@ export function UserProfile() {
           );
         })()}
 
-        {/* Estadísticas — card de entrada */}
-        {userData.id && (() => {
-          const periodsCompleted = statsData?.periodsCompleted ?? 0;
-          // Usa la misma fuente que el header para evitar discrepancias
-          const membershipStart = userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince ?? null;
-          const memberSinceLabel = membershipStart ? formatMemberSince(membershipStart) : null;
-          return (
-            <button
-              id="stats-entry-card"
-              onClick={() => setIsStatsOpen(true)}
-              className="w-full text-left bg-gradient-to-r from-lime-400 to-green-400 rounded-xl p-4 flex items-center justify-between gap-3  transition-colors"
-            >
-              <div className="flex-1 flex items-center justify-start gap-3">
-                <Medal className="w-8 h-8 text-black" />
-                <div>
-                  <p className="text-lg font-bold">Mis estadísticas</p>
-                  <p className="text-sm ">
-                    {memberSinceLabel
-                      ? `Miembro desde ${memberSinceLabel}`
-                      : periodsCompleted > 0
-                        ? `${periodsCompleted} ${periodsCompleted === 1 ? "período" : "períodos"} completados`
-                        : "Tu historial de entrenamiento"}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5  flex-shrink-0" />
-            </button>
-          );
-        })()}
+        {/* Estadísticas — bloque principal (reemplaza al botón y al drawer) */}
+        {userData.id && (
+          <UserStatsBlock userId={userData.id} />
+        )}
 
         {/* Notificaciones App */}
         {permission !== "unsupported" && (
@@ -898,14 +872,6 @@ export function UserProfile() {
         </div>
       </div>
 
-      {/* Drawer de estadísticas — lazy load al abrirse */}
-      {userData.id && (
-        <StatsDrawer
-          userId={userData.id}
-          isOpen={isStatsOpen}
-          onClose={() => setIsStatsOpen(false)}
-        />
-      )}
     </div>
   );
 }
