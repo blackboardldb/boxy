@@ -1,5 +1,11 @@
 "use client";
 
+// BUG-08 (resuelto por diseño): esta página es un Client Component ("use client"), por lo que
+// NO puede invocar requireManager() directamente (es una función de servidor async).
+// La protección recae en app/manager/(dashboard)/layout.tsx, que ejecuta requireManager()
+// antes de renderizar cualquier hijo de esta ruta.
+// Si en el futuro se migra a Server Component, agregar `await requireManager()` aquí.
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

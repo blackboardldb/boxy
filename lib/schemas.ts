@@ -51,6 +51,7 @@ export const userSchema = z.object({
   updatedAt: z.string(),
 });
 
+// Schema de creación completo (para uso admin — incluye role y organizationId)
 export const createUserSchema = z.object({
   email: z.string().email(),
   firstName: z.string().min(1),
@@ -76,7 +77,31 @@ export const createUserSchema = z.object({
   endDate: z.string().optional(),   // YYYY-MM-DD — fin del período de membresía
 });
 
-export const updateUserSchema = createUserSchema.partial();
+// Aliases explícitos para uso admin
+export const adminCreateUserSchema = createUserSchema;
+export const adminUpdateUserSchema = createUserSchema.partial();
+
+// Schema para el alumno editando su propio perfil:
+// excluye explícitamente role, organizationId, planId, endDate, membership y skipAutomaticRenewal.
+// NUNCA derivar de createUserSchema.partial() — ese expone campos privilegiados.
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  emergencyContact: z
+    .object({
+      name: z.string(),
+      phone: z.string(),
+      relationship: z.string(),
+    })
+    .optional(),
+  gender: z.enum(["masculino", "femenino", "otro", "prefiero_no_decir"]).optional(),
+  formaDePago: z.enum(["contado", "transferencia", "debito", "credito"]).optional(),
+});
+
+// Alias retroactivo — reemplazar gradualmente por adminUpdateUserSchema en imports nuevos.
+export const updateUserSchema = adminUpdateUserSchema;
 
 // Class schemas
 export const classSessionSchema = z.object({

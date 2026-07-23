@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateClassSessionSchema } from "@/lib/schemas";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+
 
 
 export async function GET(
@@ -12,6 +14,11 @@ export async function GET(
   try {
     id = (await params).id;
 
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     if (!id) {
       return NextResponse.json(
         { error: "Class ID is required" },
@@ -20,7 +27,7 @@ export async function GET(
     }
 
     // Use ClassService to get class by ID
-    const response = await classService.findById(id);
+    const response = await classService.getClassById(id);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -46,6 +53,12 @@ export async function PUT(
 ) {
   let id = "unknown";
   try {
+    // BUG-01: guard faltante en mutación de clase
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
     if (!id) {
@@ -63,8 +76,13 @@ export async function PUT(
       );
     }
 
+    const dataWithOrg = {
+      ...parsed.data,
+      organizationId: auth.organizationId
+    };
+
     // Use ClassService to update class with validation
-    const response = await classService.updateClass(id, parsed.data);
+    const response = await classService.updateClass(id, dataWithOrg);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -90,6 +108,12 @@ export async function DELETE(
 ) {
   let id = "unknown";
   try {
+    // BUG-01: guard faltante en eliminación de clase
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
     if (!id) {

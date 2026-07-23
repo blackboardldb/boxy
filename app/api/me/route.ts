@@ -29,7 +29,15 @@ export async function GET() {
         gender: true,
         dateOfBirth: true,
         emergencyContact: true,
-        userMembership: true,    // ← HAL-01: fuente de verdad relacional
+        // BUG-09: userMembership es UserMembership[] en Prisma (array), NO un objeto singular.
+        // Filtrar por organizationId de sesión para obtener únicamente la membresía del
+        // centro activo — evita mezclar datos de centros distintos para un usuario multi-tenant.
+        // ⚠️ Se lee [0] de forma explícita porque el schema aún mantiene `id @id` (PK individual).
+        // Cuando cierre la migración a @@id([userId, organizationId]), este include retornará
+        // un objeto único y se podrá eliminar el [0].
+        userMembership: {
+          where: { organizationId },
+        },
         membershipRenewals: {
           where: { status: { in: ['pending', 'scheduled'] } },
           orderBy: { requestedAt: 'desc' },
@@ -68,6 +76,14 @@ export async function GET() {
         { status: 404 }
       );
     }
+
+    // BUG-09: userMembership llega como array (UserMembership[]) filtrado por organizationId.
+    // Normalizar a objeto singular aquí — todo el código downstream opera con `dbUser.userMembership`
+    // como si fuera 1-a-1. El [0] desaparece cuando cierre la migración a @@id compuesto.
+    if (dbUser) {
+      dbUser.userMembership = dbUser.userMembership?.[0] ?? null;
+    }
+
 
     // 3. Promoción automática scheduled → active
     // Primero: revisar si hay un MembershipRenewal con status='scheduled' y startDate <= hoy
@@ -192,7 +208,8 @@ export async function GET() {
     const um = dbUser.userMembership;
     const membership = um
       ? {
-          id: um.id,
+          // Migración PK compuesta: UserMembership ya no tiene campo `id` individual.
+          id: `${um.userId}_${um.organizationId}`,
           organizationId: um.organizationId,
           organizationName: organizationName,
           status: um.status,

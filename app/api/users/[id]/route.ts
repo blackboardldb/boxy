@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { updateUserSchema } from "@/lib/schemas";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { adminUpdateUserSchema, updateProfileSchema } from "@/lib/schemas";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
 
 export async function GET(
@@ -36,9 +36,28 @@ export async function PUT(
 ) {
   let id = "unknown";
   try {
+    // BUG-03: exigir sesión activa antes de cualquier mutación
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
-    const parsed = updateUserSchema.safeParse(await request.json());
+    const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
+
+    // BUG-03: un alumno solo puede editar su propio perfil
+    if (!isAdmin && auth.user.id !== id) {
+      return NextResponse.json(
+        { error: "Sin permisos para editar este perfil" },
+        { status: 403 }
+      );
+    }
+
+    // BUG-03: admins usan el schema completo; alumnos usan el schema restringido
+    // (excluye role, organizationId, planId, membership — previene escalación de privilegios)
+    const schema = isAdmin ? adminUpdateUserSchema : updateProfileSchema;
+    const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: parsed.error.errors[0].message },

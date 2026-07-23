@@ -631,22 +631,20 @@ const ORGANIZATION_TIMEZONE = "America/Santiago";
  */
 export function getChileOffset(date: Date): string {
   try {
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const timeString = new Intl.DateTimeFormat("en-US", {
       timeZone: ORGANIZATION_TIMEZONE,
       timeZoneName: "shortOffset",
-    }).formatToParts(date);
-
-    const offsetPart = parts.find((p) => p.type === "timeZoneName");
-    if (!offsetPart) return "-03:00"; // Fallback seguro (verano)
-
-    const offset = offsetPart.value.replace("GMT", "");
-
-    if (offset === "") return "+00:00";
-    if (offset.includes(":")) return offset;
-
-    const sign = offset.startsWith("-") ? "-" : "+";
-    const absOffset = offset.replace(/[+-]/, "").padStart(2, "0");
-    return `${sign}${absOffset}:00`;
+    }).format(date);
+    const match = timeString.match(/GMT([+-]\d{1,2}(?::?\d{2})?)/);
+    if (!match) return "-03:00";
+    let offset = match[1];
+    
+    // Normalizar a formato completo "+HH:mm" o "-HH:mm" para que new Date() no falle
+    if (offset.length === 2) offset = offset[0] + "0" + offset[1] + ":00"; // "-4" -> "-04:00"
+    else if (offset.length === 3 && !offset.includes(":")) offset += ":00"; // "-04" -> "-04:00"
+    else if (offset.length === 5 && !offset.includes(":")) offset = offset.slice(0, 3) + ":" + offset.slice(3); // "-0400" -> "-04:00"
+    
+    return offset;
   } catch (e) {
     return "-03:00"; // Fallback en caso de error en Intl
   }

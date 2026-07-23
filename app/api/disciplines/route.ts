@@ -62,9 +62,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use DisciplineService to create discipline with validation
-    const response = await disciplineService.createDiscipline(parsed.data);
+    // Inject organizationId from auth context
+    const dataWithOrg = {
+      ...parsed.data,
+      organizationId: auth.organizationId
+    };
 
+    // Use DisciplineService to create discipline with validation
+    const response = await disciplineService.createDiscipline(dataWithOrg);
     // Return standardized response
     return NextResponse.json(response, {
       status: response.success ? 201 : 400,

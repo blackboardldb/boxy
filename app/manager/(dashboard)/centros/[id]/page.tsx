@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PaymentModal } from "../components/payment-modal";
 import { StatusSwitch } from "../components/status-switch";
-import { MembersList } from "../components/members-list";
 
 export default async function CentroDetailPage({
   params,
@@ -14,13 +13,13 @@ export default async function CentroDetailPage({
   await requireManager();
   const { id } = await params;
 
+  // BUG-07: se usa _count en lugar de include de members con PII.
+  // Esta página está en el scope de Manager — el manager sólo debe ver conteos de billing,
+  // no datos personales (nombre, email) de los alumnos/coaches del centro.
   const org = await prisma.organization.findUnique({
     where: { id },
     include: {
-      members: {
-        include: { user: { select: { email: true, firstName: true, lastName: true } } },
-        orderBy: { joinedAt: "desc" },
-      },
+      _count: { select: { members: true } },
       payments: { orderBy: { paidAt: "desc" }, take: 20 },
       events: { orderBy: { createdAt: "desc" }, take: 50 },
     },
@@ -61,8 +60,16 @@ export default async function CentroDetailPage({
 
       {/* Tabs (static — Fase 5 full implementation) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Alumnos */}
-        <MembersList members={org.members} />
+        {/* Conteo de Miembros — BUG-07: no se expone lista de PII */}
+        <div className="border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
+            👥 Miembros
+          </div>
+          <div className="px-4 py-6 text-center">
+            <p className="text-3xl font-bold">{org._count.members}</p>
+            <p className="text-zinc-500 text-sm mt-1">miembros registrados</p>
+          </div>
+        </div>
 
         {/* Eventos */}
         <div className="border border-zinc-800 rounded-xl overflow-hidden">

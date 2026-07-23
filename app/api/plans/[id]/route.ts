@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { planService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updatePlanSchema } from "@/lib/schemas";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
 
 export async function GET(
@@ -10,6 +11,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     if (!id) {
       return NextResponse.json(
@@ -46,6 +52,11 @@ export async function PUT(
   try {
     const { id } = await params;
 
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     if (!id) {
       return NextResponse.json(
         { error: "Plan ID is required" },
@@ -61,8 +72,13 @@ export async function PUT(
       );
     }
 
+    const dataWithOrg = {
+      ...parsed.data,
+      organizationId: auth.organizationId
+    };
+
     // Use PlanService to update plan with validation
-    const response = await planService.updatePlan(id, parsed.data);
+    const response = await planService.updatePlan(id, dataWithOrg);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -88,6 +104,11 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     if (!id) {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { disciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateDisciplineSchema } from "@/lib/schemas";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
 
 
 export async function GET(
@@ -11,6 +12,11 @@ export async function GET(
   let id = "unknown";
   try {
     id = (await params).id;
+
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     if (!id) {
       return NextResponse.json(
@@ -48,6 +54,11 @@ export async function PUT(
   try {
     id = (await params).id;
 
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     if (!id) {
       return NextResponse.json(
         { error: "Discipline ID is required" },
@@ -63,8 +74,13 @@ export async function PUT(
       );
     }
 
+    const dataWithOrg = {
+      ...parsed.data,
+      organizationId: auth.organizationId
+    };
+
     // Use DisciplineService to update discipline with validation
-    const response = await disciplineService.updateDiscipline(id, parsed.data);
+    const response = await disciplineService.updateDiscipline(id, dataWithOrg);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -91,6 +107,11 @@ export async function DELETE(
   let id = "unknown";
   try {
     id = (await params).id;
+
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     if (!id) {
       return NextResponse.json(

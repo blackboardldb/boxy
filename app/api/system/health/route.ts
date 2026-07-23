@@ -1,6 +1,9 @@
 // System Health API Endpoint
 // Provides health status of all system components
-
+// 
+// NOTA (Auditoría Multi-Tenant): Este endpoint no tiene callers en el código frontend
+// porque está diseñado para ser consumido por herramientas de monitoreo externo 
+// (ej. Vercel cron, Datadog, UptimeRobot). NO ELIMINAR.
 import { NextRequest, NextResponse } from "next/server";
 import {
   healthChecker,

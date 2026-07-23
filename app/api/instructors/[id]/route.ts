@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateInstructorSchema } from "@/lib/schemas";
+import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+
 
 
 export async function GET(
@@ -10,6 +12,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
     // Use InstructorService to get instructor by ID
     const response = await instructorService.getInstructorById(id);
@@ -38,6 +45,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // BUG-01: guard faltante en actualización de instructor
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id } = await params;
 
     const parsed = updateInstructorSchema.safeParse(await request.json());
@@ -48,8 +61,13 @@ export async function PUT(
       );
     }
 
+    const dataWithOrg = {
+      ...parsed.data,
+      organizationId: auth.organizationId
+    };
+
     // Use InstructorService to update instructor with validation
-    const response = await instructorService.updateInstructor(id, parsed.data);
+    const response = await instructorService.updateInstructor(id, dataWithOrg);
 
     if (!response.success) {
       return NextResponse.json(response, {
@@ -74,6 +92,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // BUG-01: guard faltante en eliminación de instructor
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id } = await params;
 
     // Use InstructorService to delete instructor with validation

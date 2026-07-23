@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 
@@ -12,6 +13,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // BUG-01: guard faltante en cancelación administrativa de inscripción
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id: classId } = await params;
 
     const parsed = cancelRegistrationSchema.safeParse(await request.json());

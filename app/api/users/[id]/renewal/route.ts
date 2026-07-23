@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 import { toMidnightUTC } from "@/lib/utils/dates";
 import { calcularFechaTerminoMembresia } from "@/lib/utils";
@@ -30,6 +30,18 @@ export async function POST(
   try {
     const { id: userId } = await params;
 
+    // BUG-04: guard ausente en flujo sin autoApprove — cualquier actor podía crear
+    // renovaciones a nombre de otro alumno.
+    // Se sube requireAuth() al inicio, independientemente del flag autoApprove.
+    // Si es admin: puede operar sobre cualquier userId.
+    // Si es alumno: solo puede crear renovaciones para su propio userId de sesión.
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
+
     const parsed = renewalRequestSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -39,15 +51,26 @@ export async function POST(
     }
     const { planId, paymentMethod, notes, autoApprove, planName, planPrice, planClassLimit, planDuration, startDate, paymentDate } = parsed.data;
 
-    // Si autoApprove, requerir autenticación de admin antes de continuar
+    // Si autoApprove, verificar que el solicitante sea admin
+    if (autoApprove && !isAdmin) {
+      return NextResponse.json(
+        { error: "Solo un administrador puede usar autoApprove" },
+        { status: 403 }
+      );
+    }
+
+    // Si es alumno solicitando para sí mismo, validar identidad
+    if (!isAdmin && auth.user.id !== userId) {
+      return NextResponse.json(
+        { error: "Solo puedes solicitar renovaciones para tu propia cuenta" },
+        { status: 403 }
+      );
+    }
+
     // Guardamos la referencia al auth para usar organizationId como fallback si el alumno
     // aún no tiene memberships registradas (race condition en flujo de creación).
     let adminOrgId: string | null = null;
     if (autoApprove) {
-      const auth = await requireAdmin();
-      if ("error" in auth) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-      }
       adminOrgId = auth.organizationId;
     }
 

@@ -20,7 +20,9 @@ function mapUserMembershipRow(um: SingleUserMembership): FitCenterMembership | u
     d ? new Date(d).toISOString().split("T")[0] : "";
 
   return {
-    id: um.id,
+    // Migración PK compuesta: UserMembership ya no tiene campo `id` individual.
+    // Se construye un identificador determinista para FitCenterMembership.id.
+    id: `${um.userId}_${um.organizationId}`,
     organizationId: um.organizationId,
     organizationName: "",               // enriquecible con join a Organization si se necesita
     status: um.status as MembershipStatus,

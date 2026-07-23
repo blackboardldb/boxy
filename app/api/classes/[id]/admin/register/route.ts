@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 
@@ -8,6 +9,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // BUG-01: guard faltante — cualquier actor podía inscribir alumnos con isAdmin:true sin autenticarse
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id: classId } = await params;
 
     const bodySchema = z.object({ userId: z.string().min(1) });

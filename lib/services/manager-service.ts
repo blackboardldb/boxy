@@ -34,13 +34,9 @@ export interface OrgDetail {
   billingPlan: string | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
-  members: {
-    id: string;
-    role: string;
-    status: string;
-    joinedAt: Date;
-    user: { email: string; name: string };
-  }[];
+  // BUG-07: members se expone solo como conteo — nunca como lista de PII.
+  // Un manager debe ver métricas de billing, no datos personales de alumnos/coaches.
+  memberCount: number;
   payments: {
     id: string;
     amount: number;
@@ -190,15 +186,14 @@ export const managerService = {
     return org;
   },
 
-  /** Detalle completo de un centro. */
+  /** Detalle completo de un centro (sin PII de miembros). */
   async getById(id: string): Promise<OrgDetail | null> {
     const org = await prisma.organization.findUnique({
       where: { id },
       include: {
-        members: {
-          include: { user: { select: { email: true, firstName: true, lastName: true } } },
-          orderBy: { joinedAt: "desc" },
-        },
+        // BUG-07: se usa _count en lugar de include de members con PII.
+        // El manager sólo necesita saber cuántos miembros hay, no quiénes son.
+        _count: { select: { members: true } },
         payments: { orderBy: { paidAt: "desc" }, take: 50 },
         events: { orderBy: { createdAt: "desc" }, take: 50 },
       },
@@ -225,16 +220,7 @@ export const managerService = {
       billingPlan: org.billingPlan,
       billingCycle: org.billingCycle,
       billingPeriodEnd: org.billingPeriodEnd,
-      members: org.members.map((m) => ({
-        id: m.id,
-        role: m.role,
-        status: m.status,
-        joinedAt: m.joinedAt,
-        user: {
-          email: m.user.email,
-          name: `${m.user.firstName} ${m.user.lastName}`.trim(),
-        },
-      })),
+      memberCount: org._count.members,
       payments: org.payments,
       events: org.events,
     };

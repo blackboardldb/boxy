@@ -1,24 +1,69 @@
-import { BaseService } from "./base-service";
-import { ClassSession, Discipline } from "../types";
-import { ClassRepository } from "../data-layer/types";
-import { ApiResponse, PaginatedApiResponse, createSuccessResponse } from "../api/types";
-import { ValidationError } from "../errors/types";
-import { getChileOffset } from "../utils";
+// lib/services/class-service.ts
+// Migrado (Bloque 1 — Prisma Provider): ya no extiende BaseService ni pasa
+// por PrismaClassRepository. Prisma directo, fusionando lo que antes hacía
+// el repository (select, paginación, mapToEntity) en este mismo archivo.
+
 import { prisma } from "../prisma";
-import { ValidationService } from "../validation-service";
+import { ClassSession, ClassStatus, Discipline } from "../types";
+import { ApiResponse, PaginatedApiResponse, createSuccessResponse, createPaginatedResponse } from "../api/types";
+import { ValidationError, NotFoundError } from "../errors/types";
 import { withErrorHandling } from "../errors/handler";
+import { getChileOffset } from "../utils";
+import { ValidationService } from "../validation-service";
+import { userService } from "./user-service";
 
-export class ClassService extends BaseService<ClassSession> {
-  protected repositoryName = "classes" as const;
+type ClassRowWithRegistrations = {
+  id: string;
+  name: string;
+  organizationId: string;
+  disciplineId: string;
+  dateTime: Date;
+  durationMinutes: number;
+  instructorId: string;
+  capacity: number;
+  status: string;
+  notes: string | null;
+  isGenerated: boolean;
+  _count: { registrations: number };
+};
 
-  // Get the typed class repository
-  private get classRepository(): ClassRepository {
-    return this.repository as ClassRepository;
-  }
+const defaultSelect = {
+  id: true,
+  organizationId: true,
+  name: true,
+  dateTime: true,
+  durationMinutes: true,
+  instructorId: true,
+  disciplineId: true,
+  capacity: true,
+  status: true,
+  notes: true,
+  isGenerated: true,
+  _count: {
+    select: {
+      registrations: { where: { status: "registered" } },
+    },
+  },
+} as const;
 
-  // Enhanced methods using new architecture
+function mapToEntity(row: ClassRowWithRegistrations): ClassSession {
+  return {
+    id: row.id,
+    organizationId: row.organizationId || "",
+    disciplineId: row.disciplineId || "",
+    name: row.name || "",
+    dateTime: row.dateTime?.toISOString() || new Date().toISOString(),
+    durationMinutes: row.durationMinutes || 60,
+    instructorId: row.instructorId || "",
+    capacity: row.capacity || 15,
+    status: (row.status as ClassStatus) || "scheduled",
+    notes: row.notes || undefined,
+    isGenerated: !!row.isGenerated,
+    enrolledCount: row._count?.registrations ?? 0,
+  } as ClassSession;
+}
 
-  // Get classes with pagination and filtering
+export class ClassService {
   async getClasses(params?: {
     page?: number;
     limit?: number;
@@ -29,255 +74,216 @@ export class ClassService extends BaseService<ClassSession> {
     instructorId?: string;
     status?: string;
   }): Promise<PaginatedApiResponse<ClassSession>> {
-    const findParams: {
-      page: number;
-      limit: number;
-      where?: Record<string, unknown>;
-      orderBy?: Record<string, "asc" | "desc">;
-    } = {
-      page: params?.page || 1,
-      limit: params?.limit || 50,
-    };
+    const page = params?.page || 1;
+    const limit = params?.limit || 50;
+    const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: Record<string, unknown> = {};
 
+    // MT-06: filtrar por tenant — obligatorio para aislar clases por centro
+    if (params?.organizationId) where.organizationId = params.organizationId;
+    if (params?.disciplineId) where.disciplineId = params.disciplineId;
+    if (params?.instructorId) where.instructorId = params.instructorId;
+    if (params?.status) where.status = params.status;
 
-    // MT-06: Filtrar por tenant — obligatorio para aislar clases por centro
-    if (params?.organizationId) {
-      where.organizationId = params.organizationId;
-    }
-
-    if (params?.disciplineId) {
-      where.disciplineId = params.disciplineId;
-    }
-
-    if (params?.instructorId) {
-      where.instructorId = params.instructorId;
-    }
-
-    if (params?.status) {
-      where.status = params.status;
-    }
-
-    // Date range filtering
     if (params?.startDate || params?.endDate) {
       const dateTimeFilter: Record<string, Date> = {};
       if (params.startDate) {
         const offset = getChileOffset(new Date(`${params.startDate}T12:00:00`));
-        const startStr = params.startDate.includes("T") 
-          ? params.startDate 
-          : `${params.startDate}T00:00:00.000${offset}`;
+        const startStr = params.startDate.includes("T") ? params.startDate : `${params.startDate}T00:00:00.000${offset}`;
         dateTimeFilter.gte = new Date(startStr);
       }
       if (params.endDate) {
         const offset = getChileOffset(new Date(`${params.endDate}T12:00:00`));
-        const endStr = params.endDate.includes("T") 
-          ? params.endDate 
-          : `${params.endDate}T23:59:59.999${offset}`;
+        const endStr = params.endDate.includes("T") ? params.endDate : `${params.endDate}T23:59:59.999${offset}`;
         dateTimeFilter.lte = new Date(endStr);
       }
       where.dateTime = dateTimeFilter;
     }
 
-    if (Object.keys(where).length > 0) {
-      findParams.where = where;
-    }
+    const [classes, total] = await Promise.all([
+      prisma.classSession.findMany({
+        where,
+        orderBy: { dateTime: "asc" },
+        take: limit,
+        skip,
+        select: defaultSelect,
+      }),
+      prisma.classSession.count({ where }),
+    ]);
 
-    findParams.orderBy = { dateTime: "asc" };
-
-    return await this.findMany(findParams);
+    const totalPages = Math.ceil(total / limit);
+    return createPaginatedResponse(
+      classes.map((c) => mapToEntity(c as unknown as ClassRowWithRegistrations)),
+      { page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1 }
+    );
   }
 
-  // Create a new class
-  async createClass(
-    data: Partial<ClassSession>
-  ): Promise<ApiResponse<ClassSession>> {
-    return await this.create(data);
+  async getClassById(id: string): Promise<ApiResponse<ClassSession | null>> {
+    const row = await prisma.classSession.findUnique({ where: { id }, select: defaultSelect });
+    const data = row ? mapToEntity(row as unknown as ClassRowWithRegistrations) : null;
+    return createSuccessResponse(data);
   }
 
-  // Update an existing class
-  async updateClass(
-    id: string,
-    data: Partial<ClassSession>
-  ): Promise<ApiResponse<ClassSession>> {
-    return await this.update(id, data);
+  async createClass(data: Partial<ClassSession>): Promise<ApiResponse<ClassSession>> {
+    return withErrorHandling(async () => {
+      if (!data.disciplineId || !data.instructorId || !data.dateTime) {
+        throw new ValidationError("Faltan campos requeridos");
+      }
+      if (!data.organizationId) throw new ValidationError("organizationId is required");
+
+      const created = await prisma.classSession.create({
+        data: {
+          id: data.id,
+          organizationId: data.organizationId,
+          disciplineId: data.disciplineId,
+          name: data.name!,
+          dateTime: new Date(data.dateTime as string),
+          durationMinutes: data.durationMinutes || 60,
+          instructorId: data.instructorId,
+          capacity: data.capacity || 15,
+          status: data.status || "scheduled",
+          notes: data.notes,
+          isGenerated: data.isGenerated || false,
+        },
+        select: defaultSelect,
+      });
+      return createSuccessResponse(mapToEntity(created as unknown as ClassRowWithRegistrations));
+    }, { operation: "createClass", resource: "classes" });
   }
 
-  // Delete a class
+  async updateClass(id: string, data: Partial<ClassSession>): Promise<ApiResponse<ClassSession>> {
+    return withErrorHandling(async () => {
+      const existing = await prisma.classSession.findUnique({ where: { id } });
+      if (!existing) throw new NotFoundError("classes", id);
+
+      const updated = await prisma.classSession.update({
+        where: { id },
+        data: {
+          disciplineId: data.disciplineId,
+          name: data.name,
+          dateTime: data.dateTime ? new Date(data.dateTime) : undefined,
+          durationMinutes: data.durationMinutes,
+          instructorId: data.instructorId,
+          capacity: data.capacity,
+          status: data.status,
+          notes: data.notes,
+          isGenerated: data.isGenerated,
+        },
+        select: defaultSelect,
+      });
+      return createSuccessResponse(mapToEntity(updated as unknown as ClassRowWithRegistrations));
+    }, { operation: "updateClass", resource: "classes", metadata: { id } });
+  }
+
   async deleteClass(id: string): Promise<ApiResponse<ClassSession>> {
-    return await this.delete(id);
+    return withErrorHandling(async () => {
+      const existing = await prisma.classSession.findUnique({ where: { id } });
+      if (!existing) throw new NotFoundError("classes", id);
+
+      const deleted = await prisma.classSession.delete({ where: { id }, select: defaultSelect });
+      return createSuccessResponse(mapToEntity(deleted as unknown as ClassRowWithRegistrations));
+    }, { operation: "deleteClass", resource: "classes", metadata: { id } });
   }
 
   // REGISTRATION OPERATIONS
 
-  /**
-   * Universal registration method (handles validation, daily limits, and transactions)
-   */
-  async registerStudent(
-    classId: string, 
-    userId: string, 
-    options: { isAdmin?: boolean } = {}
-  ): Promise<ApiResponse<ClassSession>> {
-    return withErrorHandling(
-      async () => {
-        const provider = this.dataProvider;
-        
-        // 1. Fetch data secuencial para inyectar organizationId
-        const classSession = await provider.classes.findUnique({ where: { id: classId } });
-        const user = await provider.users.findUnique(
-          { where: { id: userId } },
-          classSession?.organizationId ?? ""
-        );
+  async registerStudent(classId: string, userId: string, options: { isAdmin?: boolean } = {}): Promise<ApiResponse<ClassSession>> {
+    return withErrorHandling(async () => {
+      const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
+      if (!classSession) throw new ValidationError("Clase no encontrada");
 
-        if (!classSession) throw new ValidationError("Clase no encontrada");
-        if (!user) throw new ValidationError("Usuario no encontrado");
+      const user = await userService.getUserScopedToOrg(userId, classSession.organizationId);
+      if (!user) throw new ValidationError("Usuario no encontrado");
 
-        // 2. VALIDATION
-        if (classSession.status === "cancelled") throw new ValidationError("La clase ha sido cancelada");
-        const isReg = await prisma.classRegistration.findUnique({
-          where: { userId_classId: { userId, classId } }
-        });
-        if (isReg && isReg.status === 'registered') throw new ValidationError("Ya estás inscrito/a en esta clase");
-        if ((classSession.enrolledCount || 0) >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
+      if (classSession.status === "cancelled") throw new ValidationError("La clase ha sido cancelada");
 
-        if (!options.isAdmin) {
-          const targetDay = classSession.dateTime.split("T")[0];
-          const queryStart = new Date(`${targetDay}T00:00:00`);
-          const queryEnd = new Date(`${targetDay}T23:59:59`);
-          
-          const dayRegistrations = await prisma.classRegistration.findMany({
-            where: {
-              userId,
-              status: 'registered',
-              class: { dateTime: { gte: queryStart, lte: queryEnd } }
-            },
-            include: { class: true }
-          });
+      const isReg = await prisma.classRegistration.findUnique({
+        where: { userId_classId: { userId, classId } },
+      });
+      if (isReg && isReg.status === "registered") throw new ValidationError("Ya estás inscrito/a en esta clase");
 
-          const validation = await ValidationService.canUserRegisterToClass(
-            userId,
-            classSession as unknown as ClassSession,
-            dayRegistrations.map(r => r.class) as unknown as ClassSession[]
-          );
+      const enrolledCount = await prisma.classRegistration.count({ where: { classId, status: "registered" } });
+      if (enrolledCount >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
 
-          if (!validation.canRegister) {
-            throw new ValidationError(validation.reason || "Validation failed");
-          }
-        }
+      if (!options.isAdmin) {
+        const targetDay = classSession.dateTime.toISOString().split("T")[0];
+        const queryStart = new Date(`${targetDay}T00:00:00`);
+        const queryEnd = new Date(`${targetDay}T23:59:59`);
 
-        // 3. TRANSACTION
-        // HAL-09b: eliminado tx.user.update membership JSONB — ya no es necesario.
-        // remainingClasses se calcula desde ClassRegistration en la validación.
-        const updatedRecord = await prisma.$transaction(async (tx) => {
-          await tx.classRegistration.upsert({
-            where: { userId_classId: { userId, classId } },
-            update: { status: 'registered', registeredAt: new Date() },
-            create: { userId, classId, status: 'registered' }
-          });
-
-          // HAL-03 Sprint B: ya no escribimos en la columna array.
-          // Solo devolvemos la sesión fresca con sus registros para el mapper.
-          return await tx.classSession.findUnique({
-            where: { id: classId },
-            include: { registrations: { select: { userId: true, status: true } } }
-          });
+        const dayRegistrations = await prisma.classRegistration.findMany({
+          where: { userId, status: "registered", class: { dateTime: { gte: queryStart, lte: queryEnd } } },
+          include: { class: true },
         });
 
-        return createSuccessResponse(this.mapToEntity(updatedRecord!));
-      },
-      { operation: "registerStudent", resource: "classes", metadata: { classId, userId, isAdmin: options.isAdmin } }
-    );
-  }
-
-  /**
-   * Universal cancellation method
-   */
-  async cancelRegistration(classId: string, userId: string): Promise<ApiResponse<ClassSession>> {
-    return withErrorHandling(
-      async () => {
-        const provider = this.dataProvider;
-        // Fetch data secuencial para inyectar organizationId
-        const classSession = await provider.classes.findUnique({ where: { id: classId } });
-        const user = await provider.users.findUnique(
-          { where: { id: userId } },
-          classSession?.organizationId ?? ""
-        );
-
-        if (!classSession) throw new ValidationError("Clase no encontrada");
-        if (!user) throw new ValidationError("Usuario no encontrado");
-
-        const discipline = await prisma.discipline.findUnique({ where: { id: classSession.disciplineId } });
-        if (!discipline) throw new ValidationError("Disciplina no encontrada");
-
-        const validation = await ValidationService.canUserCancelClassWithRules(
+        const validation = await ValidationService.canUserRegisterToClass(
           userId,
           classSession as unknown as ClassSession,
-          discipline as unknown as Discipline
+          dayRegistrations.map((r) => r.class) as unknown as ClassSession[]
         );
+        if (!validation.canRegister) throw new ValidationError(validation.reason || "Validation failed");
+      }
 
-        if (!validation.canCancel) {
-          throw new ValidationError(validation.reason || "No se puede cancelar");
-        }
-
-        // HAL-09b: eliminado tx.user.update membership JSONB — ya no es necesario.
-        // remainingClasses se recalcula desde ClassRegistration en cada validación.
-        const updatedRecord = await prisma.$transaction(async (tx) => {
-          await tx.classRegistration.update({
-            where: { userId_classId: { userId, classId } },
-            data: { status: 'cancelled', cancelledAt: new Date() }
-          });
-
-          // HAL-03 Sprint B: ya no escribimos en la columna array.
-          return await tx.classSession.findUnique({
-            where: { id: classId },
-            include: { registrations: { select: { userId: true, status: true } } }
-          });
+      const updatedRecord = await prisma.$transaction(async (tx) => {
+        await tx.classRegistration.upsert({
+          where: { userId_classId: { userId, classId } },
+          update: { status: "registered", registeredAt: new Date() },
+          create: { userId, classId, status: "registered" },
         });
+        return tx.classSession.findUnique({ where: { id: classId }, select: defaultSelect });
+      });
 
-        return createSuccessResponse(this.mapToEntity(updatedRecord!));
-      },
-      { operation: "cancelRegistration", resource: "classes", metadata: { classId, userId } }
-    );
+      return createSuccessResponse(mapToEntity(updatedRecord as unknown as ClassRowWithRegistrations));
+    }, { operation: "registerStudent", resource: "classes", metadata: { classId, userId, isAdmin: options.isAdmin } });
   }
 
-  private mapToEntity(prismaClass: {
-    id: string;
-    organizationId: string;
-    disciplineId: string;
-    name: string;
-    dateTime: Date | string;
-    durationMinutes: number;
-    instructorId: string;
-    capacity: number;
-    status: string;
-    notes: string | null;
-    isGenerated: boolean;
-    registrations?: { userId: string; status: string }[];
-  }): ClassSession {
-    return {
-      id: prismaClass.id,
-      organizationId: prismaClass.organizationId,
-      disciplineId: prismaClass.disciplineId,
-      name: prismaClass.name,
-      dateTime: typeof prismaClass.dateTime === "string" ? prismaClass.dateTime : prismaClass.dateTime.toISOString(),
-      durationMinutes: prismaClass.durationMinutes,
-      instructorId: prismaClass.instructorId,
-      capacity: prismaClass.capacity,
-      status: prismaClass.status as "scheduled" | "completed" | "cancelled",
-      notes: prismaClass.notes || undefined,
-      isGenerated: prismaClass.isGenerated,
-    };
+  async cancelRegistration(classId: string, userId: string): Promise<ApiResponse<ClassSession>> {
+    return withErrorHandling(async () => {
+      const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
+      if (!classSession) throw new ValidationError("Clase no encontrada");
+
+      const user = await userService.getUserScopedToOrg(userId, classSession.organizationId);
+      if (!user) throw new ValidationError("Usuario no encontrado");
+
+      const discipline = await prisma.discipline.findUnique({ where: { id: classSession.disciplineId } });
+      if (!discipline) throw new ValidationError("Disciplina no encontrada");
+
+      const validation = await ValidationService.canUserCancelClassWithRules(
+        userId,
+        classSession as unknown as ClassSession,
+        discipline as unknown as Discipline
+      );
+      if (!validation.canCancel) throw new ValidationError(validation.reason || "No se puede cancelar");
+
+      const updatedRecord = await prisma.$transaction(async (tx) => {
+        await tx.classRegistration.update({
+          where: { userId_classId: { userId, classId } },
+          data: { status: "cancelled", cancelledAt: new Date() },
+        });
+        return tx.classSession.findUnique({ where: { id: classId }, select: defaultSelect });
+      });
+
+      return createSuccessResponse(mapToEntity(updatedRecord as unknown as ClassRowWithRegistrations));
+    }, { operation: "cancelRegistration", resource: "classes", metadata: { classId, userId } });
   }
 
-  protected async validateCreateData(data: Partial<ClassSession>): Promise<void> {
-    if (!data.disciplineId || !data.instructorId || !data.dateTime) {
-      throw new ValidationError("Faltan campos requeridos");
+  async healthCheck(): Promise<ApiResponse<{ status: "healthy" | "unhealthy"; details: Record<string, any> }>> {
+    try {
+      await prisma.classSession.count();
+      return createSuccessResponse({
+        status: "healthy" as const,
+        details: { serviceName: "classes", timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      return createSuccessResponse({
+        status: "unhealthy" as const,
+        details: {
+          serviceName: "classes",
+          error: error instanceof Error ? error.message : "Unknown error",
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
-  }
-
-  protected async validateUpdateData(id: string, data: Partial<ClassSession>): Promise<void> {
-    // validation...
   }
 }
 
