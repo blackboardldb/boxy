@@ -54,7 +54,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     const created = await this.prisma.instructor.create({
       data: {
         id: data.id,
-        organizationId: data.organizationId, // MT-02: columna directa
+        organizationId: data.organizationId,
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email.toLowerCase(),
@@ -106,39 +106,46 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     });
   }
 
-  async findActive(): Promise<Instructor[]> {
-    return this.findByStatus("active");
+  // FIX: ahora requiere organizationId — antes traía instructores de todos los centros
+  async findActive(organizationId: string): Promise<Instructor[]> {
+    return this.findByStatus("active", organizationId);
   }
 
-  async findByDiscipline(disciplineId: string): Promise<Instructor[]> {
-    const allInstructors = await this.prisma.instructor.findMany({
-      where: { isActive: true }
-    });
-    return allInstructors
-      .map(i => this.mapToEntity(i))
-      .filter(instructor => instructor.specialties.includes(disciplineId));
-  }
-
-  async findByStatus(status: string): Promise<Instructor[]> {
+  // FIX: agregado organizationId al where. Antes: where: { isActive: true } sin scope de tenant
+  async findByStatus(status: string, organizationId: string): Promise<Instructor[]> {
     const instructors = await this.prisma.instructor.findMany({
       where: {
-        isActive: status === "active"
+        isActive: status === "active",
+        organizationId,
       }
     });
-    return instructors.map(this.mapToEntity);
+    return instructors.map((i) => this.mapToEntity(i));
   }
 
-  async getInstructorStats(): Promise<{
+  // FIX: agregado organizationId al where + filtro de specialties se mantiene en JS
+  // (no se movió a SQL porque specialties vive dentro de profile Json, fuera de alcance de este fix)
+  async findByDiscipline(disciplineId: string, organizationId: string): Promise<Instructor[]> {
+    const instructors = await this.prisma.instructor.findMany({
+      where: { isActive: true, organizationId }
+    });
+    return instructors
+      .map((i) => this.mapToEntity(i))
+      .filter((instructor) => instructor.specialties.includes(disciplineId));
+  }
+
+  // FIX: los 4 counts ahora scopeados por organizationId. Antes devolvía stats globales
+  // mezclando todos los centros.
+  async getInstructorStats(organizationId: string): Promise<{
     total: number;
     active: number;
     inactive: number;
     byRole: Record<string, number>;
   }> {
     const [total, active, admins, coaches] = await Promise.all([
-      this.prisma.instructor.count(),
-      this.prisma.instructor.count({ where: { isActive: true } }),
-      this.prisma.instructor.count({ where: { role: "admin" } }),
-      this.prisma.instructor.count({ where: { role: "coach" } }),
+      this.prisma.instructor.count({ where: { organizationId } }),
+      this.prisma.instructor.count({ where: { organizationId, isActive: true } }),
+      this.prisma.instructor.count({ where: { organizationId, role: "admin" } }),
+      this.prisma.instructor.count({ where: { organizationId, role: "coach" } }),
     ]);
 
     return {
@@ -156,7 +163,7 @@ export class PrismaInstructorRepository implements IInstructorRepository {
     const profile = (prismaInstructor.profile as InstructorProfile) || {};
     return {
       id: prismaInstructor.id,
-      organizationId: prismaInstructor.organizationId, // MT-02: columna directa
+      organizationId: prismaInstructor.organizationId,
       firstName: prismaInstructor.firstName,
       lastName: prismaInstructor.lastName,
       email: prismaInstructor.email,

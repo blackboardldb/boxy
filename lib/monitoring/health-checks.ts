@@ -379,12 +379,12 @@ export class HealthChecker {
 
       // First call (cache miss)
       const start1 = Date.now();
-      await disciplineService.getActiveDisciplines();
+      await disciplineService.getActiveDisciplines("health-check-tenant");
       const firstCallDuration = Date.now() - start1;
 
       // Second call (should be cache hit)
       const start2 = Date.now();
-      await disciplineService.getActiveDisciplines();
+      await disciplineService.getActiveDisciplines("health-check-tenant");
       const secondCallDuration = Date.now() - start2;
 
       // Cache is working if second call is significantly faster

@@ -102,7 +102,7 @@ model Instructor {
   organizationId String
   firstName      String
   lastName       String
-  email          String         @unique
+  email          String
   phone          String?
   role           String         @default("instructor")
   isActive       Boolean        @default(true)
@@ -112,6 +112,8 @@ model Instructor {
   classes        ClassSession[]
 
   organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, email])
 
   @@index([organizationId])
   @@index([email])

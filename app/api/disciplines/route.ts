@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Use DisciplineService to get disciplines with filters
     const response = await disciplineService.getDisciplines({
+      organizationId: auth.organizationId,
       page,
       limit,
       isActive: isActive ? isActive === "true" : undefined,
