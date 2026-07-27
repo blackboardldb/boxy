@@ -12,6 +12,51 @@ const dayMap: { [key: string]: number } = {
   sab: 6,
 };
 
+/**
+ * Resuelve el instructor de una disciplina con 4 niveles de fallback.
+ */
+export function resolveInstructorForDiscipline(
+  discipline: any,
+  instructors: any[],
+  organizationId: string
+) {
+  // 0. Prioridad 1: Coach asignado explícitamente a la disciplina
+  const cancellationPayload = discipline.cancellationRules as any;
+  const defaultCoachId: string | undefined =
+    !Array.isArray(cancellationPayload) && cancellationPayload?.defaultCoachId
+      ? cancellationPayload.defaultCoachId
+      : undefined;
+
+  let instructor = defaultCoachId
+    ? instructors.find((inst) => inst.id === defaultCoachId && inst.isActive)
+    : undefined;
+
+  // 1. Fallback: buscar instructor con la especialidad requerida
+  if (!instructor) {
+    instructor = instructors.find((inst) => {
+      const profile = inst.profile as any;
+      const specsObj = profile?.specialties;
+      if (!specsObj) return false;
+      const specs = typeof specsObj === "string" ? JSON.parse(specsObj) : specsObj;
+      return Array.isArray(specs) && specs.includes(discipline.id);
+    });
+  }
+
+  // 2. Fallback explícito: Instructor Administrador/Maestro del mismo centro
+  if (!instructor) {
+    instructor = instructors.find((inst) => inst.role === "admin");
+  }
+
+  // 3. Fallback final (red de seguridad — mismo centro)
+  if (!instructor && instructors.length > 0) {
+    console.warn(`[ClassGenerator][${organizationId}] Fallback a instructors[0] para disciplina ${discipline.id}`);
+    instructor = instructors[0];
+  }
+
+  return instructor;
+}
+
+
 
 /**
  * Genera clases automáticamente para un único centro (organizationId).
@@ -66,38 +111,7 @@ export async function generateClassesFromSchedules(
 
     if (!Array.isArray(scheduleArray) || scheduleArray.length === 0) continue;
 
-    // 0. Prioridad 1: Coach asignado explícitamente a la disciplina
-    const cancellationPayload = discipline.cancellationRules as any;
-    const defaultCoachId: string | undefined =
-      !Array.isArray(cancellationPayload) && cancellationPayload?.defaultCoachId
-        ? cancellationPayload.defaultCoachId
-        : undefined;
-
-    let instructor = defaultCoachId
-      ? instructors.find((inst) => inst.id === defaultCoachId && inst.isActive)
-      : undefined;
-
-    // 1. Fallback: buscar instructor con la especialidad requerida
-    if (!instructor) {
-      instructor = instructors.find((inst) => {
-        const profile = inst.profile as any;
-        const specsObj = profile?.specialties;
-        if (!specsObj) return false;
-        const specs = typeof specsObj === "string" ? JSON.parse(specsObj) : specsObj;
-        return Array.isArray(specs) && specs.includes(discipline.id);
-      });
-    }
-
-    // 2. Fallback explícito: Instructor Administrador/Maestro del mismo centro
-    if (!instructor) {
-      instructor = instructors.find((inst) => inst.role === "admin");
-    }
-
-    // 3. Fallback final (red de seguridad — mismo centro)
-    if (!instructor && instructors.length > 0) {
-      console.warn(`[ClassGenerator][${organizationId}] Fallback a instructors[0] para disciplina ${discipline.id}`);
-      instructor = instructors[0];
-    }
+    const instructor = resolveInstructorForDiscipline(discipline, instructors, organizationId);
 
     // 4. Omisión si no hay instructores en este centro
     if (!instructor) {

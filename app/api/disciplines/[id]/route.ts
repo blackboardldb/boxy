@@ -3,6 +3,7 @@ import { disciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateDisciplineSchema } from "@/lib/schemas";
 import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { generateClassesFromSchedules } from "@/lib/utils/class-generator";
 
 
 export async function GET(
@@ -81,6 +82,14 @@ export async function PUT(
 
     // Use DisciplineService to update discipline with validation
     const response = await disciplineService.updateDiscipline(id, dataWithOrg);
+
+    if (response.success && parsed.data.schedule) {
+      try {
+        await generateClassesFromSchedules(auth.organizationId, undefined, undefined, id);
+      } catch (err) {
+        console.error("Error regenerando clases tras editar disciplina:", err);
+      }
+    }
 
     // Return standardized response
     return NextResponse.json(response, {

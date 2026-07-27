@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
-import { getChileOffset, localToUTC } from "@/lib/utils";
+import { localToUTC, startOfDayChile, endOfDayChile } from "@/lib/utils";
 import { requireAuth } from "@/lib/supabase/auth-guard";
+import { resolveInstructorForDiscipline } from "@/lib/utils/class-generator";
 
 /**
  * Genera clases para un día específico basado en los horarios de las disciplinas.
@@ -16,8 +17,10 @@ function generateClassesForDay(
     name: string;
     organizationId: string;
     schedule?: any;
+    cancellationRules?: any;
   }>,
-  organizationId: string
+  organizationId: string,
+  instructors: any[]
 ): ClassSession[] {
   const dayMapping: DayOfWeek[] = [
     "dom",
@@ -41,6 +44,9 @@ function generateClassesForDay(
 
     if (!Array.isArray(scheduleArray)) return;
 
+    const instructor = resolveInstructorForDiscipline(discipline, instructors, organizationId);
+    if (!instructor) return;
+
     scheduleArray.forEach((s) => {
       if (s.day === dayOfWeek) {
         s.times.forEach((time: string) => {
@@ -54,7 +60,7 @@ function generateClassesForDay(
             name: discipline.name,
             dateTime: dateTimeStr,
             durationMinutes: 60,
-            instructorId: "inst_blacksheep_admin", // ⚠️ Leftover conocido — Bloque 3, no se toca aquí
+            instructorId: instructor.id,
             capacity: 15,
             status: "scheduled",
             notes: "Clase generada dinámicamente",
@@ -74,13 +80,14 @@ function generateClassesForDateRange(
   startDate: Date,
   endDate: Date,
   disciplines: any[],
-  organizationId: string
+  organizationId: string,
+  instructors: any[]
 ): ClassSession[] {
   const allClasses: ClassSession[] = [];
   const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
 
   daysInRange.forEach((day) => {
-    const dayClasses = generateClassesForDay(day, disciplines, organizationId);
+    const dayClasses = generateClassesForDay(day, disciplines, organizationId, instructors);
     allClasses.push(...dayClasses);
   });
 
@@ -110,15 +117,11 @@ export async function GET(request: NextRequest) {
     let targetEndDate: Date;
 
     if (date) {
-      const offset = getChileOffset(new Date(`${date}T12:00:00`));
-      targetStartDate = new Date(`${date}T00:00:00.000${offset}`);
-      targetEndDate = new Date(`${date}T23:59:59.999${offset}`);
+      targetStartDate = startOfDayChile(date);
+      targetEndDate = endOfDayChile(date);
     } else {
-      const offsetStart = getChileOffset(new Date(`${startDate}T12:00:00`));
-      const offsetEnd = getChileOffset(new Date(`${endDate}T12:00:00`));
-      
-      targetStartDate = new Date(`${startDate}T00:00:00.000${offsetStart}`);
-      targetEndDate = new Date(`${endDate}T23:59:59.999${offsetEnd}`);
+      targetStartDate = startOfDayChile(startDate as string);
+      targetEndDate = endOfDayChile(endDate as string);
     }
 
     // 1. Buscar clases REALES que ya existan para ese rango de fechas.
@@ -141,12 +144,19 @@ export async function GET(request: NextRequest) {
       take: 100,
     });
 
+    // 2.5. Obtener instructores activos
+    const instructors = await prisma.instructor.findMany({
+      where: { isActive: true, organizationId },
+      take: 100,
+    });
+
     // 3. Generar todas las clases para el rango completo
     const allGeneratedClasses = generateClassesForDateRange(
       targetStartDate,
       targetEndDate,
       disciplines,
-      organizationId
+      organizationId,
+      instructors
     );
 
     // 4. Combinar clases, dando prioridad a las reales sobre las generadas.

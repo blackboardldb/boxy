@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { fromZonedTime } from "date-fns-tz";
 
 export const STUDENT_STATES = {
   ACTIVE: "active",
@@ -625,40 +626,14 @@ export function convertClassSessionToClassItem(
 const ORGANIZATION_TIMEZONE = "America/Santiago";
 
 /**
- * Obtiene el offset de Chile (Santiago) para una fecha específica.
- * @param date - Fecha para la cual obtener el offset
- * @returns Offset en formato "-03:00" o "-04:00"
- */
-export function getChileOffset(date: Date): string {
-  try {
-    const timeString = new Intl.DateTimeFormat("en-US", {
-      timeZone: ORGANIZATION_TIMEZONE,
-      timeZoneName: "shortOffset",
-    }).format(date);
-    const match = timeString.match(/GMT([+-]\d{1,2}(?::?\d{2})?)/);
-    if (!match) return "-03:00";
-    let offset = match[1];
-    
-    // Normalizar a formato completo "+HH:mm" o "-HH:mm" para que new Date() no falle
-    if (offset.length === 2) offset = offset[0] + "0" + offset[1] + ":00"; // "-4" -> "-04:00"
-    else if (offset.length === 3 && !offset.includes(":")) offset += ":00"; // "-04" -> "-04:00"
-    else if (offset.length === 5 && !offset.includes(":")) offset = offset.slice(0, 3) + ":" + offset.slice(3); // "-0400" -> "-04:00"
-    
-    return offset;
-  } catch (e) {
-    return "-03:00"; // Fallback en caso de error en Intl
-  }
-}
-
-/**
- * Convierte una fecha local (Chile) a UTC para almacenamiento
- * @param localDate - Fecha en la que ocurre el evento
+ * Convierte una fecha local (Chile) + hora a UTC para almacenamiento.
+ * Delega el cálculo de DST/offset a date-fns-tz — sin parsing manual de strings.
+ * @param localDate - Fecha en la que ocurre el evento (se usa solo año/mes/día)
  * @param timeString - Hora en formato "HH:mm"
  * @returns ISO string en UTC que representa exactamente ese momento en Chile
  */
 export function localToUTC(localDate: Date, timeString: string): string {
   const [hours, minutes] = timeString.split(":").map(Number);
-  const offset = getChileOffset(localDate);
 
   const year = localDate.getFullYear();
   const month = String(localDate.getMonth() + 1).padStart(2, "0");
@@ -666,8 +641,26 @@ export function localToUTC(localDate: Date, timeString: string): string {
   const hh = String(hours).padStart(2, "0");
   const mm = String(minutes).padStart(2, "0");
 
-  const isoStr = `${year}-${month}-${day}T${hh}:${mm}:00.000${offset}`;
-  return new Date(isoStr).toISOString();
+  // String "naive" (sin offset) que representa la hora de pared en Chile
+  const naiveLocalStr = `${year}-${month}-${day}T${hh}:${mm}:00.000`;
+
+  return fromZonedTime(naiveLocalStr, ORGANIZATION_TIMEZONE).toISOString();
+}
+
+/**
+ * Devuelve el instante UTC correspondiente al inicio del día (00:00:00.000)
+ * en Chile, para un string de fecha "YYYY-MM-DD".
+ */
+export function startOfDayChile(dateStr: string): Date {
+  return fromZonedTime(`${dateStr}T00:00:00.000`, ORGANIZATION_TIMEZONE);
+}
+
+/**
+ * Devuelve el instante UTC correspondiente al fin del día (23:59:59.999)
+ * en Chile, para un string de fecha "YYYY-MM-DD".
+ */
+export function endOfDayChile(dateStr: string): Date {
+  return fromZonedTime(`${dateStr}T23:59:59.999`, ORGANIZATION_TIMEZONE);
 }
 
 /**

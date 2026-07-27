@@ -8,7 +8,7 @@ import { ClassSession, ClassStatus, Discipline } from "../types";
 import { ApiResponse, PaginatedApiResponse, createSuccessResponse, createPaginatedResponse } from "../api/types";
 import { ValidationError, NotFoundError } from "../errors/types";
 import { withErrorHandling } from "../errors/handler";
-import { getChileOffset } from "../utils";
+import { startOfDayChile, endOfDayChile } from "../utils";
 import { ValidationService } from "../validation-service";
 import { userService } from "./user-service";
 
@@ -89,14 +89,14 @@ export class ClassService {
     if (params?.startDate || params?.endDate) {
       const dateTimeFilter: Record<string, Date> = {};
       if (params.startDate) {
-        const offset = getChileOffset(new Date(`${params.startDate}T12:00:00`));
-        const startStr = params.startDate.includes("T") ? params.startDate : `${params.startDate}T00:00:00.000${offset}`;
-        dateTimeFilter.gte = new Date(startStr);
+        dateTimeFilter.gte = params.startDate.includes("T")
+          ? new Date(params.startDate)
+          : startOfDayChile(params.startDate);
       }
       if (params.endDate) {
-        const offset = getChileOffset(new Date(`${params.endDate}T12:00:00`));
-        const endStr = params.endDate.includes("T") ? params.endDate : `${params.endDate}T23:59:59.999${offset}`;
-        dateTimeFilter.lte = new Date(endStr);
+        dateTimeFilter.lte = params.endDate.includes("T")
+          ? new Date(params.endDate)
+          : endOfDayChile(params.endDate);
       }
       where.dateTime = dateTimeFilter;
     }

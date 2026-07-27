@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Endpoint de Cron para Vercel
- * Se ejecuta semanalmente para asegurar la ventana móvil de 15 días.
+ * Se ejecuta diariamente para asegurar la ventana móvil de 15 días.
  */
 export async function GET(request: Request) {
   // 1. Verificación de Seguridad (CRON_SECRET)
