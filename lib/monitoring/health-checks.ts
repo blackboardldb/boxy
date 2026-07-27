@@ -1,10 +1,7 @@
 // Health Check System
-// Provides comprehensive health monitoring for both Mock and Prisma providers
+// Provides comprehensive health monitoring for the Prisma-backed system
 
-import {
-  DataProviderFactory,
-  ProviderType,
-} from "../data-layer/provider-factory";
+import { prisma } from "../prisma";
 import { logger, LogContext } from "./logger";
 import { performanceMonitor } from "./performance-monitor";
 
@@ -19,7 +16,7 @@ export interface HealthCheckResult {
 
 export interface SystemHealthReport {
   overall: "healthy" | "unhealthy" | "degraded";
-  provider: ProviderType;
+  provider: "prisma"; // ÚNICO provider real desde siempre — provider-factory eliminado en Bloque 1
   checks: HealthCheckResult[];
   summary: {
     healthy: number;
@@ -49,7 +46,6 @@ export class HealthChecker {
     return HealthChecker.instance;
   }
 
-  // Perform comprehensive health check
   async performHealthCheck(): Promise<SystemHealthReport> {
     const startTime = Date.now();
     const checks: HealthCheckResult[] = [];
@@ -57,25 +53,10 @@ export class HealthChecker {
     logger.info("Starting system health check");
 
     try {
-      // Check data provider health
-      checks.push(await this.checkDataProvider());
-
-      // Check database connectivity
       checks.push(await this.checkDatabaseConnectivity());
-
-      // Check repository operations
-      checks.push(await this.checkRepositoryOperations());
-
-      // Check service layer
-      checks.push(await this.checkServiceLayer());
-
-      // Check performance metrics
+      checks.push(await this.checkCoreQueries());
       checks.push(await this.checkPerformanceMetrics());
-
-      // Check memory usage
       checks.push(await this.checkMemoryUsage());
-
-      // Check cache functionality
       checks.push(await this.checkCacheFunctionality());
     } catch (error) {
       logger.error(
@@ -93,13 +74,12 @@ export class HealthChecker {
       });
     }
 
-    // Calculate overall health
     const summary = this.calculateHealthSummary(checks);
     const overall = this.determineOverallHealth(summary);
 
     const report: SystemHealthReport = {
       overall,
-      provider: DataProviderFactory.getCurrentProviderType() || "prisma", // HAL-15: fallback era "mock"
+      provider: "prisma",
       checks,
       summary,
       generatedAt: new Date().toISOString(),
@@ -118,44 +98,12 @@ export class HealthChecker {
     return report;
   }
 
-  // Check data provider health
-  private async checkDataProvider(): Promise<HealthCheckResult> {
-    const start = Date.now();
-
-    try {
-      const health = await DataProviderFactory.getProviderHealth();
-
-      return {
-        name: "data_provider",
-        status: health.status === "healthy" ? "healthy" : "unhealthy",
-        message: `Data provider (${health.type}) is ${health.status}`,
-        duration: Date.now() - start,
-        timestamp: new Date().toISOString(),
-        details: {
-          providerType: health.type,
-          providerDetails: health.details,
-        },
-      };
-    } catch (error) {
-      return {
-        name: "data_provider",
-        status: "unhealthy",
-        message: `Data provider check failed: ${(error as Error).message}`,
-        duration: Date.now() - start,
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  // Check database connectivity
+  // Chequeo de conectividad directa a la base de datos
   private async checkDatabaseConnectivity(): Promise<HealthCheckResult> {
     const start = Date.now();
 
     try {
-      const provider = DataProviderFactory.create();
-
-      // Try a simple count operation
-      const userCount = await provider.users.count();
+      const userCount = await prisma.user.count();
 
       return {
         name: "database_connectivity",
@@ -179,103 +127,56 @@ export class HealthChecker {
     }
   }
 
-  // Check repository operations
-  private async checkRepositoryOperations(): Promise<HealthCheckResult> {
+  // FIX: antes pasaba por DataProviderFactory.create() para probar users/classes/disciplines.
+  // Ahora consulta Prisma directo — mismo propósito (validar que las tablas core responden),
+  // sin depender de la capa de abstracción eliminada.
+  private async checkCoreQueries(): Promise<HealthCheckResult> {
     const start = Date.now();
 
     try {
-      const provider = DataProviderFactory.create();
-
-      // Test basic repository operations
-      const userResult = await provider.users.findMany({ take: 1 });
-      const classResult = await provider.classes.findMany({ take: 1 });
-      const disciplineResult = await provider.disciplines.findMany({ take: 1 });
+      const [userResult, classResult, disciplineResult] = await Promise.all([
+        prisma.user.findMany({ take: 1 }),
+        prisma.classSession.findMany({ take: 1 }),
+        prisma.discipline.findMany({ take: 1 }),
+      ]);
 
       const allOperationsSuccessful =
-        userResult && classResult && disciplineResult;
+        !!userResult && !!classResult && !!disciplineResult;
 
       return {
         name: "repository_operations",
         status: allOperationsSuccessful ? "healthy" : "degraded",
         message: allOperationsSuccessful
-          ? "All repository operations are working"
-          : "Some repository operations may be failing",
+          ? "All core table queries are working"
+          : "Some core table queries may be failing",
         duration: Date.now() - start,
         timestamp: new Date().toISOString(),
         details: {
-          userRepositoryWorking: !!userResult,
-          classRepositoryWorking: !!classResult,
-          disciplineRepositoryWorking: !!disciplineResult,
+          userQueryWorking: !!userResult,
+          classQueryWorking: !!classResult,
+          disciplineQueryWorking: !!disciplineResult,
         },
       };
     } catch (error) {
       return {
         name: "repository_operations",
         status: "unhealthy",
-        message: `Repository operations failed: ${(error as Error).message}`,
+        message: `Core table queries failed: ${(error as Error).message}`,
         duration: Date.now() - start,
         timestamp: new Date().toISOString(),
       };
     }
   }
 
-  // Check service layer
-  private async checkServiceLayer(): Promise<HealthCheckResult> {
-    const start = Date.now();
-
-    try {
-      // Import services dynamically to avoid circular dependencies
-      const { UserService } = await import("../services/user-service");
-      const { ClassService } = await import("../services/class-service");
-
-      const userService = new UserService();
-      const classService = new ClassService();
-
-      // Test service health checks
-      const userServiceHealth = await userService.healthCheck();
-      const classServiceHealth = await classService.healthCheck();
-
-      const allServicesHealthy =
-        userServiceHealth.success &&
-        userServiceHealth.data.status === "healthy" &&
-        classServiceHealth.success &&
-        classServiceHealth.data.status === "healthy";
-
-      return {
-        name: "service_layer",
-        status: allServicesHealthy ? "healthy" : "degraded",
-        message: allServicesHealthy
-          ? "All services are healthy"
-          : "Some services may be experiencing issues",
-        duration: Date.now() - start,
-        timestamp: new Date().toISOString(),
-        details: {
-          userServiceStatus: userServiceHealth.data?.status,
-          classServiceStatus: classServiceHealth.data?.status,
-        },
-      };
-    } catch (error) {
-      return {
-        name: "service_layer",
-        status: "unhealthy",
-        message: `Service layer check failed: ${(error as Error).message}`,
-        duration: Date.now() - start,
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  // Check performance metrics
   private async checkPerformanceMetrics(): Promise<HealthCheckResult> {
     const start = Date.now();
 
     try {
       const performanceSummary = performanceMonitor.getPerformanceSummary();
 
-      // Define thresholds
-      const avgDurationThreshold = 500; // ms
-      const successRateThreshold = 95; // %
-      const slowOperationsThreshold = 10; // count
+      const avgDurationThreshold = 500;
+      const successRateThreshold = 95;
+      const slowOperationsThreshold = 10;
 
       const isHealthy =
         performanceSummary.averageDuration < avgDurationThreshold &&
@@ -321,7 +222,6 @@ export class HealthChecker {
     }
   }
 
-  // Check memory usage
   private async checkMemoryUsage(): Promise<HealthCheckResult> {
     const start = Date.now();
 
@@ -334,7 +234,6 @@ export class HealthChecker {
         external: Math.round(memoryUsage.external / 1024 / 1024),
       };
 
-      // Define thresholds (in MB)
       const heapUsedThreshold = 512;
       const heapUsedCriticalThreshold = 1024;
 
@@ -366,28 +265,25 @@ export class HealthChecker {
     }
   }
 
-  // Check cache functionality
+  // Sin cambios de fondo: ya usaba DisciplineService directo (no provider-factory),
+  // y ya está scopeada con "health-check-tenant" desde el cierre de discipline-service.
   private async checkCacheFunctionality(): Promise<HealthCheckResult> {
     const start = Date.now();
 
     try {
-      // Test cache by calling a cached service method twice
       const { DisciplineService } = await import(
         "../services/discipline-service"
       );
       const disciplineService = new DisciplineService();
 
-      // First call (cache miss)
       const start1 = Date.now();
       await disciplineService.getActiveDisciplines("health-check-tenant");
       const firstCallDuration = Date.now() - start1;
 
-      // Second call (should be cache hit)
       const start2 = Date.now();
       await disciplineService.getActiveDisciplines("health-check-tenant");
       const secondCallDuration = Date.now() - start2;
 
-      // Cache is working if second call is significantly faster
       const cacheWorking = secondCallDuration < firstCallDuration * 0.5;
 
       return {
@@ -417,7 +313,6 @@ export class HealthChecker {
     }
   }
 
-  // Calculate health summary
   private calculateHealthSummary(
     checks: HealthCheckResult[]
   ): SystemHealthReport["summary"] {
@@ -435,7 +330,6 @@ export class HealthChecker {
     return summary;
   }
 
-  // Determine overall health status
   private determineOverallHealth(
     summary: SystemHealthReport["summary"]
   ): "healthy" | "unhealthy" | "degraded" {
@@ -448,11 +342,10 @@ export class HealthChecker {
     return "healthy";
   }
 
-  // Start periodic health checks
   private startPeriodicHealthChecks(): void {
     const intervalMs = parseInt(
       process.env.HEALTH_CHECK_INTERVAL_MS || "300000"
-    ); // 5 minutes default
+    );
 
     this.healthCheckInterval = setInterval(async () => {
       try {
@@ -472,7 +365,6 @@ export class HealthChecker {
     });
   }
 
-  // Stop periodic health checks
   stopPeriodicHealthChecks(): void {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
@@ -481,24 +373,20 @@ export class HealthChecker {
     }
   }
 
-  // Get last health check result
   getLastHealthCheck(): SystemHealthReport | null {
     return this.lastHealthCheck;
   }
 
-  // Get uptime in seconds
   getUptime(): number {
     return Math.floor((Date.now() - this.startTime) / 1000);
   }
 
-  // Quick health check (lightweight)
   async quickHealthCheck(): Promise<{
     status: "healthy" | "unhealthy";
     message: string;
   }> {
     try {
-      const provider = DataProviderFactory.create();
-      await provider.users.count();
+      await prisma.user.count();
 
       return {
         status: "healthy",
@@ -513,15 +401,12 @@ export class HealthChecker {
   }
 }
 
-// Singleton instance
 export const healthChecker = HealthChecker.getInstance();
 
-// Convenience function for API endpoints
 export async function getSystemHealth(): Promise<SystemHealthReport> {
   return healthChecker.performHealthCheck();
 }
 
-// Convenience function for quick checks
 export async function getQuickHealth(): Promise<{
   status: "healthy" | "unhealthy";
   message: string;

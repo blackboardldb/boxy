@@ -53,7 +53,7 @@ export class PrismaPlanRepository implements IPlanRepository {
     const created = await this.prisma.membershipPlan.create({
       data: {
         id: data.id,
-        organizationId: data.organizationId, // MT-01: columna directa
+        organizationId: data.organizationId,
         name: data.name,
         description: data.description,
         price: data.price,
@@ -111,42 +111,50 @@ export class PrismaPlanRepository implements IPlanRepository {
     });
   }
 
-  async findActive(): Promise<MembershipPlan[]> {
-    return this.findByStatus("active");
+  // FIX: ahora requiere organizationId — antes traía planes de todos los centros
+  async findActive(organizationId: string): Promise<MembershipPlan[]> {
+    return this.findByStatus("active", organizationId);
   }
 
-  async findByStatus(status: string): Promise<MembershipPlan[]> {
+  // FIX: agregado organizationId al where. Antes: where: { isActive: status === "active" } sin scope
+  async findByStatus(status: string, organizationId: string): Promise<MembershipPlan[]> {
     const plans = await this.prisma.membershipPlan.findMany({
       where: {
-        isActive: status === "active"
+        isActive: status === "active",
+        organizationId,
       }
     });
-    return plans.map(p => this.mapToEntity(p));
+    return plans.map((p) => this.mapToEntity(p));
   }
 
+  // FIX: antes traía TODOS los planes a memoria Node.js y filtraba en JS.
+  // Ahora filtra en SQL directo — mismo antipatrón que HAL-08 de BS-Plataforma.
   async findByOrganization(organizationId: string): Promise<MembershipPlan[]> {
-    const plans = await this.prisma.membershipPlan.findMany();
-    return plans
-      .map(p => this.mapToEntity(p))
-      .filter(p => p.organizationId === organizationId);
+    const plans = await this.prisma.membershipPlan.findMany({
+      where: { organizationId },
+    });
+    return plans.map((p) => this.mapToEntity(p));
   }
 
-  async getPlanStats(): Promise<{
+  // FIX: scopeado por organizationId. mostPopular se mantiene simplificado
+  // (primer plan de la lista) — igual que el código original, no se agregó
+  // lógica nueva de popularidad real por ahora.
+  async getPlanStats(organizationId: string): Promise<{
     total: number;
     active: number;
     inactive: number;
     averagePrice: number;
     mostPopular: string | null;
   }> {
-    const [total, active, allPlans] = await Promise.all([
-      this.prisma.membershipPlan.count(),
-      this.prisma.membershipPlan.count({ where: { isActive: true } }),
-      this.prisma.membershipPlan.findMany(),
+    const [total, active, orgPlans] = await Promise.all([
+      this.prisma.membershipPlan.count({ where: { organizationId } }),
+      this.prisma.membershipPlan.count({ where: { organizationId, isActive: true } }),
+      this.prisma.membershipPlan.findMany({ where: { organizationId } }),
     ]);
 
-    const mappedPlans = allPlans.map(p => this.mapToEntity(p));
-    const averagePrice = total > 0 
-      ? mappedPlans.reduce((sum, p) => sum + p.price, 0) / total 
+    const mappedPlans = orgPlans.map((p) => this.mapToEntity(p));
+    const averagePrice = total > 0
+      ? mappedPlans.reduce((sum, p) => sum + p.price, 0) / total
       : 0;
 
     return {
@@ -154,7 +162,7 @@ export class PrismaPlanRepository implements IPlanRepository {
       active,
       inactive: total - active,
       averagePrice: Math.round(averagePrice),
-      mostPopular: mappedPlans[0]?.name || null, // Simplified for now
+      mostPopular: mappedPlans[0]?.name || null, // Simplified for now (igual que original)
     };
   }
 
@@ -162,7 +170,7 @@ export class PrismaPlanRepository implements IPlanRepository {
     const config = (p.config as PlanConfig) || {};
     return {
       id: p.id,
-      organizationId: p.organizationId, // MT-01: leer desde columna directa
+      organizationId: p.organizationId,
       name: p.name,
       description: p.description || "",
       price: p.price,

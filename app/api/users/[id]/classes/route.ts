@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { getDataProvider } from "@/lib/data-layer/provider-factory";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 
 export async function GET(
   request: NextRequest,
@@ -9,32 +9,62 @@ export async function GET(
 ) {
   let userId = "unknown";
   try {
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id } = await params;
     userId = id;
-    
+
+    const organizationId = auth.organizationId;
+
+    // Lookup puntual: resuelve el CUID del perfil objetivo + confirma que
+    // pertenece al mismo centro que el que consulta. No se modificó
+    // requireAuth() para no penalizar latencia en todas las rutas del sistema.
+    const targetProfile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        authId: true, 
+        memberships: {
+          where: { organizationId }
+        } 
+      },
+    });
+
+    if (!targetProfile) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const isSelf = auth.user.id === targetProfile.authId;
+    const isStaff = auth.role === "ADMIN" || auth.role === "COACH";
+    const belongsToSameOrg = targetProfile.memberships.length > 0;
+
+    if (!belongsToSameOrg || (!isSelf && !isStaff)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const provider = getDataProvider();
-
-    // Get period totals (optimized SQL count)
     let totalInPeriod = 0;
     if (startDate && endDate) {
-      totalInPeriod = await provider.classRegistrations.countUserRegistrationsInPeriod(
-        userId, 
-        startDate, 
-        endDate
-      );
+      totalInPeriod = await prisma.classRegistration.count({
+        where: {
+          userId,
+          status: { not: 'cancelled' },
+          class: {
+            organizationId,
+            dateTime: {
+              gte: new Date(`${startDate}T00:00:00`),
+              lte: new Date(`${endDate}T23:59:59`),
+            },
+          },
+        },
+      });
     }
 
-    // 3. Enrich with session details (already handled by repository findMany if implemented correctly,
-    // but the current repository implementation might need custom include support)
-    // In this specific case, we'll continue using prisma directly temporarily for the enrichment 
-    // until the repository supports complex includes, but the count is already optimized.
-    
-    // BACKWARD COMPATIBILITY: Format same as before but with metadata
-    // Robust date parsing (extract only date part if already an ISO string)
     const parseSafeDate = (dateStr: string | null) => {
       if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
       const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
@@ -46,15 +76,16 @@ export async function GET(
     const end = parseSafeDate(endDate);
 
     const registrationsWithDetails = await prisma.classRegistration.findMany({
-      where: { 
+      where: {
         userId,
         status: { not: 'cancelled' },
-        ...(start || end ? {
-          class: {
-            status: { not: 'cancelled' },
+        class: {
+          organizationId,
+          status: { not: 'cancelled' },
+          ...(start || end ? {
             dateTime: {
               ...(start ? { gte: start } : {}),
-              ...(end ? { 
+              ...(end ? {
                 lte: (() => {
                   const date = new Date(end);
                   date.setHours(23, 59, 59, 999);
@@ -62,8 +93,8 @@ export async function GET(
                 })()
               } : {})
             }
-          }
-        } : {})
+          } : {})
+        }
       },
       select: {
         id: true,
@@ -86,7 +117,6 @@ export async function GET(
       orderBy: { class: { dateTime: 'desc' } }
     });
 
-    // Una query agregada para todos los enrolledCounts — elimina N subqueries
     const classIds = registrationsWithDetails.map(r => r.classId);
     const enrolledCounts = await prisma.classRegistration.groupBy({
       by: ['classId'],

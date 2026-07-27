@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
 import { getChileOffset, localToUTC } from "@/lib/utils";
-import { getDataProvider } from "@/lib/data-layer/provider-factory";
 import { requireAuth } from "@/lib/supabase/auth-guard";
 
 /**
@@ -16,7 +15,7 @@ function generateClassesForDay(
     id: string;
     name: string;
     organizationId: string;
-    schedule?: any; // Usamos any para manejar el JSON de Prisma localmente
+    schedule?: any;
   }>,
   organizationId: string
 ): ClassSession[] {
@@ -45,7 +44,6 @@ function generateClassesForDay(
     scheduleArray.forEach((s) => {
       if (s.day === dayOfWeek) {
         s.times.forEach((time: string) => {
-          // Usar la utilidad localToUTC que maneja el offset dinámico de Chile
           const dateTimeStr = localToUTC(day, time);
           const dateString = format(day, "yyyy-MM-dd");
 
@@ -56,7 +54,7 @@ function generateClassesForDay(
             name: discipline.name,
             dateTime: dateTimeStr,
             durationMinutes: 60,
-            instructorId: "inst_blacksheep_admin",
+            instructorId: "inst_blacksheep_admin", // ⚠️ Leftover conocido — Bloque 3, no se toca aquí
             capacity: 15,
             status: "scheduled",
             notes: "Clase generada dinámicamente",
@@ -96,9 +94,9 @@ export async function GET(request: NextRequest) {
   if (!organizationId) return NextResponse.json({ error: "organizationId is required" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const date = searchParams.get("date"); // Para compatibilidad con un solo día
-  const startDate = searchParams.get("startDate"); // Para rango de fechas
-  const endDate = searchParams.get("endDate"); // Para rango de fechas
+  const date = searchParams.get("date");
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
 
   if (!date && (!startDate || !endDate)) {
     return NextResponse.json(
@@ -112,12 +110,10 @@ export async function GET(request: NextRequest) {
     let targetEndDate: Date;
 
     if (date) {
-      // Modo de compatibilidad: un solo día respetando el offset de Chile
       const offset = getChileOffset(new Date(`${date}T12:00:00`));
       targetStartDate = new Date(`${date}T00:00:00.000${offset}`);
       targetEndDate = new Date(`${date}T23:59:59.999${offset}`);
     } else {
-      // Modo de rango: mes completo respetando el offset de Chile
       const offsetStart = getChileOffset(new Date(`${startDate}T12:00:00`));
       const offsetEnd = getChileOffset(new Date(`${endDate}T12:00:00`));
       
@@ -125,12 +121,10 @@ export async function GET(request: NextRequest) {
       targetEndDate = new Date(`${endDate}T23:59:59.999${offsetEnd}`);
     }
 
-    const provider = getDataProvider();
-
-    // 1. Buscar clases REALES que ya existan para ese rango de fechas en la BD usando repositorio
-    // NOTA: Se pasan objetos Date directamente. Pasar .toISOString() (string) hace que Prisma
-    // falle silenciosamente en la comparación y retorne []. Consistente con classService.getClasses.
-    const realClassesResult = await provider.classes.findMany({
+    // 1. Buscar clases REALES que ya existan para ese rango de fechas.
+    // NOTA: Se pasan objetos Date directamente, no .toISOString() — igual
+    // que en el código original, Prisma falla silenciosamente comparando strings.
+    const normalizedRealClasses = await prisma.classSession.findMany({
       where: {
         organizationId,
         dateTime: {
@@ -138,17 +132,14 @@ export async function GET(request: NextRequest) {
           lte: targetEndDate,
         },
       },
-      limit: 1000,
+      take: 1000,
     });
-    
-    const normalizedRealClasses = realClassesResult.items;
 
-    // 2. Obtener disciplinas activas via repositorio
-    const disciplinesResult = await provider.disciplines.findMany({
+    // 2. Obtener disciplinas activas
+    const disciplines = await prisma.discipline.findMany({
       where: { isActive: true, organizationId },
-      limit: 100,
+      take: 100,
     });
-    const disciplines = disciplinesResult.items;
 
     // 3. Generar todas las clases para el rango completo
     const allGeneratedClasses = generateClassesForDateRange(
@@ -159,20 +150,16 @@ export async function GET(request: NextRequest) {
     );
 
     // 4. Combinar clases, dando prioridad a las reales sobre las generadas.
-    // Usamos un Map para evitar duplicados en el mismo slot de tiempo/disciplina.
     const classMap = new Map<string, ClassSession>();
 
-    // Primero, agregar todas las clases generadas al mapa.
     allGeneratedClasses.forEach((cls) => {
       const key = `${cls.disciplineId}:${format(new Date(cls.dateTime), "yyyy-MM-dd:HH-mm")}`;
       classMap.set(key, cls);
     });
 
-    // Luego, sobrescribir con las clases reales. Si una clase real ocupa el mismo
-    // slot que una generada, la real tendrá precedencia.
     normalizedRealClasses.forEach((cls) => {
       const key = `${cls.disciplineId}:${format(new Date(cls.dateTime), "yyyy-MM-dd:HH-mm")}`;
-      classMap.set(key, cls);
+      classMap.set(key, cls as unknown as ClassSession);
     });
 
     // 5. Convertir el mapa de vuelta a array y ordenar por fecha

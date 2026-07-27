@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDataProvider } from "@/lib/data-layer/provider-factory";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 const notesSchema = z.object({
@@ -11,6 +12,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { id: classId } = await params;
 
     const parsed = notesSchema.safeParse(await request.json());
@@ -22,19 +28,20 @@ export async function PUT(
     }
     const { notes } = parsed.data;
 
-    const provider = getDataProvider();
-
-    // Get the class session via repository
-    const classSession = await provider.classes.findUnique({
-      where: { id: classId }
+    // Scoped por organizationId: evita editar una clase de otro centro
+    // aunque el id sea adivinado/válido en otro tenant.
+    const classSession = await prisma.classSession.findFirst({
+      where: { id: classId, organizationId: auth.organizationId },
     });
 
     if (!classSession) {
       return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }
 
-    // Update the class session with new notes via repository
-    const updatedClassSession = await provider.classes.update(classId, { notes });
+    const updatedClassSession = await prisma.classSession.update({
+      where: { id: classId },
+      data: { notes },
+    });
 
     return NextResponse.json({
       message: "Notas actualizadas exitosamente",

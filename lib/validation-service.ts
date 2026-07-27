@@ -13,8 +13,6 @@ import type {
   Discipline,
   CancellationValidation,
 } from "./types";
-import { getDataProvider } from "./data-layer/provider-factory";
-import { DataProvider } from "./data-layer/types";
 import { getPlanStatus, isClassWithinPlanValidity, formatTimeChile } from "./utils";
 
 // Helper function to get cancellation rule for a specific time
@@ -22,13 +20,11 @@ function getCancellationRule(
   classTime: string,
   discipline: Discipline
 ): { hoursBefore: number; reason: string } {
-  // Default rule: 2 hours before class
   const defaultRule = {
     hoursBefore: 0.5,
     reason: "Política estándar de cancelación (30 min)",
   };
 
-  // Check if discipline has specific rules
   if (
     discipline.cancellationRules &&
     Array.isArray(discipline.cancellationRules)
@@ -44,35 +40,14 @@ function getCancellationRule(
     }
   }
 
-  // Return default rule
   return defaultRule;
 }
 
 /**
  * Servicio centralizado de validaciones para el backend
  * Todas las validaciones de negocio se manejan aquí
- * Ahora integrado con la nueva capa de datos
  */
 export class ValidationService {
-  private static dataProvider: DataProvider;
-
-  // Initialize the validation service with data provider
-  static initialize(provider?: DataProvider): void {
-    this.dataProvider = provider || getDataProvider();
-  }
-
-  // Get data provider (lazy initialization)
-  private static getProvider(): DataProvider {
-    if (!this.dataProvider) {
-      this.dataProvider = getDataProvider();
-    }
-    return this.dataProvider;
-  }
-
-  /**
-   * Valida si un usuario puede inscribirse a una clase
-   * Ahora usa el data provider para obtener datos relacionados
-   */
   static async canUserRegisterToClass(
     userId: string,
     classSession: ClassSession,
@@ -84,17 +59,14 @@ export class ValidationService {
       : classSession.dateTime;
     const classEnd = addMinutes(classStart, classSession.durationMinutes || 60);
 
-    // 1. Verificar si la clase está cancelada
     if (classSession.status === "cancelled") {
       return { canRegister: false, reason: "La clase ha sido cancelada" };
     }
 
-    // 2. Verificar si la clase ya pasó
     if (isAfter(now, classEnd)) {
       return { canRegister: false, reason: "La clase ya finalizó" };
     }
 
-    // 3. Verificar si el usuario ya está inscrito
     const isUserRegistered = await prisma.classRegistration.findFirst({
       where: { classId: classSession.id, userId, status: 'registered' }
     });
@@ -102,7 +74,6 @@ export class ValidationService {
       return { canRegister: false, reason: "Ya estás inscrito a esta clase" };
     }
 
-    // 4. Verificar cupos disponibles
     if (
       (classSession.enrolledCount || 0) >= classSession.capacity
     ) {
@@ -117,7 +88,6 @@ export class ValidationService {
       return { canRegister: false, reason: "No tienes un plan activo o programado para esta fecha" };
     }
 
-    // Calcular remainingClasses usando la fuente de verdad (ClassRegistration)
     let remainingClasses = 0;
     if (userMembership.classLimit && userMembership.classLimit > 0) {
       const periodStart = userMembership.currentPeriodStart ? new Date(userMembership.currentPeriodStart) : new Date(0);
@@ -127,7 +97,6 @@ export class ValidationService {
       remainingClasses = Math.max(0, userMembership.classLimit - classesUsed);
     }
 
-    // Construir mockUser tipado explícitamente para utilidades legadas (utils.ts espera "any" pero se lo pasamos fuertemente tipado)
     const mockUser = {
       membership: {
         status: userMembership.status,
@@ -139,7 +108,6 @@ export class ValidationService {
       }
     };
 
-    // 5. Verificar si el usuario tiene un plan válido (activo o programado/futuro)
     const planStatus = getPlanStatus(mockUser);
     if (
       planStatus !== "active" && planStatus !== "scheduled"
@@ -147,12 +115,10 @@ export class ValidationService {
       return { canRegister: false, reason: "No tienes un plan activo o programado para esta fecha" };
     }
 
-    // 5.5 Verificar si la clase ocurre dentro de las fechas límite del plan
     if (!isClassWithinPlanValidity(mockUser, classSession.dateTime)) {
        return { canRegister: false, reason: "La fecha de esta clase supera la fecha de expiración de tu plan" };
     }
 
-    // 6. Verificar si el usuario tiene clases disponibles en su plan
     if (userMembership.classLimit && userMembership.classLimit > 0) {
       if (remainingClasses <= 0) {
         return {
@@ -162,7 +128,6 @@ export class ValidationService {
       }
     }
 
-    // 7. Verificar si la disciplina está permitida en el plan
     if (userMembership.disciplineAccess === "limited") {
       const allowedDisciplines = Array.isArray(userMembership.allowedDisciplines) 
         ? userMembership.allowedDisciplines 
@@ -175,14 +140,12 @@ export class ValidationService {
       }
     }
 
-    // 8. Verificar límite de inscripciones por día
     let targetDayClasses: ClassSession[] = [];
     const targetDate = typeof classSession.dateTime === 'string' 
       ? classSession.dateTime.split("T")[0]
       : (classSession.dateTime as Date).toISOString().split("T")[0];
 
     if (allClassSessions) {
-      // Use provided sessions if available
       targetDayClasses = allClassSessions.filter((session) => {
         const sessionDate = typeof session.dateTime === 'string'
           ? session.dateTime.split("T")[0]
@@ -190,7 +153,6 @@ export class ValidationService {
         return sessionDate === targetDate;
       });
     } else {
-      // Fetch target day's registrations from DB
       try {
         const registrations = await prisma.classRegistration.findMany({
           where: {
@@ -230,9 +192,6 @@ export class ValidationService {
     return { canRegister: true };
   }
 
-  /**
-   * Valida si un usuario puede cancelar una clase usando las reglas específicas de la disciplina
-   */
   static async canUserCancelClassWithRules(
     userId: string,
     classSession: ClassSession,
@@ -242,9 +201,8 @@ export class ValidationService {
     const classStart = typeof classSession.dateTime === 'string' 
       ? parseISO(classSession.dateTime) 
       : classSession.dateTime;
-    const classTime = formatTimeChile(classSession.dateTime); // Ensure time string matches the local time configured by the admin
+    const classTime = formatTimeChile(classSession.dateTime);
 
-    // 1. Verificar si el usuario está inscrito
     const isUserRegistered = await prisma.classRegistration.findFirst({
       where: { classId: classSession.id, userId, status: 'registered' }
     });
@@ -256,7 +214,6 @@ export class ValidationService {
       };
     }
 
-    // 2. Verificar si la clase ya pasó
     if (isAfter(now, classStart)) {
       return {
         canCancel: false,
@@ -265,11 +222,9 @@ export class ValidationService {
       };
     }
 
-    // 3. Obtener regla de cancelación aplicable
     const { hoursBefore, reason } = getCancellationRule(classTime, discipline);
     const cancellationDeadline = addHours(classStart, -hoursBefore);
 
-    // 4. Verificar si ya pasó el plazo de cancelación
     if (isAfter(now, cancellationDeadline)) {
       const timeUntilDeadline = formatDistanceToNow(cancellationDeadline, {
         addSuffix: true,
@@ -285,7 +240,6 @@ export class ValidationService {
       };
     }
 
-    // 5. Calcular tiempo restante para cancelar
     const hoursRemaining = differenceInHours(cancellationDeadline, now);
     const minutesRemaining =
       differenceInMinutes(cancellationDeadline, now) % 60;
@@ -308,9 +262,6 @@ export class ValidationService {
     };
   }
 
-  /**
-   * Valida si un usuario puede cancelar una clase (versión simple)
-   */
   static async canUserCancelClass(
     userId: string,
     classSession: ClassSession
@@ -320,7 +271,6 @@ export class ValidationService {
       ? parseISO(classSession.dateTime) 
       : classSession.dateTime;
 
-    // 1. Verificar si el usuario está inscrito
     const isUserRegistered = await prisma.classRegistration.findFirst({
       where: { classId: classSession.id, userId, status: 'registered' }
     });
@@ -328,7 +278,6 @@ export class ValidationService {
       return { canCancel: false, reason: "No estás inscrito a esta clase" };
     }
 
-    // 2. Verificar si la clase ya pasó
     if (isAfter(now, classStart)) {
       return {
         canCancel: false,
@@ -336,7 +285,6 @@ export class ValidationService {
       };
     }
 
-    // 3. Verificar política de cancelación
     const userMembership = await prisma.userMembership.findUnique({
       where: { userId_organizationId: { userId, organizationId: classSession.organizationId } },
     });

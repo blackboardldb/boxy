@@ -123,12 +123,13 @@ export interface DisciplineRepository
 
 export interface InstructorRepository
   extends Repository<import("../types").Instructor> {
-  findActive(): Promise<import("../types").Instructor[]>;
+  findActive(organizationId: string): Promise<import("../types").Instructor[]>;
   findByDiscipline(
-    disciplineId: string
+    disciplineId: string,
+    organizationId: string
   ): Promise<import("../types").Instructor[]>;
-  findByStatus(status: string): Promise<import("../types").Instructor[]>;
-  getInstructorStats(): Promise<{
+  findByStatus(status: string, organizationId: string): Promise<import("../types").Instructor[]>;
+  getInstructorStats(organizationId: string): Promise<{
     total: number;
     active: number;
     inactive: number;
@@ -138,12 +139,12 @@ export interface InstructorRepository
 
 export interface PlanRepository
   extends Repository<import("../types").MembershipPlan> {
-  findActive(): Promise<import("../types").MembershipPlan[]>;
+  findActive(organizationId: string): Promise<import("../types").MembershipPlan[]>;
   findByOrganization(
     organizationId: string
   ): Promise<import("../types").MembershipPlan[]>;
-  findByStatus(status: string): Promise<import("../types").MembershipPlan[]>;
-  getPlanStats(): Promise<{
+  findByStatus(status: string, organizationId: string): Promise<import("../types").MembershipPlan[]>;
+  getPlanStats(organizationId: string): Promise<{
     total: number;
     active: number;
     inactive: number;
