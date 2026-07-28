@@ -18,8 +18,8 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    // Use InstructorService to get instructor by ID
-    const response = await instructorService.getInstructorById(id);
+    // Scoped al org del requester — previene fuga de datos cross-tenant (Nivel 2 Bloque 5A)
+    const response = await instructorService.getInstructorById(id, auth.organizationId);
 
     if (!response.success || !response.data) {
       return NextResponse.json(

@@ -115,8 +115,8 @@ export class InstructorService {
     };
   }
 
-  async getInstructorById(id: string): Promise<ApiResponse<Instructor | null>> {
-    const instructor = await prisma.instructor.findUnique({ where: { id } });
+  async getInstructorById(id: string, organizationId: string): Promise<ApiResponse<Instructor | null>> {
+    const instructor = await prisma.instructor.findFirst({ where: { id, organizationId } });
     return {
       success: true,
       data: instructor ? mapToEntity(instructor) : null,
@@ -227,7 +227,7 @@ export class InstructorService {
   }
 
   async toggleInstructorStatus(id: string, organizationId: string): Promise<ApiResponse<Instructor>> {
-    const current = await this.getInstructorById(id);
+    const current = await this.getInstructorById(id, organizationId);
     if (!current.success || !current.data) {
       throw new NotFoundError("instructors", id);
     }
