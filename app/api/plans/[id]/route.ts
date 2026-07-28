@@ -24,8 +24,8 @@ export async function GET(
       );
     }
 
-    // Use PlanService to get plan by ID
-    const response = await planService.getPlanById(id);
+    // Scoped al org del requester — previene fuga de datos cross-tenant (Nivel 2 Bloque 5A)
+    const response = await planService.getPlanById(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

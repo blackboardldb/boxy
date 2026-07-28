@@ -96,8 +96,8 @@ export class PlanService {
     };
   }
 
-  async getPlanById(id: string): Promise<ApiResponse<MembershipPlan | null>> {
-    const plan = await prisma.membershipPlan.findUnique({ where: { id } });
+  async getPlanById(id: string, organizationId: string): Promise<ApiResponse<MembershipPlan | null>> {
+    const plan = await prisma.membershipPlan.findFirst({ where: { id, organizationId } });
     return {
       success: true,
       data: plan ? mapToEntity(plan) : null,
