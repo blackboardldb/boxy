@@ -11,17 +11,22 @@ export async function GET(
 ) {
   let id = "unknown";
   try {
+    // HAL-18: Endpoint sin autenticación — cualquiera podía leer PII con solo el ID.
+    // Se agrega requireAuth() como guard mínimo. Scope completo (+ organizationId filter)
+    // se cierra en el Grupo 3 del inventario Bloque 5A.
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
-    // Use UserService to get user by ID
     const response = await userService.getUserById(id);
 
-    // Return standardized response
     return NextResponse.json(response, {
       status: response.success && response.data ? 200 : 404,
     });
   } catch (error) {
-    // Use ErrorHandler to create standardized error response
     return ErrorHandler.createResponse(error, {
       operation: "getUserById",
       resource: "users",
@@ -66,8 +71,8 @@ export async function PUT(
     }
     const body = parsed.data;
 
-    // Use UserService to update user with validation
-    const response = await userService.updateUser(id, body);
+    // MT-07 (Bloque 5A-1): pasar organizationId del actor autenticado para aislamiento de tenant
+    const response = await userService.updateUser(id, body, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -101,8 +106,8 @@ export async function DELETE(
 
     id = (await params).id;
 
-    // Use UserService to delete user (soft delete)
-    const response = await userService.deleteUser(id);
+    // MT-07 (Bloque 5A-1): pasar organizationId del actor autenticado para aislamiento de tenant
+    const response = await userService.deleteUser(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

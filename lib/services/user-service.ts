@@ -214,10 +214,28 @@ async function promoteScheduledIfReady(
   return userMembership;
 }
 
-function mapToEntity(prismaUser: any): FitCenterUserProfile {
-  const umRaw = Array.isArray(prismaUser.userMembership) ? prismaUser.userMembership[0] : prismaUser.userMembership;
+function mapToEntity(prismaUser: any, targetOrganizationId?: string): FitCenterUserProfile {
+  // Si se provee targetOrganizationId, seleccionamos la membresía de ese centro.
+  // Si no, usamos [0] — solo válido en contextos globales donde ya sabemos que hay exactamente una.
+  let umRaw;
+  if (Array.isArray(prismaUser.userMembership)) {
+    umRaw = targetOrganizationId
+      ? prismaUser.userMembership.find((m: any) => m.organizationId === targetOrganizationId)
+      : prismaUser.userMembership[0];
+  } else {
+    umRaw = prismaUser.userMembership;
+  }
   const membership = umRaw ? mapUserMembershipRow(umRaw) : undefined;
-  const orgMember = prismaUser.memberships?.[0];
+
+  // Mismo criterio para el org_member (role, formaDePago, etc.)
+  let orgMember;
+  if (Array.isArray(prismaUser.memberships)) {
+    orgMember = targetOrganizationId
+      ? prismaUser.memberships.find((m: any) => m.organizationId === targetOrganizationId)
+      : prismaUser.memberships[0];
+  } else {
+    orgMember = prismaUser.memberships?.[0];
+  }
 
   return {
     id: prismaUser.id,
@@ -276,7 +294,8 @@ export class UserService {
     const promoted = await promoteScheduledIfReady(user.id, umRaw, user.membershipRenewals);
     if (promoted !== umRaw) (user as any).userMembership = [promoted];
 
-    return mapToEntity(user);
+    // Pasamos organizationId para que mapToEntity no use [0] arbitrario
+    return mapToEntity(user, organizationId);
   }
 
   // Scope global intencional (cross-tenant) — solo para soft delete y casos
@@ -383,7 +402,7 @@ export class UserService {
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    return createPaginatedResponse(users.map(mapToEntity), {
+    return createPaginatedResponse(users.map((u) => mapToEntity(u)), {
       page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1,
     });
   }
@@ -437,7 +456,7 @@ export class UserService {
     }, { operation: "createUser", resource: "users" });
   }
 
-  async updateUser(id: string, data: any): Promise<ApiResponse<FitCenterUserProfile>> {
+  async updateUser(id: string, data: any, organizationId: string): Promise<ApiResponse<FitCenterUserProfile>> {
     return withErrorHandling(async () => {
       const existing = await prisma.user.findUnique({
         where: { id },
@@ -445,10 +464,14 @@ export class UserService {
       });
       if (!existing) throw new NotFoundError("User", id);
 
-      await validateUpdateData(id, data, mapToEntity(existing));
+      // MT-07: Validar pertenencia al tenant antes de cualquier escritura.
+      // Usamos 404 intencionalmente (indistinguible entre "no existe" y "existe en otro tenant").
+      const belongsToOrg = existing.memberships.some((m) => m.organizationId === organizationId);
+      if (!belongsToOrg) throw new NotFoundError("User", id);
 
-      const orgId = existing.memberships[0]?.organizationId;
-      if (!orgId) throw new ValidationError("organizationId is required");
+      await validateUpdateData(id, data, mapToEntity(existing, organizationId));
+
+      const orgId = organizationId;
 
       await prisma.user.update({
         where: { id },
@@ -554,41 +577,83 @@ export class UserService {
     }, { operation: "updateUser", resource: "users", metadata: { id } });
   }
 
-  async deleteUser(id: string): Promise<ApiResponse<FitCenterUserProfile>> {
+  async deleteUser(id: string, organizationId: string): Promise<ApiResponse<FitCenterUserProfile>> {
     return withErrorHandling(async () => {
-      const existingUser = await this.getUserGlobalScope(id);
-      if (!existingUser) throw new NotFoundError("User", id);
+      // MT-07: Consulta directa a Prisma para tener acceso a memberships[] antes de mapear.
+      // No usamos getUserScopedToOrg como guard porque no devuelve null cuando el usuario
+      // existe pero no pertenece a la org — devuelve el objeto con membership: undefined.
+      const existingPrismaUser = await prisma.user.findUnique({
+        where: { id },
+        include: {
+          memberships: true,
+          userMembership: { where: { organizationId } },
+        },
+      });
+      if (!existingPrismaUser) throw new NotFoundError("User", id);
 
-      if (existingUser.membership?.status === "active") {
+      // Guard de pertenencia al tenant
+      const belongsToOrg = existingPrismaUser.memberships.some((m) => m.organizationId === organizationId);
+      if (!belongsToOrg) throw new NotFoundError("User", id);
+
+      // Evaluar membresía del centro correcto (ya filtrado en la query)
+      const ownMembership = existingPrismaUser.userMembership[0];
+      if (ownMembership?.status === "active") {
         throw new ValidationError("Cannot delete user with active membership. Please deactivate first.");
       }
 
-      await prisma.user.update({ where: { id }, data: { deletedAt: new Date() } });
+      let shouldRevokeGlobalAuth = false;
 
-      if (existingUser.membership) {
-        await prisma.userMembership.updateMany({
-          where: { userId: id },
+      // MT-07: Transacción atómica para prevenir condición de carrera si dos centros
+      // intentan eliminar al mismo usuario simultáneamente.
+      await prisma.$transaction(async (tx) => {
+        // 1. Inactivar la relación con ESTE centro únicamente
+        await tx.userMembership.updateMany({
+          where: { userId: id, organizationId },
           data: { status: "inactive", autoRenews: false },
         });
-      }
+        await tx.organizationMember.updateMany({
+          where: { userId: id, organizationId },
+          data: { status: "inactive" },
+        });
 
-      if (existingUser.authId) {
-        try {
-          await deleteAuthUser(existingUser.authId);
-        } catch (error) {
-          Sentry.captureException(error, { extra: { userId: id, authId: existingUser.authId, action: "soft_delete_auth_revoke" } });
-          console.error(`[UserService] ALERTA: Soft delete OK en BD, pero falló revocación en Supabase Auth para authId=${existingUser.authId}.`, error);
+        // 2. Contar cuántos OTROS centros tiene activos (la escritura anterior ya está en esta tx)
+        const activeOtherOrgsCount = await tx.organizationMember.count({
+          where: {
+            userId: id,
+            organizationId: { not: organizationId },
+            status: { not: "inactive" },
+          },
+        });
+
+        // 3. Si no quedan otros centros, hacer el soft-delete global
+        if (activeOtherOrgsCount === 0) {
+          await tx.user.update({ where: { id }, data: { deletedAt: new Date() } });
+          shouldRevokeGlobalAuth = true;
         }
-      } else {
+      });
+
+      // 4. Revocación de Auth (fuera de la transacción para no bloquear la BD esperando red).
+      // DEUDA TÉCNICA (DT-01): Si deleteAuthUser falla aquí, la BD ya tiene deletedAt seteado
+      // pero el usuario conserva credenciales de Auth activas. Riesgo preexistente antes de este fix.
+      // Solución definitiva: Outbox Pattern o cola de reintentos (fuera del alcance de Bloque 5A).
+      if (shouldRevokeGlobalAuth && existingPrismaUser.authId) {
+        try {
+          await deleteAuthUser(existingPrismaUser.authId);
+        } catch (error) {
+          Sentry.captureException(error, { extra: { userId: id, authId: existingPrismaUser.authId, action: "soft_delete_auth_revoke" } });
+          console.error(`[UserService] ALERTA: Soft delete OK en BD, pero falló revocación en Supabase Auth para authId=${existingPrismaUser.authId}.`, error);
+        }
+      } else if (shouldRevokeGlobalAuth) {
         console.warn(`[UserService] Usuario ${id} sin authId — omitiendo revocación en Auth.`);
+      } else {
+        console.log(`[UserService] Usuario ${id} tiene otros centros activos — no se revoca Auth global.`);
       }
 
-      const updatedUser = await this.getUserGlobalScope(id);
+      const updatedUser = await this.getUserScopedToOrg(id, organizationId);
       if (!updatedUser) throw new NotFoundError("User", id);
-
       clearCache();
-      clearCache(`user_email_${existingUser.email}`);
-      console.log(`[UserService] Alumno eliminado (soft delete): userId=${id} (${existingUser.email})`);
+      clearCache(`user_email_${existingPrismaUser.email}`);
+      console.log(`[UserService] Alumno eliminado del centro ${organizationId}: userId=${id} (${existingPrismaUser.email}). Global: ${shouldRevokeGlobalAuth}`);
       return createSuccessResponse(updatedUser);
     }, { operation: "deleteUser", resource: "users", metadata: { id } });
   }
@@ -627,7 +692,7 @@ export class UserService {
       include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: "desc" } }, memberships: true },
     });
     const total = users.length;
-    return createPaginatedResponse(users.map(mapToEntity), {
+    return createPaginatedResponse(users.map((u) => mapToEntity(u)), {
       page: 1, limit: total || 1, total, totalPages: 1, hasNextPage: false, hasPrevPage: false,
     });
   }

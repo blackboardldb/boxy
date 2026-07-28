@@ -236,7 +236,9 @@ export class DisciplineService {
 
       // Limpieza de especialidades huérfanas en instructores
       try {
-        const affectedInstructors = await prisma.instructor.findMany({});
+        const affectedInstructors = await prisma.instructor.findMany({
+          where: { organizationId }
+        });
         const toUpdate = affectedInstructors.filter((inst) => {
           const profile = (inst.profile as { specialties?: string[] }) || {};
           return Array.isArray(profile.specialties) && profile.specialties.includes(deletedEntity.id);
