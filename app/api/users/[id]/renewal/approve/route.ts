@@ -36,9 +36,14 @@ export async function POST(
     const startDate: string | undefined = parsed.data?.startDate;
 
     // 1. Buscar usuario con datos de membresía (necesario para consolidar período anterior en stats)
+    // userMembership filtrado por organizationId del admin — en usuarios multi-tenant, el array
+    // sin filtrar retornaba [0] del centro equivocado al consolidar user_monthly_stats (Nivel 4).
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { userMembership: true, memberships: { select: { organizationId: true } } },
+      include: {
+        userMembership: { where: { organizationId: auth.organizationId } },
+        memberships: { select: { organizationId: true } },
+      },
     });
 
     if (!user) {

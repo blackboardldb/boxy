@@ -107,8 +107,8 @@ export async function GET(
       where: { email: auth.user.email! },
       select: {
         id: true,
-        memberships: { select: { organizationId: true }, take: 1 },
         userMembership: {
+          where: { organizationId: auth.organizationId },
           select: {
             startDate: true,
             status: true,
@@ -124,7 +124,10 @@ export async function GET(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
-    const organizationId = dbUser.memberships?.[0]?.organizationId;
+    // organizationId: fuente de verdad es auth (requireAuth() garantiza el tenant activo
+    // del requester mediante JWT + fallback DB ordenado por joinedAt desc).
+    // Elimina la dependencia de memberships[0] cuyo orden no era determinista.
+    const organizationId = auth.organizationId;
 
 
     // ─── 1. Registros de clase del alumno ────────────────────────────────────
