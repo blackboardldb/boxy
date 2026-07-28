@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+// MIGRACIÓN: Este endpoint usaba la tabla legacy `profiles` (pre-multi-tenant, docs/historico/).
+// La tabla no existe en el schema Prisma actual de Boxy. El endpoint fallaba con 403 siempre.
+// Migrado a requireAdmin() (organization_members, roles ADMIN/COACH, con organizationId).
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 const ALLOWED_STATUSES = ["cancelled", "superseded", "approved", "rejected"] as const;
 
@@ -9,21 +12,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; renewalId: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    // Solo admins pueden modificar renovaciones directamente
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "admin") {
-      return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const { id: userId, renewalId } = await params;
@@ -37,9 +28,13 @@ export async function PATCH(
       );
     }
 
-    // Verificar que la renovación pertenece al usuario indicado
+    // Verificar que la renovación pertenece al usuario indicado y al centro del admin
     const renewal = await prisma.membershipRenewal.findFirst({
-      where: { id: renewalId, userId },
+      where: { 
+        id: renewalId, 
+        userId,
+        organizationId: auth.organizationId 
+      },
     });
 
     if (!renewal) {
