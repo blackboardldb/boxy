@@ -39,7 +39,7 @@ export async function GET() {
           where: { organizationId },
         },
         membershipRenewals: {
-          where: { status: { in: ['pending', 'scheduled'] } },
+          where: { organizationId, status: { in: ['pending', 'scheduled'] } },
           orderBy: { requestedAt: 'desc' },
           take: 5,
         },
@@ -169,6 +169,7 @@ export async function GET() {
           const existingRenewal = await prisma.membershipRenewal.findFirst({
             where: {
               userId: dbUser.id,
+              organizationId: promoted.organizationId,
               status: 'approved',
               startDate: {
                 gte: new Date(startDate.toISOString().split('T')[0] + "T00:00:00"),
