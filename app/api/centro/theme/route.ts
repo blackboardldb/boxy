@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth/require-admin";
-import { getTenant } from "@/lib/tenant/get-tenant";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
@@ -12,13 +11,15 @@ const schema = z.object({
 });
 
 export async function PATCH(request: NextRequest) {
-  try {
-    await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  // Guard migrado de lib/auth/require-admin (legacy, basado en redirect()) al
+  // guard canónico del proyecto — expone organizationId del token y no depende
+  // de getTenant() / Host header, cerrando la ventana de tenant-spoofing vía URL.
+  const auth = await requireAdmin();
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
+  const { organizationId } = auth;
 
-  const { organizationId } = await getTenant();
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);
 
