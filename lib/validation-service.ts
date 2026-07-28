@@ -92,7 +92,7 @@ export class ValidationService {
     if (userMembership.classLimit && userMembership.classLimit > 0) {
       const periodStart = userMembership.currentPeriodStart ? new Date(userMembership.currentPeriodStart) : new Date(0);
       const classesUsed = await prisma.classRegistration.count({
-        where: { userId, status: 'registered', class: { dateTime: { gte: periodStart } } }
+        where: { userId, status: 'registered', class: { organizationId: classSession.organizationId, dateTime: { gte: periodStart } } }
       });
       remainingClasses = Math.max(0, userMembership.classLimit - classesUsed);
     }
@@ -159,6 +159,7 @@ export class ValidationService {
             userId: userId,
             status: 'registered',
             class: {
+              organizationId: classSession.organizationId,
               dateTime: {
                 gte: new Date(`${targetDate}T00:00:00`),
                 lte: new Date(`${targetDate}T23:59:59`)
