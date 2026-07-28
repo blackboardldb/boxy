@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         })
       ]);
 
-      const updatedUser = await userService.getUserById(existingUser.id);
+      const updatedUser = await userService.getUserById(existingUser.id, auth.organizationId);
       return NextResponse.json(updatedUser, { status: 201 });
     }
 
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
         return user;
       });
 
-      const response = await userService.getUserById(newUser.id);
+      const response = await userService.getUserById(newUser.id, auth.organizationId);
       return NextResponse.json(response, { status: 201 });
     } catch (dbError: any) {
       console.error("[POST /api/users] Error BD, rollback en Auth:", dbError);

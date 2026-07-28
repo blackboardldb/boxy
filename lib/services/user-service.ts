@@ -312,9 +312,34 @@ export class UserService {
     return user ? mapToEntity(user) : null;
   }
 
-  async getUserById(id: string): Promise<ApiResponse<FitCenterUserProfile | null>> {
+  async getUserById(id: string, organizationId: string): Promise<ApiResponse<FitCenterUserProfile | null>> {
     return withErrorHandling(
-      async () => createSuccessResponse(await this.getUserGlobalScope(id)),
+      async () => {
+        // Una sola query: trae el usuario con memberships (para el guard de pertenencia
+        // via organization_members) y userMembership filtrado por org (para mapToEntity
+        // sin [0] arbitrario). Patrón idéntico al guard de deleteUser (L585-596).
+        const user = await prisma.user.findUnique({
+          where: { id },
+          include: {
+            userMembership: { where: { organizationId } },
+            memberships: true,
+            membershipRenewals: {
+              where: { status: { in: ["pending", "scheduled"] } },
+              orderBy: { requestedAt: "desc" },
+            },
+          },
+        });
+
+        if (!user) return createSuccessResponse(null);
+
+        // Guard de pertenencia: verifica organization_members, NO userMembership (plan).
+        // Un alumno sin plan activo puede pertenecer legítimamente a un centro
+        // (recién registrado, membresía vencida, staff sin plan, etc.).
+        const belongsToOrg = user.memberships.some((m) => m.organizationId === organizationId);
+        if (!belongsToOrg) return createSuccessResponse(null);
+
+        return createSuccessResponse(mapToEntity(user, organizationId));
+      },
       { operation: "getUserById", resource: "users", metadata: { id } }
     );
   }

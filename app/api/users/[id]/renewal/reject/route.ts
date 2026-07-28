@@ -36,8 +36,8 @@ export async function POST(
     }
     const reason: string = parsed.data?.reason ?? "Rechazado por administrador";
 
-    // Verificar que el usuario existe
-    const userResponse = await userService.getUserById(userId);
+    // Verificar que el usuario existe y pertenece al centro del admin
+    const userResponse = await userService.getUserById(userId, orgId);
     if (!userResponse.data) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -69,8 +69,8 @@ export async function POST(
       },
     });
 
-    // Re-fetch usuario actualizado para la respuesta
-    const updatedUserResponse = await userService.getUserById(userId);
+    // Re-fetch usuario actualizado para la respuesta (scoped al org del admin)
+    const updatedUserResponse = await userService.getUserById(userId, orgId);
 
     return NextResponse.json({
       user: updatedUserResponse.data,

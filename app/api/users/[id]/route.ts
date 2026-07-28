@@ -11,9 +11,8 @@ export async function GET(
 ) {
   let id = "unknown";
   try {
-    // HAL-18: Endpoint sin autenticación — cualquiera podía leer PII con solo el ID.
-    // Se agrega requireAuth() como guard mínimo. Scope completo (+ organizationId filter)
-    // se cierra en el Grupo 3 del inventario Bloque 5A.
+    // HAL-18 (cerrado en Grupo 3): requireAuth() bloquea acceso anónimo;
+    // getUserById ahora scoped a organizationId para prevenir fuga de PII cross-tenant.
     const auth = await requireAuth();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -21,7 +20,7 @@ export async function GET(
 
     id = (await params).id;
 
-    const response = await userService.getUserById(id);
+    const response = await userService.getUserById(id, auth.organizationId);
 
     return NextResponse.json(response, {
       status: response.success && response.data ? 200 : 404,
