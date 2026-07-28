@@ -38,16 +38,23 @@ export async function POST(
     // 1. Buscar usuario con datos de membresía (necesario para consolidar período anterior en stats)
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { userMembership: true, memberships: { select: { organizationId: true }, take: 1 } },
+      include: { userMembership: true, memberships: { select: { organizationId: true } } },
     });
 
     if (!user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
-    // orgId: la fuente de verdad es el admin autenticado — nunca el usuario.
-    // Fallback a memberships[0] del alumno para el caso multi-centro.
-    const orgId = auth.organizationId ?? user.memberships?.[0]?.organizationId;
+    // Guard cross-tenant: un pending renewal implica que el user ya tiene OrganizationMember
+    // (la transacción de POST /api/users los crea atómicamente). Si memberships no incluye
+    // el centro del admin, tratamos como 404 — indistinguible de "no existe" para el atacante.
+    const belongsToOrg = user.memberships.some((m) => m.organizationId === auth.organizationId);
+    if (!belongsToOrg) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // orgId: fuente de verdad es el admin autenticado. Auth garantizada por requireAdmin().
+    const orgId = auth.organizationId;
     if (!orgId) {
       return NextResponse.json({ error: "No se pudo determinar el organizationId" }, { status: 400 });
     }

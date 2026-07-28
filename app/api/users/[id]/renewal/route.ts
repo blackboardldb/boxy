@@ -81,7 +81,6 @@ export async function POST(
         id: true,
         memberships: {
           select: { organizationId: true },
-          take: 1,
         },
         userMembership: {
           select: {
@@ -97,6 +96,19 @@ export async function POST(
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 } );
+    }
+
+    // Guard cross-tenant (solo aplica a admins, que pueden especificar userId arbitrario).
+    // Rama permisiva: si memberships está vacío, es la race condition del alta de alumno
+    // nuevo (POST /api/users crea User+OrganizationMember atómicamente, pero el cliente
+    // puede llamar a este endpoint en el mismo instante). Se permite continuar usando
+    // adminOrgId como fallback — el flujo lo resuelve en L125.
+    // Si ya tiene memberships pero ninguna en el centro del admin → cruce de tenant real → 404.
+    if (isAdmin && user.memberships.length > 0) {
+      const belongsToOrg = user.memberships.some((m) => m.organizationId === auth.organizationId);
+      if (!belongsToOrg) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
     }
 
     // Verificar que el plan existe
@@ -119,10 +131,12 @@ export async function POST(
       processedAtDate = toMidnightUTC(paymentDate) ?? new Date();
     }
 
-    // organizationId: preferir la de memberships del usuario, pero usar
-    // adminOrgId como fallback seguro para el caso de alumno recién creado
-    // que aún no tiene OrganizationMember commiteado (race condition).
-    const orgId = user.memberships?.[0]?.organizationId ?? adminOrgId ?? null;
+    // organizationId: para admins usar siempre auth.organizationId (fuente de verdad, no
+    // depender del [0] del array que podría ser de otro centro en un usuario multi-tenant).
+    // Para alumnos, usar su propio membership o adminOrgId como fallback de race condition.
+    const orgId = isAdmin
+      ? auth.organizationId
+      : (user.memberships?.[0]?.organizationId ?? adminOrgId ?? null);
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
