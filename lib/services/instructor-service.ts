@@ -2,7 +2,7 @@ import { prisma } from "../prisma";
 import { Instructor } from "../types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
 import { generatedSchemas, validateWithSchema } from "../types/generator";
-import { ValidationError } from "../errors/types";
+import { ValidationError, NotFoundError } from "../errors/types";
 import { PrismaInstructorRepository } from "../data-layer/repositories/instructor-repository";
 import { Prisma } from "@prisma/client";
 
@@ -177,11 +177,11 @@ export class InstructorService {
     return { success: true, data: mapToEntity(created), meta: { timestamp: new Date().toISOString(), processingTime: 0 } };
   }
 
-  async updateInstructor(id: string, instructorData: any): Promise<ApiResponse<Instructor>> {
-    const existing = await prisma.instructor.findUnique({ where: { id } });
-    if (!existing) {
-      throw new ValidationError("Instructor not found");
-    }
+  async updateInstructor(id: string, instructorData: any, organizationId: string): Promise<ApiResponse<Instructor>> {
+    // findFirst con organizationId: el NotFoundError es intencionalmente
+    // indistinguible entre "no existe" y "existe pero pertenece a otro tenant".
+    const existing = await prisma.instructor.findFirst({ where: { id, organizationId } });
+    if (!existing) throw new NotFoundError("instructors", id);
     const existingEntity = mapToEntity(existing);
 
     await this.validateUpdateData(id, instructorData, existingEntity);
@@ -214,11 +214,9 @@ export class InstructorService {
     return { success: true, data: mapToEntity(updated), meta: { timestamp: new Date().toISOString(), processingTime: 0 } };
   }
 
-  async deleteInstructor(id: string): Promise<ApiResponse<Instructor>> {
-    const existing = await prisma.instructor.findUnique({ where: { id } });
-    if (!existing) {
-      throw new ValidationError("Instructor not found");
-    }
+  async deleteInstructor(id: string, organizationId: string): Promise<ApiResponse<Instructor>> {
+    const existing = await prisma.instructor.findFirst({ where: { id, organizationId } });
+    if (!existing) throw new NotFoundError("instructors", id);
     await this.validateDelete(id);
 
     const deleted = await prisma.instructor.delete({ where: { id } });
@@ -228,12 +226,12 @@ export class InstructorService {
     return { success: true, data: mapToEntity(deleted), meta: { timestamp: new Date().toISOString(), processingTime: 0 } };
   }
 
-  async toggleInstructorStatus(id: string): Promise<ApiResponse<Instructor>> {
+  async toggleInstructorStatus(id: string, organizationId: string): Promise<ApiResponse<Instructor>> {
     const current = await this.getInstructorById(id);
     if (!current.success || !current.data) {
-      throw new ValidationError("Instructor not found");
+      throw new NotFoundError("instructors", id);
     }
-    const updated = await this.updateInstructor(id, { isActive: !current.data.isActive });
+    const updated = await this.updateInstructor(id, { isActive: !current.data.isActive }, organizationId);
     console.log(
       `[InstructorService] Instructor status toggled: ${id} (${current.data.isActive ? "active" : "inactive"} -> ${!current.data.isActive ? "active" : "inactive"})`
     );

@@ -67,7 +67,7 @@ export async function PUT(
     };
 
     // Use InstructorService to update instructor with validation
-    const response = await instructorService.updateInstructor(id, dataWithOrg);
+    const response = await instructorService.updateInstructor(id, dataWithOrg, auth.organizationId);
 
     if (!response.success) {
       return NextResponse.json(response, {
@@ -101,7 +101,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Use InstructorService to delete instructor with validation
-    const response = await instructorService.deleteInstructor(id);
+    const response = await instructorService.deleteInstructor(id, auth.organizationId);
 
     if (!response.success) {
       return NextResponse.json(response, {

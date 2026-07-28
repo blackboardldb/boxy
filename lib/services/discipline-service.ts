@@ -145,9 +145,11 @@ export class DisciplineService {
     }, { operation: "createDiscipline", resource: "disciplines" });
   }
 
-  async updateDiscipline(id: string, data: any): Promise<ApiResponse<Discipline>> {
+  async updateDiscipline(id: string, data: any, organizationId: string): Promise<ApiResponse<Discipline>> {
     return withErrorHandling(async () => {
-      const previous = await prisma.discipline.findUnique({ where: { id } });
+      // findFirst con organizationId: el NotFoundError es intencionalmente
+      // indistinguible entre "no existe" y "existe pero pertenece a otro tenant".
+      const previous = await prisma.discipline.findFirst({ where: { id, organizationId } });
       if (!previous) throw new NotFoundError("disciplines", id);
 
       const previousEntity = mapToEntity(previous);
@@ -217,9 +219,9 @@ export class DisciplineService {
     }, { operation: "updateDiscipline", resource: "disciplines", metadata: { id } });
   }
 
-  async deleteDiscipline(id: string): Promise<ApiResponse<Discipline>> {
+  async deleteDiscipline(id: string, organizationId: string): Promise<ApiResponse<Discipline>> {
     return withErrorHandling(async () => {
-      const existing = await prisma.discipline.findUnique({ where: { id } });
+      const existing = await prisma.discipline.findFirst({ where: { id, organizationId } });
       if (!existing) throw new NotFoundError("disciplines", id);
 
       const classesUsingDiscipline = await prisma.classSession.count({ where: { disciplineId: id } });

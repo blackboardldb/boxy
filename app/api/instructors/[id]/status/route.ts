@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 
 export async function PATCH(
@@ -10,8 +11,14 @@ export async function PATCH(
   try {
     const { id } = await params;
 
+    // HAL-17: endpoint sin guard — cualquier request sin sesión podía mutar estado
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     // Use InstructorService to toggle instructor status
-    const response = await instructorService.toggleInstructorStatus(id);
+    const response = await instructorService.toggleInstructorStatus(id, auth.organizationId);
 
     if (!response.success) {
       return NextResponse.json(response, {

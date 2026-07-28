@@ -81,7 +81,7 @@ export async function PUT(
     };
 
     // Use DisciplineService to update discipline with validation
-    const response = await disciplineService.updateDiscipline(id, dataWithOrg);
+    const response = await disciplineService.updateDiscipline(id, dataWithOrg, auth.organizationId);
 
     if (response.success && parsed.data.schedule) {
       try {
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 
     // Use DisciplineService to delete discipline with validation
-    const response = await disciplineService.deleteDiscipline(id);
+    const response = await disciplineService.deleteDiscipline(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

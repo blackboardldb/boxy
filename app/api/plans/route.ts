@@ -108,7 +108,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Use PlanService to update plan with validation
-    const response = await planService.updatePlan(id, parsed.data);
+    const response = await planService.updatePlan(id, parsed.data, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -144,7 +144,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Use PlanService to delete plan with validation
-    const response = await planService.deletePlan(id);
+    const response = await planService.deletePlan(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

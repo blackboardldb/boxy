@@ -82,7 +82,7 @@ export async function PUT(
     };
 
     // Use ClassService to update class with validation
-    const response = await classService.updateClass(id, dataWithOrg);
+    const response = await classService.updateClass(id, dataWithOrg, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -124,7 +124,7 @@ export async function DELETE(
     }
 
     // Use ClassService to delete class with validation
-    const response = await classService.deleteClass(id);
+    const response = await classService.deleteClass(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

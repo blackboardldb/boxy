@@ -2,7 +2,7 @@ import { prisma } from "../prisma";
 import { MembershipPlan } from "../types";
 import { ApiResponse, PaginatedApiResponse } from "../api/types";
 import { generatedSchemas, createSchemas, validateWithSchema } from "../types/generator";
-import { ValidationError } from "../errors/types";
+import { ValidationError, NotFoundError } from "../errors/types";
 import { PrismaPlanRepository } from "../data-layer/repositories/plan-repository";
 import { Prisma } from "@prisma/client";
 
@@ -147,11 +147,11 @@ export class PlanService {
     return { success: true, data: mapToEntity(created), meta: { timestamp: new Date().toISOString(), processingTime: 0 } };
   }
 
-  async updatePlan(id: string, planData: any): Promise<ApiResponse<MembershipPlan>> {
-    const existing = await prisma.membershipPlan.findUnique({ where: { id } });
-    if (!existing) {
-      throw new ValidationError("Plan not found");
-    }
+  async updatePlan(id: string, planData: any, organizationId: string): Promise<ApiResponse<MembershipPlan>> {
+    // findFirst con organizationId: el NotFoundError es intencionalmente
+    // indistinguible entre "no existe" y "existe pero pertenece a otro tenant".
+    const existing = await prisma.membershipPlan.findFirst({ where: { id, organizationId } });
+    if (!existing) throw new NotFoundError("plans", id);
     const existingEntity = mapToEntity(existing);
 
     await this.validateUpdateData(id, planData, existingEntity);
@@ -190,11 +190,9 @@ export class PlanService {
     return { success: true, data: mapToEntity(updated), meta: { timestamp: new Date().toISOString(), processingTime: 0 } };
   }
 
-  async deletePlan(id: string): Promise<ApiResponse<MembershipPlan>> {
-    const existing = await prisma.membershipPlan.findUnique({ where: { id } });
-    if (!existing) {
-      throw new ValidationError("Plan not found");
-    }
+  async deletePlan(id: string, organizationId: string): Promise<ApiResponse<MembershipPlan>> {
+    const existing = await prisma.membershipPlan.findFirst({ where: { id, organizationId } });
+    if (!existing) throw new NotFoundError("plans", id);
     await this.validateDelete(id);
 
     const deleted = await prisma.membershipPlan.delete({ where: { id } });

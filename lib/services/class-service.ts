@@ -152,9 +152,11 @@ export class ClassService {
     }, { operation: "createClass", resource: "classes" });
   }
 
-  async updateClass(id: string, data: Partial<ClassSession>): Promise<ApiResponse<ClassSession>> {
+  async updateClass(id: string, data: Partial<ClassSession>, organizationId: string): Promise<ApiResponse<ClassSession>> {
     return withErrorHandling(async () => {
-      const existing = await prisma.classSession.findUnique({ where: { id } });
+      // findFirst con organizationId: el NotFoundError es intencionalmente
+      // indistinguible entre "no existe" y "existe pero pertenece a otro tenant".
+      const existing = await prisma.classSession.findFirst({ where: { id, organizationId } });
       if (!existing) throw new NotFoundError("classes", id);
 
       const updated = await prisma.classSession.update({
@@ -176,9 +178,9 @@ export class ClassService {
     }, { operation: "updateClass", resource: "classes", metadata: { id } });
   }
 
-  async deleteClass(id: string): Promise<ApiResponse<ClassSession>> {
+  async deleteClass(id: string, organizationId: string): Promise<ApiResponse<ClassSession>> {
     return withErrorHandling(async () => {
-      const existing = await prisma.classSession.findUnique({ where: { id } });
+      const existing = await prisma.classSession.findFirst({ where: { id, organizationId } });
       if (!existing) throw new NotFoundError("classes", id);
 
       const deleted = await prisma.classSession.delete({ where: { id }, select: defaultSelect });
