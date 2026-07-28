@@ -121,17 +121,6 @@ export async function POST(request: NextRequest) {
       const planConfigB = (planDataB?.config ?? {}) as Record<string, unknown>;
 
       await prisma.$transaction([
-        prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            firstName: body.firstName,
-            lastName: body.lastName,
-            phone: body.phone,
-            dateOfBirth: body.dateOfBirth,
-            gender: body.gender,
-            emergencyContact: body.emergencyContact ? (typeof body.emergencyContact === 'string' ? body.emergencyContact : JSON.stringify(body.emergencyContact)) : undefined,
-          }
-        }),
         prisma.organizationMember.create({
           data: {
             userId: existingUser.id,
