@@ -1,4 +1,4 @@
-# BS Plataforma — Documento Maestro de Deuda Técnica y Roadmap
+# Boxy — Documento Maestro de Deuda Técnica y Roadmap
 
 > **Nota:** Este documento consolida y reemplaza los análisis anteriores (`hal01_fase4_analisis_completo`, `roadmap_completo_bs_plataforma`, `vision_general_actualizada`). Los documentos previos quedan obsoletos y pasan a ser de referencia histórica.
 > **Fuentes:** Auditoría original 2026-04-06 + tracking de commits + scan de código 2026-04-15 + correcciones de riesgo para Fase 4.
@@ -26,7 +26,7 @@
 | HAL-14 | Constraint names expuestos | 🟠 Pendiente post HAL-16 | `567283a` |
 | **HAL-15** | **84 errores TSC** | **✅ Completo — 63 → 0 errores** | **`df3d03a`** |
 | **HAL-16** | **141 `as any` castings** | **✅ Completo — 141 → 0** | `886f139` |
-
+| **HAL-17** | **Mutación Cross-Tenant (PUT/DELETE) + Guard Faltante** | **✅ Completo** | `90a4197` |
 ---
 
 ## Decisiones ya tomadas sobre HAL-01
@@ -151,6 +151,7 @@ WHERE membership IS NOT NULL;
 | **HAL-03** | **Arrays denormalizados `ClassSession`** (`registeredParticipantsIds`, `waitlistParticipantsIds`). Removidos. Fuente de verdad → `ClassRegistration`. Mapper dual-read → writes eliminados → DROP de columnas ejecutado 2026-04-26. TSC 0 errores. Generación de clases operativa. | ✅ Completo | DROP: `2026-04-26` |
 | **HAL-16** | **141 → 0 `as any` restantes**. Type Safety Audit completo. Front, backend, validadores, store y utilidades estrictamente tipados. TSC = 0 errores. | 🟢 Bajo | 6h | **✅ Completo — 2026-04-26** |
 | **HAL-14** | **Constraint names expuestos**. `handleZodError`/`handlePrismaError`: `error: any` → `error: unknown`. Type guards narrowed. P2002/P2025/P2003 ya protegíos con `isDev`. Commit `79c96d0`. | 🟢 Bajo | 0.5h | **✅ Completo — 2026-04-26** |
+| **HAL-17** | **Mutación Cross-Tenant / Autorización Rota**. Vulnerabilidad donde endpoints `PUT`/`DELETE` de recursos con `[id]` (disciplines, classes, instructors, plans) permitían modificar datos de otros tenants adivinando el ID. Además, `/api/instructors/[id]/status` carecía de `requireAdmin()`. Se forzó `organizationId` en queries de Prisma y se añadió guard. | 🟢 Bajo | 2h | **✅ Completo — 2026-07-28** |
 | **HAL-10** | **Zustand → React Query (TanStack)**. Traspaso final a manejo async de frontend global. Es una tarea backlogged sin deadline pero recomendada iterar posteriormente con el sistema puramente relacional optimizado y la query JSONB bloqueante fuera. | 🟢 Bajo | 12h | **Bloqueado por HAL-01 y HAL-03** |
 
 ### Flujo de Ejecución Acumulativo de HALs (Cronograma)
@@ -401,5 +402,21 @@ WHERE table_name = 'class_sessions'
 ✅ HAL-14 — Completo (2026-04-26, commit 79c96d0)
    handler.ts: 0 as any, constraint names seguros en prod
     ↓
+✅ HAL-17 — Completo (2026-07-28, commit 90a4197)
+   Mutación cross-tenant bloqueada, auth guard implementado.
+    ↓
 HAL-10 (TanStack/React Query) ← PRÓXIMO PASO
 ```
+
+---
+
+## HAL-17 — Mutación Cross-Tenant y Guard Faltante
+**Estado: ✅ Completo**
+- **Diagnóstico:** Se identificó un patrón de vulnerabilidad en los handlers `PUT` y `DELETE` para `disciplines`, `classes`, `instructors` y `plans`. Un atacante autenticado en su propia organización podía modificar o eliminar recursos de *otras* organizaciones simplemente conociendo o iterando IDs válidos, ya que las queries en base de datos usaban `findUnique({ where: { id } })` sin validar el `organizationId` del dueño.
+- **Diagnóstico Adicional (HAL-17):** El endpoint `PATCH /api/instructors/[id]/status` no llamaba a `requireAdmin()` ni `requireAuth()`, permitiendo cambios de estado (activar/desactivar instructores) sin requerir sesión (operación pública).
+- **Resolución:**
+  1. Se reemplazó el patrón `findUnique` por `findFirst({ where: { id, organizationId } })` en los 4 servicios de negocio afectados para asegurar el aislamiento tenant a nivel de datos.
+  2. Se modificaron los 5 route handlers `[id]` + `plans/route.ts` para extraer `auth.organizationId` de la sesión y pasarlo forzosamente al servicio.
+  3. Se añadió `requireAdmin()` al endpoint vulnerable de `instructors/[id]/status`.
+  4. Los errores `ValidationError` genéricos de "no existe" fueron migrados a `NotFoundError` (status code 404) para estandarización.
+- **Verificación:** Smoke test ejecutado en entorno multi-tenant real (BSFit vs Centro 1) devolviendo 404 Not Found a los intentos de manipulación cruzada.
