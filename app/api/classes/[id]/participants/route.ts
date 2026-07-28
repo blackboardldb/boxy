@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { ErrorHandler } from "@/lib/errors/handler";
 
@@ -8,6 +9,11 @@ export async function GET(
 ) {
   let id = "unknown";
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     id = (await params).id;
 
     if (!id) {
@@ -17,6 +23,7 @@ export async function GET(
     const registrations = await prisma.classRegistration.findMany({
       where: {
         classId: id,
+        class: { organizationId: auth.organizationId }, // Scope: clase debe pertenecer al tenant del admin
         status: "registered",
       },
       select: {
@@ -29,8 +36,9 @@ export async function GET(
             lastName: true,
             email: true,
             phone: true,
-            // HAL-01 COMPLETO: membership JSONB eliminado → userMembership relacional
+            // Filtrado por org para que [0] sea determinista en usuarios multi-tenant (Nivel 4)
             userMembership: {
+              where: { organizationId: auth.organizationId },
               select: { membershipType: true },
             },
           },
