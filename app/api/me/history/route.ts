@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 const PAGE_SIZE = 5;
@@ -15,36 +15,22 @@ const PAGE_SIZE = 5;
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const { organizationId } = auth;
 
-    // Resolver id interno + organizationId desde organization_members
+    // Resolver id interno desde la base de datos local
     // Boxy: la identidad es tenant-scoped; un email puede existir en varios centros.
     const dbUser = await prisma.user.findFirst({
-      where: { email: { equals: user.email!, mode: "insensitive" } },
-      select: {
-        id: true,
-        memberships: {
-          select: { organizationId: true },
-          take: 1,
-        },
-      },
+      where: { email: { equals: auth.user.email!, mode: "insensitive" } },
+      select: { id: true },
     });
 
     if (!dbUser) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
-
-    // organizationId: preferir el del token si requireAuth() lo expone,
-    // si no, tomarlo de organization_members.
-    // Si no hay ninguno, rechazar — un alumno sin centro no tiene historial válido.
-    const organizationId = dbUser.memberships?.[0]?.organizationId ?? null;
 
     if (!organizationId) {
       return NextResponse.json(
