@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 // La tabla no existe en el schema Prisma actual de Boxy. El endpoint fallaba con 403 siempre.
 // Migrado a requireAdmin() (organization_members, roles ADMIN/COACH, con organizationId).
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { z } from "zod";
 
-const ALLOWED_STATUSES = ["cancelled", "superseded", "approved", "rejected"] as const;
+const patchRenewalSchema = z.object({
+  status: z.enum(["cancelled", "superseded", "approved", "rejected"]),
+});
 
 export async function PATCH(
   request: Request,
@@ -18,15 +21,14 @@ export async function PATCH(
     }
 
     const { id: userId, renewalId } = await params;
-    const body = await request.json();
-    const { status } = body;
-
-    if (!ALLOWED_STATUSES.includes(status)) {
+    const parsed = patchRenewalSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: `Status inválido. Permitidos: ${ALLOWED_STATUSES.join(", ")}` },
+        { error: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+    const { status } = parsed.data;
 
     // Verificar que la renovación pertenece al usuario indicado y al centro del admin
     const renewal = await prisma.membershipRenewal.findFirst({
