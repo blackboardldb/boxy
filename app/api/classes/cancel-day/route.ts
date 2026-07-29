@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { startOfDayChile, endOfDayChile } from "@/lib/utils";
 
 const cancelDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe tener formato YYYY-MM-DD"),
@@ -10,6 +12,11 @@ const cancelDaySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const json = await request.json();
     const parsed = cancelDaySchema.safeParse(json);
 
@@ -20,7 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, organizationId, generatedClasses = [] } = parsed.data;
+    // Ignoramos el organizationId del payload y forzamos el de la sesión
+    const { date, generatedClasses = [] } = parsed.data;
+    const organizationId = auth.organizationId;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const persistedGenIds: string[] = [];
 
@@ -29,7 +38,10 @@ export async function POST(request: NextRequest) {
       try {
         const persistResponse = await fetch(`${baseUrl}/api/classes/persist-generated`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            cookie: request.headers.get("cookie") || "",
+          },
           body: JSON.stringify({ classData, action: "cancel" }),
         });
 
@@ -44,9 +56,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Definir el rango del día en UTC para la consulta
-    const startOfDay = new Date(`${date}T00:00:00.000Z`);
-    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    // Definir el rango del día en horario chileno
+    const startOfDay = startOfDayChile(date);
+    const endOfDay = endOfDayChile(date);
 
     // 2. Identificar clases reales del día que no estén canceladas
     const realClasses = await prisma.classSession.findMany({
