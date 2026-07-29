@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { startOfDayChile, endOfDayChile } from "@/lib/utils";
 
 const cancelBulkSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido. Se espera YYYY-MM-DD"),
@@ -8,6 +10,11 @@ const cancelBulkSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const parsed = cancelBulkSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -27,10 +34,11 @@ export async function POST(request: NextRequest) {
 
     const classes = await prisma.classSession.findMany({
       where: {
+        organizationId: auth.organizationId,
         dateTime: {
-          // HAL-15: DateTime no soporta contains — usar rango gte/lt del día
-          gte: new Date(`${date}T00:00:00.000Z`),
-          lt:  new Date(`${date}T23:59:59.999Z`),
+          // Utilizar helpers de horario chileno para que el rango de día sea preciso
+          gte: startOfDayChile(date),
+          lte: endOfDayChile(date),
         },
         status: { not: "cancelled" },
       },
