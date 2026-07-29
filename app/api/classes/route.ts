@@ -101,7 +101,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await classService.createClass(parsed.data);
+    const discipline = await prisma.discipline.findFirst({
+      where: { id: parsed.data.disciplineId, organizationId: auth.organizationId }
+    });
+    if (!discipline) {
+      return NextResponse.json({ error: "Discipline not found" }, { status: 404 });
+    }
+
+    const instructor = await prisma.instructor.findFirst({
+      where: { id: parsed.data.instructorId, organizationId: auth.organizationId }
+    });
+    if (!instructor) {
+      return NextResponse.json({ error: "Instructor not found" }, { status: 404 });
+    }
+
+    const response = await classService.createClass({
+      ...parsed.data,
+      organizationId: auth.organizationId,
+    });
     return NextResponse.json(response, {
       status: response.success ? 201 : 400,
     });
