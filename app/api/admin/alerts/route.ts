@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
-import { sendToUsers, sendToOrganization } from "@/lib/services/push-service";
+import { sendToOrganization } from "@/lib/services/push-service";
 import { createInAppAlertSchema } from "@/lib/schemas";
 
 export async function GET() {
