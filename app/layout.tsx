@@ -6,8 +6,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 
 export const metadata: Metadata = {
-  title: "BlackSheep",
-  description: "Sistema de gestión para BlackSheep CrossFit",
+  title: "Boxy",
+  description: "Organiza tus clases",
   manifest: "/manifest.json",
   icons: {
     apple: [

@@ -66,3 +66,43 @@ export async function sendToUsers(
 
   return { sent, failed };
 }
+
+/**
+ * Envía una notificación push a todos los usuarios de un centro.
+ */
+export async function sendToOrganization(
+  organizationId: string,
+  payload: PushPayload
+): Promise<{ sent: number; failed: number }> {
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: { organizationId },
+    select: { id: true, subscription: true },
+  });
+
+  if (subscriptions.length === 0) return { sent: 0, failed: 0 };
+
+  const pushPayload = JSON.stringify(payload);
+  let sent = 0;
+  let failed = 0;
+
+  const pushPromises = subscriptions.map(async (subRecord) => {
+    try {
+      await webpush.sendNotification(
+        subRecord.subscription as unknown as webpush.PushSubscription,
+        pushPayload
+      );
+      sent++;
+    } catch (err: any) {
+      failed++;
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await prisma.pushSubscription.delete({ where: { id: subRecord.id } });
+      } else {
+        console.error(`[Push Notification] Error enviando a sub ${subRecord.id}:`, err);
+      }
+    }
+  });
+
+  await Promise.allSettled(pushPromises);
+
+  return { sent, failed };
+}

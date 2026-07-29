@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
-import { sendToUsers } from "@/lib/services/push-service";
+import { sendToUsers, sendToOrganization } from "@/lib/services/push-service";
 import { createInAppAlertSchema } from "@/lib/schemas";
 
 export async function GET() {
@@ -53,12 +53,7 @@ export async function POST(req: NextRequest) {
     if (shouldSendPush) {
       try {
         // Alerta general del centro: se manda a todas las suscripciones del tenant
-        const subs = await prisma.pushSubscription.findMany({
-          where: { organizationId: auth.organizationId },
-          select: { userId: true },
-        });
-        const userIds = [...new Set(subs.map((s) => s.userId))];
-        await sendToUsers(userIds, auth.organizationId, {
+        await sendToOrganization(auth.organizationId, {
           title: alert.title,
           body: alert.content,
           type: alert.type,

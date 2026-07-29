@@ -58,36 +58,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Cancel all classes for the date
-    const cancelledClasses: string[] = [];
-    const affectedUsers: string[] = [];
+    const classIds = classes.map((c) => c.id);
 
-    for (const classSession of classes) {
-      // Update class status to cancelled
-      await prisma.classSession.update({
-        where: { id: classSession.id },
+    // Capturar afectados ANTES de actualizar (igual criterio que cancel-day)
+    const registrations = await prisma.classRegistration.findMany({
+      where: { classId: { in: classIds }, status: "registered" },
+      select: { userId: true },
+    });
+    const uniqueAffectedUsers = [...new Set(registrations.map((r) => r.userId))];
+
+    await prisma.$transaction([
+      prisma.classSession.updateMany({
+        where: { id: { in: classIds } },
         data: { status: "cancelled" },
-      });
-
-      cancelledClasses.push(classSession.id);
-
-      // Registrar usuarios afectados verificando la fuente de verdad relacional (HAL-03)
-      const registrations = await prisma.classRegistration.findMany({
-        where: { classId: classSession.id, status: 'registered' },
-        select: { userId: true }
-      });
-      for (const reg of registrations) {
-        affectedUsers.push(reg.userId);
-      }
-
-      // [FIX] Marcar las inscripciones como canceladas para que
-      // validation-service devuelva el cupo automáticamente al alumno.
-      await prisma.classRegistration.updateMany({
-        where: { classId: classSession.id, status: "registered" },
+      }),
+      prisma.classRegistration.updateMany({
+        where: { classId: { in: classIds }, status: "registered" },
         data: { status: "cancelled", cancelledAt: new Date() },
-      });
-    }
-
-    const uniqueAffectedUsers = [...new Set(affectedUsers)];
+      }),
+    ]);
 
     // Notificar — awaited a propósito (ver nota sobre Serverless en alerts/route.ts)
     if (uniqueAffectedUsers.length > 0) {
@@ -103,8 +92,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `Successfully cancelled ${cancelledClasses.length} classes for ${date}`,
-      cancelledClasses,
+      message: `Successfully cancelled ${classIds.length} classes for ${date}`,
+      cancelledClasses: classIds,
       affectedUsers: uniqueAffectedUsers,
     });
   } catch (error) {
