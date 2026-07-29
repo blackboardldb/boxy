@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { startOfDayChile, endOfDayChile } from "@/lib/utils";
+import { sendToUsers } from "@/lib/services/push-service";
 
 const cancelDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe tener formato YYYY-MM-DD"),
@@ -74,9 +75,17 @@ export async function POST(request: NextRequest) {
     });
 
     const realClassIds = realClasses.map((c) => c.id);
+    let affectedUserIds: string[] = [];
 
     // 3. Ejecutar transacción para clases reales
     if (realClassIds.length > 0) {
+      // Capturar afectados ANTES del updateMany (que no retorna filas)
+      const registrations = await prisma.classRegistration.findMany({
+        where: { classId: { in: realClassIds }, status: "registered" },
+        select: { userId: true },
+      });
+      affectedUserIds = [...new Set(registrations.map((r) => r.userId))];
+
       await prisma.$transaction(async (tx) => {
         // Cancelar las sesiones
         await tx.classSession.updateMany({
@@ -121,11 +130,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Notificar — awaited, igual criterio que en cancel-bulk
+    if (affectedUserIds.length > 0) {
+      try {
+        await sendToUsers(affectedUserIds, organizationId, {
+          title: "Clase Cancelada",
+          body: `Se cancelaron las clases del ${date}.`,
+          type: "cancelacion",
+        });
+      } catch (pushErr) {
+        console.error("Error enviando push de cancelación (cancel-day):", pushErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       affectedRealClasses: realClassIds.length,
       affectedGeneratedClasses: persistedGenIds.length,
       totalAffected: allAffectedIds.length,
+      notifiedUsers: affectedUserIds.length,
     });
   } catch (error) {
     console.error("Error in cancel-day route:", error);

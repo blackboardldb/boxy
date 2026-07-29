@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
 import { startOfDayChile, endOfDayChile } from "@/lib/utils";
+import { sendToUsers } from "@/lib/services/push-service";
 
 const cancelBulkSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato de fecha inválido. Se espera YYYY-MM-DD"),
@@ -77,12 +78,34 @@ export async function POST(request: NextRequest) {
       for (const reg of registrations) {
         affectedUsers.push(reg.userId);
       }
+
+      // [FIX] Marcar las inscripciones como canceladas para que
+      // validation-service devuelva el cupo automáticamente al alumno.
+      await prisma.classRegistration.updateMany({
+        where: { classId: classSession.id, status: "registered" },
+        data: { status: "cancelled", cancelledAt: new Date() },
+      });
+    }
+
+    const uniqueAffectedUsers = [...new Set(affectedUsers)];
+
+    // Notificar — awaited a propósito (ver nota sobre Serverless en alerts/route.ts)
+    if (uniqueAffectedUsers.length > 0) {
+      try {
+        await sendToUsers(uniqueAffectedUsers, auth.organizationId, {
+          title: "Clase Cancelada",
+          body: `Se cancelaron las clases del ${date}.`,
+          type: "cancelacion",
+        });
+      } catch (pushErr) {
+        console.error("Error enviando push de cancelación (cancel-bulk):", pushErr);
+      }
     }
 
     return NextResponse.json({
       message: `Successfully cancelled ${cancelledClasses.length} classes for ${date}`,
       cancelledClasses,
-      affectedUsers: [...new Set(affectedUsers)], // Remove duplicates
+      affectedUsers: uniqueAffectedUsers,
     });
   } catch (error) {
     console.error("Error cancelling classes:", error);
