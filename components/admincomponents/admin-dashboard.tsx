@@ -35,14 +35,12 @@ interface MemberListItem {
   currentPeriodEnd: string | null;
 }
 
-const WHATSAPP_EXPIRED_MESSAGE = `🗓️ *Tu plan ha finalizado. Recuerda que:*
+const WHATSAPP_EXPIRED_MESSAGE = `🗓️ *Tu plan ha finalizado. Recuerda que para seguir entrenando:*
 
-•  Reservas vía app, activación manual.
-•  Renueva enviando tu comprobante. Pago por transferencia o presencial (efectivo o tarjetas)
+•  Debes renovar tu membresía en el centro.
+•  Los pagos y las opciones de planes se gestionan directamente con la administración.
 
-💡 Si estarás de vacaciones, recuerda que contamos con un plan lite de 6 clases mensuales por $22.000.
-
-🚨*Recordar que las clases no son acumulativas al mes siguiente.*`;
+¡Te esperamos de vuelta pronto! 💪`;
 
 export function AdminDashboard({ role }: { role: string }) {
   const [expiringSkip, setExpiringSkip] = useState(0);
