@@ -1,23 +1,21 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ exerciseKey: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user || !user.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const { organizationId } = auth;
 
     const dbUser = await prisma.user.findFirst({
-      where: { email: { equals: user.email, mode: "insensitive" } },
+      where: { email: { equals: auth.user.email!, mode: "insensitive" } },
+      select: { id: true },
     });
 
     if (!dbUser) {
@@ -28,11 +26,11 @@ export async function GET(
     const { exerciseKey } = await params;
 
     // NOTA: take: 3 con orderBy asc funciona correctamente SOLO porque
-    // la lógica de POST garantiza máximo 3 filas por (userId, exerciseKey).
+    // la lógica de POST garantiza máximo 3 filas por (userId, exerciseKey, organizationId).
     // Si esa invariante falla, esta query devolvería los 3 más antiguos,
     // no primero + últimos 2. Considerar query defensiva en el futuro.
     const records = await prisma.userLift.findMany({
-      where: { userId, exerciseKey },
+      where: { userId, exerciseKey, organizationId },
       orderBy: { recordedAt: "asc" },
       take: 3,
     });

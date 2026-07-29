@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 const createLiftSchema = z.object({
@@ -11,18 +11,16 @@ const createLiftSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user || !user.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const { organizationId } = auth;
+
     const dbUser = await prisma.user.findFirst({
-      where: { email: { equals: user.email, mode: "insensitive" } },
-      include: { memberships: { select: { organizationId: true }, take: 1 } },
+      where: { email: { equals: auth.user.email!, mode: "insensitive" } },
+      select: { id: true },
     });
 
     if (!dbUser) {
@@ -30,10 +28,6 @@ export async function POST(req: Request) {
     }
 
     const userId = dbUser.id;
-    const organizationId = dbUser.memberships?.[0]?.organizationId;
-    if (!organizationId) {
-      return NextResponse.json({ error: "User has no organization" }, { status: 400 });
-    }
 
     const body = await req.json();
     const result = createLiftSchema.safeParse(body);
