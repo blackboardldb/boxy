@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/supabase/auth-guard";
+import { z } from "zod";
 
 // =============================
-// TIPOS Y INTERFACES
+// SCHEMA
 // =============================
 
-interface EmitEventRequest {
-  room: string;
-  event: string;
-  data: unknown;
-}
+const emitEventSchema = z.object({
+  room: z.string().min(1, "room es requerido"),
+  event: z.string().min(1, "event es requerido"),
+  data: z.unknown().optional(),
+});
 
 // =============================
 // HANDLER PRINCIPAL
@@ -16,19 +18,20 @@ interface EmitEventRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: EmitEventRequest = await request.json();
-    const { room, event, data } = body;
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
-    // Validar campos requeridos
-    if (!room || !event) {
+    const parsed = emitEventSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Room and event are required",
-        },
+        { success: false, message: parsed.error.errors[0].message },
         { status: 400 }
       );
     }
+
+    const { room, event, data } = parsed.data;
 
     // Por ahora, simplemente loguear el evento
     // En una implementación real, aquí se emitiría el evento WebSocket
