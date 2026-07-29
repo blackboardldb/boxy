@@ -285,7 +285,7 @@ export class UserService {
       include: {
         userMembership: { where: { organizationId } },
         memberships: true,
-        membershipRenewals: { where: { status: { in: ["pending", "scheduled"] } }, orderBy: { requestedAt: "desc" } },
+        membershipRenewals: { where: { organizationId, status: { in: ["pending", "scheduled"] } }, orderBy: { requestedAt: "desc" } },
       },
     });
     if (!user) return null;
@@ -324,7 +324,7 @@ export class UserService {
             userMembership: { where: { organizationId } },
             memberships: true,
             membershipRenewals: {
-              where: { status: { in: ["pending", "scheduled"] } },
+              where: { organizationId, status: { in: ["pending", "scheduled"] } },
               orderBy: { requestedAt: "desc" },
             },
           },
@@ -354,11 +354,11 @@ export class UserService {
         where: { email },
         include: {
           userMembership: organizationId ? { where: { organizationId } } : true,
-          membershipRenewals: { orderBy: { requestedAt: "desc" } },
+          membershipRenewals: organizationId ? { where: { organizationId }, orderBy: { requestedAt: "desc" } } : { orderBy: { requestedAt: "desc" } },
           memberships: true,
         },
       });
-      return createSuccessResponse(user ? mapToEntity(user) : null);
+      return createSuccessResponse(user ? mapToEntity(user, organizationId) : null);
     });
   }
 
@@ -421,13 +421,17 @@ export class UserService {
         where,
         take: limit,
         skip,
-        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: "desc" } }, memberships: true },
+        include: { 
+          userMembership: params?.organizationId ? { where: { organizationId: params.organizationId } } : true, 
+          membershipRenewals: params?.organizationId ? { where: { organizationId: params.organizationId }, orderBy: { requestedAt: "desc" } } : { orderBy: { requestedAt: "desc" } }, 
+          memberships: true 
+        },
       }),
       prisma.user.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    return createPaginatedResponse(users.map((u) => mapToEntity(u)), {
+    return createPaginatedResponse(users.map((u) => mapToEntity(u, params?.organizationId)), {
       page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1,
     });
   }
@@ -472,12 +476,16 @@ export class UserService {
 
       const withMembership = await prisma.user.findUnique({
         where: { id: created.id },
-        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: "desc" } }, memberships: true },
+        include: { 
+          userMembership: { where: { organizationId: orgId } }, 
+          membershipRenewals: { where: { organizationId: orgId }, orderBy: { requestedAt: "desc" } }, 
+          memberships: true 
+        },
       });
 
       clearCache();
       console.log(`[UserService] User created: ${created.id} (${created.email})`);
-      return createSuccessResponse(mapToEntity(withMembership));
+      return createSuccessResponse(mapToEntity(withMembership, orgId));
     }, { operation: "createUser", resource: "users" });
   }
 
@@ -593,12 +601,16 @@ export class UserService {
 
       const updated = await prisma.user.findUnique({
         where: { id },
-        include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: "desc" } }, memberships: true },
+        include: { 
+          userMembership: { where: { organizationId: orgId } }, 
+          membershipRenewals: { where: { organizationId: orgId }, orderBy: { requestedAt: "desc" } }, 
+          memberships: true 
+        },
       });
 
       clearCache();
       clearCache(`user_email_${updated!.email}`);
-      return createSuccessResponse(mapToEntity(updated));
+      return createSuccessResponse(mapToEntity(updated, orgId));
     }, { operation: "updateUser", resource: "users", metadata: { id } });
   }
 
@@ -714,10 +726,14 @@ export class UserService {
           { deletedAt: null },
         ],
       },
-      include: { userMembership: true, membershipRenewals: { orderBy: { requestedAt: "desc" } }, memberships: true },
+      include: { 
+        userMembership: { where: { organizationId } }, 
+        membershipRenewals: { where: { organizationId }, orderBy: { requestedAt: "desc" } }, 
+        memberships: true 
+      },
     });
     const total = users.length;
-    return createPaginatedResponse(users.map((u) => mapToEntity(u)), {
+    return createPaginatedResponse(users.map((u) => mapToEntity(u, organizationId)), {
       page: 1, limit: total || 1, total, totalPages: 1, hasNextPage: false, hasPrevPage: false,
     });
   }
