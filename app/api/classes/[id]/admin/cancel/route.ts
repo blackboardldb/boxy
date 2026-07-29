@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { ErrorHandler } from "@/lib/errors/handler";
 import { z } from "zod";
 
 const adminCancelSchema = z.object({
@@ -11,13 +12,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let classId = "unknown";
   try {
     const auth = await requireAdmin();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { id: classId } = await params;
+    classId = (await params).id;
 
     const parsed = adminCancelSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -38,17 +40,14 @@ export async function POST(
         where: { userId_classId: { userId, classId } },
         data: { status: "cancelled", cancelledAt: new Date() },
       });
-
-      // HAL-03 Sprint B: ya no escribimos en la columna array.
-      await tx.classSession.findUnique({
-        where: { id: classId },
-        include: { registrations: { select: { userId: true, status: true } } },
-      });
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Error removing student (admin):", error);
-    return NextResponse.json({ error: error?.message || "Error al remover alumno" }, { status: 500 });
+  } catch (error) {
+    return ErrorHandler.createResponse(error, {
+      operation: "adminCancelRegistration",
+      resource: "classes",
+      metadata: { classId },
+    });
   }
 }
