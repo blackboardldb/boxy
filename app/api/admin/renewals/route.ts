@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
             email: true,
             phone: true,
             userMembership: {
+              where: { organizationId },
               select: {
                 status: true,
                 membershipType: true,
