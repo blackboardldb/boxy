@@ -37,12 +37,20 @@ export async function POST(request: NextRequest) {
     const generatedClasses = [];
 
     const [hours, minutes] = time.split(":").map(Number);
-    const discipline = await prisma.discipline.findUnique({
-      where: { id: disciplineId }
+    const discipline = await prisma.discipline.findFirst({
+      where: { id: disciplineId, organizationId }
     });
 
     if (!discipline) {
       return NextResponse.json({ error: "Discipline not found" }, { status: 404 });
+    }
+
+    const instructor = await prisma.instructor.findFirst({
+      where: { id: instructorId, organizationId }
+    });
+
+    if (!instructor) {
+      return NextResponse.json({ error: "Instructor not found" }, { status: 404 });
     }
 
     for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
