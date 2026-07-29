@@ -8,14 +8,13 @@ export default async function AdminPage() {
   const headersList = await headers();
   const role = headersList.get("x-user-role") || "alumno";
 
-  let orgName = "Boxy"; // Fallback por defecto
+  const auth = await requireAuth();
+  if ("error" in auth) {
+    redirect("/login");
+  }
 
+  let orgName = "Boxy";
   try {
-    const auth = await requireAuth();
-    if ("error" in auth) {
-      redirect("/login");
-    }
-    
     if (auth.organizationId) {
       const org = await prisma.organization.findUnique({
         where: { id: auth.organizationId },
