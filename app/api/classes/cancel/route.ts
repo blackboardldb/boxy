@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/supabase/auth-guard";
 
 const cancelClassSchema = z.object({
   classId:   z.string().min(1, "classId es requerido"),
@@ -13,6 +14,11 @@ const cancelClassSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const parsed = cancelClassSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -45,7 +51,10 @@ export async function POST(request: NextRequest) {
         }/api/classes/persist-generated`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            cookie: request.headers.get("cookie") || "",
+          },
           body: JSON.stringify({
             classData,
             action: "cancel",
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              room: `org_${classDataOrg?.organizationId || "blacksheep_001"}`,
+              room: `org_${auth.organizationId}`,
               event: "class-cancelled",
               data: {
                 classId: classId,
@@ -104,8 +113,8 @@ export async function POST(request: NextRequest) {
       // =============================
 
       // Get the class session
-      const classSession = await prisma.classSession.findUnique({
-        where: { id: classId },
+      const classSession = await prisma.classSession.findFirst({
+        where: { id: classId, organizationId: auth.organizationId },
       });
 
       if (!classSession) {
