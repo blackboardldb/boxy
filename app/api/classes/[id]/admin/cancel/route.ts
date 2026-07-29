@@ -28,7 +28,7 @@ export async function POST(
     }
     const { userId } = parsed.data;
 
-    const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
+    const classSession = await prisma.classSession.findFirst({ where: { id: classId, organizationId: auth.organizationId } });
     if (!classSession) {
       return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
     }
