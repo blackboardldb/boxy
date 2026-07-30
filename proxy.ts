@@ -33,6 +33,9 @@ function extractSlug(hostname: string): string | null {
 export async function proxy(request: NextRequest) {
   const { pathname, hostname, searchParams } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete("x-organization-id");
+  requestHeaders.delete("x-organization-slug");
+  requestHeaders.delete("x-organization-name");
 
   // En desarrollo local Next.js puede reescribir nextUrl.hostname a localhost
   // Es más seguro extraer el hostname desde el header "host"
