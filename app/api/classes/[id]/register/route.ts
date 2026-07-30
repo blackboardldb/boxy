@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
-import { z } from "zod";
+import { requireAuth } from "@/lib/supabase/auth-guard";
+import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
 
 
 export async function POST(
@@ -8,19 +9,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAuth();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const internalUser = await resolveInternalUser(auth);
+    if (!internalUser) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
     const { id: classId } = await params;
 
-    const bodySchema = z.object({ userId: z.string().min(1) });
-    const parsed = bodySchema.safeParse(await request.json());
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.errors[0].message },
-        { status: 400 }
-      );
-    }
-    const { userId } = parsed.data;
-
-    const result = await classService.registerStudent(classId, userId);
+    const result = await classService.registerStudent(classId, internalUser.id);
 
     if (!result.success) {
       return NextResponse.json(
@@ -41,3 +42,4 @@ export async function POST(
     );
   }
 }
+

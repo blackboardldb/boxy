@@ -177,17 +177,14 @@ export function useRegisterClass() {
   return useMutation({
     mutationFn: ({
       classId,
-      userId,
     }: {
       classId: string;
-      userId: string;
     }) =>
       fetchClient<{ success: boolean }>(`/classes/${classId}/register`, {
         method: "POST",
-        body: JSON.stringify({ userId }),
       }),
 
-    onMutate: async ({ classId, userId }) => {
+    onMutate: async ({ classId }) => {
       await queryClient.cancelQueries({ queryKey: classKeys.lists() });
       const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists() });
 
@@ -205,15 +202,15 @@ export function useRegisterClass() {
         });
       });
 
-      // Cancelar y capturar myBookings
-      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(userId) });
+      // Cancelar y capturar myBookings de forma general para el usuario actual
+      await queryClient.cancelQueries({ queryKey: ["classes", "myBookings"] });
       const previousMyBookings = queryClient.getQueriesData({ 
-        queryKey: classKeys.myBookingsPrefix(userId) 
+        queryKey: ["classes", "myBookings"] 
       });
 
       // Actualizar myBookings optimistamente
       queryClient.setQueriesData(
-        { queryKey: classKeys.myBookingsPrefix(userId) },
+        { queryKey: ["classes", "myBookings"] },
         (old: ClassSession[] | undefined) => {
           if (!old) return old;
           return old.map(session => {
@@ -243,10 +240,10 @@ export function useRegisterClass() {
       }
     },
 
-    onSettled: (_data, _error, variables) => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.all });
       queryClient.invalidateQueries({
-        queryKey: classKeys.myBookingsPrefix(variables.userId),
+        queryKey: ["classes", "myBookings"],
       });
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
