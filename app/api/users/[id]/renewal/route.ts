@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/supabase/auth-guard";
+import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
 import { z } from "zod";
 import { toMidnightUTC } from "@/lib/utils/dates";
 import { calcularFechaTerminoMembresia } from "@/lib/utils";
@@ -40,6 +41,11 @@ export async function POST(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const internalUser = await resolveInternalUser(auth);
+    if (!internalUser) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
     const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
 
     const parsed = renewalRequestSchema.safeParse(await request.json());
@@ -60,7 +66,7 @@ export async function POST(
     }
 
     // Si es alumno solicitando para sí mismo, validar identidad
-    if (!isAdmin && auth.user.id !== userId) {
+    if (!isAdmin && internalUser.id !== userId) {
       return NextResponse.json(
         { error: "Solo puedes solicitar renovaciones para tu propia cuenta" },
         { status: 403 }
@@ -131,12 +137,10 @@ export async function POST(
       processedAtDate = toMidnightUTC(paymentDate) ?? new Date();
     }
 
-    // organizationId: para admins usar siempre auth.organizationId (fuente de verdad, no
+    // organizationId: usar siempre auth.organizationId (fuente de verdad, no
     // depender del [0] del array que podría ser de otro centro en un usuario multi-tenant).
-    // Para alumnos, usar su propio membership o adminOrgId como fallback de race condition.
-    const orgId = isAdmin
-      ? auth.organizationId
-      : (user.memberships?.[0]?.organizationId ?? adminOrgId ?? null);
+    // Funciona de forma segura para admins y alumnos.
+    const orgId = auth.organizationId;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
@@ -275,8 +279,6 @@ export async function POST(
       const prevPeriodEnd   = user.userMembership[0].currentPeriodEnd;
       const prevPlanName    = user.userMembership[0].membershipType ?? "Plan";
       const prevClassLimit  = user.userMembership[0].classLimit ?? 0;
-      const orgId           = user.memberships?.[0]?.organizationId;
-      if (!orgId) throw new Error("organizationId is required");
 
       prisma.classRegistration.count({
         where: {

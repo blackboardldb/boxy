@@ -181,7 +181,7 @@ export default function RenewPlanPage() {
 
       // Redirigir después de un breve delay
       setTimeout(() => {
-        router.push("/app");
+        router.push("/alumnos");
       }, 1500);
     } catch (error) {
       console.error("Error requesting renewal:", error);
