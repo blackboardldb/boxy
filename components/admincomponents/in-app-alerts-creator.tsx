@@ -31,7 +31,7 @@ import { useCreateAlert } from "@/lib/react-query/hooks/useAlerts";
  * Formulario para crear nuevas alertas In-App.
  * Extraído de AlertsManager para usarse de forma independiente en el Tab 2 de /alertas.
  */
-export function InAppAlertsCreator() {
+export function InAppAlertsCreator({ onSuccess }: { onSuccess?: () => void }) {
   const createAlert = useCreateAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,6 +64,7 @@ export function InAppAlertsCreator() {
 
       setTitle("");
       setContent("");
+      onSuccess?.();
     } catch (error) {
       console.error("Error al crear alerta:", error);
     } finally {

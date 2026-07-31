@@ -7,29 +7,34 @@ import { InAppAlertsCreator } from "../../../components/admincomponents/in-app-a
 import { PublishedAlertsList } from "../../../components/admincomponents/published-alerts-list";
 import { usePendingRenewals } from "@/lib/react-query/hooks/useRenewals";
 import { useAlerts } from "@/lib/react-query/hooks/useAlerts";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 
-type Tab = "solicitudes" | "inapp" | "notificaciones";
+type Tab = "solicitudes" | "notificaciones";
 
 const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   {
     id: "solicitudes",
-    label: "Renovar plan",
+    label: "Solicitud renovacion",
     icon: <RefreshCw className="h-3.5 w-3.5" />,
   },
   {
-    id: "inapp",
-    label: "Enviar notificación",
-    icon: <Bell className="h-3.5 w-3.5" />,
-  },
-  {
     id: "notificaciones",
-    label: "",
+    label: "Hist notificaciones",
     icon: <BellRing className="h-3.5 w-3.5" />,
   },
 ];
 
 export default function AlertasPage() {
   const [activeTab, setActiveTab] = useState<Tab>("solicitudes");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Badges de conteo (cargados solo una vez, React Query cachea)
   const { data: pendingRenewals = [] } = usePendingRenewals();
@@ -45,25 +50,24 @@ export default function AlertasPage() {
 
   return (
     <div className="p-4 pt-8 md:p-8 space-y-6">
+      {/* Header Action */}
+      <div className="flex justify-end mb-5">
+        <Button onClick={() => setIsDrawerOpen(true)} className="gap-2 rounded-xl">
+          <Plus className="h-4 w-4" />
+          Nueva alerta
+        </Button>
+      </div>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Alertas</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Solicitudes de renovación, enviar notificaciones y ver notificaciones
-          </p>
-        </div>
-        {/* {pendingRenewals.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full">
-            <RefreshCw className="h-3 w-3" />
-            {pendingRenewals.length} pendiente
-            {pendingRenewals.length !== 1 ? "s" : ""}
-          </span>
-        )} */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Alertas</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Solicitudes de renovación, enviar notificaciones y ver notificaciones
+        </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-muted rounded-xl w-full">
         {tabs.map((tab) => {
           const count = badgeFor(tab.id);
           const isActive = activeTab === tab.id;
@@ -71,7 +75,7 @@ export default function AlertasPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 ${isActive
+              className={`flex-1 flex justify-center items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-150 ${isActive
                 ? "bg-background shadow text-foreground"
                 : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -90,29 +94,26 @@ export default function AlertasPage() {
 
       {/* Contenido por tab */}
 
-      {/* Tab 1: Solicitudes de renovación — Notifications sin su header propio
-          ya que esta página ya tiene su propio h1. */}
+      {/* Tab 1: Solicitudes de renovación */}
       {activeTab === "solicitudes" && <Notifications hideHeader />}
 
-
-      {/* Tab 2: Crear alertas In-App */}
-      {activeTab === "inapp" && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-base font-bold text-zinc-900">
-              Nueva notificación In-App
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Las alertas aparecerán en el banner de la app para los alumnos
-              durante el período definido.
-            </p>
-          </div>
-          <InAppAlertsCreator />
-        </div>
-      )}
-
-      {/* Tab 3: Notificaciones — historial de alertas publicadas + clases canceladas */}
+      {/* Tab 2: Notificaciones — historial de alertas publicadas + clases canceladas */}
       {activeTab === "notificaciones" && <PublishedAlertsList />}
+
+      {/* Drawer para Crear Alertas */}
+      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <DrawerContent className="max-h-[90vh]">
+          <div className="max-w-xl mx-auto w-full p-4 overflow-y-auto">
+            <DrawerHeader className="px-0 pt-0 text-left">
+              <DrawerTitle>Nueva notificación In-App</DrawerTitle>
+              <DrawerDescription>
+                Las alertas aparecerán en el banner de la app para los alumnos durante el período definido.
+              </DrawerDescription>
+            </DrawerHeader>
+            <InAppAlertsCreator onSuccess={() => setIsDrawerOpen(false)} />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
