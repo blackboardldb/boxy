@@ -148,10 +148,14 @@ export async function POST(
     const orgId = activeOrgId;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
-    await prisma.membershipRenewal.updateMany({
-      where: { userId, status: { in: ["pending", "scheduled"] } },
-      data: { status: "cancelled" },
-    });
+    // Para el flujo autoApprove se ejecuta directo. Para el flujo de alumno se ejecuta
+    // transaccionalmente más abajo para evitar condición de carrera (Hallazgo 4).
+    if (autoApprove) {
+      await prisma.membershipRenewal.updateMany({
+        where: { userId, organizationId: activeOrgId, status: { in: ["pending", "scheduled"] } },
+        data: { status: "cancelled" },
+      });
+    }
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
     const currentPlanIdRaw = user.userMembership?.[0]?.planId ?? null;
@@ -269,9 +273,16 @@ export async function POST(
         },
       });
     } else {
-      // Flujo sin autoApprove (alumno solicita renovación) → siempre crear
-      renewal = await prisma.membershipRenewal.create({
-        data: { userId, ...renewalData },
+      // Flujo sin autoApprove (alumno solicita renovación) → siempre crear, de forma transaccional
+      await prisma.$transaction(async (tx) => {
+        await tx.membershipRenewal.updateMany({
+          where: { userId, organizationId: activeOrgId, status: { in: ["pending", "scheduled"] } },
+          data: { status: "cancelled" },
+        });
+
+        renewal = await tx.membershipRenewal.create({
+          data: { userId, ...renewalData },
+        });
       });
     }
 
