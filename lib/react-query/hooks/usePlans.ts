@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 import type { MembershipPlan as Plan } from "@/lib/types";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const planKeys = {
@@ -36,6 +37,7 @@ export function usePlans(params?: {
   search?: string;
   isActive?: string;
 }) {
+  const activeOrgId = useActiveOrgId();
   const searchParams = new URLSearchParams();
   searchParams.set("page", String(params?.page ?? 1));
   searchParams.set("limit", String(params?.limit ?? 50));
@@ -44,7 +46,7 @@ export function usePlans(params?: {
     searchParams.set("isActive", params.isActive);
 
   return useQuery({
-    queryKey: planKeys.list(params),
+    queryKey: [...planKeys.list(params), activeOrgId],
     queryFn: () =>
       fetchClient<PlansApiResponse>(
         `/plans?${searchParams.toString()}`
