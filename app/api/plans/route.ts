@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -28,11 +33,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // MT-01: Filtrar planes por organizationId del tenant autenticado
+    // MT-01: Filtrar planes por organizationId del tenant activo
     const response = await planService.getPlans({
       page,
       limit,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
       search: search || undefined,
       isActive:
         isActive && isActive !== "todos" ? isActive === "true" : undefined,
@@ -56,6 +61,11 @@ export async function POST(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     const parsed = createPlanSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -65,10 +75,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // MT-01: Inyectar organizationId del admin autenticado al crear el plan
+    // MT-01: Inyectar organizationId del tenant activo al crear el plan
     const response = await planService.createPlan({
       ...parsed.data,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
     });
 
     // Return standardized response
@@ -91,6 +101,11 @@ export async function PUT(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     const rawBody = await request.json();
     const { id, ...updateData } = rawBody;
@@ -108,7 +123,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Use PlanService to update plan with validation
-    const response = await planService.updatePlan(id, parsed.data, auth.organizationId);
+    const response = await planService.updatePlan(id, parsed.data, activeOrgId);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -135,6 +150,11 @@ export async function DELETE(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     const { searchParams } = new URL(request.url);
     id = searchParams.get("id");
@@ -144,7 +164,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Use PlanService to delete plan with validation
-    const response = await planService.deletePlan(id, auth.organizationId);
+    const response = await planService.deletePlan(id, activeOrgId);
 
     // Return standardized response
     return NextResponse.json(response, {
