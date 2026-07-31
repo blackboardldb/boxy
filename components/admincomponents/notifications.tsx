@@ -353,9 +353,22 @@ export function Notifications({ hideHeader = false }: { hideHeader?: boolean }) 
                     {selectedRenewal.user.firstName}{" "}
                     {selectedRenewal.user.lastName}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-zinc-500 mb-3">
                     {selectedRenewal.user.email}
                   </p>
+
+                  <div className="pt-3 border-t border-zinc-200 space-y-1">
+                    <p className="text-xs text-zinc-600">
+                      <span className="font-semibold">Plan anterior:</span>{" "}
+                      {selectedRenewal.user.membership?.membershipType || "Ninguno"}
+                    </p>
+                    <p className="text-xs text-zinc-600">
+                      <span className="font-semibold">Vencimiento:</span>{" "}
+                      {selectedRenewal.user.membership?.currentPeriodEnd
+                        ? format(new Date(selectedRenewal.user.membership.currentPeriodEnd), "dd MMM yyyy", { locale: es })
+                        : "—"}
+                    </p>
+                  </div>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
                   <Label className="text-[10px] uppercase font-bold text-orange-600">
