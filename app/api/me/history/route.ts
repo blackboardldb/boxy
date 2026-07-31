@@ -19,7 +19,11 @@ export async function GET(request: Request) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { organizationId } = auth;
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     // Resolver id interno desde la base de datos local
     // Boxy: la identidad es tenant-scoped; un email puede existir en varios centros.
@@ -30,13 +34,6 @@ export async function GET(request: Request) {
 
     if (!dbUser) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
-    }
-
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "No se encontró organización para este usuario" },
-        { status: 404 }
-      );
     }
 
     // Parsear parámetros de paginación
@@ -51,7 +48,7 @@ export async function GET(request: Request) {
     const renewals = await prisma.membershipRenewal.findMany({
       where: {
         userId: dbUser.id,
-        organizationId,          // ← filtro multi-tenant obligatorio en Boxy
+        organizationId: activeOrgId,          // ← filtro multi-tenant obligatorio en Boxy
         status: "approved",
         ...(cursorRaw
           ? { requestedAt: { lt: new Date(cursorRaw) } }
