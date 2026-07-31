@@ -10,8 +10,13 @@ export async function GET(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
-    const { organizationId } = auth;  // siempre desde el token del admin — nunca desde headers del cliente
+    const organizationId = activeOrgId;  // MT-01: Filtrar por organizationId del tenant activo
     const status = request.nextUrl.searchParams.get("status") || "pending";
     const take = Math.min(
       parseInt(request.nextUrl.searchParams.get("take") || "50"),
