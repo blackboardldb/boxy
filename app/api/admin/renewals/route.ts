@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
           lastName: r.user.lastName,
           email: r.user.email,
           phone: r.user.phone,
-          membership: r.user.userMembership,
+          membership: r.user.userMembership?.[0] ?? null,
           daysUntilExpiration,
         },
         requestedPlan: plan
