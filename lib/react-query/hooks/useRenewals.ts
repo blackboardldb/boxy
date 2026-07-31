@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 export const renewalKeys = {
   all: ["renewals"] as const,
@@ -7,8 +8,9 @@ export const renewalKeys = {
 };
 
 export function usePendingRenewals() {
+  const activeOrgId = useActiveOrgId();
   return useQuery({
-    queryKey: renewalKeys.pending(),
+    queryKey: [...renewalKeys.pending(), activeOrgId],
     queryFn: () => fetchClient<any>("/admin/renewals?status=pending").then((res) => res.data),
     staleTime: 1000 * 60, // 1 minuto
     refetchOnWindowFocus: true, // Se revalida cuando el admin vuelve a la pestaña
