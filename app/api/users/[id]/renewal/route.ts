@@ -40,6 +40,11 @@ export async function POST(
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     const internalUser = await resolveInternalUser(auth);
     if (!internalUser) {
@@ -77,7 +82,7 @@ export async function POST(
     // aún no tiene memberships registradas (race condition en flujo de creación).
     let adminOrgId: string | null = null;
     if (autoApprove) {
-      adminOrgId = auth.organizationId;
+      adminOrgId = activeOrgId;
     }
 
     // Validar que el usuario existe (incluir membresía para consolidar período anterior en autoApprove)
@@ -111,7 +116,7 @@ export async function POST(
     // adminOrgId como fallback — el flujo lo resuelve en L125.
     // Si ya tiene memberships pero ninguna en el centro del admin → cruce de tenant real → 404.
     if (isAdmin && user.memberships.length > 0) {
-      const belongsToOrg = user.memberships.some((m) => m.organizationId === auth.organizationId);
+      const belongsToOrg = user.memberships.some((m) => m.organizationId === activeOrgId);
       if (!belongsToOrg) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
@@ -137,10 +142,10 @@ export async function POST(
       processedAtDate = toMidnightUTC(paymentDate) ?? new Date();
     }
 
-    // organizationId: usar siempre auth.organizationId (fuente de verdad, no
-    // depender del [0] del array que podría ser de otro centro en un usuario multi-tenant).
-    // Funciona de forma segura para admins y alumnos.
-    const orgId = auth.organizationId;
+    // MT-01: Filtrar por organizationId del tenant activo, no del JWT primario.
+    // Anteriormente se usaba auth.organizationId creyendo erróneamente que era
+    // la fuente de verdad, causando fugas de datos en alumnos/admins bicentrados.
+    const orgId = activeOrgId;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
     await prisma.membershipRenewal.updateMany({
