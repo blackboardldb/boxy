@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 import type { ClassSession } from "@/lib/types";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 export interface ClassesParams {
@@ -61,8 +62,10 @@ export function useClasses(params: ClassesParams = {}) {
   if (endDate) searchParams.set("endDate", endDate);
   if (status) searchParams.set("status", status);
 
+  const activeOrgId = useActiveOrgId();
+
   return useQuery({
-    queryKey: classKeys.list({ startDate, endDate, limit, page, status }),
+    queryKey: [...classKeys.list({ startDate, endDate, limit, page, status }), activeOrgId],
     queryFn: () =>
       fetchClient<ClassesApiResponse>(`/classes?${searchParams.toString()}`).then(
         (res) => res.data ?? []
@@ -82,8 +85,10 @@ export function useClassesByDate(params: { date?: string; startDate?: string; en
   if (startDate) searchParams.set("startDate", startDate);
   if (endDate) searchParams.set("endDate", endDate);
 
+  const activeOrgId = useActiveOrgId();
+
   return useQuery({
-    queryKey: ["classes", "by-date", params],
+    queryKey: ["classes", "by-date", params, activeOrgId],
     queryFn: () =>
       fetchClient<{ classes: ClassSession[] }>(`/classes/by-date?${searchParams.toString()}`).then(
         (res) => res.classes ?? []
@@ -104,8 +109,10 @@ export function useUserClasses(userId: string, startDate?: string) {
   const searchParams = new URLSearchParams();
   if (startDate) searchParams.set("startDate", startDate);
 
+  const activeOrgId = useActiveOrgId();
+
   return useQuery({
-    queryKey: classKeys.userClasses(userId),
+    queryKey: [...classKeys.userClasses(userId), activeOrgId],
     queryFn: () =>
       fetchClient<{ success: boolean; data: ClassSession[] }>(
         `/users/${userId}/classes${startDate ? `?${searchParams.toString()}` : ""}`
@@ -127,8 +134,10 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
   const searchParams = new URLSearchParams();
   if (startDate) searchParams.set("startDate", startDate);
 
+  const activeOrgId = useActiveOrgId();
+
   return useQuery({
-    queryKey: classKeys.myBookings(userId ?? "", startDate),
+    queryKey: [...classKeys.myBookings(userId ?? "", startDate), activeOrgId],
     queryFn: () =>
       fetchClient<{ success: boolean; data: ClassSession[] }>(
         `/users/${userId}/classes${startDate ? `?${searchParams.toString()}` : ""}`
@@ -383,8 +392,9 @@ export function useCancelDay() {
 }
 
 export function useClassParticipants(classId: string | undefined) {
+  const activeOrgId = useActiveOrgId();
   return useQuery({
-    queryKey: classKeys.participants(classId ?? ""),
+    queryKey: [...classKeys.participants(classId ?? ""), activeOrgId],
     queryFn: async () => {
       const res = await fetchClient<any>(`/classes/${classId}/participants`);
       return res.data;

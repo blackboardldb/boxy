@@ -97,8 +97,11 @@ function generateClassesForDateRange(
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const organizationId = auth.organizationId;
-  if (!organizationId) return NextResponse.json({ error: "organizationId is required" }, { status: 403 });
+  
+  const activeOrgId = request.headers.get("x-organization-id");
+  if (!activeOrgId) {
+    return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+  }
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
@@ -129,7 +132,7 @@ export async function GET(request: NextRequest) {
     // que en el código original, Prisma falla silenciosamente comparando strings.
     const normalizedRealClasses = await prisma.classSession.findMany({
       where: {
-        organizationId,
+        organizationId: activeOrgId,
         dateTime: {
           gte: targetStartDate,
           lte: targetEndDate,
@@ -140,13 +143,13 @@ export async function GET(request: NextRequest) {
 
     // 2. Obtener disciplinas activas
     const disciplines = await prisma.discipline.findMany({
-      where: { isActive: true, organizationId },
+      where: { isActive: true, organizationId: activeOrgId },
       take: 100,
     });
 
     // 2.5. Obtener instructores activos
     const instructors = await prisma.instructor.findMany({
-      where: { isActive: true, organizationId },
+      where: { isActive: true, organizationId: activeOrgId },
       take: 100,
     });
 
@@ -155,7 +158,7 @@ export async function GET(request: NextRequest) {
       targetStartDate,
       targetEndDate,
       disciplines,
-      organizationId,
+      activeOrgId,
       instructors
     );
 

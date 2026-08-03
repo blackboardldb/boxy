@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -35,7 +40,7 @@ export async function GET(request: NextRequest) {
       classService.getClasses({
         page,
         limit,
-        organizationId: auth.organizationId,
+        organizationId: activeOrgId,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         disciplineId: disciplineId || undefined,
