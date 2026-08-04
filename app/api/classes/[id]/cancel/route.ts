@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuth } from "@/lib/supabase/auth-guard";
+import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
 import { z } from "zod";
 
 
@@ -13,10 +14,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // BUG-01: guard faltante en cancelación administrativa de inscripción
-    const auth = await requireAdmin();
+    // Fix: Un alumno debe poder cancelar su propia inscripción, no requiere ser Admin.
+    const auth = await requireAuth();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const internalUser = await resolveInternalUser(auth);
+    if (!internalUser) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
     const { id: classId } = await params;
@@ -29,6 +35,14 @@ export async function POST(
       );
     }
     const { userId } = parsed.data;
+
+    // Validación de seguridad crítica: el usuario solo puede cancelar su propia reserva
+    if (internalUser.id !== userId) {
+      return NextResponse.json(
+        { error: "No tienes permiso para cancelar la reserva de otro usuario" },
+        { status: 403 }
+      );
+    }
 
     const result = await classService.cancelRegistration(classId, userId);
 
