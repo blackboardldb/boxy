@@ -19,6 +19,11 @@ export async function POST(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     classId = (await params).id;
 
     const parsed = adminCancelSchema.safeParse(await request.json());
@@ -30,7 +35,7 @@ export async function POST(
     }
     const { userId } = parsed.data;
 
-    const classSession = await prisma.classSession.findFirst({ where: { id: classId, organizationId: auth.organizationId } });
+    const classSession = await prisma.classSession.findFirst({ where: { id: classId, organizationId: activeOrgId } });
     if (!classSession) {
       return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
     }
