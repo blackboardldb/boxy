@@ -148,14 +148,8 @@ export async function POST(
     const orgId = activeOrgId;
 
     // Cancelar renovaciones pendientes anteriores (no puede haber dos pending)
-    // Para el flujo autoApprove se ejecuta directo. Para el flujo de alumno se ejecuta
-    // transaccionalmente más abajo para evitar condición de carrera (Hallazgo 4).
-    if (autoApprove) {
-      await prisma.membershipRenewal.updateMany({
-        where: { userId, organizationId: activeOrgId, status: { in: ["pending", "scheduled"] } },
-        data: { status: "cancelled" },
-      });
-    }
+    // Se ejecuta transaccionalmente más abajo para ambos flujos (autoApprove y alumno)
+    // para evitar condición de carrera (Hallazgo 4).
 
     // currentPlanId: verificar que el planId del UserMembership exista en membership_plans
     const currentPlanIdRaw = user.userMembership?.[0]?.planId ?? null;
@@ -201,76 +195,87 @@ export async function POST(
 
     let renewal;
     if (autoApprove && startDateNormalized && orgId) {
-      // Buscar renewal existente por clave de negocio (userId, organizationId, startDate)
-      const existingApproved = await prisma.membershipRenewal.findFirst({
-        where: {
-          userId,
-          organizationId: orgId,
-          status: { in: ['approved', 'superseded'] },
-          startDate: startDateNormalized,
-        },
-      });
-
-      if (existingApproved) {
-        // Existe → actualizar. Nunca acumular un registro nuevo.
-        renewal = await prisma.membershipRenewal.update({
-          where: { id: existingApproved.id },
-          data: renewalData,
+      renewal = await prisma.$transaction(async (tx) => {
+        // 1. Cancelar renovaciones pendientes anteriores de forma transaccional
+        await tx.membershipRenewal.updateMany({
+          where: { userId, organizationId: orgId, status: { in: ["pending", "scheduled"] } },
+          data: { status: "cancelled" },
         });
-        console.log(`[renewal POST autoApprove] Renewal updated for user ${userId}, orgId ${orgId}`);
-      } else {
-        renewal = await prisma.membershipRenewal.create({
-          data: { userId, ...renewalData },
+
+        // 2. Buscar renewal existente por clave de negocio (userId, organizationId, startDate)
+        const existingApproved = await tx.membershipRenewal.findFirst({
+          where: {
+            userId,
+            organizationId: orgId,
+            status: { in: ['approved', 'superseded'] },
+            startDate: startDateNormalized,
+          },
         });
-        console.log(`[renewal POST autoApprove] Renewal created for user ${userId}, orgId ${orgId}`);
-      }
 
-      // IMPORTANTE: Al aprobar automáticamente, también debemos activar la UserMembership del usuario!
-      const startDateStr = startDate ?? new Date().toISOString().split("T")[0];
-      const periodEndStr = calcularFechaTerminoMembresia(startDateStr, effectiveDuration || 1);
-      const periodEnd = toMidnightUTC(periodEndStr);
-      const planConfig = plan.config as any;
+        let localRenewal;
+        if (existingApproved) {
+          // Existe → actualizar. Nunca acumular un registro nuevo.
+          localRenewal = await tx.membershipRenewal.update({
+            where: { id: existingApproved.id },
+            data: renewalData,
+          });
+          console.log(`[renewal POST autoApprove] Renewal updated for user ${userId}, orgId ${orgId}`);
+        } else {
+          localRenewal = await tx.membershipRenewal.create({
+            data: { userId, ...renewalData },
+          });
+          console.log(`[renewal POST autoApprove] Renewal created for user ${userId}, orgId ${orgId}`);
+        }
 
-      await prisma.userMembership.upsert({
-        where: { userId_organizationId: { userId, organizationId: orgId } },
-        update: {
-          status: "active",
-          planId: planId,
-          membershipType: effectiveName,
-          monthlyPrice: effectivePrice,
-          currentPeriodStart: startDateNormalized,
-          currentPeriodEnd: periodEnd,
-          classLimit: effectiveClassLimit,
-          ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
-          ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
-          ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
-          ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
-          ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
-          ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
-          ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
-          ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
-          ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
-        },
-        create: {
-          userId,
-          organizationId: orgId,
-          status: "active",
-          planId: planId,
-          membershipType: effectiveName,
-          monthlyPrice: effectivePrice,
-          currentPeriodStart: startDateNormalized,
-          currentPeriodEnd: periodEnd,
-          classLimit: effectiveClassLimit,
-          ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
-          ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
-          ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
-          ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
-          ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
-          ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
-          ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
-          ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
-          ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
-        },
+        // 3. Activar la UserMembership del usuario de forma atómica
+        const startDateStr = startDate ?? new Date().toISOString().split("T")[0];
+        const periodEndStr = calcularFechaTerminoMembresia(startDateStr, effectiveDuration || 1);
+        const periodEnd = toMidnightUTC(periodEndStr);
+        const planConfig = plan.config as any;
+
+        await tx.userMembership.upsert({
+          where: { userId_organizationId: { userId, organizationId: orgId } },
+          update: {
+            status: "active",
+            planId: planId,
+            membershipType: effectiveName,
+            monthlyPrice: effectivePrice,
+            currentPeriodStart: startDateNormalized,
+            currentPeriodEnd: periodEnd,
+            classLimit: effectiveClassLimit,
+            ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
+            ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
+            ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
+            ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
+            ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
+            ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
+            ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
+            ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
+            ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
+          },
+          create: {
+            userId,
+            organizationId: orgId,
+            status: "active",
+            planId: planId,
+            membershipType: effectiveName,
+            monthlyPrice: effectivePrice,
+            currentPeriodStart: startDateNormalized,
+            currentPeriodEnd: periodEnd,
+            classLimit: effectiveClassLimit,
+            ...(planConfig?.disciplineAccess ? { disciplineAccess: planConfig.disciplineAccess } : {}),
+            ...(planConfig?.allowedDisciplines ? { allowedDisciplines: planConfig.allowedDisciplines } : {}),
+            ...(typeof planConfig?.canFreeze === "boolean" ? { canFreeze: planConfig.canFreeze } : {}),
+            ...(typeof planConfig?.freezeDurationDays === "number" ? { freezeDurationDays: planConfig.freezeDurationDays } : {}),
+            ...(typeof planConfig?.autoRenews === "boolean" ? { autoRenews: planConfig.autoRenews } : {}),
+            ...(typeof planConfig?.allowCancellation === "boolean" ? { allowCancellation: planConfig.allowCancellation } : {}),
+            ...(typeof planConfig?.cancellationHours === "number" ? { cancellationHours: planConfig.cancellationHours } : {}),
+            ...(typeof planConfig?.maxBookingsPerDay === "number" ? { maxBookingsPerDay: planConfig.maxBookingsPerDay } : {}),
+            ...(typeof planConfig?.autoWaitlist === "boolean" ? { autoWaitlist: planConfig.autoWaitlist } : {}),
+          },
+        });
+
+        return localRenewal;
       });
     } else {
       // Flujo sin autoApprove (alumno solicita renovación) → siempre crear, de forma transaccional
@@ -333,9 +338,18 @@ export async function POST(
       renewal,
     });
   } catch (error: unknown) {
+    const errCode = (error as { code?: string })?.code;
+    
+    // Captura específica del Partial Unique Index (violación de concurrencia P2002)
+    if (errCode === 'P2002') {
+      return NextResponse.json(
+        { error: "Ya existe una solicitud o renovación activa para esta fecha." },
+        { status: 409 }
+      );
+    }
+
     const errMsg  = error instanceof Error ? error.message : String(error);
-    const errCode = (error as { code?: string })?.code ?? "unknown";
-    console.error("Error creating renewal request:", { message: errMsg, code: errCode });
-    return NextResponse.json({ error: errMsg, code: errCode }, { status: 500 });
+    console.error("Error creating renewal request:", { message: errMsg, code: errCode ?? "unknown" });
+    return NextResponse.json({ error: errMsg, code: errCode ?? "unknown" }, { status: 500 });
   }
 }
