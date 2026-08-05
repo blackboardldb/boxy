@@ -385,22 +385,24 @@ export class UserService {
     if (params?.status) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const orgFilter = params.organizationId ? { organizationId: params.organizationId } : {};
+
       if (params.status === "active") {
-        conditions.push({ userMembership: { currentPeriodEnd: { gte: today }, status: { notIn: ["inactive", "suspended", "expired"] } } });
+        conditions.push({ userMembership: { some: { ...orgFilter, currentPeriodEnd: { gte: today }, status: { notIn: ["inactive", "suspended", "expired"] } } } });
       } else if (params.status === "scheduled") {
-        conditions.push({ userMembership: { currentPeriodStart: { gt: today } } });
+        conditions.push({ userMembership: { some: { ...orgFilter, currentPeriodStart: { gt: today } } } });
       } else if (params.status === "pending") {
-        conditions.push({ userMembership: { status: "pending" } });
+        conditions.push({ userMembership: { some: { ...orgFilter, status: "pending" } } });
       } else if (params.status === "inactive") {
         conditions.push({
           OR: [
-            { userMembership: null },
-            { userMembership: { status: { in: ["inactive", "suspended", "expired"] } } },
-            { userMembership: { currentPeriodEnd: { lt: today }, status: { notIn: ["pending", "scheduled"] } } },
+            { userMembership: { none: { ...orgFilter } } },
+            { userMembership: { some: { ...orgFilter, status: { in: ["inactive", "suspended", "expired"] } } } },
+            { userMembership: { some: { ...orgFilter, currentPeriodEnd: { lt: today }, status: { notIn: ["pending", "scheduled"] } } } },
           ],
         });
       } else {
-        conditions.push({ userMembership: { status: params.status } });
+        conditions.push({ userMembership: { some: { ...orgFilter, status: params.status } } });
       }
     }
 

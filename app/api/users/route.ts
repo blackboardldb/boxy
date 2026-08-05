@@ -47,8 +47,10 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role") || "";
     const status = searchParams.get("status") || "";
     
-    // Multi-tenant: usar organizationId del guard autenticado (MT-03)
-    const organizationId = auth.organizationId;
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     // Use UserService to get users with filters
     const response = await userService.getUsers({
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
       search: search || undefined,
       role: role || undefined,
       status: status || undefined,
-      organizationId: organizationId || undefined,
+      organizationId: activeOrgId,
     });
 
     // Return standardized response
@@ -79,6 +81,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const parsed = createUserSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -96,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       // Verificar si ya está en esta organización
-      const inOrg = existingUser.memberships.find(m => m.organizationId === auth.organizationId);
+      const inOrg = existingUser.memberships.find(m => m.organizationId === activeOrgId);
       if (inOrg) {
         // Caso C — email ya existe en organization_members para ese centro
         return NextResponse.json(
@@ -124,7 +131,7 @@ export async function POST(request: NextRequest) {
         prisma.organizationMember.create({
           data: {
             userId: existingUser.id,
-            organizationId: auth.organizationId,
+            organizationId: activeOrgId,
             role: toMemberRole(body.role), // BUG-ROLE-01 fix: respetar el rol enviado por el admin
             formaDePago: body.formaDePago,
             status: "active"
@@ -133,7 +140,7 @@ export async function POST(request: NextRequest) {
         prisma.userMembership.create({
           data: {
             userId: existingUser.id,
-            organizationId: auth.organizationId,
+            organizationId: activeOrgId,
             // Si viene planId, crear la membresía activa con todos los datos del plan
             status: planDataB ? "active" : "pending",
             ...(planDataB && {
@@ -148,7 +155,7 @@ export async function POST(request: NextRequest) {
         })
       ]);
 
-      const updatedUser = await userService.getUserById(existingUser.id, auth.organizationId);
+      const updatedUser = await userService.getUserById(existingUser.id, activeOrgId);
       return NextResponse.json(updatedUser, { status: 201 });
     }
 
@@ -164,7 +171,7 @@ export async function POST(request: NextRequest) {
           firstName: body.firstName,
           lastName: body.lastName,
         },
-        auth.organizationId
+        activeOrgId
       );
     } catch (authError: any) {
       console.error("[POST /api/users] Error en createAuthUser:", authError);
@@ -220,7 +227,7 @@ export async function POST(request: NextRequest) {
         await tx.organizationMember.create({
           data: {
             userId: user.id,
-            organizationId: auth.organizationId,
+            organizationId: activeOrgId,
             role: toMemberRole(body.role), // BUG-ROLE-01 fix: respetar el rol enviado por el admin
             formaDePago: body.formaDePago,
             status: "active"
@@ -232,7 +239,7 @@ export async function POST(request: NextRequest) {
         await tx.userMembership.create({
           data: {
             userId: user.id,
-            organizationId: auth.organizationId,
+            organizationId: activeOrgId,
             status: planData ? "active" : "pending",
             ...(planData && {
               planId: planData.id,
@@ -248,7 +255,7 @@ export async function POST(request: NextRequest) {
         return user;
       });
 
-      const response = await userService.getUserById(newUser.id, auth.organizationId);
+      const response = await userService.getUserById(newUser.id, activeOrgId);
       return NextResponse.json(response, { status: 201 });
     } catch (dbError: any) {
       console.error("[POST /api/users] Error BD, rollback en Auth:", dbError);

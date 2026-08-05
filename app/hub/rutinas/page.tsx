@@ -7,6 +7,7 @@ import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, CheckCircle, Circle, MapPin } from 'lucide-react'
 import { RoutineAssignmentFull, RoutineContent } from '@/lib/types/routine'
 import { RoutineModal } from '@/components/routines/RoutineModal'
+import { useActiveOrgId } from '@/lib/react-query/use-active-org-id'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FETCHERS
@@ -165,6 +166,7 @@ function DayColumn({
 
 export default function AdminRutinasPage() {
   const queryClient = useQueryClient()
+  const activeOrgId = useActiveOrgId()
   const [weekOffset, setWeekOffset]     = useState(0)
   const [deletingId, setDeletingId]     = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -179,7 +181,7 @@ export default function AdminRutinasPage() {
   const to   = format(weekEnd, 'yyyy-MM-dd')
 
   const { data: assignments = [], isLoading } = useQuery({
-    queryKey: ['admin-routines', from, to],
+    queryKey: ['admin-routines', activeOrgId, from, to],
     queryFn:  () => fetchAssignments(from, to),
   })
 
@@ -188,7 +190,7 @@ export default function AdminRutinasPage() {
     onMutate:   (id) => setDeletingId(id),
     onSettled:  () => setDeletingId(null),
     onSuccess:  () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-routines', from, to] })
+      queryClient.invalidateQueries({ queryKey: ['admin-routines', activeOrgId, from, to] })
     },
   })
 

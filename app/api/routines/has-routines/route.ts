@@ -1,19 +1,24 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/supabase/auth-guard'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/routines/has-routines
 // Devuelve { hasRoutines: boolean }
 // Usado por el sidebar para mostrar u ocultar la sección Rutinas
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await requireAuth()
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const activeOrgId = request.headers.get("x-organization-id")
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 })
+    }
+
     const count = await prisma.routineAssignment.count({
-      where: { organizationId: auth.organizationId },
+      where: { organizationId: activeOrgId },
     })
 
     return NextResponse.json({ hasRoutines: count > 0 })

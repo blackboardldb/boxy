@@ -135,12 +135,11 @@ export class RoutineService {
   }
 
   // Para alumno — solo ve sus assignments con su propia completion.
-  // Seguridad: el filtro por userId garantiza que solo ve sus rutinas.
-  // NO filtramos por organizationId porque el token del alumno puede tener un
-  // orgId diferente al que usó el admin al crear la rutina (desfase de JWT →
-  // la query devolvería vacío aunque el alumno tenga rutinas asignadas).
+  // Seguridad: filtro por userId + organizationId garantiza aislamiento de tenant.
+  // El organizationId viene del header x-organization-id (proxy), no del JWT
+  // del alumno, por lo que coincide siempre con el que usó el admin al crear la rutina.
   async getAssignmentsForMember(
-    _organizationId: string,
+    organizationId: string,
     userId: string,
     query: GetRoutinesQueryInput
   ) {
@@ -151,6 +150,7 @@ export class RoutineService {
       where: {
         userId,
         assignment: {
+          organizationId,
           assignedDate: { gte: from, lte: to },
         },
       },

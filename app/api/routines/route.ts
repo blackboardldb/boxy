@@ -17,7 +17,11 @@ export async function GET(req: NextRequest) {
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
-    const { organizationId, user, role } = auth
+    const { user, role } = auth
+    const activeOrgId = req.headers.get("x-organization-id")
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 })
+    }
 
     const searchParams = req.nextUrl.searchParams
     const rawQuery = {
@@ -38,7 +42,7 @@ export async function GET(req: NextRequest) {
 
     if (isCoachOrAdmin) {
       const assignments = await routineService.getAssignments(
-        organizationId,
+        activeOrgId,
         parsed.data
       )
       return NextResponse.json(assignments)
@@ -64,12 +68,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
-    // Nota: NO filtramos por organizationId del alumno para las rutinas.
-    // Las rutinas se asignan con el organizationId del admin que las crea, y el
-    // token del alumno puede tener un organizationId diferente si hay desfase
-    // en el JWT. La seguridad está garantizada por el userId del alumno.
+    // Nota: filtramos por organizationId (activeOrgId, vía header del proxy) Y por
+    // userId del alumno. El activeOrgId siempre coincide con el organizationId que
+    // usó el admin al crear la rutina, porque ambos resuelven desde el mismo dominio.
     const assignments = await routineService.getAssignmentsForMember(
-      organizationId,
+      activeOrgId,
       dbUser.id,
       parsed.data
     )
@@ -89,7 +92,11 @@ export async function POST(req: NextRequest) {
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
-    const { organizationId, user } = auth
+    const { user } = auth
+    const activeOrgId = req.headers.get("x-organization-id")
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 })
+    }
 
     // Obtenemos el ID interno de Prisma para el creador
     const dbUser = await prisma.user.findUnique({
@@ -114,7 +121,7 @@ export async function POST(req: NextRequest) {
       }
 
       const assignments = await routineService.createWeekAssignments(
-        organizationId,
+        activeOrgId,
         dbUser.id,
         parsed.data
       )
@@ -132,7 +139,7 @@ export async function POST(req: NextRequest) {
     }
 
     const assignment = await routineService.createAssignment(
-      organizationId,
+      activeOrgId,
       dbUser.id,
       parsed.data
     )
