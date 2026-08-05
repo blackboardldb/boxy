@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Megaphone, XOctagon, AlertTriangle, Info, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 interface InAppAlert {
   id: string;
@@ -13,9 +14,10 @@ interface InAppAlert {
 }
 
 export function InAppAlerts() {
+  const activeOrgId = useActiveOrgId();
   const today = new Date().toISOString().split("T")[0];
   const { data: alerts = [] } = useQuery({
-    queryKey: ["inAppAlerts", today],
+    queryKey: ["inAppAlerts", today, activeOrgId],
     queryFn: () =>
       fetchClient<{ success: boolean; data: InAppAlert[] }>("/alerts").then(
         (res) => res.data ?? []

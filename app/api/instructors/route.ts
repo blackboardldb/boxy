@@ -2,17 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdmin, requireAuth } from "@/lib/supabase/auth-guard";
 import { createInstructorSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
   try {
-    // MT-02: Requerir admin autenticado — filtrar instructores por tenant
-    const auth = await requireAdmin();
+    // Fix: Permitir acceso a alumnos autenticados para que puedan ver los instructores en el calendario,
+    // pero forzaremos que solo vean información 'minimal' más adelante.
+    const auth = await requireAuth();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
+    const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -21,7 +29,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role") || "";
     const isActive = searchParams.get("isActive");
-    const minimal = searchParams.get("minimal") === "true";
+    let minimal = searchParams.get("minimal") === "true";
+
+    // BARRERA DE SEGURIDAD: Los alumnos NUNCA pueden pedir la vista completa (que expone emails y teléfonos)
+    if (!isAdmin) {
+      minimal = true;
+    }
 
     // Validate parameters
     if (page < 1 || limit < 1 || limit > 100) {
@@ -35,7 +48,7 @@ export async function GET(request: NextRequest) {
     const response = await instructorService.getInstructors({
       page,
       limit,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
       search: search || undefined,
       role: role && role !== "todos" ? role : undefined,
       isActive:
