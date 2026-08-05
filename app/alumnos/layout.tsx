@@ -5,13 +5,21 @@ import GlobalNav from "@/components/GlobalNav";
 import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isRenewalPage = pathname === "/app/renovar-plan";
 
+  const { currentUser } = useCurrentUser();
+  const centerName = currentUser?.organizationName || "Boxy";
+
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    document.title = `${centerName} | Boxy`;
+  }, [centerName, pathname]);
 
   useEffect(() => {
     // 1. Banner de instalación PWA
@@ -50,7 +58,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Download className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-xs font-bold">Instalar BlackSheep</p>
+              <p className="text-xs font-bold">Instalar {centerName}</p>
               <p className="text-[10px] text-zinc-400">Accede más rápido desde tu pantalla de inicio</p>
             </div>
           </div>

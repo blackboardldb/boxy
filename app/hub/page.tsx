@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AdminDashboard } from "../../components/admincomponents/admin-dashboard";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { HubLogo } from "@/components/admincomponents/hub-logo";
 
 export default async function AdminPage() {
   const headersList = await headers();
@@ -31,7 +32,12 @@ export default async function AdminPage() {
   return (
     <div className="p-4 pt-8 md:p-8 ">
       <div className="mb-4">
-        <h1 className="text-3xl font-bold">{orgName}</h1>
+        {/* Logo en versión móvil */}
+        <div className="block lg:hidden">
+          <HubLogo />
+        </div>
+        {/* Título en versión desktop */}
+        <h1 className="hidden lg:block text-3xl font-bold">{orgName}</h1>
       </div>
       <AdminDashboard role={role} />
     </div>

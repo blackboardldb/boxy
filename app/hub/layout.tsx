@@ -1,8 +1,7 @@
 import type React from "react";
 import { Navigation } from "../../components/admincomponents/navigation";
 import { MobileAdminNav } from "../../components/admincomponents/mobile-nav-admin-v2";
-import Logo from "@/components/Logo";
-import Link from "next/link";
+import { HubLogo } from "@/components/admincomponents/hub-logo";
 import { headers } from "next/headers";
 
 export default async function AdminLayout({
@@ -26,10 +25,8 @@ export default async function AdminLayout({
       <div className="hidden lg:block w-72 h-screen p-4  sticky top-0">
         <aside className="lg:flex flex-col w-full h-full bg-white shrink-0 rounded-xl 
         overflow-hidden border border-zinc-100 shadow-xl">
-          <div className="p-8 border-b border-zinc-50 text-black">
-            <Link href="/hub" className="text-black">
-              <Logo size={160} />
-            </Link>
+          <div className="p-3 pt-4 border-b border-zinc-50 text-black">
+            <HubLogo />
           </div>
           <div className="flex-1 overflow-hidden">
             <Navigation role={role} />
