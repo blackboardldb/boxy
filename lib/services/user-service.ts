@@ -425,7 +425,13 @@ export class UserService {
         skip,
         include: { 
           userMembership: params?.organizationId ? { where: { organizationId: params.organizationId } } : true, 
-          membershipRenewals: params?.organizationId ? { where: { organizationId: params.organizationId }, orderBy: { requestedAt: "desc" } } : { orderBy: { requestedAt: "desc" } }, 
+          membershipRenewals: {
+            where: {
+              ...(params?.organizationId ? { organizationId: params.organizationId } : {}),
+              status: { in: ['pending', 'scheduled'] },
+            },
+            orderBy: { requestedAt: 'desc' },
+          },
           memberships: true 
         },
       }),
