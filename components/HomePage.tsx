@@ -87,7 +87,7 @@ const HomePage: React.FC<HomePageProps> = ({
       </div>
 
 
-      <MembershipCard
+      {/* <MembershipCard
         planStatus={effectivePlanStatus}
         hasPendingRenewal={!!hasPendingRenewal}
         membershipType={membershipType}
@@ -99,7 +99,7 @@ const HomePage: React.FC<HomePageProps> = ({
         scheduledStartFormatted={scheduledStartFormatted}
         currentMonthStats={currentMonthStats}
         isLoadingStats={isLoadingStats}
-      />
+      /> */}
       <MembershipCard2
         planStatus={effectivePlanStatus}
         hasPendingRenewal={!!hasPendingRenewal}
