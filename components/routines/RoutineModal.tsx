@@ -6,6 +6,7 @@ import { format, addDays, startOfWeek } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { X, Plus, Trash2, Search } from 'lucide-react'
 import { RoutineBlock } from '@/lib/types/routine'
+import { useActiveOrgId } from '@/lib/react-query/use-active-org-id'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS INTERNOS
@@ -352,9 +353,12 @@ export function RoutineModal({
   )
   const [activeDayIndex, setActiveDayIndex] = useState(0)
 
+  const activeOrgId = useActiveOrgId()
   const { data: members = [] } = useQuery({
-    queryKey: ['members-for-routine'],
+    queryKey: ['members-for-routine', activeOrgId],
     queryFn: fetchMembers,
+    staleTime: 1000 * 60 * 5, // 5 min — reutilizable en misma sesión, trade-off conocido
+    enabled: !!activeOrgId,   // no disparar sin tenant resuelto
   })
 
   const filteredMembers = members.filter((m) =>
