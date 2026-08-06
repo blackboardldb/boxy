@@ -4,6 +4,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
+import { adminStatsKeys } from "./useAdminStats";
 import type { FitCenterUserProfile as User } from "@/lib/types";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -37,10 +39,10 @@ interface UserApiResponse {
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const userKeys = {
-  all: ["users"] as const,
-  lists: () => ["users", "list"] as const,
-  list: (params: UserListParams) => ["users", "list", params] as const,
-  detail: (id: string) => ["users", "detail", id] as const,
+  all: (orgId: string) => ["users", orgId] as const,
+  lists: (orgId: string) => ["users", orgId, "list"] as const,
+  list: (orgId: string, params: UserListParams) => ["users", orgId, "list", params] as const,
+  detail: (orgId: string, id: string) => ["users", orgId, "detail", id] as const,
 };
 
 // ─── Hooks de lectura ─────────────────────────────────────────────────────────
@@ -53,6 +55,7 @@ export const userKeys = {
  * sin request adicional (dentro del staleTime).
  */
 export function usePaginatedUsers(params: UserListParams = {}) {
+  const orgId = useActiveOrgId();
   const { page = 1, limit = 10, search = "", status, role } = params;
 
   const searchParams = new URLSearchParams({
@@ -64,7 +67,7 @@ export function usePaginatedUsers(params: UserListParams = {}) {
   if (role) searchParams.set("role", role);
 
   return useQuery({
-    queryKey: userKeys.list({ page, limit, search, status, role }),
+    queryKey: userKeys.list(orgId ?? "", { page, limit, search, status, role }),
     queryFn: () =>
       fetchClient<UsersApiResponse>(`/users?${searchParams.toString()}`).then(
         (res) => ({
@@ -74,7 +77,7 @@ export function usePaginatedUsers(params: UserListParams = {}) {
       ),
     staleTime: 1000 * 60 * 2, // 2 min — usuarios cambian moderadamente
     placeholderData: (prev) => prev, // mantiene datos anteriores mientras carga nueva página
-    enabled: params.enabled,
+    enabled: params.enabled !== false && !!orgId,
   });
 }
 
@@ -82,12 +85,13 @@ export function usePaginatedUsers(params: UserListParams = {}) {
  * useUser — datos de un usuario específico por ID.
  */
 export function useUser(id: string) {
+  const orgId = useActiveOrgId();
   return useQuery({
-    queryKey: userKeys.detail(id),
+    queryKey: userKeys.detail(orgId ?? "", id),
     queryFn: () =>
       fetchClient<UserApiResponse>(`/users/${id}`).then((res) => res.data),
     staleTime: 1000 * 60 * 5,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && !!orgId,
   });
 }
 
@@ -95,6 +99,7 @@ export function useUser(id: string) {
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: (userData: Partial<User>) =>
@@ -105,13 +110,18 @@ export function useCreateUser() {
 
     onSuccess: () => {
       // Invalida todas las listas — el nuevo usuario puede aparecer en cualquier filtro
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: userKeys.lists(orgId) });
+      }
     },
   });
 }
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
@@ -122,14 +132,19 @@ export function useUpdateUser() {
 
     onSuccess: (_data, variables) => {
       // Invalida el detalle del usuario editado y todas las listas
-      queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: userKeys.detail(orgId, variables.id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.lists(orgId) });
+      }
     },
   });
 }
 
 export function useDeleteUser() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: (id: string) =>
@@ -138,9 +153,13 @@ export function useDeleteUser() {
       }),
 
     onSuccess: (_data, id) => {
-      queryClient.removeQueries({ queryKey: userKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.removeQueries({ queryKey: userKeys.detail(orgId, id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.lists(orgId) });
+        queryClient.invalidateQueries({ queryKey: adminStatsKeys.stats(orgId) });
+      }
     },
   });
 }
