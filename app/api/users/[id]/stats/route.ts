@@ -89,13 +89,18 @@ function toDateString(value: Date | string | null | undefined): string | null {
 // ─── GET /api/users/[id]/stats ─────────────────────────────────────────────────
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
     }
 
     const { id: userId } = await params;
@@ -108,7 +113,7 @@ export async function GET(
       select: {
         id: true,
         userMembership: {
-          where: { organizationId: auth.organizationId },
+          where: { organizationId: activeOrgId },
           select: {
             startDate: true,
             status: true,
@@ -124,10 +129,10 @@ export async function GET(
       return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
     }
 
-    // organizationId: fuente de verdad es auth (requireAuth() garantiza el tenant activo
-    // del requester mediante JWT + fallback DB ordenado por joinedAt desc).
-    // Elimina la dependencia de memberships[0] cuyo orden no era determinista.
-    const organizationId = auth.organizationId;
+    // organizationId: fuente de verdad es el header x-organization-id (proxy),
+    // resuelto por dominio — no el JWT del requester, que puede estar desfasado
+    // si el usuario pertenece a más de un centro.
+    const organizationId = activeOrgId;
 
 
     // ─── 1. Registros de clase del alumno ────────────────────────────────────

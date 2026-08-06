@@ -14,10 +14,15 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const { id } = await params;
     userId = id;
 
-    const organizationId = auth.organizationId;
+    const organizationId = activeOrgId;
 
     // Lookup puntual: resuelve el CUID del perfil objetivo + confirma que
     // pertenece al mismo centro que el que consulta. No se modificó
