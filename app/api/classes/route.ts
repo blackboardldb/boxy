@@ -98,6 +98,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const parsed = createClassSessionSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -107,14 +112,14 @@ export async function POST(request: NextRequest) {
     }
 
     const discipline = await prisma.discipline.findFirst({
-      where: { id: parsed.data.disciplineId, organizationId: auth.organizationId }
+      where: { id: parsed.data.disciplineId, organizationId: activeOrgId }
     });
     if (!discipline) {
       return NextResponse.json({ error: "Discipline not found" }, { status: 404 });
     }
 
     const instructor = await prisma.instructor.findFirst({
-      where: { id: parsed.data.instructorId, organizationId: auth.organizationId }
+      where: { id: parsed.data.instructorId, organizationId: activeOrgId }
     });
     if (!instructor) {
       return NextResponse.json({ error: "Instructor not found" }, { status: 404 });
@@ -122,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     const response = await classService.createClass({
       ...parsed.data,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
     });
     return NextResponse.json(response, {
       status: response.success ? 201 : 400,
