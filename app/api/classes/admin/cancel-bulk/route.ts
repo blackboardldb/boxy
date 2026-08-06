@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const parsed = cancelBulkSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const classes = await prisma.classSession.findMany({
       where: {
-        organizationId: auth.organizationId,
+        organizationId: activeOrgId,
         dateTime: {
           // Utilizar helpers de horario chileno para que el rango de día sea preciso
           gte: startOfDayChile(date),
@@ -69,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.$transaction([
       prisma.classSession.updateMany({
-        where: { id: { in: classIds } },
+        where: { id: { in: classIds }, organizationId: activeOrgId },
         data: { status: "cancelled" },
       }),
       prisma.classRegistration.updateMany({
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
     // Notificar — awaited a propósito (ver nota sobre Serverless en alerts/route.ts)
     if (uniqueAffectedUsers.length > 0) {
       try {
-        await sendToUsers(uniqueAffectedUsers, auth.organizationId, {
+        await sendToUsers(uniqueAffectedUsers, activeOrgId, {
           title: "Clase Cancelada",
           body: `Se cancelaron las clases del ${date}.`,
           type: "cancelacion",

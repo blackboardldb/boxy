@@ -32,6 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const parsed = persistGeneratedSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // Validar FK cross-tenant: disciplina debe pertenecer al centro del admin.
     const discipline = await prisma.discipline.findFirst({
-      where: { id: classData.disciplineId, organizationId: auth.organizationId },
+      where: { id: classData.disciplineId, organizationId: activeOrgId },
     });
     if (!discipline) {
       return NextResponse.json({ error: "Disciplina no encontrada" }, { status: 404 });
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
     let resolvedInstructorId: string;
     if (classData.instructorId) {
       const instructor = await prisma.instructor.findFirst({
-        where: { id: classData.instructorId, organizationId: auth.organizationId },
+        where: { id: classData.instructorId, organizationId: activeOrgId },
       });
       if (!instructor) {
         return NextResponse.json({ error: "Instructor no encontrado" }, { status: 404 });
@@ -72,9 +77,9 @@ export async function POST(request: NextRequest) {
       resolvedInstructorId = instructor.id;
     } else {
       const instructors = await prisma.instructor.findMany({
-        where: { isActive: true, organizationId: auth.organizationId },
+        where: { isActive: true, organizationId: activeOrgId },
       });
-      const resolved = resolveInstructorForDiscipline(discipline, instructors, auth.organizationId);
+      const resolved = resolveInstructorForDiscipline(discipline, instructors, activeOrgId);
       if (!resolved) {
         return NextResponse.json(
           { error: "No hay instructor disponible para esta disciplina" },
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
     // organizationId forzado desde la sesión del admin — nunca del payload del cliente.
     const classToPersist = {
       id: realId,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
       disciplineId: classData.disciplineId,
       name: classData.name,
       dateTime: classData.dateTime,
