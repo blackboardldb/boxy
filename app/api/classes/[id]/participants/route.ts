@@ -14,6 +14,11 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     id = (await params).id;
 
     if (!id) {
@@ -23,7 +28,7 @@ export async function GET(
     const registrations = await prisma.classRegistration.findMany({
       where: {
         classId: id,
-        class: { organizationId: auth.organizationId }, // Scope: clase debe pertenecer al tenant del admin
+        class: { organizationId: activeOrgId }, // Scope: clase debe pertenecer al tenant del admin
         status: "registered",
       },
       select: {
@@ -38,7 +43,7 @@ export async function GET(
             phone: true,
             // Filtrado por org para que [0] sea determinista en usuarios multi-tenant (Nivel 4)
             userMembership: {
-              where: { organizationId: auth.organizationId },
+              where: { organizationId: activeOrgId },
               select: { membershipType: true },
             },
           },

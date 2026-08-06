@@ -17,6 +17,11 @@ export async function PUT(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const { id: classId } = await params;
 
     const parsed = notesSchema.safeParse(await request.json());
@@ -31,7 +36,7 @@ export async function PUT(
     // Scoped por organizationId: evita editar una clase de otro centro
     // aunque el id sea adivinado/válido en otro tenant.
     const classSession = await prisma.classSession.findFirst({
-      where: { id: classId, organizationId: auth.organizationId },
+      where: { id: classId, organizationId: activeOrgId },
     });
 
     if (!classSession) {
