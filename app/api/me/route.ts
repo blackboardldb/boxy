@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
 
     // 2. Si no es alumno, buscar en public.instructors
     if (!dbUser) {
-      const instructor = await prisma.instructor.findUnique({
-        where: { email: user.email!.toLowerCase() },
+      const instructor = await prisma.instructor.findFirst({
+        where: { organizationId, email: user.email!.toLowerCase() },
         select: {
           id: true,
           firstName: true,
