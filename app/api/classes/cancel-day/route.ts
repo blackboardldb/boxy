@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const json = await request.json();
     const parsed = cancelDaySchema.safeParse(json);
 
@@ -30,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Ignoramos el organizationId del payload y forzamos el de la sesión
     const { date, generatedClasses = [] } = parsed.data;
-    const organizationId = auth.organizationId;
+    const organizationId = activeOrgId;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const persistedGenIds: string[] = [];
 
@@ -42,6 +47,7 @@ export async function POST(request: NextRequest) {
           headers: { 
             "Content-Type": "application/json",
             cookie: request.headers.get("cookie") || "",
+            "x-organization-id": organizationId,
           },
           body: JSON.stringify({ classData, action: "cancel" }),
         });
@@ -89,7 +95,8 @@ export async function POST(request: NextRequest) {
       await prisma.$transaction(async (tx) => {
         // Cancelar las sesiones
         await tx.classSession.updateMany({
-          where: { id: { in: realClassIds } },
+          // Defensa en profundidad: el array realClassIds ya viene filtrado, pero el constraint evita updates accidentales.
+          where: { id: { in: realClassIds }, organizationId },
           data: { status: "cancelled" },
         });
 

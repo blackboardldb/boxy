@@ -19,6 +19,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
+
     const parsed = cancelClassSchema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
@@ -54,6 +59,7 @@ export async function POST(request: NextRequest) {
           headers: { 
             "Content-Type": "application/json",
             cookie: request.headers.get("cookie") || "",
+            "x-organization-id": activeOrgId,
           },
           body: JSON.stringify({
             classData,
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              room: `org_${auth.organizationId}`,
+              room: `org_${activeOrgId}`,
               event: "class-cancelled",
               data: {
                 classId: classId,
@@ -114,7 +120,7 @@ export async function POST(request: NextRequest) {
 
       // Get the class session
       const classSession = await prisma.classSession.findFirst({
-        where: { id: classId, organizationId: auth.organizationId },
+        where: { id: classId, organizationId: activeOrgId },
       });
 
       if (!classSession) {
