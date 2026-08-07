@@ -11,16 +11,11 @@ if (!globalForPrisma.prisma) {
     throw new Error("DATABASE_URL no está definida. Revisar .env");
   }
 
-  // Limpiamos el flag pgbouncer de la URL porque ahora usamos el driver nativo pg.
-  // Esto evita que Prisma inyecte BEGIN/DEALLOCATE ALL innecesarios.
-  const connectionUrl = new URL(process.env.DATABASE_URL);
-  connectionUrl.searchParams.delete("pgbouncer");
-
   // En serverless (Vercel), cada lambda levanta su propio Node process.
   // Mantenemos max: 2 para no agotar las conexiones del pooler de Supabase.
   // En local (development) permitimos más conexiones concurrentes porque hay un solo proceso de Node.
   const pool = new Pool({
-    connectionString: connectionUrl.toString(),
+    connectionString: process.env.DATABASE_URL,
     max: process.env.NODE_ENV === "development" ? 15 : 2,
     idleTimeoutMillis: 30000,       // Cerrar conexiones inactivas a los 30s
     connectionTimeoutMillis: 10000, // No colgarse por siempre si la DB no responde
