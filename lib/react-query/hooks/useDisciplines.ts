@@ -69,12 +69,8 @@ export function useCreateDiscipline() {
       // que dispara la mutation ya está montado en un contexto de tenant válido.
       if (orgId) {
         queryClient.invalidateQueries({ queryKey: disciplineKeys.all(orgId) });
+        queryClient.invalidateQueries({ queryKey: classKeys.all(orgId) });
       }
-      // TODO (Perf, no seguridad): classKeys carece de orgId en su raíz...
-      // Efecto: invalidar classKeys.all fuerza refetch de clases en TODOS los tenants
-      // simultáneamente (no expone datos entre tenants — el backend ya filtra por org —
-      // pero genera carga de red/DB innecesaria a escala). Refactorizar useClasses.ts aparte.
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
     },
   });
 }
@@ -101,12 +97,8 @@ export function useUpdateDiscipline() {
       // que dispara la mutation ya está montado en un contexto de tenant válido.
       if (orgId) {
         queryClient.invalidateQueries({ queryKey: disciplineKeys.all(orgId) });
+        queryClient.invalidateQueries({ queryKey: classKeys.all(orgId) });
       }
-      // TODO (Perf, no seguridad): classKeys carece de orgId en su raíz...
-      // Efecto: invalidar classKeys.all fuerza refetch de clases en TODOS los tenants
-      // simultáneamente (no expone datos entre tenants — el backend ya filtra por org —
-      // pero genera carga de red/DB innecesaria a escala). Refactorizar useClasses.ts aparte.
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
     },
   });
 }

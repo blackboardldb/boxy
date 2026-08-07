@@ -32,17 +32,15 @@ export function useRealtimeClasses() {
           console.log("Realtime change detected in ClassSession:", payload);
           
           // Invalidar todas las listas de clases para forzar el refetch
-          // TODO (Severidad Alta - Seguridad y Perf): classKeys carece de orgId en su raíz.
-          // Efecto actual: invalida cache globalmente. Refactorizar useClasses.ts aparte.
           // Nota de seguridad: El filtro organizationId en el canal reduce carga, pero si RLS 
           // no está habilitado en la tabla class_sessions, este filtro client-side es la 
           // ÚNICA barrera y un cliente malicioso podría bypassearlo. Confirmar RLS en DB.
-          queryClient.invalidateQueries({ queryKey: classKeys.all });
+          queryClient.invalidateQueries({ queryKey: classKeys.all(orgId) });
           
           // Si el cambio es en una clase específica, invalidar también participantes si aplica
           if (payload.new && (payload.new as any).id) {
             queryClient.invalidateQueries({ 
-              queryKey: classKeys.participants((payload.new as any).id) 
+              queryKey: classKeys.participants(orgId, (payload.new as any).id) 
             });
           }
         }

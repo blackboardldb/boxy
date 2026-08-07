@@ -29,17 +29,19 @@ interface ClassesApiResponse {
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const classKeys = {
-  all: ["classes"] as const,
-  lists: () => ["classes", "list"] as const,
-  list: (params: ClassesParams) => ["classes", "list", params] as const,
+  all: (orgId: string) => ["classes", orgId] as const,
+  lists: (orgId: string) => ["classes", orgId, "list"] as const,
+  list: (orgId: string, params: ClassesParams) => ["classes", orgId, "list", params] as const,
+  byDate: (orgId: string, params: { date?: string; startDate?: string; endDate?: string }) => 
+    ["classes", orgId, "by-date", params] as const,
   // Clases de un usuario específico (historial de asistencia)
-  userClasses: (userId: string) => ["classes", "user", userId] as const,
+  userClasses: (orgId: string, userId: string) => ["classes", orgId, "user", userId] as const,
   // Bookings del alumno autenticado para la home
-  myBookingsPrefix: (userId: string) => ["classes", "myBookings", userId] as const,
-  myBookings: (userId: string, startDate?: string) =>
-    ["classes", "myBookings", userId, startDate] as const,
-  participants: (classId: string) => ["classes", "participants", classId] as const,
-  notes: (classId: string) => ["classes", "notes", classId] as const,
+  myBookingsPrefix: (orgId: string, userId: string) => ["classes", orgId, "myBookings", userId] as const,
+  myBookings: (orgId: string, userId: string, startDate?: string) =>
+    ["classes", orgId, "myBookings", userId, startDate] as const,
+  participants: (orgId: string, classId: string) => ["classes", orgId, "participants", classId] as const,
+  notes: (orgId: string, classId: string) => ["classes", orgId, "notes", classId] as const,
 };
 
 // ─── useClasses — calendario semanal (admin y alumno) ────────────────────────
@@ -65,13 +67,13 @@ export function useClasses(params: ClassesParams = {}) {
   const activeOrgId = useActiveOrgId();
 
   return useQuery({
-    queryKey: [...classKeys.list({ startDate, endDate, limit, page, status }), activeOrgId],
+    queryKey: classKeys.list(activeOrgId || "", { startDate, endDate, limit, page, status }),
     queryFn: () =>
       fetchClient<ClassesApiResponse>(`/classes?${searchParams.toString()}`).then(
         (res) => res.data ?? []
       ),
     staleTime: 1000 * 60 * 2, // 2 minutos
-    enabled: !!(startDate || endDate),
+    enabled: !!activeOrgId && !!(startDate || endDate),
   });
 }
 
@@ -88,13 +90,13 @@ export function useClassesByDate(params: { date?: string; startDate?: string; en
   const activeOrgId = useActiveOrgId();
 
   return useQuery({
-    queryKey: ["classes", "by-date", params, activeOrgId],
+    queryKey: classKeys.byDate(activeOrgId || "", params),
     queryFn: () =>
       fetchClient<{ classes: ClassSession[] }>(`/classes/by-date?${searchParams.toString()}`).then(
         (res) => res.classes ?? []
       ),
     staleTime: 1000 * 60 * 5,
-    enabled: !!(date || (startDate && endDate)),
+    enabled: !!activeOrgId && !!(date || (startDate && endDate)),
   });
 }
 
@@ -112,13 +114,13 @@ export function useUserClasses(userId: string, startDate?: string) {
   const activeOrgId = useActiveOrgId();
 
   return useQuery({
-    queryKey: [...classKeys.userClasses(userId), activeOrgId],
+    queryKey: classKeys.userClasses(activeOrgId || "", userId),
     queryFn: () =>
       fetchClient<{ success: boolean; data: ClassSession[] }>(
         `/users/${userId}/classes${startDate ? `?${searchParams.toString()}` : ""}`
       ).then((res) => res.data ?? []),
     staleTime: 1000 * 60 * 5,
-    enabled: Boolean(userId),
+    enabled: !!activeOrgId && Boolean(userId),
   });
 }
 
@@ -137,13 +139,13 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
   const activeOrgId = useActiveOrgId();
 
   return useQuery({
-    queryKey: [...classKeys.myBookings(userId ?? "", startDate), activeOrgId],
+    queryKey: classKeys.myBookings(activeOrgId || "", userId ?? "", startDate),
     queryFn: () =>
       fetchClient<{ success: boolean; data: ClassSession[] }>(
         `/users/${userId}/classes${startDate ? `?${searchParams.toString()}` : ""}`
       ).then((res) => res.data ?? []),
     staleTime: 1000 * 60 * 2,
-    enabled: Boolean(userId),
+    enabled: !!activeOrgId && Boolean(userId),
   });
 }
 
@@ -151,6 +153,7 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
 
 export function useCreateClass() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: (payload: {
@@ -167,7 +170,10 @@ export function useCreateClass() {
       }),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+      }
     },
   });
 }
@@ -182,6 +188,7 @@ export function useCreateClass() {
  */
 export function useRegisterClass() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: ({
@@ -194,10 +201,13 @@ export function useRegisterClass() {
       }),
 
     onMutate: async ({ classId }) => {
-      await queryClient.cancelQueries({ queryKey: classKeys.lists() });
-      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (!activeOrgId) return { previousClasses: undefined, previousMyBookings: undefined };
 
-      queryClient.setQueriesData({ queryKey: classKeys.lists() }, (old: ClassSession[] | undefined) => {
+      await queryClient.cancelQueries({ queryKey: classKeys.lists(activeOrgId) });
+      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists(activeOrgId) });
+
+      queryClient.setQueriesData({ queryKey: classKeys.lists(activeOrgId) }, (old: ClassSession[] | undefined) => {
         if (!old) return old;
         return old.map(session => {
           if (session.id === classId) {
@@ -211,7 +221,9 @@ export function useRegisterClass() {
         });
       });
 
-      // Cancelar y capturar myBookings de forma general para el usuario actual
+      // TODO (Fase C, pendiente): este bloque de myBookings usa key genérica sin userId,
+      // a diferencia de useCancelClassRegistration que sí scopea por usuario. Bug conocido
+      // de over-invalidation, se corrige en la próxima pasada junto con el optimistic update.
       await queryClient.cancelQueries({ queryKey: ["classes", "myBookings"] });
       const previousMyBookings = queryClient.getQueriesData({ 
         queryKey: ["classes", "myBookings"] 
@@ -250,7 +262,9 @@ export function useRegisterClass() {
     },
 
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+      }
       queryClient.invalidateQueries({
         queryKey: ["classes", "myBookings"],
       });
@@ -265,6 +279,7 @@ export function useRegisterClass() {
  */
 export function useCancelClassRegistration() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: ({
@@ -280,10 +295,13 @@ export function useCancelClassRegistration() {
       }),
 
     onMutate: async ({ classId, userId }) => {
-      await queryClient.cancelQueries({ queryKey: classKeys.lists() });
-      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (!activeOrgId) return { previousClasses: undefined, previousMyBookings: undefined };
 
-      queryClient.setQueriesData({ queryKey: classKeys.lists() }, (old: ClassSession[] | undefined) => {
+      await queryClient.cancelQueries({ queryKey: classKeys.lists(activeOrgId) });
+      const previousClasses = queryClient.getQueriesData({ queryKey: classKeys.lists(activeOrgId) });
+
+      queryClient.setQueriesData({ queryKey: classKeys.lists(activeOrgId) }, (old: ClassSession[] | undefined) => {
         if (!old) return old;
         return old.map(session => {
           if (session.id === classId) {
@@ -298,14 +316,14 @@ export function useCancelClassRegistration() {
       });
 
       // Cancelar y capturar myBookings
-      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(userId) });
+      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) });
       const previousMyBookings = queryClient.getQueriesData({ 
-        queryKey: classKeys.myBookingsPrefix(userId) 
+        queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) 
       });
 
       // Actualizar myBookings optimistamente
       queryClient.setQueriesData(
-        { queryKey: classKeys.myBookingsPrefix(userId) },
+        { queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) },
         (old: ClassSession[] | undefined) => {
           if (!old) return old;
           return old.map(session => {
@@ -336,10 +354,12 @@ export function useCancelClassRegistration() {
     },
 
     onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: classKeys.myBookingsPrefix(variables.userId),
-      });
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+        queryClient.invalidateQueries({
+          queryKey: classKeys.myBookingsPrefix(activeOrgId, variables.userId),
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
@@ -350,6 +370,7 @@ export function useCancelClassRegistration() {
  */
 export function useCancelClass() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: (classId: string) =>
@@ -359,7 +380,10 @@ export function useCancelClass() {
       }),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+      }
     },
   });
 }
@@ -369,6 +393,7 @@ export function useCancelClass() {
  */
 export function useCancelDay() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: ({ 
@@ -386,7 +411,10 @@ export function useCancelDay() {
       }),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: classKeys.all });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+      }
     },
   });
 }
@@ -394,18 +422,19 @@ export function useCancelDay() {
 export function useClassParticipants(classId: string | undefined) {
   const activeOrgId = useActiveOrgId();
   return useQuery({
-    queryKey: [...classKeys.participants(classId ?? ""), activeOrgId],
+    queryKey: classKeys.participants(activeOrgId || "", classId ?? ""),
     queryFn: async () => {
       const res = await fetchClient<any>(`/classes/${classId}/participants`);
       return res.data;
     },
-    enabled: !!classId,
+    enabled: !!activeOrgId && !!classId,
     staleTime: 1000 * 30, // 30 segundos — participantes cambian frecuente
   });
 }
 
 export function useSaveClassNotes() {
   const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
   return useMutation({
     mutationFn: ({ classId, notes }: { classId: string; notes: string }) =>
       fetchClient(`/classes/${classId}/notes`, {
@@ -413,8 +442,11 @@ export function useSaveClassNotes() {
         body: JSON.stringify({ notes }),
       }),
     onSuccess: (_, { classId }) => {
-      queryClient.invalidateQueries({ queryKey: classKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: classKeys.notes(classId) });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.lists(activeOrgId) });
+        queryClient.invalidateQueries({ queryKey: classKeys.notes(activeOrgId, classId) });
+      }
     },
   });
 }
