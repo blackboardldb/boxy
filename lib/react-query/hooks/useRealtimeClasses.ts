@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 import { classKeys } from "./useClasses";
 
 /**
@@ -12,21 +13,30 @@ import { classKeys } from "./useClasses";
 export function useRealtimeClasses() {
   const queryClient = useQueryClient();
   const supabase = createClient();
+  const orgId = useActiveOrgId();
 
   useEffect(() => {
+    if (!orgId) return;
+
     const channel = supabase
-      .channel("realtime-classes")
+      .channel(`realtime-classes-${orgId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "class_sessions",
+          filter: `organizationId=eq.${orgId}`,
         },
         (payload) => {
           console.log("Realtime change detected in ClassSession:", payload);
           
           // Invalidar todas las listas de clases para forzar el refetch
+          // TODO (Severidad Alta - Seguridad y Perf): classKeys carece de orgId en su raíz.
+          // Efecto actual: invalida cache globalmente. Refactorizar useClasses.ts aparte.
+          // Nota de seguridad: El filtro organizationId en el canal reduce carga, pero si RLS 
+          // no está habilitado en la tabla class_sessions, este filtro client-side es la 
+          // ÚNICA barrera y un cliente malicioso podría bypassearlo. Confirmar RLS en DB.
           queryClient.invalidateQueries({ queryKey: classKeys.all });
           
           // Si el cambio es en una clase específica, invalidar también participantes si aplica
