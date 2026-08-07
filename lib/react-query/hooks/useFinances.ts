@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 interface FinanceItem {
   userId: string;
@@ -39,7 +40,14 @@ export interface FinancesResponse {
   totalPages: number;
 }
 
+export const financeKeys = {
+  all: (orgId: string) => ["finances", orgId] as const,
+  list: (orgId: string, year: number, month: number, page: number) =>
+    ["finances", orgId, year, month, page] as const,
+};
+
 export function useFinances(year: number, month: number, page: number = 1) {
+  const orgId = useActiveOrgId();
   const searchParams = new URLSearchParams({
     year: String(year),
     month: String(month),
@@ -47,11 +55,12 @@ export function useFinances(year: number, month: number, page: number = 1) {
   });
 
   return useQuery({
-    queryKey: ["finances", year, month, page],
+    queryKey: financeKeys.list(orgId ?? "", year, month, page),
     queryFn: () =>
       fetchClient<{ success: boolean; data: FinancesResponse }>(
         `/finances?${searchParams.toString()}`
       ).then((res) => res.data),
+    enabled: !!orgId,
     staleTime: 0, // siempre refrescar — los ingresos cambian al asignar planes
   });
 }
