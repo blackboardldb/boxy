@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateEgreso } from "@/lib/react-query/hooks/useEgresos";
+import { Plus } from "lucide-react";
 
 export function AddExpenseModal({
   year,
   month,
+  trigger,
 }: {
   year: number;
   month: number;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
@@ -46,7 +49,12 @@ export function AddExpenseModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" className="rounded-xl ">Agregar compra o gasto</Button>
+        {trigger || (
+          <Button variant="outline" className="bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-semibold rounded-xl text-xs flex items-center gap-1.5 border-0">
+            <Plus className="h-4 w-4" />
+            Agregar gasto
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

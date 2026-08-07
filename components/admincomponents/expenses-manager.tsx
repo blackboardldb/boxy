@@ -2,8 +2,8 @@
 
 import React from "react";
 import { useEgresos, useDeleteEgreso } from "@/lib/react-query/hooks/useEgresos";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AddExpenseModal } from "./add-expense-modal";
 import { Trash2 } from "lucide-react";
 
@@ -22,42 +22,59 @@ export function ExpensesManager({
   const deleteEgreso = useDeleteEgreso(selectedYear, selectedMonth);
 
   return (
-    <Card className="h-full rounded-xl">
-      <CardHeader>
-        <p className="text-lg font-bold ">Egresos <span className=" font-medium ">{selectedMonthName}</span></p>
+    <Card className="h-full rounded-xl flex flex-col overflow-hidden p-0 py-4">
+      <CardHeader className="pt-0 pb-3 border-b px-3 sm:px-6 mb-0 flex flex-row items-center justify-between space-y-0">
+        <div>
+          <span className="text-sm font-medium text-muted-foreground tracking-wider block">
+            Egresos
+          </span>
+          <CardTitle className="text-lg font-bold tracking-tight capitalize">
+            {selectedMonthName}
+          </CardTitle>
+        </div>
         <AddExpenseModal year={selectedYear} month={selectedMonth} />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 flex-1">
         {egresos.length === 0 ? (
-          <div className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground text-center py-6 px-3">
             No hay egresos registrados en {selectedMonthName.toLowerCase()}.
-          </div>
+          </p>
         ) : (
-          <ul className="divide-y divide-gray-200">
-            {egresos.map((e) => (
-              <li key={e.id} className="flex items-center justify-between py-2">
-                <div>
-                  <div className="font-medium">{e.motivo}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(e.fecha).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-semibold">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b hover:bg-slate-100 bg-slate-100">
+                <TableHead className="h-8 text-xs font-semibold text-muted-foreground pl-3 sm:pl-6 pr-1">Item</TableHead>
+                <TableHead className="h-8 text-xs font-semibold text-muted-foreground px-1">Fecha</TableHead>
+                <TableHead className="h-8 text-xs font-semibold text-muted-foreground text-right px-1">Monto</TableHead>
+                <TableHead className="h-8 text-xs font-semibold text-muted-foreground text-right pr-3 sm:pr-6 pl-1 w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {egresos.map((e) => (
+                <TableRow key={e.id} className="hover:bg-zinc-50/50">
+                  <TableCell className="py-2.5 pl-3 sm:pl-6 pr-1 font-medium text-sm text-zinc-900">
+                    {e.motivo}
+                  </TableCell>
+                  <TableCell className="py-2.5 px-1 text-xs font-semibold whitespace-nowrap text-zinc-700">
+                    {e.fecha ? new Date(e.fecha).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "—"}
+                  </TableCell>
+                  <TableCell className="py-2.5 px-1 text-right font-semibold text-sm text-zinc-900">
                     ${e.monto.toLocaleString("es-CL")}
-                  </span>
-                  <Button
-                    onClick={() => deleteEgreso.mutate(e.id)}
-                    disabled={deleteEgreso.isPending}
-                    title="Eliminar egreso"
-                    className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 w-10 rounded-xl"
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  </TableCell>
+                  <TableCell className="py-2.5 pr-3 sm:pr-6 pl-1 text-right">
+                    <button
+                      onClick={() => deleteEgreso.mutate(e.id)}
+                      disabled={deleteEgreso.isPending}
+                      title="Eliminar egreso"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>

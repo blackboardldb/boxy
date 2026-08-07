@@ -2,6 +2,7 @@
 
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChevronRight,
@@ -133,7 +134,7 @@ export function AdminDashboard({ role }: { role: string }) {
         <div className="space-y-2">
           <div className="rounded-xl border bg-card p-4">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <span className="text-sm font-medium text-muted-foreground tracking-wider">
                 Alumnos vigentes
               </span>
               <Link
@@ -209,7 +210,7 @@ export function AdminDashboard({ role }: { role: string }) {
 
                 return (
                   <div>
-                    <div className="flex justify-start gap-2 items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    <div className="flex justify-start gap-2 items-center text-sm font-medium text-muted-foreground tracking-wider mb-4">
                       <span className="text-muted-foreground">Ingresos mes</span>
 
                     </div>
@@ -237,7 +238,7 @@ export function AdminDashboard({ role }: { role: string }) {
         </div>
         {/* ── Tarjeta 2: Estados de Membresía ── */}
         <div className="rounded-xl border bg-card p-4 flex flex-col justify-between">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Estados de Membresía</p>
+          <p className="text-sm font-medium text-muted-foreground tracking-wider mb-4">Estados de Membresía</p>
           {statsLoading ? (
             <div className="flex gap-4 items-center flex-1">
               <Skeleton className="h-32 w-32 rounded-full shrink-0" />
@@ -300,100 +301,156 @@ export function AdminDashboard({ role }: { role: string }) {
             );
           })()}
         </div>
-      </div >
+      </div>
 
       {/* Listas Rápidas: Próximos a Vencer y Recientemente Inactivos */}
-      < div className="grid gap-6 md:grid-cols-2 mt-6" >
-        <Card className="rounded-xl">
-          <CardHeader className="pb-3 border-b mb-3">
-            <CardTitle className="text-base">Próximos a vencer</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2 mt-6">
+        <Card className="rounded-xl overflow-hidden p-0 py-4">
+          <CardHeader className="pt-0 pb-3 border-b px-3 sm:px-6 mb-0">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground tracking-wider block">Alumnos</span>
+              <CardTitle className="text-lg font-bold tracking-tight">Próximos a vencer</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {expiringLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-3 p-3 sm:p-6">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
               </div>
             ) : upcomingExpirations.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos próximos a vencer.</p>
+              <p className="text-sm text-muted-foreground text-center py-4 px-3">No hay alumnos próximos a vencer.</p>
             ) : (
-              <div className="space-y-3">
-                {upcomingExpirations.map((u) => (
-                  <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
-                    <div className="">
-                      <p className="font-medium">{u.firstName} {u.lastName}</p>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                      <span className="text-xs font-semibold ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-2 rounded-xl hover:bg-zinc-100" />
-                      <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
-                        Ver Perfil
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+              <div className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b hover:bg-slate-100 bg-slate-100">
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground pl-3 sm:pl-6 pr-1">Alumno</TableHead>
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground px-1">Vence</TableHead>
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground text-right pr-3 sm:pr-6 pl-1">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {upcomingExpirations.map((u) => (
+                      <TableRow key={u.id} className="hover:bg-zinc-50/50">
+                        <TableCell className="py-2.5 pl-3 sm:pl-6 pr-1">
+                          <p className="font-medium text-sm text-zinc-900 leading-tight">
+                            {u.firstName} {u.lastName}
+                          </p>
+                          {u.membershipType && (
+                            <span className="text-[11px] text-muted-foreground font-normal block truncate max-w-[120px] sm:max-w-none">
+                              {u.membershipType}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2.5 px-1 text-xs font-semibold whitespace-nowrap text-zinc-700">
+                          {u.currentPeriodEnd
+                            ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="py-2.5 pr-3 sm:pr-6 pl-1 text-right">
+                          <div className="flex items-center justify-end space-x-1">
+                            <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors" />
+                            <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
+                              Ver Perfil
+                            </Link>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
                 {hasMoreExpiring && (
-                  <button
-                    onClick={loadMoreExpiring}
-                    disabled={expiringLoading}
-                    className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl mt-2 disabled:opacity-50"
-                  >
-                    {expiringLoading ? "Cargando..." : "Ver más"}
-                  </button>
+                  <div className="px-3 sm:px-6 pt-3 pb-1">
+                    <button
+                      onClick={loadMoreExpiring}
+                      disabled={expiringLoading}
+                      className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl disabled:opacity-50"
+                    >
+                      {expiringLoading ? "Cargando..." : "Ver más"}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl">
-          <CardHeader className="pb-3 border-b mb-3">
-            <CardTitle className="text-base text-red-600">Recientemente inactivos</CardTitle>
+        <Card className="rounded-xl overflow-hidden p-0 py-4">
+          <CardHeader className="pt-0 pb-3 border-b px-3 sm:px-6 mb-0">
+            <div>
+              <span className="text-sm font-medium text-muted-foreground tracking-wider block">Alumnos</span>
+              <CardTitle className="text-lg font-bold tracking-tight text-red-600">Recientemente inactivos</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {expiredLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-3 p-3 sm:p-6">
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
                 <Skeleton className="h-8 w-full rounded-xl" />
               </div>
             ) : recentlyInactive.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No hay alumnos inactivos recientemente.</p>
+              <p className="text-sm text-muted-foreground text-center py-4 px-3">No hay alumnos inactivos recientemente.</p>
             ) : (
-              <div className="space-y-3">
-                {recentlyInactive.map((u) => (
-                  <div key={u.id} className="flex justify-between items-center text-sm pb-2 border-b last:border-0 last:pb-0">
-                    <div className="">
-                      <p className="font-medium">{u.firstName} {u.lastName}</p>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{u.membershipType}</span>
-                      <span className="text-xs text-red-600 font-medium ml-2">{u.currentPeriodEnd ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }) : '—'}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-2 rounded-xl hover:bg-zinc-100" />
-                      <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-2 rounded-xl hover:bg-zinc-100">
-                        Ver Perfil
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+              <div className="px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b hover:bg-slate-100 bg-slate-100">
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground pl-3 sm:pl-6 pr-1">Alumno</TableHead>
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground px-1">Venció</TableHead>
+                      <TableHead className="h-8 text-xs font-semibold text-muted-foreground text-right pr-3 sm:pr-6 pl-1">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentlyInactive.map((u) => (
+                      <TableRow key={u.id} className="hover:bg-zinc-50/50">
+                        <TableCell className="py-2.5 pl-3 sm:pl-6 pr-1">
+                          <p className="font-medium text-sm text-zinc-900 leading-tight">
+                            {u.firstName} {u.lastName}
+                          </p>
+                          {u.membershipType && (
+                            <span className="text-[11px] text-muted-foreground font-normal block truncate max-w-[120px] sm:max-w-none">
+                              {u.membershipType}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2.5 px-1 text-xs font-semibold whitespace-nowrap text-red-600">
+                          {u.currentPeriodEnd
+                            ? parseISO(u.currentPeriodEnd.substring(0, 10)).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="py-2.5 pr-3 sm:pr-6 pl-1 text-right">
+                          <div className="flex items-center justify-end space-x-1">
+                            <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors" />
+                            <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
+                              Ver Perfil
+                            </Link>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
 
                 {hasMoreExpired && (
-                  <button
-                    onClick={loadMoreExpired}
-                    disabled={expiredLoading}
-                    className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl mt-2 disabled:opacity-50"
-                  >
-                    {expiredLoading ? "Cargando..." : "Ver más"}
-                  </button>
+                  <div className="px-3 sm:px-6 pt-3 pb-1">
+                    <button
+                      onClick={loadMoreExpired}
+                      disabled={expiredLoading}
+                      className="w-full text-center py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 transition-colors bg-zinc-50 rounded-xl disabled:opacity-50"
+                    >
+                      {expiredLoading ? "Cargando..." : "Ver más"}
+                    </button>
+                  </div>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }
