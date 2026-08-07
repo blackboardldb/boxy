@@ -18,9 +18,12 @@ if (!globalForPrisma.prisma) {
 
   // En serverless (Vercel), cada lambda levanta su propio Node process.
   // Mantenemos max: 2 para no agotar las conexiones del pooler de Supabase.
+  // En local (development) permitimos más conexiones concurrentes porque hay un solo proceso de Node.
   const pool = new Pool({
     connectionString: connectionUrl.toString(),
-    max: 2,
+    max: process.env.NODE_ENV === "development" ? 15 : 2,
+    idleTimeoutMillis: 30000,       // Cerrar conexiones inactivas a los 30s para evitar "zombies" matados por Supabase
+    connectionTimeoutMillis: 10000, // No colgarse por siempre si la DB no responde
   });
   
   const adapter = new PrismaPg(pool);
