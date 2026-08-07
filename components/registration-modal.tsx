@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useClassParticipants } from "@/lib/react-query/hooks/useClasses";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,15 +37,9 @@ export default function RegistrationModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: participants = [], isLoading: loadingParticipants } = useQuery({
-    queryKey: ["participants", classItem?.id],
-    queryFn: () =>
-      fetch(`/api/classes/${classItem?.id}/participants`)
-        .then(r => r.json())
-        .then(res => res.data || []),
-    enabled: isOpen && !!classItem,
-    staleTime: 1000 * 30 // 30 segundos
-  });
+  const { data: participants = [], isLoading: loadingParticipants } = useClassParticipants(
+    classItem?.id || ""
+  );
 
   useEffect(() => {
     if (isOpen) {
