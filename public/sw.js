@@ -2,9 +2,9 @@
 // SERVICE WORKER PARA BLACKSHEEP CROSSFIT
 // ========================================================================================
 
-const CACHE_NAME = "blacksheep-v1.2.0";
-const STATIC_CACHE = "blacksheep-static-v1.2.0";
-const DYNAMIC_CACHE = "blacksheep-dynamic-v1.2.0";
+const CACHE_NAME = "blacksheep-v1.3.0";
+const STATIC_CACHE = "blacksheep-static-v1.3.0";
+const DYNAMIC_CACHE = "blacksheep-dynamic-v1.3.0";
 
 // Archivos estáticos para cache inmediato
 const STATIC_ASSETS = [
@@ -80,6 +80,15 @@ self.addEventListener("fetch", (event) => {
 
   // Solo procesar requests del mismo origen
   if (url.origin !== location.origin) {
+    return;
+  }
+
+  // ⚡ CRÍTICO: dejar pasar todos los assets de Next.js sin interceptar.
+  // Los chunks JS de /_next/static/ llevan hashes en el nombre y son
+  // gestionados por el propio Next.js con cabeceras Cache-Control immutable.
+  // Si el SW los cachea con cacheFirst y después hay un nuevo build, los
+  // hashes cambian y el SW sirve el chunk viejo → ChunkLoadError.
+  if (url.pathname.startsWith("/_next/")) {
     return;
   }
 
@@ -252,7 +261,9 @@ async function networkFirst(request, cacheName) {
 function isStaticAsset(pathname) {
   const staticExtensions = [
     ".css",
-    ".js",
+    // ⚠️ .js excluido intencionalmente: los chunks de Next.js tienen hashes
+    // cambiantes en cada build. Cachearlos con cacheFirst causa ChunkLoadError
+    // al servir una versión obsoleta. Next.js los gestiona vía Cache-Control immutable.
     ".png",
     ".jpg",
     ".jpeg",

@@ -214,7 +214,14 @@ export class ClassService {
         const queryEnd = new Date(`${targetDay}T23:59:59`);
 
         const dayRegistrations = await prisma.classRegistration.findMany({
-          where: { userId, status: "registered", class: { dateTime: { gte: queryStart, lte: queryEnd } } },
+          where: {
+            userId,
+            status: "registered",
+            class: {
+              organizationId: classSession.organizationId,
+              dateTime: { gte: queryStart, lte: queryEnd },
+            },
+          },
           include: { class: true },
         });
 
