@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 import type { Instructor } from "@/lib/types";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -29,10 +30,10 @@ interface PaginatedInstructorsResponse {
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const instructorKeys = {
-  all: ["instructors"] as const,
-  minimal: () => ["instructors", "minimal"] as const,
-  lists: () => ["instructors", "list"] as const,
-  list: (params: InstructorsParams) => ["instructors", "list", params] as const,
+  all: (orgId: string) => ["instructors", orgId] as const,
+  minimal: (orgId: string) => ["instructors", orgId, "minimal"] as const,
+  lists: (orgId: string) => ["instructors", orgId, "list"] as const,
+  list: (orgId: string, params: InstructorsParams) => ["instructors", orgId, "list", params] as const,
 };
 
 // ─── useInstructorsMinimal ────────────────────────────────────────────────────
@@ -41,12 +42,14 @@ export const instructorKeys = {
  * staleTime: 15min — instructores cambian raramente.
  */
 export function useInstructorsMinimal() {
+  const orgId = useActiveOrgId();
   return useQuery({
-    queryKey: instructorKeys.minimal(),
+    queryKey: instructorKeys.minimal(orgId ?? ""),
     queryFn: () =>
       fetchClient<InstructorsApiResponse>("/instructors?minimal=true&limit=100").then(
         (res) => res.data ?? []
       ),
+    enabled: !!orgId,
     staleTime: 1000 * 60 * 15,
   });
 }
@@ -57,6 +60,7 @@ export function useInstructorsMinimal() {
  * queryKey incluye todos los filtros — cada combinación tiene su propia caché.
  */
 export function usePaginatedInstructors(params: InstructorsParams = {}) {
+  const orgId = useActiveOrgId();
   const { page = 1, limit = 10, search = "", role = "", isActive = "todos" } = params;
 
   const searchParams = new URLSearchParams({ page: String(page), limit: String(limit) });
@@ -65,9 +69,10 @@ export function usePaginatedInstructors(params: InstructorsParams = {}) {
   if (isActive && isActive !== "todos") searchParams.set("isActive", isActive);
 
   return useQuery({
-    queryKey: instructorKeys.list({ page, limit, search, role, isActive }),
+    queryKey: instructorKeys.list(orgId ?? "", { page, limit, search, role, isActive }),
     queryFn: () =>
       fetchClient<PaginatedInstructorsResponse>(`/instructors?${searchParams.toString()}`),
+    enabled: !!orgId,
     staleTime: 1000 * 60 * 2,
     placeholderData: (prev) => prev,
   });
@@ -77,6 +82,7 @@ export function usePaginatedInstructors(params: InstructorsParams = {}) {
 
 export function useCreateInstructor() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
   return useMutation({
     mutationFn: (data: Partial<Instructor>) =>
       fetchClient<{ success: boolean; data: Instructor }>("/instructors", {
@@ -84,14 +90,19 @@ export function useCreateInstructor() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: instructorKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: instructorKeys.minimal() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: instructorKeys.lists(orgId) });
+        queryClient.invalidateQueries({ queryKey: instructorKeys.minimal(orgId) });
+      }
     },
   });
 }
 
 export function useUpdateInstructor() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Instructor> }) =>
       fetchClient<{ success: boolean; data: Instructor }>(`/instructors/${id}`, {
@@ -99,20 +110,29 @@ export function useUpdateInstructor() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: instructorKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: instructorKeys.minimal() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: instructorKeys.lists(orgId) });
+        queryClient.invalidateQueries({ queryKey: instructorKeys.minimal(orgId) });
+      }
     },
   });
 }
 
 export function useDeleteInstructor() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
   return useMutation({
     mutationFn: (id: string) =>
       fetchClient<{ success: boolean }>(`/instructors/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: instructorKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: instructorKeys.minimal() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: instructorKeys.lists(orgId) });
+        queryClient.invalidateQueries({ queryKey: instructorKeys.minimal(orgId) });
+      }
     },
   });
 }
@@ -123,6 +143,7 @@ export function useDeleteInstructor() {
  */
 export function useToggleInstructorStatus() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
   return useMutation({
     mutationFn: ({ id, currentStatus }: { id: string; currentStatus: boolean }) =>
       fetchClient<{ success: boolean; data: Instructor }>(`/instructors/${id}`, {
@@ -130,8 +151,12 @@ export function useToggleInstructorStatus() {
         body: JSON.stringify({ isActive: !currentStatus }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: instructorKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: instructorKeys.minimal() });
+      // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente
+      // que dispara la mutation ya está montado en un contexto de tenant válido.
+      if (orgId) {
+        queryClient.invalidateQueries({ queryKey: instructorKeys.lists(orgId) });
+        queryClient.invalidateQueries({ queryKey: instructorKeys.minimal(orgId) });
+      }
     },
   });
 }
