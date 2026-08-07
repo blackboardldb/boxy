@@ -22,7 +22,7 @@ if (!globalForPrisma.prisma) {
   const pool = new Pool({
     connectionString: connectionUrl.toString(),
     max: process.env.NODE_ENV === "development" ? 15 : 2,
-    idleTimeoutMillis: 30000,       // Cerrar conexiones inactivas a los 30s para evitar "zombies" matados por Supabase
+    idleTimeoutMillis: 30000,       // Cerrar conexiones inactivas a los 30s
     connectionTimeoutMillis: 10000, // No colgarse por siempre si la DB no responde
   });
   
@@ -34,10 +34,10 @@ if (!globalForPrisma.prisma) {
       maxWait: 5000,
       timeout: 10000,
     },
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+    // QUITAMOS "query" de dev. El OOM de 4GB que vimos con 4 sesiones activas 
+    // fue muy probablemente backpressure en el stdout de Node.js saturado por el log
+    // infinito de queries de Prisma, no un memory leak oscuro del adapter Wasm.
+    log: ["error", "warn"],
   });
 }
 
