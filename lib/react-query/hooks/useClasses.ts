@@ -193,14 +193,17 @@ export function useRegisterClass() {
   return useMutation({
     mutationFn: ({
       classId,
+      userId,
     }: {
       classId: string;
+      userId: string;
     }) =>
       fetchClient<{ success: boolean }>(`/classes/${classId}/register`, {
         method: "POST",
+        // userId no se envía al backend porque el endpoint usa el auth context
       }),
 
-    onMutate: async ({ classId }) => {
+    onMutate: async ({ classId, userId }) => {
       // Guard defensivo: orgId debería estar siempre resuelto acá porque el componente que dispara la mutation ya está montado en un contexto de tenant válido.
       if (!activeOrgId) return { previousClasses: undefined, previousMyBookings: undefined };
 
@@ -221,17 +224,15 @@ export function useRegisterClass() {
         });
       });
 
-      // TODO (Fase C, pendiente): este bloque de myBookings usa key genérica sin userId,
-      // a diferencia de useCancelClassRegistration que sí scopea por usuario. Bug conocido
-      // de over-invalidation, se corrige en la próxima pasada junto con el optimistic update.
-      await queryClient.cancelQueries({ queryKey: ["classes", "myBookings"] });
+      // Bug resuelto: se aisla el optimistic update al usuario específico
+      await queryClient.cancelQueries({ queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) });
       const previousMyBookings = queryClient.getQueriesData({ 
-        queryKey: ["classes", "myBookings"] 
+        queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) 
       });
 
       // Actualizar myBookings optimistamente
       queryClient.setQueriesData(
-        { queryKey: ["classes", "myBookings"] },
+        { queryKey: classKeys.myBookingsPrefix(activeOrgId, userId) },
         (old: ClassSession[] | undefined) => {
           if (!old) return old;
           return old.map(session => {
@@ -261,13 +262,13 @@ export function useRegisterClass() {
       }
     },
 
-    onSettled: () => {
+    onSettled: (_data, _error, variables) => {
       if (activeOrgId) {
         queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+        queryClient.invalidateQueries({
+          queryKey: classKeys.myBookingsPrefix(activeOrgId, variables.userId),
+        });
       }
-      queryClient.invalidateQueries({
-        queryKey: ["classes", "myBookings"],
-      });
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });

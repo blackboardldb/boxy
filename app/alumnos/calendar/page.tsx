@@ -271,6 +271,7 @@ export default function CalendarPage() {
     try {
       await registerClass.mutateAsync({
         classId: selectedClass.id,
+        userId: currentUser.id,
       });
       reloadUser();
     } catch (error) {
