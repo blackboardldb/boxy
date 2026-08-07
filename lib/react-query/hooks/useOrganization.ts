@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 import type { Organization } from "@/lib/types";
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const orgKeys = {
-  org: ["organization"] as const,
+  org: (orgId: string) => ["organization", orgId] as const,
 };
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -24,20 +25,22 @@ interface OrgApiResponse {
  * - enabled: true por defecto — puede deshabilitarse en rutas sin auth.
  */
 export function useOrganization(options?: { enabled?: boolean }) {
+  const orgId = useActiveOrgId();
   return useQuery({
-    queryKey: orgKeys.org,
+    queryKey: orgKeys.org(orgId ?? ""),
     queryFn: () =>
       fetchClient<OrgApiResponse>("/organization").then((res) => res.data),
     staleTime: 1000 * 60 * 10, // 10 minutos
     gcTime: 1000 * 60 * 30,    // 30 minutos
     retry: 1,
-    enabled: options?.enabled ?? true,
+    enabled: (options?.enabled ?? true) && !!orgId,
   });
 }
 
 // ─── useUpdateOrganization — PUT /api/organization ───────────────────────────
 export function useUpdateOrganization() {
   const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
 
   return useMutation({
     mutationFn: ({
@@ -56,7 +59,9 @@ export function useUpdateOrganization() {
 
     onSuccess: (updatedOrg) => {
       // Actualizar cache directamente con el dato devuelto por el servidor
-      queryClient.setQueryData(orgKeys.org, updatedOrg);
+      if (orgId) {
+        queryClient.setQueryData(orgKeys.org(orgId), updatedOrg);
+      }
     },
   });
 }

@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 export interface PlanHistoryItem {
   id:            string;
@@ -19,7 +20,7 @@ interface PlanHistoryResponse {
 }
 
 export const planHistoryKeys = {
-  history: (userId: string) => ["plan-history", userId] as const,
+  history: (orgId: string, userId: string) => ["plan-history", orgId, userId] as const,
 };
 
 /**
@@ -29,15 +30,16 @@ export const planHistoryKeys = {
  * (es decir, cuando el admin abre el acordeón "Historial de Planes").
  */
 export function usePlanHistory(userId: string, enabled: boolean) {
+  const orgId = useActiveOrgId();
   return useInfiniteQuery({
-    queryKey: planHistoryKeys.history(userId),
+    queryKey: planHistoryKeys.history(orgId ?? "", userId),
     queryFn: ({ pageParam = null }: { pageParam?: string | null }) => {
       const query = pageParam ? `?cursor=${encodeURIComponent(pageParam)}&limit=5` : `?limit=5`;
       return fetchClient<PlanHistoryResponse>(`/users/${userId}/plan-history${query}`);
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null,
-    enabled: enabled && Boolean(userId),
+    enabled: enabled && Boolean(userId) && !!orgId,
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
   });
