@@ -20,6 +20,20 @@ if (!globalForPrisma.prisma) {
     idleTimeoutMillis: 30000,       // Cerrar conexiones inactivas a los 30s
     connectionTimeoutMillis: 10000, // No colgarse por siempre si la DB no responde
   });
+
+  // CRÍTICO: Prevenir que errores en conexiones inactivas (ej. PgBouncer cerrándolas)
+  // rompan el proceso silenciosamente o acumulen basura.
+  pool.on("error", (err) => {
+    console.error("Error inesperado en cliente inactivo de pg.Pool", err);
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    // Profiler de memoria para detectar fugas asociadas a la destrucción de conexiones en idleTimeout
+    setInterval(() => {
+      const mem = process.memoryUsage();
+      console.log(`[heap] rss=${(mem.rss/1024/1024).toFixed(0)}MB heapUsed=${(mem.heapUsed/1024/1024).toFixed(0)}MB listeners_pool=${pool.listenerCount('error')}`);
+    }, 60000).unref();
+  }
   
   const adapter = new PrismaPg(pool);
 
