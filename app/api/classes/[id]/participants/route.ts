@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuth } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { ErrorHandler } from "@/lib/errors/handler";
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   let id = "unknown";
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAuth();
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -53,12 +53,15 @@ export async function GET(
     });
 
     // Mapear a un formato más útil para el Drawer
+    // Ocultar PII (email/teléfono) si el usuario no es admin o coach del tenant
+    const isAdminOrCoach = auth.role === "ADMIN" || auth.role === "COACH";
+    
     const participants = registrations.map((reg) => ({
       userId: reg.user.id,
       firstName: reg.user.firstName,
       lastName: reg.user.lastName,
-      email: reg.user.email,
-      phone: reg.user.phone,
+      email: isAdminOrCoach ? reg.user.email : null,
+      phone: isAdminOrCoach ? reg.user.phone : null,
       membershipType: reg.user.userMembership?.[0]?.membershipType ?? "Sin plan",
       bookedAt: reg.registeredAt.toISOString(),
     }));
