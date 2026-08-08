@@ -19,9 +19,15 @@ if (!globalForPrisma.prisma) {
     }, 60000).unref();
 
     // Volvemos al motor nativo de Prisma (Rust) exclusivamente para local dev.
-    // Hipótesis a verificar: El driver adapter en combinación con HMR/Polling causa un Memory Leak.
-    // Hecho comprobado: Con el adapter activo, el heap sube ~1GB en 4 minutos en reposo.
+    // Inyectamos connection_limit=10 explícitamente para mitigar los cuelgues (latencia extrema)
+    // bajo estrés (como React Query haciendo polling desde múltiples pestañas).
+    // NOTA: Esto NO resuelve el memory leak de heap subyacente (causa raíz aún sin identificar).
+    const devUrl = new URL(process.env.DATABASE_URL);
+    devUrl.searchParams.set("connection_limit", "10");
+    devUrl.searchParams.set("pool_timeout", "20");
+
     globalForPrisma.prisma = new PrismaClient({
+      datasourceUrl: devUrl.toString(),
       transactionOptions: {
         maxWait: 5000,
         timeout: 10000,

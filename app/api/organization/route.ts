@@ -13,7 +13,6 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     const { organizationId } = auth;
-    console.log("[DEBUG] Executing direct prisma.organization.findUnique for ID:", organizationId);
 
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },

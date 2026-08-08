@@ -5,6 +5,18 @@ import type { NextRequest } from "next/server";
 // Dominio raíz de la app — cambiar en producción
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost";
 
+// TTL del caché de tenant en el browser (cookie).
+// 5 min es aceptable: los datos de org (name, slug, status) cambian rarísimo.
+// Trade-off conocido y aceptado: si un super-admin suspende un centro, los usuarios
+// con cookie vigente pueden seguir accediendo hasta 5 min más.
+const TENANT_CACHE_TTL_SECS = 60 * 5;
+
+// Deduplicación de requests en vuelo (Thundering Herd Coalescing).
+// Si múltiples requests concurrentes fallan el caché de cookie al mismo tiempo,
+// solo el primero hará el fetch real; los demás esperarán esta promesa.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const inFlightTenantRequests = new Map<string, Promise<any>>();
+
 /**
  * Extrae el slug del subdominio a partir del hostname.
  * Ejemplos:
@@ -74,20 +86,72 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Consultar la organización en DB via API interna para no usar Prisma en edge
-  const orgResponse = await fetch(
-    new URL(`/api/tenant/${slug}`, request.url),
-    {
-      headers: { "x-middleware-secret": process.env.MIDDLEWARE_SECRET ?? "" },
-    }
-  );
+  // OPTIÓN B: cachear la resolución del tenant en cookie por subdominio.
+  // Elimina la cascada de fetches internos a /api/tenant/{slug} que causaba el Memory Leak
+  // (~1GB/min en dev con polling de React Query en múltiples pestañas).
+  //
+  // Garantías de seguridad:
+  // 1. httpOnly: no accesible desde JS del cliente.
+  // 2. Sin `domain` explícito: browser la scopea al host exacto (bsfit.localhost ≠ centro1.localhost).
+  // 3. Esta cookie es CACÉ, no autenticación. Los headers x-organization-* siguen siendo
+  //    la fuente de verdad; los endpoints validan con requireAuth()/requireAdmin() contra la DB.
+  // 4. Validación de slug interno para prevenir cookies copiadas entre centros.
 
-  if (!orgResponse.ok) {
-    // Organización no encontrada → página not-found
-    return NextResponse.rewrite(new URL("/not-found", request.url));
+  const tenantCookieKey = `tc_${slug}`;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let org: any = null;
+  let wasCacheMiss = false;
+
+  const cachedRaw = request.cookies.get(tenantCookieKey)?.value;
+  if (cachedRaw) {
+    try {
+      const parsed = JSON.parse(cachedRaw);
+      // Validar slug para prevenir cookie de otro centro copiada manualmente
+      if (parsed?.slug === slug && parsed?.id) {
+        org = parsed;
+      }
+    } catch {
+      // Cookie corrompida o malformada → ignorar y hacer fetch fresco
+    }
   }
 
-  const org = await orgResponse.json();
+  if (!org) {
+    wasCacheMiss = true;
+    
+    // Deduplicación (Coalescing): si ya hay un fetch en vuelo para este slug, lo reusamos.
+    if (inFlightTenantRequests.has(slug)) {
+      try {
+        org = await inFlightTenantRequests.get(slug);
+      } catch (error) {
+        return NextResponse.rewrite(new URL("/not-found", request.url));
+      }
+    } else {
+      // No hay fetch en vuelo -> creamos uno y lo guardamos en el Map
+      const fetchPromise = fetch(
+        new URL(`/api/tenant/${slug}`, request.url),
+        {
+          headers: { "x-middleware-secret": process.env.MIDDLEWARE_SECRET ?? "" },
+        }
+      )
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Tenant not found");
+        return res.json();
+      })
+      .finally(() => {
+        // Limpiar el Map sin importar si falló o fue exitoso
+        inFlightTenantRequests.delete(slug);
+      });
+
+      inFlightTenantRequests.set(slug, fetchPromise);
+
+      try {
+        org = await fetchPromise;
+      } catch (error) {
+        // Organización no encontrada → página not-found
+        return NextResponse.rewrite(new URL("/not-found", request.url));
+      }
+    }
+  }
 
   // Centro suspendido → página suspendida
   if (org.status === "SUSPENDED") {
@@ -195,6 +259,22 @@ export async function proxy(request: NextRequest) {
   supabaseResponse.cookies.getAll().forEach((cookie) => {
     finalResponse.cookies.set(cookie.name, cookie.value);
   });
+
+  // Escribir cookie de caché de tenant solo en cache miss.
+  // Sin `domain` explícito → browser scopea al host exacto (bsfit.localhost ≠ centro1.localhost).
+  if (wasCacheMiss) {
+    finalResponse.cookies.set(
+      tenantCookieKey,
+      JSON.stringify({ id: org.id, slug: org.slug, name: org.name, status: org.status }),
+      {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: TENANT_CACHE_TTL_SECS,
+        path: "/",
+        // domain: no se setea → scopeado exacto al subdominio emisor
+      }
+    );
+  }
 
   return finalResponse;
 }
