@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    const { organizationId } = auth;
+    
+    const activeOrgId = request.headers.get("x-organization-id");
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
+    }
 
     const parsed = generateAutoSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
     const { startDate, endDate } = parsed.data;
 
-    const generatedClasses = await generateClassesFromSchedules(organizationId, startDate, endDate);
+    const generatedClasses = await generateClassesFromSchedules(activeOrgId, startDate, endDate);
 
     return NextResponse.json(
       {

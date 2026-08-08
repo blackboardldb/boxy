@@ -36,6 +36,7 @@ import {
   Loader2,
   AlertCircle,
   User,
+  RefreshCcw,
 } from "lucide-react";
 import {
   useDisciplines,
@@ -44,6 +45,7 @@ import {
   useCreateDiscipline,
 } from "@/lib/react-query/hooks/useDisciplines";
 import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
+import { useGenerateClassesAuto } from "@/lib/react-query/hooks/useClasses";
 
 const dayLabels: Record<DayOfWeek, string> = {
   lun: "Lunes",
@@ -102,6 +104,31 @@ export default function ScheduleManagerImproved() {
     null
   );
   const [disciplineToDeleteName, setDisciplineToDeleteName] = useState<string>("");
+
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [generateStartDate, setGenerateStartDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [generateEndDate, setGenerateEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split("T")[0];
+  });
+
+  const generateClassesAutoMutation = useGenerateClassesAuto();
+
+  const handleRegenerateClasses = async () => {
+    try {
+      await generateClassesAutoMutation.mutateAsync({
+        startDate: generateStartDate,
+        endDate: generateEndDate,
+      });
+      setShowRegenerateModal(false);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
 
   // Estados para gestión de disciplinas
   const handleNewDiscipline = () => {
@@ -281,10 +308,13 @@ export default function ScheduleManagerImproved() {
           <h2 className="text-2xl font-bold tracking-tight">Configuración de Horarios</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestiona tus disciplinas, horarios semanales y reglas de cupos.</p>
         </div>
-        <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
-        <Button onClick={handleNewDiscipline} size="lg" className="rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95">
-          <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
-        </Button>
+        <div className="order-1 sm:order-2 flex flex-col sm:flex-row end justify-end w-full sm:w-auto gap-3">
+          <Button onClick={() => setShowRegenerateModal(true)} variant="outline" size="lg" className="rounded-xl font-bold bg-white border-2">
+            <RefreshCcw className="w-4 h-4 mr-2" /> Regenerar Clases
+          </Button>
+          <Button onClick={handleNewDiscipline} size="lg" className="rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95">
+            <Plus className="w-5 h-5 mr-1" /> Nueva Disciplina
+          </Button>
         </div>
       </div>
 
@@ -804,6 +834,69 @@ export default function ScheduleManagerImproved() {
             </Button>
             <Button variant="outline" onClick={() => setShowDeleteModal(false)} className="flex-1 h-12 rounded-xl border-2 font-bold">
               Volver Atrás
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Regenerar Clases */}
+      <Dialog open={showRegenerateModal} onOpenChange={setShowRegenerateModal}>
+        <DialogContent className="max-w-md rounded-xl p-8 border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <RefreshCcw className="w-6 h-6" />
+              Regenerar Clases
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-zinc-600 font-medium">
+              Esta acción proyectará los horarios de las disciplinas activas dentro del rango seleccionado.
+              Las clases que ya fueron generadas o modificadas <span className="font-bold underline">no se sobrescribirán</span>.
+            </p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-2">
+                <Label className="font-bold text-zinc-700">Fecha de Inicio</Label>
+                <Input
+                  type="date"
+                  value={generateStartDate}
+                  onChange={(e) => setGenerateStartDate(e.target.value)}
+                  className="rounded-xl h-11 border-zinc-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-zinc-700">Fecha de Fin</Label>
+                <Input
+                  type="date"
+                  value={generateEndDate}
+                  onChange={(e) => setGenerateEndDate(e.target.value)}
+                  className="rounded-xl h-11 border-zinc-100"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500 italic mt-2">
+              Por defecto, el rango coincide con la ventana móvil de 14 días (Hoy → Hoy + 14 días).
+            </p>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowRegenerateModal(false)}
+              className="flex-1 h-12 rounded-xl border-2 font-bold"
+              disabled={generateClassesAutoMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRegenerateClasses}
+              disabled={generateClassesAutoMutation.isPending}
+              className="flex-1 h-12 rounded-xl bg-zinc-950 text-white font-bold transition-transform active:scale-95"
+            >
+              {generateClassesAutoMutation.isPending ? (
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              ) : (
+                <RefreshCcw className="w-5 h-5 mr-2" />
+              )}
+              Generar
             </Button>
           </div>
         </DialogContent>

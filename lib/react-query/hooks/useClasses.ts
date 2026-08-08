@@ -451,3 +451,24 @@ export function useSaveClassNotes() {
     },
   });
 }
+
+/**
+ * useGenerateClassesAuto — regenerar clases masivamente.
+ */
+export function useGenerateClassesAuto() {
+  const queryClient = useQueryClient();
+  const activeOrgId = useActiveOrgId();
+
+  return useMutation({
+    mutationFn: (payload: { startDate: string; endDate: string }) =>
+      fetchClient<{ success: boolean; classes: any[]; message: string }>("/classes/generate-auto", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      if (activeOrgId) {
+        queryClient.invalidateQueries({ queryKey: classKeys.all(activeOrgId) });
+      }
+    },
+  });
+}
