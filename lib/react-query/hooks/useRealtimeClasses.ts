@@ -30,17 +30,18 @@ export function useRealtimeClasses() {
         },
         (payload) => {
           console.log("Realtime change detected in ClassSession:", payload);
-          
+
           // Invalidar todas las listas de clases para forzar el refetch
-          // Nota de seguridad: El filtro organizationId en el canal reduce carga, pero si RLS 
-          // no está habilitado en la tabla class_sessions, este filtro client-side es la 
-          // ÚNICA barrera y un cliente malicioso podría bypassearlo. Confirmar RLS en DB.
+          // Nota de seguridad: RLS no está activo en la BD (confirmado). El filtro de 
+          // organizationId de arriba es la ÚNICA barrera de contención client-side para 
+          // aislar eventos entre tenants. Si un cliente altera la query, puede escuchar 
+          // clases de otros gimnasios. (Riesgo residual aceptado para este vector).
           queryClient.invalidateQueries({ queryKey: classKeys.all(orgId) });
-          
+
           // Si el cambio es en una clase específica, invalidar también participantes si aplica
           if (payload.new && (payload.new as any).id) {
-            queryClient.invalidateQueries({ 
-              queryKey: classKeys.participants(orgId, (payload.new as any).id) 
+            queryClient.invalidateQueries({
+              queryKey: classKeys.participants(orgId, (payload.new as any).id)
             });
           }
         }
