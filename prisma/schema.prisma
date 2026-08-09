@@ -226,6 +226,21 @@ model Organization {
   operatingHours           Json?
   defaultCancellationHours Int     @default(6)
 
+  // SaaS Plan y Billing Interno
+  saasPlanName              SaasPlan?
+  overrideMaxActiveStudents Int?
+
+  // Personalización / Branding
+  customIconUrl       String?
+  customSplashUrl     String?
+  allowCustomBranding Boolean @default(false)
+
+  // Accesos Iniciales (Passwords cifrados con AES-256-GCM)
+  defaultAdminPassword   String?
+  defaultStudentPassword String?
+  defaultCoachPassword   String?
+  encryptionKeyVersion   Int     @default(1)
+
   // SaaS Relations
   members            OrganizationMember[]
   payments           OrganizationPayment[]
@@ -395,6 +410,7 @@ model OrganizationMember {
   @@unique([userId, organizationId])
   @@index([organizationId])
   @@index([userId])
+  @@index([organizationId, status])
   @@map("organization_members")
   @@schema("public")
 }
@@ -540,7 +556,13 @@ enum OrgStatus {
   ACTIVE
   SUSPENDED
   CANCELED
+  @@schema("public")
+}
 
+enum SaasPlan {
+  EARLY
+  BASE
+  PRO
   @@schema("public")
 }
 

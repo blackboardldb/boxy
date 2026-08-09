@@ -25,6 +25,8 @@ interface DashboardStats {
   monthlyRevenue: number;  // Ingresos reales: SUM(membership_renewals.amount) aprobados este mes
   monthlyEgresos: number;  // Egresos: SUM(expenses.monto) del mes
   monthlyBalance: number;  // monthlyRevenue - monthlyEgresos
+  saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+  overrideMaxActiveStudents?: number | null;
 }
 
 interface MemberListItem {
@@ -100,7 +102,23 @@ export function AdminDashboard({ role }: { role: string }) {
     pendingMembers = 0,
     inactiveMembers = 0,
     newThisMonth: newMembersThisMonth = 0,
+    saasPlanName,
+    overrideMaxActiveStudents,
   } = dashboardStats || {};
+
+  // Calcular Límite
+  const PLAN_LIMITS: Record<string, number> = {
+    EARLY: 40,
+    BASE: 80,
+    PRO: 150,
+  };
+  
+  const planLimit = saasPlanName && PLAN_LIMITS[saasPlanName] ? PLAN_LIMITS[saasPlanName] : null;
+  const effectiveLimit = overrideMaxActiveStudents ?? planLimit;
+  const currentActive = activeMembers + scheduledMembers;
+  
+  const remainingSpots = effectiveLimit !== null ? (effectiveLimit + 3) - currentActive : null;
+  const showCapacityAlert = remainingSpots !== null && remainingSpots <= 3;
 
   return (
     <div className="space-y-6 mb-16">
@@ -125,6 +143,36 @@ export function AdminDashboard({ role }: { role: string }) {
           </div>
           <ChevronRight className="h-5 w-5 text-amber-900 shrink-0" />
         </Link>
+      )}
+
+      {/* Alerta de Capacidad */}
+      {!statsLoading && showCapacityAlert && (
+        <div className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-red-100 border border-red-200">
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-10 h-10 shrink-0">
+              <svg className="w-10 h-10 transform -rotate-90">
+                <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-red-200" />
+                <circle 
+                  cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                  strokeDasharray={100.53 /* 2 * PI * 16 */} 
+                  strokeDashoffset={100.53 - (100.53 * Math.min(100, (currentActive / (effectiveLimit! + 3)) * 100)) / 100}
+                  className="text-red-600 transition-all duration-1000 ease-out" 
+                />
+              </svg>
+              <span className="absolute text-[10px] font-bold text-red-700">{remainingSpots! > 0 ? remainingSpots : 0}</span>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-900">
+                {remainingSpots! <= 0 
+                  ? "Capacidad máxima alcanzada" 
+                  : `Quedan ${remainingSpots} cupos disponibles`}
+              </p>
+              <p className="text-xs text-red-800">
+                Has alcanzado el límite de tu plan. Contáctanos en configuración para aumentarlo.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Grilla Principal de Métricas */}

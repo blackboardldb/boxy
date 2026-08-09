@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PaymentModal } from "../components/payment-modal";
 import { StatusSwitch } from "../components/status-switch";
+import { DefaultPasswords } from "../components/default-passwords";
 
 export default async function CentroDetailPage({
   params,
@@ -123,6 +124,9 @@ export default async function CentroDetailPage({
           </table>
         )}
       </div>
+
+      {/* Default Passwords */}
+      <DefaultPasswords orgId={org.id} />
     </div>
   );
 }

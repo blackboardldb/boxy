@@ -15,6 +15,8 @@ interface Org {
   ownerRut?: string | null;
   billingPlan?: string | null;
   billingCycle?: string | null;
+  saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+  overrideMaxActiveStudents?: number | null;
 }
 
 export function EditCenterForm({ org }: { org: Org }) {
@@ -31,6 +33,8 @@ export function EditCenterForm({ org }: { org: Org }) {
     ownerRut:      org.ownerRut      ?? "",
     billingPlan:   org.billingPlan   ?? "boxy_base",
     billingCycle:  org.billingCycle  ?? "A",
+    saasPlanName:  org.saasPlanName  ?? "BASE",
+    overrideMaxActiveStudents: org.overrideMaxActiveStudents?.toString() ?? "",
   });
 
   const set = (key: keyof typeof form) =>
@@ -44,7 +48,10 @@ export function EditCenterForm({ org }: { org: Org }) {
       const res = await fetch(`/manager/api/centros/${org.id}/info`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          overrideMaxActiveStudents: form.overrideMaxActiveStudents ? parseInt(form.overrideMaxActiveStudents) : null,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -134,6 +141,40 @@ export function EditCenterForm({ org }: { org: Org }) {
               <option value="A">Ciclo A — vence el día 10</option>
               <option value="B">Ciclo B — vence el día 25</option>
             </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Plan SaaS */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+          Plan SaaS
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">Nivel de Plan</label>
+            <select
+              value={form.saasPlanName}
+              onChange={set("saasPlanName")}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
+            >
+              <option value="EARLY">EARLY (Máx 40)</option>
+              <option value="BASE">BASE (Máx 80)</option>
+              <option value="PRO">PRO (Máx 150)</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">Override de Límite (Alumnos Activos)</label>
+            <Input 
+              type="number" 
+              placeholder="Opcional" 
+              value={form.overrideMaxActiveStudents} 
+              onChange={set("overrideMaxActiveStudents")} 
+              className="bg-zinc-900 border-zinc-700" 
+            />
+            <p className="text-[10px] text-zinc-500 leading-tight mt-1">
+              Si se define, este valor reemplazará el límite del plan seleccionado.
+            </p>
           </div>
         </div>
       </section>

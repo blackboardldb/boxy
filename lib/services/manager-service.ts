@@ -13,6 +13,7 @@ export interface OrgSummary {
   lastPayment: Date | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
+  saasPlanName: "EARLY" | "BASE" | "PRO" | null;
 }
 
 export interface OrgDetail {
@@ -34,6 +35,11 @@ export interface OrgDetail {
   billingPlan: string | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
+  saasPlanName: "EARLY" | "BASE" | "PRO" | null;
+  overrideMaxActiveStudents: number | null;
+  customIconUrl: string | null;
+  customSplashUrl: string | null;
+  allowCustomBranding: boolean;
   // BUG-07: members se expone solo como conteo — nunca como lista de PII.
   // Un manager debe ver métricas de billing, no datos personales de alumnos/coaches.
   memberCount: number;
@@ -76,31 +82,41 @@ function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const managerService = {
-  /** Lista todos los centros con conteo de miembros y último pago. */
-  async listAll(): Promise<OrgSummary[]> {
-    const orgs = await prisma.organization.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: { select: { members: true } },
-        payments: {
-          orderBy: { paidAt: "desc" },
-          take: 1,
-          select: { paidAt: true },
+  /** Lista todos los centros con conteo de miembros y último pago. Soporta paginación opcional. */
+  async listAll(page = 1, limit = 50): Promise<{ data: OrgSummary[], total: number }> {
+    const skip = (page - 1) * limit;
+    const [orgs, total] = await Promise.all([
+      prisma.organization.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          _count: { select: { members: true } },
+          payments: {
+            orderBy: { paidAt: "desc" },
+            take: 1,
+            select: { paidAt: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.organization.count()
+    ]);
 
-    return orgs.map((org) => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      status: org.status,
-      createdAt: org.createdAt,
-      memberCount: org._count.members,
-      lastPayment: org.payments[0]?.paidAt ?? null,
-      billingCycle: org.billingCycle,
-      billingPeriodEnd: org.billingPeriodEnd,
-    }));
+    return {
+      total,
+      data: orgs.map((org) => ({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        status: org.status,
+        createdAt: org.createdAt,
+        memberCount: org._count.members,
+        lastPayment: org.payments[0]?.paidAt ?? null,
+        billingCycle: org.billingCycle,
+        billingPeriodEnd: org.billingPeriodEnd,
+        saasPlanName: org.saasPlanName as any,
+      }))
+    };
   },
 
   /** Crea un centro y su primer admin. */
@@ -122,6 +138,20 @@ export const managerService = {
 
     const billingPeriodEnd = calculateBillingPeriodEnd(data.billingCycle);
 
+    const { encryptPassword } = await import("@/lib/utils/encryption");
+    const crypto = await import("crypto");
+
+    const generateSimplePassword = (slug: string) => {
+      // Cryptographically secure random 4 digits (1000 to 9999)
+      const nums = crypto.randomInt(1000, 10000).toString();
+      // Secure random choice for symbol position
+      return crypto.randomInt(0, 2) === 1 ? `${slug}@${nums}` : `${slug}${nums}@`;
+    };
+
+    const defaultAdminPassword = encryptPassword(generateSimplePassword(data.slug));
+    const defaultStudentPassword = encryptPassword(generateSimplePassword(data.slug));
+    const defaultCoachPassword = encryptPassword(generateSimplePassword(data.slug));
+
     // 1. Crear organización primero (para obtener ID)
     const org = await prisma.organization.create({
       data: {
@@ -137,6 +167,10 @@ export const managerService = {
         ownerName: data.ownerName,
         ownerLastName: data.ownerLastName,
         ownerRut: data.ownerRut,
+        saasPlanName: "BASE", // default asignado a todos los nuevos centros
+        defaultAdminPassword: defaultAdminPassword,
+        defaultStudentPassword: defaultStudentPassword,
+        defaultCoachPassword: defaultCoachPassword,
       },
     });
 
@@ -220,6 +254,11 @@ export const managerService = {
       billingPlan: org.billingPlan,
       billingCycle: org.billingCycle,
       billingPeriodEnd: org.billingPeriodEnd,
+      saasPlanName: org.saasPlanName as any,
+      overrideMaxActiveStudents: org.overrideMaxActiveStudents,
+      customIconUrl: org.customIconUrl,
+      customSplashUrl: org.customSplashUrl,
+      allowCustomBranding: org.allowCustomBranding,
       memberCount: org._count.members,
       payments: org.payments,
       events: org.events,
@@ -239,6 +278,11 @@ export const managerService = {
       ownerRut?: string;
       billingPlan?: string;
       billingCycle?: string;
+      saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+      overrideMaxActiveStudents?: number | null;
+      customIconUrl?: string | null;
+      customSplashUrl?: string | null;
+      allowCustomBranding?: boolean;
     }
   ): Promise<void> {
     const org = await prisma.organization.findUnique({ where: { id } });
@@ -255,8 +299,80 @@ export const managerService = {
         ...(data.ownerRut     !== undefined && { ownerRut: data.ownerRut }),
         ...(data.billingPlan  !== undefined && { billingPlan: data.billingPlan }),
         ...(data.billingCycle !== undefined && { billingCycle: data.billingCycle }),
+        ...(data.saasPlanName !== undefined && { saasPlanName: data.saasPlanName }),
+        ...(data.overrideMaxActiveStudents !== undefined && { overrideMaxActiveStudents: data.overrideMaxActiveStudents }),
+        ...(data.customIconUrl !== undefined && { customIconUrl: data.customIconUrl }),
+        ...(data.customSplashUrl !== undefined && { customSplashUrl: data.customSplashUrl }),
+        ...(data.allowCustomBranding !== undefined && { allowCustomBranding: data.allowCustomBranding }),
       },
     });
+  },
+
+  /** Obtiene contraseñas desencriptadas y deja registro de auditoría. */
+  async getDefaultPasswords(orgId: string, managerUserId: string) {
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new Error("Centro no encontrado");
+
+    await prisma.systemEvent.create({
+      data: {
+        organizationId: orgId,
+        type: "password_view",
+        message: `El manager ${managerUserId} visualizó las contraseñas por defecto.`,
+        metadata: { managerUserId, timestamp: new Date().toISOString() }
+      }
+    });
+
+    const { decryptPassword } = await import("@/lib/utils/encryption");
+
+    return {
+      adminPassword: org.defaultAdminPassword ? decryptPassword(org.defaultAdminPassword) : null,
+      studentPassword: org.defaultStudentPassword ? decryptPassword(org.defaultStudentPassword) : null,
+      coachPassword: org.defaultCoachPassword ? decryptPassword(org.defaultCoachPassword) : null,
+    };
+  },
+
+  /** Genera nuevas contraseñas simples para un centro existente (ej. centros antiguos sin claves) */
+  async resetDefaultPasswords(orgId: string, managerUserId: string) {
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) throw new Error("Centro no encontrado");
+
+    const { encryptPassword } = await import("@/lib/utils/encryption");
+    const crypto = await import("crypto");
+
+    const generateSimplePassword = (slug: string) => {
+      // Cryptographically secure random 4 digits
+      const nums = crypto.randomInt(1000, 10000).toString();
+      return crypto.randomInt(0, 2) === 1 ? `${slug}@${nums}` : `${slug}${nums}@`;
+    };
+
+    const adminPasswordPlain = generateSimplePassword(org.slug);
+    const studentPasswordPlain = generateSimplePassword(org.slug);
+    const coachPasswordPlain = generateSimplePassword(org.slug);
+
+    await prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        defaultAdminPassword: encryptPassword(adminPasswordPlain),
+        defaultStudentPassword: encryptPassword(studentPasswordPlain),
+        defaultCoachPassword: encryptPassword(coachPasswordPlain),
+      }
+    });
+
+    await prisma.systemEvent.create({
+      data: {
+        organizationId: orgId,
+        type: "password_reset",
+        message: `El manager ${managerUserId} generó nuevas contraseñas por defecto.`,
+        metadata: { managerUserId, timestamp: new Date().toISOString() }
+      }
+    });
+
+    // Retorna en texto plano a la interfaz que lo acaba de generar
+    return { 
+      adminPassword: adminPasswordPlain, 
+      studentPassword: studentPasswordPlain, 
+      coachPassword: coachPasswordPlain 
+    };
   },
 
   /** Activa o suspende un centro. */

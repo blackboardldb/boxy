@@ -450,52 +450,95 @@ export class UserService {
       const orgId = data.organizationId;
       if (!orgId) throw new ValidationError("organizationId is required");
 
-      const created = await prisma.user.create({
-        data: {
-          id: data.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email.toLowerCase(),
-          authId: data.authId ?? null,
-          phone: data.phone ?? undefined,
-          gender: data.gender ?? undefined,
-          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
-          emergencyContact: data.emergencyContact ?? undefined,
-        },
-      });
+      const role = (data.role?.toUpperCase() || "ALUMNO") as MemberRole;
 
-      await prisma.organizationMember.create({
-        data: {
-          userId: created.id,
-          organizationId: orgId,
-          role: (data.role?.toUpperCase() || "ALUMNO") as MemberRole,
-          formaDePago: data.formaDePago ?? undefined,
-          status: "active",
-        },
-      });
+      return prisma.$transaction(async (tx) => {
+        // 1. Lock de fila para asegurar atomicidad en la cuenta de activos
+        if (role === "ALUMNO") {
+          const orgData: any[] = await tx.$queryRaw`
+            SELECT "saasPlanName", "overrideMaxActiveStudents"
+            FROM "organizations"
+            WHERE id = ${orgId}
+            FOR UPDATE
+          `;
+          if (!orgData.length) throw new Error("Organization not found");
 
-      if (data.membership) {
-        await prisma.userMembership.upsert({
-          where: { userId_organizationId: { userId: created.id, organizationId: orgId } },
-          create: { userId: created.id, ...membershipToUpsertData(data.membership, orgId) },
-          update: {},
+          const planName = orgData[0].saasPlanName;
+          const overrideLimit = orgData[0].overrideMaxActiveStudents;
+
+          const PLAN_LIMITS: Record<string, number> = {
+            EARLY: 40,
+            BASE: 80,
+            PRO: 150,
+          };
+
+          const planLimit = planName && PLAN_LIMITS[planName] ? PLAN_LIMITS[planName] : null;
+          const effectiveLimit = overrideLimit ?? planLimit;
+
+          if (effectiveLimit !== null) {
+            const activeCount = await tx.organizationMember.count({
+              where: {
+                organizationId: orgId,
+                status: "active",
+                role: "ALUMNO",
+              }
+            });
+
+            if (activeCount + 1 > effectiveLimit + 3) {
+              throw new Error(`Se ha superado el límite de alumnos activos (${effectiveLimit} + 3 de tolerancia). Actualiza el plan del centro.`);
+            }
+          }
+        }
+
+        const created = await tx.user.create({
+          data: {
+            id: data.id,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email.toLowerCase(),
+            authId: data.authId ?? null,
+            phone: data.phone ?? undefined,
+            gender: data.gender ?? undefined,
+            dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+            emergencyContact: data.emergencyContact ?? undefined,
+          },
         });
-      }
 
-      const withMembership = await prisma.user.findUnique({
-        where: { id: created.id },
-        include: { 
-          userMembership: { where: { organizationId: orgId } }, 
-          membershipRenewals: { where: { organizationId: orgId }, orderBy: { requestedAt: "desc" } }, 
-          memberships: true 
-        },
+        await tx.organizationMember.create({
+          data: {
+            userId: created.id,
+            organizationId: orgId,
+            role,
+            formaDePago: data.formaDePago ?? undefined,
+            status: "active",
+          },
+        });
+
+        if (data.membership) {
+          await tx.userMembership.upsert({
+            where: { userId_organizationId: { userId: created.id, organizationId: orgId } },
+            create: { userId: created.id, ...membershipToUpsertData(data.membership, orgId) },
+            update: membershipToUpsertData(data.membership, orgId),
+          });
+        }
+
+        const freshUser = await tx.user.findUnique({
+          where: { id: created.id },
+          include: { 
+            userMembership: { where: { organizationId: orgId } }, 
+            membershipRenewals: { where: { organizationId: orgId }, orderBy: { requestedAt: "desc" } }, 
+            memberships: true 
+          },
+        });
+
+        clearCache();
+        console.log(`[UserService] User created: ${created.id} (${created.email})`);
+        
+        return createSuccessResponse(mapToEntity(freshUser as any, orgId), 201);
       });
-
-      clearCache();
-      console.log(`[UserService] User created: ${created.id} (${created.email})`);
-      return createSuccessResponse(mapToEntity(withMembership, orgId));
     }, { operation: "createUser", resource: "users" });
   }
+
 
   async updateUser(id: string, data: any, organizationId: string): Promise<ApiResponse<FitCenterUserProfile>> {
     return withErrorHandling(async () => {

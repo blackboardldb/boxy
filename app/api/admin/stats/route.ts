@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
       newThisMonth:     bigint;
       monthlyRevenue:   number | null;
       monthlyEgresos:   number | null;
+      saasPlanName:     string | null;
+      overrideMaxActiveStudents: number | null;
     };
 
     const [row] = await prisma.$queryRaw<DashboardRow[]>`
@@ -93,6 +95,11 @@ export async function GET(request: NextRequest) {
           WHERE fecha >= ${firstOfMonth}
             AND fecha <  ${firstOfNextMonth}
             AND "organizationId" = ${organizationId}
+        ),
+        org_info AS (
+          SELECT "saasPlanName", "overrideMaxActiveStudents"
+          FROM "organizations"
+          WHERE id = ${organizationId}
         )
       SELECT
         mc."totalMembers",
@@ -102,11 +109,14 @@ export async function GET(request: NextRequest) {
         mc."inactiveMembers",
         mc."newThisMonth",
         rv."monthlyRevenue",
-        eg."monthlyEgresos"
+        eg."monthlyEgresos",
+        oi."saasPlanName",
+        oi."overrideMaxActiveStudents"
       FROM membership_counts mc
       CROSS JOIN renewal_pending rp
       CROSS JOIN revenue rv
       CROSS JOIN egresos eg
+      CROSS JOIN org_info oi
     `;
 
     // Prisma $queryRaw devuelve BigInt para COUNT/SUM de enteros; lo parseamos a Number
@@ -138,6 +148,8 @@ export async function GET(request: NextRequest) {
         monthlyRevenue,  // Caja real: SUM(membership_renewals.amount) aprobados este mes
         monthlyEgresos,  // Egresos: SUM(expenses.monto) del mes
         monthlyBalance: monthlyRevenue - monthlyEgresos,
+        saasPlanName: row.saasPlanName ?? null,
+        overrideMaxActiveStudents: row.overrideMaxActiveStudents ?? null,
       },
     });
 
