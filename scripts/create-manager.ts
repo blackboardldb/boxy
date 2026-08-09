@@ -23,7 +23,7 @@ if (!supabaseUrl || !serviceRoleKey || !MANAGER_PASSWORD) {
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 async function main() {
   console.log(`\n🔐 Creando manager: ${MANAGER_EMAIL}\n`);

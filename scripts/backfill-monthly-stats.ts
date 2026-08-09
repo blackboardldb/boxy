@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
 import * as path from "path";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 function toDateString(value: Date | string | null | undefined): string | null {
   if (!value) return null;

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { prisma } from "./lib/prisma";
 
 async function test() {
   const start = Date.now()

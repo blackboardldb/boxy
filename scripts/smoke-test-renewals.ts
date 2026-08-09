@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 async function runTest() {
   console.log('--- Iniciando Smoke Test de Aislamiento ---');

@@ -13,7 +13,7 @@
 
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 async function main() {
   // 1. Obtener la organización principal (debe existir exactamente una en este momento)

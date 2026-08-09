@@ -13,7 +13,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { persistSession: false },
 });
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 async function runSmokeTest() {
   console.log("--- Iniciando HTTP Smoke Test Cross-Tenant ---");

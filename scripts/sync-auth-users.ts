@@ -43,7 +43,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

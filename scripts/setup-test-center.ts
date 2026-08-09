@@ -20,7 +20,7 @@ if (!supabaseUrl || !serviceRoleKey || !ADMIN_PASSWORD || !ALUMNO_PASSWORD) {
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
 
 async function createAuthUser(email: string, password: string, role: string) {
   const { data: listData } = await supabase.auth.admin.listUsers();
