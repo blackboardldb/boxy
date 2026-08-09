@@ -29,7 +29,7 @@ export interface SystemHealthReport {
 }
 
 export class HealthChecker {
-  private static instance: HealthChecker;
+  // private static instance: HealthChecker; // Replaced with globalThis pattern
   private startTime: number;
   private lastHealthCheck: SystemHealthReport | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
@@ -40,10 +40,11 @@ export class HealthChecker {
   }
 
   static getInstance(): HealthChecker {
-    if (!HealthChecker.instance) {
-      HealthChecker.instance = new HealthChecker();
+    const globalForHealth = globalThis as unknown as { healthChecker: HealthChecker | undefined };
+    if (!globalForHealth.healthChecker) {
+      globalForHealth.healthChecker = new HealthChecker();
     }
-    return HealthChecker.instance;
+    return globalForHealth.healthChecker;
   }
 
   async performHealthCheck(): Promise<SystemHealthReport> {

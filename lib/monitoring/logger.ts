@@ -37,7 +37,7 @@ export interface LogEntry {
 }
 
 export class Logger {
-  private static instance: Logger;
+  // private static instance: Logger;
   private logLevel: LogLevel;
   private enableConsole: boolean;
   private enableFile: boolean;
@@ -51,10 +51,11 @@ export class Logger {
   }
 
   static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
+    const globalForLogger = globalThis as unknown as { logger: Logger | undefined };
+    if (!globalForLogger.logger) {
+      globalForLogger.logger = new Logger();
     }
-    return Logger.instance;
+    return globalForLogger.logger;
   }
 
   private getLogLevelFromEnv(): LogLevel {

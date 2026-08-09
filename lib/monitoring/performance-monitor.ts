@@ -41,7 +41,7 @@ export interface PerformanceAlert {
 }
 
 export class PerformanceMonitor {
-  private static instance: PerformanceMonitor;
+  // private static instance: PerformanceMonitor;
   private metrics: PerformanceMetric[] = [];
   private maxMetricsCount: number = 10000;
   private alertThresholds: Record<string, number> = {
@@ -69,10 +69,11 @@ export class PerformanceMonitor {
   }
 
   static getInstance(): PerformanceMonitor {
-    if (!PerformanceMonitor.instance) {
-      PerformanceMonitor.instance = new PerformanceMonitor();
+    const globalForPerf = globalThis as unknown as { performanceMonitor: PerformanceMonitor | undefined };
+    if (!globalForPerf.performanceMonitor) {
+      globalForPerf.performanceMonitor = new PerformanceMonitor();
     }
-    return PerformanceMonitor.instance;
+    return globalForPerf.performanceMonitor;
   }
 
   // Record a performance metric
