@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ClassSession, ClassListItem, Instructor } from "@/lib/types";
 import { formatDateChile, formatTimeChile } from "@/lib/utils";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, parseISO } from "date-fns";
 import type { DayOfWeek } from "@/lib/types";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Suspense } from "react";
 import { useClasses, useCancelClass } from "@/lib/react-query/hooks/useClasses";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
@@ -47,12 +49,35 @@ function localToUTC(date: Date): string {
 // Ahora contiene toda la información necesaria para que el drawer muestre
 // los detalles completos de la clase, sin necesidad de hacer otra llamada a la API.
 
-export default function AdminClasesPage() {
+function AdminClassesContent() {
   // Estado UI
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [page, setPage] = useState(1);
   const limit = 10;
-  const today = startOfDay(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(() => today);
+  const today = useMemo(() => startOfDay(new Date()), []);
+  
+  const initialDate = useMemo(() => {
+    const dayParam = searchParams.get("day");
+    if (!dayParam) return today;
+    
+    const parsedDate = parseISO(dayParam);
+    if (isNaN(parsedDate.getTime())) return today;
+    
+    const realCurrentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const maxDate = new Date(realCurrentWeekStart);
+    maxDate.setDate(realCurrentWeekStart.getDate() + 13);
+    
+    if (parsedDate < realCurrentWeekStart || parsedDate > maxDate) {
+      return today;
+    }
+    
+    return startOfDay(parsedDate);
+  }, [searchParams, today]);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedClass, setSelectedClass] = useState<ClassListItem | null>(null);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
@@ -114,7 +139,8 @@ export default function AdminClasesPage() {
     setSelectedDate(date);
     setPage(1);
     setSelectedDisciplineId("all");
-  }, []);
+    router.replace(`${pathname}?day=${format(date, "yyyy-MM-dd")}`, { scroll: false });
+  }, [router, pathname]);
 
   // CONTEXTO: Filtrado inteligente para optimizar performance y UX
   const activeClasses = useMemo(() => {
@@ -328,5 +354,13 @@ export default function AdminClasesPage() {
         selectedDate={selectedDate}
       />
     </div>
+  );
+}
+
+export default function AdminClasesPage() {
+  return (
+    <Suspense fallback={<div className="pb-8 space-y-6 animate-pulse bg-white/50 min-h-screen" />}>
+      <AdminClassesContent />
+    </Suspense>
   );
 }

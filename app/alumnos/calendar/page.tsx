@@ -16,6 +16,8 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClassSession, FormattedClassItem } from "@/lib/types";
@@ -31,10 +33,33 @@ import { useClasses, useRegisterClass, useCancelClassRegistration } from "@/lib/
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { useInstructorsMinimal } from "@/lib/react-query/hooks/useInstructors";
 
-export default function CalendarPage() {
+function CalendarContent() {
 
-  const today = startOfDay(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(() => today);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const today = useMemo(() => startOfDay(new Date()), []);
+  
+  const initialDate = useMemo(() => {
+    const dayParam = searchParams.get("day");
+    if (!dayParam) return today;
+    
+    const parsedDate = parseISO(dayParam);
+    if (isNaN(parsedDate.getTime())) return today;
+    
+    const realCurrentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const maxDate = new Date(realCurrentWeekStart);
+    maxDate.setDate(realCurrentWeekStart.getDate() + 13); // Current week (7) + Next week (7) = 14 days, max date is index 13
+    
+    if (parsedDate < realCurrentWeekStart || parsedDate > maxDate) {
+      return today;
+    }
+    
+    return startOfDay(parsedDate);
+  }, [searchParams, today]);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>("all");
   const [selectedClass, setSelectedClass] = useState<FormattedClassItem | null>(null);
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
@@ -138,7 +163,8 @@ export default function CalendarPage() {
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
     setSelectedDisciplineId("all");
-  }, []);
+    router.replace(`${pathname}?day=${format(date, "yyyy-MM-dd")}`, { scroll: false });
+  }, [router, pathname]);
 
   // Transformar clases para la fecha seleccionada
   const getClassesForDate = useCallback(
@@ -457,5 +483,13 @@ export default function CalendarPage() {
         </>
       )}
     </>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <CalendarContent />
+    </Suspense>
   );
 }
