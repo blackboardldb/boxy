@@ -179,14 +179,16 @@ export class HealthChecker {
       const successRateThreshold = 95;
       const slowOperationsThreshold = 10;
 
-      const isHealthy =
+      const isHealthy = performanceSummary.totalOperations === 0 || (
         performanceSummary.averageDuration < avgDurationThreshold &&
         performanceSummary.successRate > successRateThreshold &&
-        performanceSummary.slowOperations < slowOperationsThreshold;
+        performanceSummary.slowOperations < slowOperationsThreshold
+      );
 
-      const isDegraded =
+      const isDegraded = performanceSummary.totalOperations > 0 && (
         performanceSummary.averageDuration < avgDurationThreshold * 2 &&
-        performanceSummary.successRate > successRateThreshold - 10;
+        performanceSummary.successRate > successRateThreshold - 10
+      );
 
       const status = isHealthy
         ? "healthy"
@@ -359,6 +361,7 @@ export class HealthChecker {
         );
       }
     }, intervalMs);
+    this.healthCheckInterval.unref();
 
     logger.info("Periodic health checks started", {
       operation: "startPeriodicHealthChecks",

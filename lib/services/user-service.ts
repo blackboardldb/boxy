@@ -534,7 +534,7 @@ export class UserService {
         clearCache();
         console.log(`[UserService] User created: ${created.id} (${created.email})`);
         
-        return createSuccessResponse(mapToEntity(freshUser as any, orgId), 201);
+        return createSuccessResponse(mapToEntity(freshUser as any, orgId));
       });
     }, { operation: "createUser", resource: "users" });
   }

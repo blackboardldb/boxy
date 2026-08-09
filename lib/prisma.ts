@@ -7,6 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 if (!globalForPrisma.prisma) {
+  console.log("[PRISMA] CREATING NEW PRISMA CLIENT INSTANCE!");
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL no está definida. Revisar .env");
   }
@@ -16,7 +17,7 @@ if (!globalForPrisma.prisma) {
     setInterval(() => {
       const mem = process.memoryUsage();
       console.log(`[heap] rss=${(mem.rss/1024/1024).toFixed(0)}MB heapUsed=${(mem.heapUsed/1024/1024).toFixed(0)}MB`);
-    }, 60000).unref();
+    }, 5000).unref();
 
     // Volvemos al motor nativo de Prisma (Rust) exclusivamente para local dev.
     // Inyectamos connection_limit=10 explícitamente para mitigar los cuelgues (latencia extrema)

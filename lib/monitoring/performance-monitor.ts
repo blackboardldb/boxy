@@ -369,7 +369,7 @@ export class PerformanceMonitor {
         metricsCount: this.metrics.length,
         alertsCount: this.alerts.length,
       });
-    }, 60 * 60 * 1000); // Run every hour
+    }, 60 * 60 * 1000).unref(); // Run every hour
   }
 
   // Export metrics for external analysis
