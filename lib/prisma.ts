@@ -36,10 +36,13 @@ if (!globalForPrisma.prisma) {
       log: ["error", "warn"],
     });
   } else {
+    const prodUrl = new URL(process.env.DATABASE_URL);
+    
     // PRODUCCIÓN (Serverless):
     // Aquí sí usamos el pooler y el adapter para evitar latencias de DEALLOCATE ALL
     const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: prodUrl.toString(),
+      options: "-c search_path=auth,public", // CRÍTICO: Asegura que raw queries vean auth
       max: 2,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
@@ -50,7 +53,8 @@ if (!globalForPrisma.prisma) {
       console.error("Error inesperado en cliente inactivo de pg.Pool", err);
     });
     
-    const adapter = new PrismaPg(pool);
+    // Mantenemos explícito el schema para el adapter
+    const adapter = new PrismaPg(pool, { schema: "public,auth" });
 
     globalForPrisma.prisma = new PrismaClient({
       adapter,
