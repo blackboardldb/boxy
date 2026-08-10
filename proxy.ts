@@ -189,8 +189,11 @@ export async function proxy(request: NextRequest) {
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data,
+    error: claimsError,
+  } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const user = !claimsError && claims ? claims : null;
 
   const isLoginRoute = pathname === "/login";
   const isProtectedRoute =
@@ -314,8 +317,11 @@ async function handleManagerAuth(
   );
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data,
+    error: claimsError,
+  } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  const user = !claimsError && claims ? claims : null;
 
   if (!user) {
     return NextResponse.redirect(new URL("/manager/login", request.url));
