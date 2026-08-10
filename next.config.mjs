@@ -10,6 +10,9 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  env: {
+    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "dev",
+  },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
     // NOTE: script-src mantiene 'unsafe-inline' temporalmente por compatibilidad con Next.js
