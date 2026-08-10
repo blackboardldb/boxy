@@ -13,6 +13,7 @@ interface AuthSuccess {
   user: AuthUser;
   role: string;
   organizationId: string;
+  dbUserId: string | null; // id de public.users — evita re-lookup por email en las rutas
 }
 
 interface AuthError {
@@ -67,12 +68,14 @@ export async function requireAuth(): Promise<AuthResult> {
   // La rama role === "OWNER" | "SUPPORT" fue eliminada — era código muerto
   // (create-manager.ts nunca escribe app_metadata.role; confirmado por auditoría).
   if (app_metadata.isManager === true) {
-    return { user, role: "MANAGER", organizationId: "" };
+    return { user, role: "MANAGER", organizationId: "", dbUserId: null };
   }
 
   // A partir de acá: flujo normal de organization_members (ADMIN / COACH / ALUMNO)
   let role           = (app_metadata.role as string)?.toUpperCase() || "";
   let organizationId = app_metadata.organizationId as string;
+
+  let dbUserId: string | null = null;
 
   if (!organizationId || !role) {
     // MT-08 / BUG-ROLE-02: Resolver desde organization_members si app_metadata está
@@ -81,7 +84,7 @@ export async function requireAuth(): Promise<AuthResult> {
     const member = await prisma.organizationMember.findFirst({
       where:   { user: { authId: user.id } },
       orderBy: { joinedAt: "desc" },
-      select:  { organizationId: true, role: true },
+      select:  { organizationId: true, role: true, userId: true },
     });
 
     if (!member) {
@@ -90,9 +93,10 @@ export async function requireAuth(): Promise<AuthResult> {
 
     organizationId = organizationId || member.organizationId;
     role           = role           || member.role?.toUpperCase() || "";
+    dbUserId       = member.userId;
   }
 
-  return { user, role, organizationId };
+  return { user, role, organizationId, dbUserId };
 }
 
 /**
@@ -158,6 +162,7 @@ export async function requireAuthFast(request: Request): Promise<AuthResult> {
       user: { id: payload.sub as string, email: payload.email as string, app_metadata },
       role: "MANAGER",
       organizationId: "",
+      dbUserId: null,
     };
   }
 
@@ -197,5 +202,5 @@ export async function requireAuthFast(request: Request): Promise<AuthResult> {
 
   const role = membership.role?.toUpperCase() || "";
 
-  return { user, role, organizationId };
+  return { user, role, organizationId, dbUserId: dbUser.id };
 }

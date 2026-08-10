@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // 1. Buscar en public.users (alumnos/clientes)
     let dbUser: any = await prisma.user.findUnique({
-      where: { email: user.email!.toLowerCase() },
+      where: auth.dbUserId ? { id: auth.dbUserId } : { email: user.email!.toLowerCase() },
       select: {
         id: true,
         firstName: true,
