@@ -2,9 +2,10 @@
 // SERVICE WORKER PARA BLACKSHEEP CROSSFIT
 // ========================================================================================
 
-const CACHE_NAME = "blacksheep-v1.3.0";
-const STATIC_CACHE = "blacksheep-static-v1.3.0";
-const DYNAMIC_CACHE = "blacksheep-dynamic-v1.3.0";
+const VERSION = new URL(location).searchParams.get('v') || 'dev';
+const CACHE_NAME = `blacksheep-v-${VERSION}`;
+const STATIC_CACHE = `blacksheep-static-v-${VERSION}`;
+const DYNAMIC_CACHE = `blacksheep-dynamic-v-${VERSION}`;
 
 // Archivos estáticos para cache inmediato
 const STATIC_ASSETS = [
