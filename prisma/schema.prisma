@@ -71,6 +71,7 @@ model ClassSession {
   @@index([instructorId])
   @@index([status])
   @@index([organizationId])
+  @@index([organizationId, dateTime])
   @@map("class_sessions")
   @@schema("public")
 }
