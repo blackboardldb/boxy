@@ -300,6 +300,9 @@ model MembershipRenewal {
   @@index([status])
   @@index([requestedAt])
   @@index([userId, startDate, status])
+  // PERF-04: índice tenant-first para la query de membershipRenewals en /api/me (organizationId filter + status + orden por requestedAt)
+  // organizationId primero porque Boxy es multi-tenant — a diferencia de BS Plataforma (single-tenant) donde el índice análogo empieza por userId.
+  @@index([organizationId, userId, status, requestedAt])
   @@map("membership_renewals")
   @@schema("public")
 }

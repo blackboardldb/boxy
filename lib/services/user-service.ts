@@ -365,27 +365,35 @@ export class UserService {
   async getUsers(params?: {
     page?: number; limit?: number; search?: string; role?: string; status?: string; organizationId?: string;
   }): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
+    // SEC-01 (fail-closed): organizationId es obligatorio — devolver todos los usuarios
+    // sin filtrar por tenant sería una fuga de datos cross-org. Sin RLS de respaldo en la DB,
+    // este guard de aplicación es la única barrera de aislamiento de tenant.
+    if (!params?.organizationId) {
+      throw new ValidationError("organizationId es requerido");
+    }
+    const organizationId = params.organizationId;
+
     const page = params?.page || 1;
     const limit = params?.limit || 10;
     const skip = (page - 1) * limit;
 
     const conditions: any[] = [{ deletedAt: null }];
 
-    if (params?.organizationId || params?.role) {
-      conditions.push({
-        memberships: {
-          some: {
-            ...(params.organizationId && { organizationId: params.organizationId }),
-            ...(params.role && { role: params.role === "user" ? "ALUMNO" : params.role.toUpperCase() }),
-          },
+    // Filtro de membresía siempre scoped al centro
+    conditions.push({
+      memberships: {
+        some: {
+          organizationId,
+          ...(params.role && { role: params.role === "user" ? "ALUMNO" : params.role.toUpperCase() }),
         },
-      });
-    }
+      },
+    });
 
     if (params?.status) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const orgFilter = params.organizationId ? { organizationId: params.organizationId } : {};
+      // orgFilter siempre presente — organizationId ya fue validado arriba
+      const orgFilter = { organizationId };
 
       if (params.status === "active") {
         conditions.push({ userMembership: { some: { ...orgFilter, currentPeriodEnd: { gte: today }, status: { notIn: ["inactive", "suspended", "expired"] } } } });
@@ -423,23 +431,21 @@ export class UserService {
         where,
         take: limit,
         skip,
-        include: { 
-          userMembership: params?.organizationId ? { where: { organizationId: params.organizationId } } : true, 
+        include: {
+          // organizationId ya fue validado como obligatorio arriba — siempre filtramos por tenant
+          userMembership: { where: { organizationId } },
           membershipRenewals: {
-            where: {
-              ...(params?.organizationId ? { organizationId: params.organizationId } : {}),
-              status: { in: ['pending', 'scheduled'] },
-            },
+            where: { organizationId, status: { in: ['pending', 'scheduled'] } },
             orderBy: { requestedAt: 'desc' },
           },
-          memberships: true 
+          memberships: true,
         },
       }),
       prisma.user.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    return createPaginatedResponse(users.map((u) => mapToEntity(u, params?.organizationId)), {
+    return createPaginatedResponse(users.map((u) => mapToEntity(u, organizationId)), {
       page, limit, total, totalPages, hasNextPage: page < totalPages, hasPrevPage: page > 1,
     });
   }

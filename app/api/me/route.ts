@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAuthFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 // HAL-01 Fase 4 Sprint 1.5: La promoción scheduled→active ya no lee ni escribe
 // en el JSONB membership. Opera directamente sobre la tabla UserMembership.
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const organizationId = request.headers.get("x-organization-id");
-    if (!organizationId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
-
+    // organizationId resuelto y validado por requireAuthFast (header proxy + pertenencia en organization_members)
+    const { organizationId } = auth;
     const user = auth.user;
 
     const org = await prisma.organization.findUnique({

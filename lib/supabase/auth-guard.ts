@@ -113,3 +113,89 @@ export async function requireAdmin(): Promise<AuthResult> {
   return auth;
 }
 
+/**
+ * ⚠️ SOLO para rutas GET de datos propios/org — NO usar en mutations ni /manager/*.
+ *
+ * Diferencia clave respecto a requireAuth():
+ *   - Elimina el fallback a `prisma.organizationMember.findFirst` que ocurre cuando
+ *     el JWT no trae organizationId/role (ese es el costo real en Boxy, no getUser()).
+ *   - Resuelve el tenant desde el header `x-organization-id` del proxy (fuente única
+ *     de verdad), nunca desde app_metadata del JWT.
+ *
+ * Validación de pertenencia: aunque no hace el findFirst del fallback, sí hace
+ *   un findUnique por PK compuesta (userId_organizationId) para cerrar el vector
+ *   de header manipulado — sin RLS de respaldo, esta es la única barrera para ese
+ *   vector. Es O(1) por la PK compuesta indexada, a diferencia del findFirst eliminado
+ *   que hacía JOIN en users sin saber el tenant.
+ *
+ * Ventana de riesgo: hasta ~1h de rol desactualizado si el usuario fue baneado o
+ *   cambiado de rol (el JWT sigue siendo válido hasta que expire).
+ */
+export async function requireAuthFast(request: Request): Promise<AuthResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    return { error: "No autenticado", status: 401 };
+  }
+
+  let payload;
+  try {
+    const verified = await jwtVerify(session.access_token, supabaseJWKS);
+    payload = verified.payload;
+  } catch {
+    return { error: "Token inválido o expirado", status: 401 };
+  }
+
+  const app_metadata = (payload.app_metadata as any) || {};
+
+  // MANAGER bypass — mismo criterio que requireAuth()
+  if (app_metadata.isManager === true) {
+    return {
+      user: { id: payload.sub as string, email: payload.email as string, app_metadata },
+      role: "MANAGER",
+      organizationId: "",
+    };
+  }
+
+  // Resolver tenant exclusivamente desde el header del proxy.
+  // ⚠️ Hallazgo 6: no usar app_metadata.organizationId — el proxy y el JWT
+  // pueden divergir. El header es la fuente única de verdad en Boxy.
+  const organizationId = (request as any).headers?.get?.("x-organization-id") ?? "";
+  if (!organizationId) {
+    return { error: "Tenant no resuelto — falta x-organization-id", status: 400 };
+  }
+
+  // Obtener el userId de public.users a partir del authId del JWT
+  const dbUser = await prisma.user.findUnique({
+    where: { authId: payload.sub as string },
+    select: { id: true },
+  });
+  if (!dbUser) {
+    return { error: "Usuario no encontrado", status: 404 };
+  }
+
+  // Validación de pertenencia: PK compuesta indexada O(1) — no es el findFirst eliminado.
+  // Sin RLS de respaldo, esta query es la única barrera contra header manipulado.
+  const membership = await prisma.organizationMember.findUnique({
+    where: { userId_organizationId: { userId: dbUser.id, organizationId } },
+    select: { role: true },
+  });
+
+  if (!membership) {
+    return { error: "Sin permisos para este centro", status: 403 };
+  }
+
+  const user = {
+    id: payload.sub as string,
+    email: payload.email as string,
+    app_metadata,
+  };
+
+  const role = membership.role?.toUpperCase() || "";
+
+  return { user, role, organizationId };
+}

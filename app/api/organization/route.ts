@@ -2,16 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { organizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdmin } from "@/lib/supabase/auth-guard";
 import { updateOrganizationSchema } from "@/lib/schemas";
 
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    // organizationId resuelto y validado por requireAuthFast (header proxy + pertenencia en organization_members)
     const { organizationId } = auth;
 
     const organization = await prisma.organization.findUnique({
