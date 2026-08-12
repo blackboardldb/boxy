@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 // HAL-01 Fase 4 Sprint 1.4: Rechaza la renovación pendiente actualizando directamente
@@ -19,7 +19,7 @@ export async function POST(
     const userId = (await params).id;  // Next.js 15: params es una Promise
 
     // Guard de autenticación — solo admins pueden rechazar renovaciones
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

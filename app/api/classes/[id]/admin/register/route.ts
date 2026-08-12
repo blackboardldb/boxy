@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 
 export async function POST(
@@ -10,12 +11,22 @@ export async function POST(
 ) {
   try {
     // BUG-01: guard faltante — cualquier actor podía inscribir alumnos con isAdmin:true sin autenticarse
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const { organizationId } = auth;
 
     const { id: classId } = await params;
+
+    // FIX: Prevenir Tenant Spoofing validando que la clase pertenece al admin usando findFirst (id no es unique con org)
+    const targetClass = await prisma.classSession.findFirst({
+      where: { id: classId, organizationId },
+      select: { id: true }
+    });
+    if (!targetClass) {
+      return NextResponse.json({ error: "Clase no encontrada o acceso denegado" }, { status: 404 });
+    }
 
     const bodySchema = z.object({ userId: z.string().min(1) });
     const parsed = bodySchema.safeParse(await request.json());

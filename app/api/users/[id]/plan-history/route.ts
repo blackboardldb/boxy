@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireSelfOrAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -16,12 +16,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdmin();
+    const { id: userId } = await params;
+    const auth = await requireSelfOrAdminFast(_request, userId);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { id: userId } = await params;
     const { organizationId } = auth;
 
     const { searchParams } = new URL(_request.url);

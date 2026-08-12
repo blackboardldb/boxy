@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/supabase/auth-guard'
+import { requireAdminFast } from '@/lib/supabase/auth-guard'
 import { exerciseService } from '@/lib/services/exercise-service'
 import { CreateCustomExerciseSchema } from '@/lib/validations/routine-schemas'
 
@@ -8,7 +8,7 @@ import { CreateCustomExerciseSchema } from '@/lib/validations/routine-schemas'
 // Acepta ?q=query para búsqueda en autocomplete
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 // Crea ejercicio custom del centro — solo ADMIN
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

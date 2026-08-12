@@ -204,3 +204,45 @@ export async function requireAuthFast(request: Request): Promise<AuthResult> {
 
   return { user, role, organizationId, dbUserId: dbUser.id };
 }
+
+/**
+ * Helper para requerir rol de administrador o coach validando ESTRICTAMENTE 
+ * la pertenencia al tenant indicado en el header x-organization-id.
+ * MITIGA: Tenant spoofing en mutations cross-tenant.
+ * 
+ * Hereda la ventana de riesgo de requireAuthFast: hasta ~1h de rol desactualizado
+ * si el usuario fue baneado o degradado (sesión JWT sigue viva). Aceptado para M0.
+ */
+export async function requireAdminFast(request: Request): Promise<AuthResult> {
+  const auth = await requireAuthFast(request);
+
+  if ("error" in auth) {
+    return auth;
+  }
+
+  if (!["ADMIN", "COACH"].includes(auth.role)) {
+    return { error: "Sin permisos para este centro", status: 403 };
+  }
+
+  return auth;
+}
+
+/**
+ * Helper para mutaciones y accesos de datos propios donde un ALUMNO 
+ * solo puede actuar sobre sí mismo, pero un ADMIN/COACH puede actuar sobre cualquiera.
+ * Usa requireAuthFast por debajo, protegiendo contra spoofing de tenant.
+ */
+export async function requireSelfOrAdminFast(request: Request, targetUserId: string): Promise<AuthResult> {
+  const auth = await requireAuthFast(request);
+
+  if ("error" in auth) {
+    return auth;
+  }
+
+  const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
+  if (!isAdmin && auth.user.id !== targetUserId) {
+    return { error: "Sin permisos para actuar sobre este perfil", status: 403 };
+  }
+
+  return auth;
+}

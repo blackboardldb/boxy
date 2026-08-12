@@ -81,7 +81,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState("");
-  const [registerPayment, setRegisterPayment] = useState(true);
+  const [registrarIngreso, setRegistrarIngreso] = useState(true);
 
   // Sincronizar student local con dato de React Query
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function StudentEditPage({ params }: { params: Promise<{ id: stri
       setEditStartDate(m.currentPeriodStart ? m.currentPeriodStart.substring(0, 10) : "");
       setEditEndDate(m.currentPeriodEnd ? m.currentPeriodEnd.substring(0, 10) : "");
       setEditPaymentMethod(student.formaDePago || "transferencia");
-      setRegisterPayment(true);
+      setRegistrarIngreso(true);
     }
     setEditingSection("membership");
   };
@@ -247,7 +247,7 @@ const handleStartDateChange = (newDate: string) => {
       const changes = {
         formaDePago: editPaymentMethod as FitCenterUserProfile["formaDePago"],
         membership: updatedMembership,
-        registerPayment,
+        registrarIngreso,
       };
 
       // Fix 1: Cancelar renovaciones zombie (scheduled/pending) antes de guardar.
@@ -645,17 +645,17 @@ const handleStartDateChange = (newDate: string) => {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="registerPayment"
-                        checked={registerPayment}
-                        onCheckedChange={(v) => setRegisterPayment(v as boolean)}
-                      />
-                      <Label htmlFor="registerPayment" className="text-sm text-zinc-600 cursor-pointer">
-                        Registrar como ingreso
-                      </Label>
-                    </div>
+                  <div className="flex items-center gap-2 mt-4">
+                    <Checkbox
+                      id="registrarIngreso"
+                      checked={registrarIngreso}
+                      onCheckedChange={(v) => setRegistrarIngreso(v as boolean)}
+                    />
+                    <Label htmlFor="registrarIngreso" className="text-sm text-zinc-600 cursor-pointer">
+                      Registrar como ingreso
+                    </Label>
+                  </div>
+                  <div className="flex justify-end mt-4">
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setEditingSection(null)} className="rounded-xl">Cancelar</Button>
                       <Button onClick={saveMembershipInfo} disabled={isSaving} className="rounded-xl">{isSaving ? "Guardando..." : "Guardar cambios"}</Button>

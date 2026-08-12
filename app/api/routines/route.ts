@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth, requireAdmin } from '@/lib/supabase/auth-guard'
+import { requireAuthFast, requireAdminFast } from '@/lib/supabase/auth-guard'
 import { routineService } from '@/lib/services/routine-service'
 import { prisma } from '@/lib/prisma'
 import {
@@ -13,15 +13,12 @@ import {
 // Alumno → ve solo los suyos
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAuth()
+    const auth = await requireAuthFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
     const { user, role } = auth
-    const activeOrgId = req.headers.get("x-organization-id")
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 })
-    }
+    const activeOrgId = auth.organizationId
 
     const searchParams = req.nextUrl.searchParams
     const rawQuery = {
@@ -88,15 +85,12 @@ export async function GET(req: NextRequest) {
 // Body diferenciado por campo "mode": "day" | "week"
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
     const { user } = auth
-    const activeOrgId = req.headers.get("x-organization-id")
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 })
-    }
+    const activeOrgId = auth.organizationId
 
     // Obtenemos el ID interno de Prisma para el creador
     const dbUser = await prisma.user.findUnique({

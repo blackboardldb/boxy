@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 
 
 export async function PATCH(
@@ -12,7 +12,7 @@ export async function PATCH(
     const { id } = await params;
 
     // HAL-17: endpoint sin guard — cualquier request sin sesión podía mutar estado
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

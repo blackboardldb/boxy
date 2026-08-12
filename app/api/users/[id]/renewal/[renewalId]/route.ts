@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 // MIGRACIÓN: Este endpoint usaba la tabla legacy `profiles` (pre-multi-tenant, docs/historico/).
 // La tabla no existe en el schema Prisma actual de Boxy. El endpoint fallaba con 403 siempre.
 // Migrado a requireAdmin() (organization_members, roles ADMIN/COACH, con organizationId).
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 const patchRenewalSchema = z.object({
@@ -15,7 +15,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; renewalId: string }> }
 ) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

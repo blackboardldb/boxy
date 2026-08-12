@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { updateExpenseSchema } from "@/lib/schemas";
 
 export async function DELETE(
@@ -9,7 +9,7 @@ export async function DELETE(
 ) {
   try {
     // 0. Autenticación y Autorización (faltaba en la versión anterior)
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -104,7 +104,7 @@ export async function PUT(
 ) {
   try {
     // 0. Autenticación y Autorización
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

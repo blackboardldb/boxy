@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { disciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 import { createDisciplineSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
   try {
     // Autenticación básica
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -50,10 +50,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Solo administradores pueden crear disciplinas
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+
+    // auth.organizationId ya viene validado contra el header por requireAdminFast
+    const activeOrgId = auth.organizationId;
 
     const parsed = createDisciplineSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -63,10 +66,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Inject organizationId from auth context
+    // Inject organizationId from valid proxy header
     const dataWithOrg = {
       ...parsed.data,
-      organizationId: auth.organizationId
+      organizationId: activeOrgId
     };
 
     // Use DisciplineService to create discipline with validation

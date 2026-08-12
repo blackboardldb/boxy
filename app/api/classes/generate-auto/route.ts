@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateClassesFromSchedules } from "@/lib/utils/class-generator";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 const generateAutoSchema = z.object({
@@ -10,15 +10,11 @@ const generateAutoSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-    
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const parsed = generateAutoSchema.safeParse(await request.json());
     if (!parsed.success) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/supabase/auth-guard'
+import { requireAdminFast } from '@/lib/supabase/auth-guard'
 import { routineService } from '@/lib/services/routine-service'
 
 type Params = { params: Promise<{ id: string }> }
@@ -7,9 +7,9 @@ type Params = { params: Promise<{ id: string }> }
 // DELETE /api/routines/[id]
 // Elimina el assignment y sus members en cascade
 // Solo COACH que lo creó o ADMIN
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAuthFast } from "@/lib/supabase/auth-guard";
 
 export async function GET(
   request: NextRequest,
@@ -9,20 +9,15 @@ export async function GET(
 ) {
   let userId = "unknown";
   try {
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
     }
 
     const { id } = await params;
     userId = id;
 
-    const organizationId = activeOrgId;
+    const organizationId = auth.organizationId;
 
     // Lookup puntual: resuelve el CUID del perfil objetivo + confirma que
     // pertenece al mismo centro que el que consulta. No se modificó

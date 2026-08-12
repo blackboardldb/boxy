@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

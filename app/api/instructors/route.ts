@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
-import { requireAdmin, requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAdminFast, requireAuthFast } from "@/lib/supabase/auth-guard";
 import { createInstructorSchema } from "@/lib/schemas";
 
 
@@ -10,15 +10,12 @@ export async function GET(request: NextRequest) {
   try {
     // Fix: Permitir acceso a alumnos autenticados para que puedan ver los instructores en el calendario,
     // pero forzaremos que solo vean información 'minimal' más adelante.
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
 
@@ -70,10 +67,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 0. Autenticación y Autorización
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+
+    // auth.organizationId ya viene validado contra el header por requireAdminFast
+    const activeOrgId = auth.organizationId;
 
     const parsed = createInstructorSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       await createAuthUser(body.email, authRole, {
         firstName: body.firstName,
         lastName: body.lastName,
-      }, auth.organizationId);
+      }, activeOrgId);
     } catch (authError: any) {
       const msg = authError?.message ?? "";
       if (!msg.includes("already")) {
@@ -117,10 +117,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Crear el registro del instructor en Prisma (public.instructors)
-    // MT-02: Inyectar organizationId del admin autenticado
+    // MT-02: Inyectar organizationId del tenant activo (header validado)
     const response = await instructorService.createInstructor({
       ...body,
-      organizationId: auth.organizationId,
+      organizationId: activeOrgId,
     });
 
     // Return standardized response

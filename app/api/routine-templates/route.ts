@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/supabase/auth-guard'
+import { requireAdminFast } from '@/lib/supabase/auth-guard'
 import { routineService } from '@/lib/services/routine-service'
 import { CreateRoutineTemplateSchema } from '@/lib/validations/routine-schemas'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/routine-templates
 // Lista todos los templates activos del centro
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -27,7 +27,7 @@ export async function GET() {
 // Crea un template nuevo — COACH o ADMIN
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

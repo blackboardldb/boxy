@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { createUserSchema } from "@/lib/schemas";
 import { toMidnightUTC } from "@/lib/utils/dates";
 import type { MemberRole } from "@prisma/client";
@@ -34,10 +34,11 @@ function toAuthRole(role?: string): "alumno" | "coach" | "admin" {
 export async function GET(request: NextRequest) {
   try {
     // 0. Autenticación y Autorización
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const activeOrgId = auth.organizationId;
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -46,11 +47,6 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role") || "";
     const status = searchParams.get("status") || "";
-    
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
 
     // Use UserService to get users with filters
     const response = await userService.getUsers({
@@ -76,15 +72,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 0. Autenticación y Autorización
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const parsed = createUserSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -96,8 +88,9 @@ export async function POST(request: NextRequest) {
     const body = parsed.data;
 
     // Verificar si el usuario ya existe globalmente
+    const emailLowerCase = body.email.toLowerCase();
     const existingUser = await prisma.user.findUnique({
-      where: { email: body.email },
+      where: { email: emailLowerCase },
       include: { memberships: true }
     });
 
@@ -121,6 +114,13 @@ export async function POST(request: NextRequest) {
           where: { id: body.planId },
           select: { id: true, name: true, price: true, duration: true, config: true },
         });
+      }
+
+      if (body.registrarIngreso && (!body.formaDePago || !planDataB)) {
+        return NextResponse.json(
+          { success: false, error: "Para registrar un ingreso se requiere un plan y una forma de pago." },
+          { status: 400 }
+        );
       }
 
       const membershipStartB = toMidnightUTC(body.startDate ?? null) ?? new Date();
@@ -152,7 +152,31 @@ export async function POST(request: NextRequest) {
               classLimit: (planConfigB?.classLimit as number | undefined) ?? 0,
             }),
           }
-        })
+        }),
+        ...(body.registrarIngreso && planDataB ? [
+          prisma.membershipRenewal.create({
+            data: {
+              userId: existingUser.id,
+              organizationId: activeOrgId,
+              requestedPlanId: planDataB.id,
+              currentPlanId: null,
+              paymentMethod: body.formaDePago!,
+              status: "approved",
+              processedAt: new Date(),
+              startDate: membershipStartB,
+              amount: planDataB.price > 0 ? planDataB.price : null,
+              notes: null,
+              renewalDetails: {
+                requestedPlanName: planDataB.name,
+                requestedPlanPrice: planDataB.price,
+                requestedPlanClassLimit: (planConfigB?.classLimit as number | undefined) ?? 0,
+                requestedPlanDuration: planDataB.duration,
+                paymentMethod: body.formaDePago!,
+                startDate: body.startDate ?? null,
+              }
+            }
+          })
+        ] : [])
       ]);
 
       const updatedUser = await userService.getUserById(existingUser.id, activeOrgId);
@@ -163,9 +187,9 @@ export async function POST(request: NextRequest) {
     // 1. Crear en Supabase Auth y capturar el UUID (authId)
     let authId: string;
     try {
-      console.log("[POST /api/users] Creando usuario en Supabase Auth:", body.email);
+      console.log("[POST /api/users] Creando usuario en Supabase Auth:", emailLowerCase);
       authId = await createAuthUser(
-        body.email,
+        emailLowerCase,
         toAuthRole(body.role), // BUG-ROLE-01 fix: contraseña por defecto según rol real
         {
           firstName: body.firstName,
@@ -209,11 +233,18 @@ export async function POST(request: NextRequest) {
     const membershipEnd   = toMidnightUTC(body.endDate ?? null);
     const planConfig      = (planData?.config ?? {}) as Record<string, unknown>;
 
+    if (body.registrarIngreso && (!body.formaDePago || !planData)) {
+      return NextResponse.json(
+        { success: false, error: "Para registrar un ingreso se requiere un plan y una forma de pago." },
+        { status: 400 }
+      );
+    }
+
     try {
       const newUser = await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
-            email: body.email,
+            email: emailLowerCase,
             authId: authId,
             firstName: body.firstName,
             lastName: body.lastName,
@@ -251,6 +282,31 @@ export async function POST(request: NextRequest) {
             }),
           }
         });
+
+        if (body.registrarIngreso && planData) {
+          await tx.membershipRenewal.create({
+            data: {
+              userId: user.id,
+              organizationId: activeOrgId,
+              requestedPlanId: planData.id,
+              currentPlanId: null,
+              paymentMethod: body.formaDePago!,
+              status: "approved",
+              processedAt: new Date(),
+              startDate: membershipStart,
+              amount: planData.price > 0 ? planData.price : null,
+              notes: null,
+              renewalDetails: {
+                requestedPlanName: planData.name,
+                requestedPlanPrice: planData.price,
+                requestedPlanClassLimit: (planConfig?.classLimit as number | undefined) ?? 0,
+                requestedPlanDuration: planData.duration,
+                paymentMethod: body.formaDePago!,
+                startDate: body.startDate ?? null,
+              }
+            }
+          });
+        }
 
         return user;
       });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 
 export async function DELETE(
   request: NextRequest,
@@ -8,16 +8,13 @@ export async function DELETE(
 ) {
   try {
     // 1. Guard: Solo admin
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    // 2. Tenant: fail-closed desde el header
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    // 2. Tenant: aislado y validado desde el token
+    const activeOrgId = auth.organizationId;
 
     // 3. Validación de params (Next.js 15+ API)
     const { id } = await params;

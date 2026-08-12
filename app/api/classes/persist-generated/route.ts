@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { resolveInstructorForDiscipline } from "@/lib/utils/class-generator";
 import { prisma } from "@/lib/prisma";
 import { ClassSession } from "@/lib/types";
@@ -27,15 +27,11 @@ const persistGeneratedSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const parsed = persistGeneratedSchema.safeParse(await request.json());
     if (!parsed.success) {

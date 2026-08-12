@@ -67,6 +67,7 @@ export const createUserSchema = z.object({
     .optional(),
   gender: z.enum(["masculino", "femenino", "otro", "prefiero_no_decir"]).optional(),
   formaDePago: z.enum(["contado", "transferencia", "debito", "credito"]).optional(),
+  registrarIngreso: z.boolean().optional(),
   organizationId: z.string().optional(),
   role: z.enum(["user", "admin", "coach"]).default("user"),
   membership: z.unknown().optional(),

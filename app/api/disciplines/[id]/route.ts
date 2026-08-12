@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { disciplineService } from "@/lib/services/discipline-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateDisciplineSchema } from "@/lib/schemas";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 import { generateClassesFromSchedules } from "@/lib/utils/class-generator";
 
 
@@ -14,7 +14,7 @@ export async function GET(
   try {
     id = (await params).id;
 
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -26,8 +26,8 @@ export async function GET(
       );
     }
 
-    // Use DisciplineService to get discipline by ID
-    const response = await disciplineService.getDisciplineById(id);
+    // Use DisciplineService to get discipline by ID and filter by organizationId
+    const response = await disciplineService.getDisciplineById(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {
@@ -55,7 +55,7 @@ export async function PUT(
   try {
     id = (await params).id;
 
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -117,7 +117,7 @@ export async function DELETE(
   try {
     id = (await params).id;
 
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

@@ -103,8 +103,8 @@ export class DisciplineService {
     });
   }
 
-  async getDisciplineById(id: string): Promise<ApiResponse<Discipline | null>> {
-    const row = await prisma.discipline.findUnique({ where: { id } });
+  async getDisciplineById(id: string, organizationId: string): Promise<ApiResponse<Discipline | null>> {
+    const row = await prisma.discipline.findFirst({ where: { id, organizationId } });
     return createSuccessResponse(row ? mapToEntity(row) : null);
   }
 

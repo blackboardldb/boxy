@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { organizationService } from "@/lib/services/organization-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
-import { requireAuthFast, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 import { updateOrganizationSchema } from "@/lib/schemas";
 
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // MT-04: Requerir admin autenticado — el target es siempre la org del admin
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

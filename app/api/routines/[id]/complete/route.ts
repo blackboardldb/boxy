@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/supabase/auth-guard'
+import { requireAuthFast } from '@/lib/supabase/auth-guard'
 import { routineService } from '@/lib/services/routine-service'
 import { CompleteRoutineSchema } from '@/lib/validations/routine-schemas'
 import { prisma } from '@/lib/prisma'
@@ -11,7 +11,7 @@ type Params = { params: Promise<{ id: string }> }
 // Cualquier rol puede completar — el servicio valida que esté asignado
 export async function POST(req: NextRequest, { params }: Params) {
   try {
-    const auth = await requireAuth()
+    const auth = await requireAuthFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

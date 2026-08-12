@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { z } from "zod";
 
 // HAL-01 Fase 4 Sprint 1.3 (revisado): Aprueba una renovación pendiente.
@@ -19,7 +19,7 @@ export async function POST(
   try {
     const { id: userId } = await params;  // Next.js 15: params es una Promise
 
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const parsed = approveRenewalSchema.safeParse(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { startOfDayChile, endOfDayChile } from "@/lib/utils";
 import { sendToUsers } from "@/lib/services/push-service";
 
@@ -13,15 +13,11 @@ const cancelDaySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const json = await request.json();
     const parsed = cancelDaySchema.safeParse(json);

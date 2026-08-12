@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest) {
   // Guard migrado de lib/auth/require-admin (legacy, basado en redirect()) al
   // guard canónico del proyecto — expone organizationId del token y no depende
   // de getTenant() / Host header, cerrando la ventana de tenant-spoofing vía URL.
-  const auth = await requireAdmin();
+  const auth = await requireAdminFast(request);
   if ("error" in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

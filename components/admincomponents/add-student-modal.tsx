@@ -60,8 +60,9 @@ const createStudentData = (
   },
   selectedPlan: MembershipPlan,
   organizationId: string,
-  initialStudent?: FitCenterUserProfile
-): Omit<FitCenterUserProfile, "id"> & { planId?: string; startDate?: string; endDate?: string } => {
+  initialStudent?: FitCenterUserProfile,
+  registrarIngreso?: boolean
+): Omit<FitCenterUserProfile, "id"> & { planId?: string; startDate?: string; endDate?: string; registrarIngreso?: boolean } => {
   return {
     firstName: formData.firstName,
     lastName: formData.lastName,
@@ -70,6 +71,7 @@ const createStudentData = (
     organizationId: initialStudent?.organizationId ?? organizationId,
     // Remover campos undefined para evitar problemas de validación
     ...(formData.formaDePago && { formaDePago: formData.formaDePago }),
+    ...(registrarIngreso !== undefined && { registrarIngreso }),
     avatarId: "avatar_default",
     role: "user",
     // Campos de plan a nivel superior — el backend los usa para crear el UserMembership
@@ -284,7 +286,8 @@ export function AddStudentModal({
       formData,
       selectedPlan,
       currentUser.organizationId,
-      initialStudent
+      initialStudent,
+      registrarIngreso
     );
 
     try {
@@ -299,29 +302,6 @@ export function AddStudentModal({
       } else {
         const createdUser = await onAddStudent(studentData);
         if (createdUser) {
-          // Registrar ingreso en finanzas si el checkbox está marcado y hay precio
-          if (registrarIngreso && selectedPlan.price > 0) {
-            try {
-              await fetch(`/api/users/${createdUser.id}/renewal`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  planId: selectedPlan.id,
-                  paymentMethod: formData.formaDePago || "contado",
-                  autoApprove: true,
-                  planName: selectedPlan.name,
-                  planPrice: selectedPlan.price,
-                  planClassLimit: calcularClasesSegunDuracion(selectedPlan.classLimit, selectedPlan.durationInMonths),
-                  planDuration: selectedPlan.durationInMonths,
-                  startDate: formData.joinDate,
-                  paymentDate: formData.joinDate,
-                }),
-              });
-            } catch (renewalErr) {
-              // El alumno fue creado; el ingreso falló silenciosamente (no bloquear UX)
-              console.error("[AddStudentModal] Error registrando ingreso:", renewalErr);
-            }
-          }
           onSuccess?.();
           setOpen(false);
         } else {

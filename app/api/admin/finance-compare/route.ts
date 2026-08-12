@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/admin/finance-compare
@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

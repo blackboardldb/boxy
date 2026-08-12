@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { userService } from "@/lib/services/user-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { adminUpdateUserSchema, updateProfileSchema } from "@/lib/schemas";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireSelfOrAdminFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
   try {
     // HAL-18 (cerrado en Grupo 3): requireAuth() bloquea acceso anónimo;
     // getUserById ahora scoped a organizationId para prevenir fuga de PII cross-tenant.
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -40,23 +40,15 @@ export async function PUT(
 ) {
   let id = "unknown";
   try {
+    id = (await params).id;
+
     // BUG-03: exigir sesión activa antes de cualquier mutación
-    const auth = await requireAuth();
+    const auth = await requireSelfOrAdminFast(request, id);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    id = (await params).id;
-
     const isAdmin = ["ADMIN", "COACH"].includes(auth.role);
-
-    // BUG-03: un alumno solo puede editar su propio perfil
-    if (!isAdmin && auth.user.id !== id) {
-      return NextResponse.json(
-        { error: "Sin permisos para editar este perfil" },
-        { status: 403 }
-      );
-    }
 
     // BUG-03: admins usan el schema completo; alumnos usan el schema restringido
     // (excluye role, organizationId, planId, membership — previene escalación de privilegios)
@@ -98,7 +90,7 @@ export async function DELETE(
   let id = "unknown";
   try {
     // Paso 4: Seguridad — solo admins pueden eliminar alumnos
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

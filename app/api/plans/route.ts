@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { planService } from "@/lib/services/plan-service";
 import { ErrorHandler } from "@/lib/errors/handler";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 import { createPlanSchema, updatePlanSchema } from "@/lib/schemas";
 
 
 export async function GET(request: NextRequest) {
   try {
-    // Autenticación básica
-    const auth = await requireAuth();
+    // Autenticación básica (MT-07)
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -57,15 +54,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Solo administradores pueden crear planes
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    // auth.organizationId ya viene validado contra el header por requireAdminFast
+    const activeOrgId = auth.organizationId;
 
     const parsed = createPlanSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -97,15 +92,13 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Solo administradores pueden actualizar planes
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    // auth.organizationId ya viene validado contra el header por requireAdminFast
+    const activeOrgId = auth.organizationId;
 
     const rawBody = await request.json();
     const { id, ...updateData } = rawBody;
@@ -146,15 +139,13 @@ export async function DELETE(request: NextRequest) {
   let id: string | null = null;
   try {
     // Solo administradores pueden eliminar planes
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    // auth.organizationId ya viene validado contra el header por requireAdminFast
+    const activeOrgId = auth.organizationId;
 
     const { searchParams } = new URL(request.url);
     id = searchParams.get("id");

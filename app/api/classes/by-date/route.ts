@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { eachDayOfInterval, getDay, format } from "date-fns";
 import { ClassSession, DayOfWeek } from "@/lib/types";
 import { localToUTC, startOfDayChile, endOfDayChile } from "@/lib/utils";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAuthFast } from "@/lib/supabase/auth-guard";
 import { resolveInstructorForDiscipline } from "@/lib/utils/class-generator";
 
 /**
@@ -95,10 +95,10 @@ function generateClassesForDateRange(
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requireAuthFast(request);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   
-  const activeOrgId = request.headers.get("x-organization-id");
+  const activeOrgId = auth.organizationId;
   if (!activeOrgId) {
     return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
   }

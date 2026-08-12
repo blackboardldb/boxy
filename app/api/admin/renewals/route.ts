@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/admin/renewals?status=pending
 // Devuelve las renovaciones de membresía con info del usuario y plan solicitado.
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
-
-    const organizationId = activeOrgId;  // MT-01: Filtrar por organizationId del tenant activo
+    const organizationId = auth.organizationId;  // MT-01: Filtrar por organizationId del tenant activo
     const status = request.nextUrl.searchParams.get("status") || "pending";
     const take = Math.min(
       parseInt(request.nextUrl.searchParams.get("take") || "50"),

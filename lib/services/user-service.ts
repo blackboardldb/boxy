@@ -362,8 +362,8 @@ export class UserService {
     });
   }
 
-  async getUsers(params?: {
-    page?: number; limit?: number; search?: string; role?: string; status?: string; organizationId?: string;
+  async getUsers(params: {
+    page?: number; limit?: number; search?: string; role?: string; status?: string; organizationId: string;
   }): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
     // SEC-01 (fail-closed): organizationId es obligatorio — devolver todos los usuarios
     // sin filtrar por tenant sería una fuga de datos cross-org. Sin RLS de respaldo en la DB,
@@ -623,7 +623,7 @@ export class UserService {
             update: upsertData,
           });
 
-          const shouldRegisterPayment = data.registerPayment !== false && !data.skipAutomaticRenewal;
+          const shouldRegisterPayment = data.registrarIngreso !== false && !data.skipAutomaticRenewal;
 
           if (m.status === "active" && startDate && shouldRegisterPayment) {
             const existingRenewal = await prisma.membershipRenewal.findFirst({
@@ -793,10 +793,6 @@ export class UserService {
     return createPaginatedResponse(users.map((u) => mapToEntity(u, organizationId)), {
       page: 1, limit: total || 1, total, totalPages: 1, hasNextPage: false, hasPrevPage: false,
     });
-  }
-
-  async searchUsers(query: string, organizationId?: string): Promise<PaginatedApiResponse<FitCenterUserProfile>> {
-    return this.getUsers({ search: query, organizationId });
   }
 
   async getUserStats(organizationId: string): Promise<ApiResponse<{

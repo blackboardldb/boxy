@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAuthFast } from "@/lib/supabase/auth-guard";
 import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
 import { z } from "zod";
 import { toMidnightUTC } from "@/lib/utils/dates";
@@ -36,15 +36,12 @@ export async function POST(
     // Se sube requireAuth() al inicio, independientemente del flag autoApprove.
     // Si es admin: puede operar sobre cualquier userId.
     // Si es alumno: solo puede crear renovaciones para su propio userId de sesión.
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const internalUser = await resolveInternalUser(auth);
     if (!internalUser) {

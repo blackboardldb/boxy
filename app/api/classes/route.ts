@@ -2,28 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin, requireAuth } from "@/lib/supabase/auth-guard";
+import { requireAdminFast, requireAuthFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { createClassSessionSchema } from "@/lib/schemas";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-
-    if (!authUser) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    }
-
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("startDate");
@@ -48,7 +37,7 @@ export async function GET(request: NextRequest) {
         status: status || undefined,
       }),
       prisma.user.findFirst({
-        where: { email: { equals: authUser.email, mode: "insensitive" } },
+        where: { email: { equals: auth.user.email, mode: "insensitive" } },
         select: { id: true },
       }),
     ]);
@@ -93,15 +82,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    const activeOrgId = request.headers.get("x-organization-id");
-    if (!activeOrgId) {
-      return NextResponse.json({ error: "Tenant no resuelto" }, { status: 400 });
-    }
+    const activeOrgId = auth.organizationId;
 
     const parsed = createClassSessionSchema.safeParse(await request.json());
     if (!parsed.success) {

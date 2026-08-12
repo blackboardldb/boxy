@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/supabase/auth-guard'
+import { requireAdminFast } from '@/lib/supabase/auth-guard'
 import { routineService } from '@/lib/services/routine-service'
 import { UpdateRoutineTemplateSchema } from '@/lib/validations/routine-schemas'
 
@@ -10,7 +10,7 @@ type Params = { params: Promise<{ id: string }> }
 // La restricción de "solo los suyos" se maneja en el servicio vía createdByUserId
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
@@ -47,9 +47,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 // DELETE /api/routine-templates/[id]
 // Soft delete — solo ADMIN
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const auth = await requireAdmin()
+    const auth = await requireAdminFast(req)
     if ('error' in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }

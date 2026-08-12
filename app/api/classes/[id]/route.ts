@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { updateClassSessionSchema } from "@/lib/schemas";
-import { requireAuth, requireAdmin } from "@/lib/supabase/auth-guard";
+import { requireAuthFast, requireAdminFast } from "@/lib/supabase/auth-guard";
 
 
 
@@ -14,7 +14,7 @@ export async function GET(
   try {
     id = (await params).id;
 
-    const auth = await requireAuth();
+    const auth = await requireAuthFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -54,7 +54,7 @@ export async function PUT(
   let id = "unknown";
   try {
     // BUG-01: guard faltante en mutación de clase
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
@@ -109,7 +109,7 @@ export async function DELETE(
   let id = "unknown";
   try {
     // BUG-01: guard faltante en eliminación de clase
-    const auth = await requireAdmin();
+    const auth = await requireAdminFast(request);
     if ("error" in auth) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }

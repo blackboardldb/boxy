@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 import PWAInitializer from "@/components/PWAInitializer";
 import ReactQueryProvider from "@/lib/react-query/provider";
-import RealtimeHandler from "@/components/RealtimeHandler";
+
 
 export default function RootLayout({
   children,
@@ -39,7 +39,6 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} bg-black`}>
         <ReactQueryProvider>
-          <RealtimeHandler />
           <PWAInitializer />
           {children}
         </ReactQueryProvider>
