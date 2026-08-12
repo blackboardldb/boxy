@@ -192,12 +192,14 @@ export class ClassService {
 
   async registerStudent(classId: string, userId: string, options: { isAdmin?: boolean } = {}): Promise<ApiResponse<ClassSession>> {
     return withErrorHandling(async () => {
-      const classSession = await prisma.classSession.findUnique({ where: { id: classId } });
+      const classSession = await prisma.classSession.findUnique({
+        where: { id: classId },
+        select: { id: true, organizationId: true, capacity: true, status: true, dateTime: true },
+      });
       if (!classSession) throw new ValidationError("Clase no encontrada");
 
       const user = await userService.getUserScopedToOrg(userId, classSession.organizationId);
       if (!user) throw new ValidationError("Usuario no encontrado");
-
       if (classSession.status === "cancelled") throw new ValidationError("La clase ha sido cancelada");
 
       const isReg = await prisma.classRegistration.findUnique({
@@ -205,14 +207,10 @@ export class ClassService {
       });
       if (isReg && isReg.status === "registered") throw new ValidationError("Ya estás inscrito/a en esta clase");
 
-      const enrolledCount = await prisma.classRegistration.count({ where: { classId, status: "registered" } });
-      if (enrolledCount >= classSession.capacity) throw new ValidationError("No hay cupos disponibles");
-
       if (!options.isAdmin) {
         const targetDay = classSession.dateTime.toISOString().split("T")[0];
         const queryStart = new Date(`${targetDay}T00:00:00`);
         const queryEnd = new Date(`${targetDay}T23:59:59`);
-
         const dayRegistrations = await prisma.classRegistration.findMany({
           where: {
             userId,
@@ -224,7 +222,6 @@ export class ClassService {
           },
           include: { class: true },
         });
-
         const validation = await ValidationService.canUserRegisterToClass(
           userId,
           classSession as unknown as ClassSession,
@@ -233,13 +230,35 @@ export class ClassService {
         if (!validation.canRegister) throw new ValidationError(validation.reason || "Validation failed");
       }
 
+      // === ZONA CRÍTICA: lock + re-check + count + insert, todo atómico ===
       const updatedRecord = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM class_sessions WHERE id = ${classId} FOR UPDATE`;
+
+        const liveSession = await tx.classSession.findUnique({
+          where: { id: classId },
+          select: { capacity: true, status: true },
+        });
+        if (!liveSession || liveSession.status === "cancelled") {
+          throw new ValidationError("La clase ya no está disponible");
+        }
+
+        const enrolledCount = await tx.classRegistration.count({
+          where: { classId, status: "registered" },
+        });
+        if (enrolledCount >= liveSession.capacity) {
+          throw new ValidationError("No hay cupos disponibles");
+        }
+
         await tx.classRegistration.upsert({
           where: { userId_classId: { userId, classId } },
           update: { status: "registered", registeredAt: new Date() },
           create: { userId, classId, status: "registered" },
         });
+
         return tx.classSession.findUnique({ where: { id: classId }, select: defaultSelect });
+      }, {
+        maxWait: 10000,
+        timeout: 15000,
       });
 
       return createSuccessResponse(mapToEntity(updatedRecord as unknown as ClassRowWithRegistrations));
