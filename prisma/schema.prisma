@@ -10,36 +10,28 @@ datasource db {
   schemas   = ["auth", "public"]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BOXY & Business Models (schema: public)
-// ─────────────────────────────────────────────────────────────────────────────
-
 model User {
-  id               String    @id @default(cuid())
-  firstName        String
-  lastName         String
-  email            String    @unique
-  authId           String    @unique // UUID de Supabase Auth — FK formal entre public.users y auth.users
-  phone            String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @default(now()) @updatedAt
-  dateOfBirth      DateTime?
-  emergencyContact String?
-  gender           String?
-  deletedAt        DateTime? // Soft delete — ver user-service.ts deleteUser()
-
-  // SaaS Relation
-  memberships OrganizationMember[]
-
-  // Business Relations
+  id                        String                    @id @default(cuid())
+  firstName                 String
+  lastName                  String
+  email                     String                    @unique
+  authId                    String                    @unique
+  phone                     String?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @default(now()) @updatedAt
+  dateOfBirth               DateTime?
+  emergencyContact          String?
+  gender                    String?
+  deletedAt                 DateTime?
   classRegistrations        ClassRegistration[]
   membershipRenewals        MembershipRenewal[]
-  userMembership            UserMembership[]
-  userLifts                 UserLift[]
-  monthlyStats              UserMonthlyStat[]
-  routineTemplatesCreated   RoutineTemplate[]         @relation("RoutineTemplatesCreated")
-  routineAssignmentsCreated RoutineAssignment[]       @relation("RoutineAssignmentsCreated")
+  memberships               OrganizationMember[]
   routineAssignmentMembers  RoutineAssignmentMember[] @relation("RoutineAssignmentMembers")
+  routineAssignmentsCreated RoutineAssignment[]       @relation("RoutineAssignmentsCreated")
+  routineTemplatesCreated   RoutineTemplate[]         @relation("RoutineTemplatesCreated")
+  userLifts                 UserLift[]
+  userMembership            UserMembership[]
+  monthlyStats              UserMonthlyStat[]
 
   @@index([email])
   @@index([deletedAt])
@@ -100,7 +92,6 @@ model Discipline {
 
 model Instructor {
   id             String         @id @default(cuid())
-  organizationId String
   firstName      String
   lastName       String
   email          String
@@ -110,12 +101,11 @@ model Instructor {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   profile        Json?
+  organizationId String
   classes        ClassSession[]
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, email])
-
   @@index([organizationId])
   @@index([email])
   @@index([isActive])
@@ -126,7 +116,6 @@ model Instructor {
 
 model MembershipPlan {
   id              String           @id @default(cuid())
-  organizationId  String
   name            String
   description     String?
   price           Float
@@ -136,9 +125,9 @@ model MembershipPlan {
   updatedAt       DateTime         @updatedAt
   features        Json?
   config          Json?
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
   userMemberships UserMembership[]
-
-  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -149,41 +138,29 @@ model MembershipPlan {
 }
 
 model UserMembership {
-  // MIGRACIÓN BUG-ROOT: PK compuesta (userId + organizationId) — elimina el CUID id.
-  // Todas las queries usan { where: { userId_organizationId: { userId, organizationId } } }
-  // o { where: { userId, organizationId } } — el nombre del accessor de Prisma es idéntico.
-  userId         String
-  organizationId String
-  planId         String?
-
-  // Estado operativo
-  status             String    @default("pending")
+  userId             String
+  organizationId     String
+  planId             String?
+  status             String          @default("pending")
   startDate          DateTime?
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   monthlyPrice       Float?
   membershipType     String?
-
-  // Config del plan
-  classLimit         Int      @default(0)
-  disciplineAccess   String   @default("all")
-  allowedDisciplines String[] @default([])
-  canFreeze          Boolean  @default(false)
-  freezeDurationDays Int      @default(0)
-  autoRenews         Boolean  @default(false)
-
-  // Config del centro
-  allowCancellation Boolean @default(true)
-  cancellationHours Int     @default(6)
-  maxBookingsPerDay Int     @default(3)
-  autoWaitlist      Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization     @relation(fields: [organizationId], references: [id])
-  plan         MembershipPlan?  @relation(fields: [planId], references: [id])
+  classLimit         Int             @default(0)
+  disciplineAccess   String          @default("all")
+  allowedDisciplines String[]        @default([])
+  canFreeze          Boolean         @default(false)
+  freezeDurationDays Int             @default(0)
+  autoRenews         Boolean         @default(false)
+  allowCancellation  Boolean         @default(true)
+  cancellationHours  Int             @default(6)
+  maxBookingsPerDay  Int             @default(3)
+  autoWaitlist       Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  plan               MembershipPlan? @relation(fields: [planId], references: [id])
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, organizationId])
   @@index([organizationId])
@@ -194,67 +171,50 @@ model UserMembership {
 }
 
 model Organization {
-  id                String    @id @default(cuid())
-  name              String
-  slug              String    @unique // "micentro" → subdominio micentro.boxy.app
-  status            OrgStatus @default(TRIAL)
-  themePrimaryColor String    @default("#6366f1")
-  themeVariant      Int       @default(1) // 1|2|3|4
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @default(now()) @updatedAt
-  suspendedAt       DateTime?
-  suspendedReason   String?
-
-  // Datos de contacto del centro
-  email   String?
-  phone   String?
-  address String?
-
-  // Datos del dueño
-  ownerName     String?
-  ownerLastName String?
-  ownerRut      String?
-
-  // Billing con Boxy
-  billingPlan      String? // boxy_base | boxy_pt
-  billingPeriodEnd DateTime? // vencimiento del trial o período pagado
-  billingCycle     String? // 'A' (día 1) o 'B' (día 15)
-
-  // Configuración operativa del centro (ex-settings JSONB — MT-10)
-  description              String?
-  orgType                  String  @default("HUB") // HUB | PERSONAL_TRAINING
-  timezone                 String  @default("America/Santiago")
-  operatingHours           Json?
-  defaultCancellationHours Int     @default(6)
-
-  // SaaS Plan y Billing Interno
+  id                        String                @id @default(cuid())
+  name                      String
+  slug                      String                @unique
+  status                    OrgStatus             @default(TRIAL)
+  themePrimaryColor         String                @default("#6366f1")
+  themeVariant              Int                   @default(1)
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @default(now()) @updatedAt
+  suspendedAt               DateTime?
+  suspendedReason           String?
+  address                   String?
+  billingPeriodEnd          DateTime?
+  billingPlan               String?
+  email                     String?
+  ownerLastName             String?
+  ownerName                 String?
+  ownerRut                  String?
+  phone                     String?
+  billingCycle              String?
+  defaultCancellationHours  Int                   @default(6)
+  description               String?
+  operatingHours            Json?
+  orgType                   String                @default("HUB")
+  timezone                  String                @default("America/Santiago")
   saasPlanName              SaasPlan?
   overrideMaxActiveStudents Int?
-
-  // Personalización / Branding
-  customIconUrl       String?
-  customSplashUrl     String?
-  allowCustomBranding Boolean @default(false)
-
-  // Accesos Iniciales (Passwords cifrados con AES-256-GCM)
-  defaultAdminPassword   String?
-  defaultStudentPassword String?
-  defaultCoachPassword   String?
-  encryptionKeyVersion   Int     @default(1)
-
-  // SaaS Relations
-  members            OrganizationMember[]
-  payments           OrganizationPayment[]
-  events             SystemEvent[]
-  expenses           Expense[]
-  membershipPlans    MembershipPlan[]
-  instructors        Instructor[]
-  membershipRenewals MembershipRenewal[]
-  inAppAlerts        InAppAlert[]
-  pushSubscriptions  PushSubscription[]
-  routineTemplates   RoutineTemplate[]
-  routineAssignments RoutineAssignment[]
-  userMemberships    UserMembership[]     // inversa de UserMembership.organization
+  customIconUrl             String?
+  customSplashUrl           String?
+  allowCustomBranding       Boolean               @default(false)
+  defaultAdminPassword      String?
+  defaultStudentPassword    String?
+  defaultCoachPassword      String?
+  encryptionKeyVersion      Int                   @default(1)
+  expenses                  Expense[]
+  inAppAlerts               InAppAlert[]
+  instructors               Instructor[]
+  membershipPlans           MembershipPlan[]
+  membershipRenewals        MembershipRenewal[]
+  members                   OrganizationMember[]
+  payments                  OrganizationPayment[]
+  pushSubscriptions         PushSubscription[]
+  routineAssignments        RoutineAssignment[]
+  routineTemplates          RoutineTemplate[]
+  events                    SystemEvent[]
 
   @@map("organizations")
   @@schema("public")
@@ -282,7 +242,6 @@ model ClassRegistration {
 model MembershipRenewal {
   id              String       @id @default(cuid())
   userId          String
-  organizationId  String
   currentPlanId   String?
   requestedPlanId String?
   status          String       @default("pending")
@@ -293,17 +252,16 @@ model MembershipRenewal {
   notes           String?
   renewalDetails  Json?
   amount          Float?
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id])
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([organizationId])
   @@index([status])
   @@index([requestedAt])
   @@index([userId, startDate, status])
-  // PERF-04: índice tenant-first para la query de membershipRenewals en /api/me (organizationId filter + status + orden por requestedAt)
-  // organizationId primero porque Boxy es multi-tenant — a diferencia de BS Plataforma (single-tenant) donde el índice análogo empieza por userId.
-  @@index([organizationId, userId, status, requestedAt])
+  @@index([organizationId, userId, status, requestedAt], map: "membership_renewals_organizationId_userId_status_requestedAt_id")
   @@map("membership_renewals")
   @@schema("public")
 }
@@ -314,10 +272,9 @@ model UserLift {
   organizationId String
   exerciseKey    String
   weight         Float
-  unit           String // 'kg' | 'lbs'
+  unit           String
   recordedAt     DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, exerciseKey, recordedAt])
   @@map("user_lifts")
@@ -334,8 +291,7 @@ model UserMonthlyStat {
   classesLimit    Int      @default(0)
   planName        String?
   createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, periodStart])
   @@index([userId, periodStart(sort: Desc)])
@@ -345,15 +301,14 @@ model UserMonthlyStat {
 }
 
 model Expense {
-  id             String   @id @default(cuid())
-  organizationId String
+  id             String       @id @default(cuid())
   motivo         String
   fecha          DateTime
   monto          Float
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([fecha])
@@ -363,17 +318,16 @@ model Expense {
 }
 
 model InAppAlert {
-  id             String   @id @default(cuid())
-  organizationId String? // null = alerta global del sistema; string = alerta específica del centro
+  id             String        @id @default(cuid())
   title          String
   content        String
   type           String
   startDate      DateTime
   endDate        DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([startDate, endDate])
@@ -382,34 +336,28 @@ model InAppAlert {
 }
 
 model PushSubscription {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   userId         String
-  organizationId String
   subscription   Json
-  createdAt      DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@index([userId, organizationId])
   @@map("push_subscriptions")
   @@schema("public")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SaaS Multi-tenant Relationship Tables
-// ─────────────────────────────────────────────────────────────────────────────
-
 model OrganizationMember {
-  id             String     @id @default(cuid())
+  id             String       @id @default(cuid())
   userId         String
   organizationId String
-  role           MemberRole @default(ALUMNO)
+  role           MemberRole   @default(ALUMNO)
+  status         String       @default("active")
+  joinedAt       DateTime     @default(now())
   formaDePago    String?
-  status         String     @default("active")
-  joinedAt       DateTime   @default(now())
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
   @@index([organizationId])
@@ -420,16 +368,15 @@ model OrganizationMember {
 }
 
 model OrganizationPayment {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  amount         Int // en centavos — CLP: multiplicar x100 al guardar, dividir x100 al mostrar
-  currency       String   @default("CLP")
+  amount         Int
+  currency       String       @default("CLP")
   paidAt         DateTime
   method         String?
   notes          String?
-  createdAt      DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@map("organization_payments")
@@ -437,14 +384,13 @@ model OrganizationPayment {
 }
 
 model SystemEvent {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  type           String // auth_failure | sync_error | payment_failed
+  type           String
   message        String
   metadata       Json?
-  createdAt      DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([createdAt])
@@ -454,7 +400,7 @@ model SystemEvent {
 
 model ManagerUser {
   id        String      @id @default(cuid())
-  authId    String      @unique // UUID de auth.users
+  authId    String      @unique
   email     String      @unique
   role      ManagerRole @default(SUPPORT)
   createdAt DateTime    @default(now())
@@ -465,16 +411,16 @@ model ManagerUser {
 }
 
 model Exercise {
-  id             String   @id @default(cuid())
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
   name           String
-  category       String? // fuerza | cardio | movilidad | potencia | gimnasia | otro
-  muscleGroup    String? // piernas | espalda | pecho | hombros | brazos | core | full_body
+  category       String?
+  muscleGroup    String?
   description    String?
-  isCustom       Boolean  @default(false) // false = global Boxy, true = creado por el centro
-  organizationId String? // null = global, string = ejercicio propio del centro
+  isCustom       Boolean  @default(false)
+  organizationId String?
   isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([category])
   @@index([muscleGroup])
@@ -485,19 +431,18 @@ model Exercise {
 }
 
 model RoutineTemplate {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String
-  description    String?
-  content        Json // estructura de bloques — ver spec abajo
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
+  id              String              @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId  String
+  name            String
+  description     String?
+  content         Json
+  isActive        Boolean             @default(true)
   createdByUserId String
+  createdAt       DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  assignments     RoutineAssignment[]
   createdBy       User                @relation("RoutineTemplatesCreated", fields: [createdByUserId], references: [id])
   organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignments     RoutineAssignment[]
 
   @@index([organizationId])
   @@index([createdByUserId])
@@ -507,21 +452,20 @@ model RoutineTemplate {
 }
 
 model RoutineAssignment {
-  id             String   @id @default(cuid())
-  organizationId String
-  assignedDate   DateTime @db.Date
-  content        Json // snapshot inmutable del contenido al publicar
-  location       String? // texto libre: "Box principal", "Domicilio Juan", "Al aire libre"
-  notes          String? // nota general del día, opcional
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
+  id              String                    @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId  String
+  assignedDate    DateTime                  @db.Date
+  content         Json
+  location        String?
+  notes           String?
   templateId      String?
-  template        RoutineTemplate?          @relation(fields: [templateId], references: [id])
   createdByUserId String
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+  members         RoutineAssignmentMember[]
   createdBy       User                      @relation("RoutineAssignmentsCreated", fields: [createdByUserId], references: [id])
   organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members         RoutineAssignmentMember[]
+  template        RoutineTemplate?          @relation(fields: [templateId], references: [id])
 
   @@index([organizationId])
   @@index([assignedDate])
@@ -533,15 +477,14 @@ model RoutineAssignment {
 }
 
 model RoutineAssignmentMember {
-  id           String    @id @default(cuid())
+  id           String            @id @default(dbgenerated("gen_random_uuid()"))
   assignmentId String
   userId       String
-  completedAt  DateTime?
-  memberNotes  String? // nota del alumno al completar
-  createdAt    DateTime  @default(now())
-
-  assignment RoutineAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  user       User              @relation("RoutineAssignmentMembers", fields: [userId], references: [id], onDelete: Cascade)
+  completedAt  DateTime?         @db.Timestamptz(6)
+  memberNotes  String?
+  createdAt    DateTime          @default(now()) @db.Timestamptz(6)
+  assignment   RoutineAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User              @relation("RoutineAssignmentMembers", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, userId])
   @@index([userId])
@@ -550,44 +493,6 @@ model RoutineAssignmentMember {
   @@map("routine_assignment_members")
   @@schema("public")
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ENUMS (public)
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum OrgStatus {
-  TRIAL
-  ACTIVE
-  SUSPENDED
-  CANCELED
-  @@schema("public")
-}
-
-enum SaasPlan {
-  EARLY
-  BASE
-  PRO
-  @@schema("public")
-}
-
-enum MemberRole {
-  ALUMNO
-  COACH
-  ADMIN
-
-  @@schema("public")
-}
-
-enum ManagerRole {
-  OWNER
-  SUPPORT
-
-  @@schema("public")
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUPABASE AUTH SCHEMAS (mirroring auth schema)
-// ─────────────────────────────────────────────────────────────────────────────
 
 model audit_log_entries {
   instance_id String?   @db.Uuid
@@ -601,30 +506,31 @@ model audit_log_entries {
 }
 
 model custom_oauth_providers {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_type         String
-  identifier            String    @unique
-  name                  String
-  client_id             String
-  client_secret         String
-  acceptable_client_ids String[]  @default([])
-  scopes                String[]  @default([])
-  pkce_enabled          Boolean   @default(true)
-  attribute_mapping     Json      @default("{}")
-  authorization_params  Json      @default("{}")
-  enabled               Boolean   @default(true)
-  email_optional        Boolean   @default(false)
-  issuer                String?
-  discovery_url         String?
-  skip_nonce_check      Boolean   @default(false)
-  cached_discovery      Json?
-  discovery_cached_at   DateTime? @db.Timestamptz(6)
-  authorization_url     String?
-  token_url             String?
-  userinfo_url          String?
-  jwks_uri              String?
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_type           String
+  identifier              String    @unique
+  name                    String
+  client_id               String
+  client_secret           String
+  acceptable_client_ids   String[]  @default([])
+  scopes                  String[]  @default([])
+  pkce_enabled            Boolean   @default(true)
+  attribute_mapping       Json      @default("{}")
+  authorization_params    Json      @default("{}")
+  enabled                 Boolean   @default(true)
+  email_optional          Boolean   @default(false)
+  issuer                  String?
+  discovery_url           String?
+  skip_nonce_check        Boolean   @default(false)
+  cached_discovery        Json?
+  discovery_cached_at     DateTime? @db.Timestamptz(6)
+  authorization_url       String?
+  token_url               String?
+  userinfo_url            String?
+  jwks_uri                String?
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime  @default(now()) @db.Timestamptz(6)
+  custom_claims_allowlist String[]  @default([])
 
   @@index([created_at])
   @@index([enabled])
@@ -911,6 +817,7 @@ model sessions {
   @@schema("auth")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model sso_domains {
   id              String        @id @db.Uuid
   sso_provider_id String        @db.Uuid
@@ -923,6 +830,7 @@ model sso_domains {
   @@schema("auth")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model sso_providers {
   id                String              @id @db.Uuid
   resource_id       String?
@@ -937,6 +845,7 @@ model sso_providers {
   @@schema("auth")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
   instance_id                 String?                @db.Uuid
   id                          String                 @id @db.Uuid
@@ -1025,9 +934,37 @@ model webauthn_credentials {
   @@schema("auth")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH ENUMS
-// ─────────────────────────────────────────────────────────────────────────────
+enum OrgStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELED
+
+  @@schema("public")
+}
+
+enum SaasPlan {
+  EARLY
+  BASE
+  PRO
+
+  @@schema("public")
+}
+
+enum MemberRole {
+  ALUMNO
+  COACH
+  ADMIN
+
+  @@schema("public")
+}
+
+enum ManagerRole {
+  OWNER
+  SUPPORT
+
+  @@schema("public")
+}
 
 enum aal_level {
   aal1
@@ -1098,3 +1035,5 @@ enum one_time_token_type {
 
   @@schema("auth")
 }
+
+
