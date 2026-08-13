@@ -33,12 +33,11 @@ export function useMe(options?: { enabled?: boolean }) {
     queryKey: meKeys.me,
     queryFn: () =>
       fetchClient<MeApiResponse>("/me").then((res) => res.data),
-    staleTime: 0,              // siempre refetch al mount
+    staleTime: 1000 * 60 * 1,  // 1 minuto de frescura
     gcTime: 1000 * 60 * 5,    // 5 min en caché inactiva
     retry: 1,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 1000 * 60 * 3, // refresca cada 3 min si la app está abierta
+    refetchOnWindowFocus: false,
     enabled: options?.enabled ?? true,
   });
 }

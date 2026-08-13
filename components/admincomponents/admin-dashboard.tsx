@@ -126,6 +126,7 @@ export function AdminDashboard({ role }: { role: string }) {
       {!statsLoading && pendingMembers > 0 && (
         <Link
           href="/hub/alertas"
+          prefetch={false}
           className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-orange-500 border border-orange-600 hover:bg-orange-400 transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -187,6 +188,7 @@ export function AdminDashboard({ role }: { role: string }) {
               </span>
               <Link
                 href="/hub/alumnos"
+                prefetch={false}
                 className="text-sm underline font-bold text-zinc-900 p-1.5 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -400,7 +402,7 @@ export function AdminDashboard({ role }: { role: string }) {
                         <TableCell className="py-2.5 pr-3 sm:pr-6 pl-1 text-right">
                           <div className="flex items-center justify-end space-x-1">
                             <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors" />
-                            <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
+                            <Link href={`/hub/alumnos/${u.id}`} prefetch={false} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
                               Ver Perfil
                             </Link>
                           </div>
@@ -473,7 +475,7 @@ export function AdminDashboard({ role }: { role: string }) {
                         <TableCell className="py-2.5 pr-3 sm:pr-6 pl-1 text-right">
                           <div className="flex items-center justify-end space-x-1">
                             <WhatsAppLink phone={u.phone} message={WHATSAPP_EXPIRED_MESSAGE} className="p-1.5 rounded-lg hover:bg-zinc-100 transition-colors" />
-                            <Link href={`/hub/alumnos/${u.id}`} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
+                            <Link href={`/hub/alumnos/${u.id}`} prefetch={false} className="text-xs underline font-bold transition-colors p-1.5 rounded-lg hover:bg-zinc-100 whitespace-nowrap">
                               Ver Perfil
                             </Link>
                           </div>
