@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { classService } from "@/lib/services/class-service";
 import { requireAuthFast } from "@/lib/supabase/auth-guard";
 import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
+import { ErrorHandler } from "@/lib/errors/handler";
 
 
 export async function POST(
@@ -36,10 +37,10 @@ export async function POST(
     });
   } catch (error: any) {
     console.error("Error registering for class:", error);
-    return NextResponse.json(
-      { error: error?.message || "Error al inscribir al usuario" },
-      { status: 500 }
-    );
+    return ErrorHandler.createResponse(error, {
+      operation: "register_student_api",
+      resource: "classes",
+    });
   }
 }
 

@@ -402,35 +402,25 @@ export function getPlanStatus(
 
   if (!startDateStr || !endDateStr) return "inactive";
 
-  const parseDate = (dateStr: string | Date): Date | null => {
-    if (!dateStr) return null;
-    if (dateStr instanceof Date) return dateStr;
-    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-      return new Date(dateStr.substring(0, 10) + "T12:00:00Z");
-    }
-    if (/^\d{2}\/\d{2}\/\d{4}/.test(dateStr)) {
-      const [day, month, year] = dateStr.substring(0, 10).split("/");
-      return new Date(`${year}-${month}-${day}T12:00:00`);
-    }
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-  };
+  // HAL-?? — Timezone hardcodeado a Chile
+  // Boxy es multi-tenant pero hoy solo opera centros en Chile.
+  // Cuando se agregue un centro en otro país (AR, CO, MX), este
+  // hardcodeo romperá la vigencia de membresías por desfase horario.
+  // Fix: agregar 'timezone' al schema de Organization y pasarlo como
+  // parámetro a getPlanStatus en vez de ORGANIZATION_TIMEZONE.
+  const startString = formatDateChile(startDateStr);
+  const endString = formatDateChile(endDateStr);
+  const todayString = formatDateChile(new Date());
 
-  const startDate = parseDate(startDateStr);
-  const endDate = parseDate(endDateStr);
-
-  if (!startDate || !endDate) return "inactive";
-
-  const today = new Date();
-  today.setUTCHours(12, 0, 0, 0);
+  if (!startString || !endString) return "inactive";
 
   // classLimit ya es campo directo de UserMembership (no planConfig del JSONB)
   const classLimit = user.membership.planConfig?.classLimit ?? user.membership.classLimit ?? 0;
   const remainingClasses = user.membership.centerStats?.currentMonth?.remainingClasses ?? 0;
   const isLimitedPlan = classLimit > 0;
 
-  if (today < startDate) return "scheduled";
-  if (today > endDate) return "inactive";
+  if (todayString < startString) return "scheduled";
+  if (todayString > endString) return "inactive";
   if (isLimitedPlan && remainingClasses <= 0) return "inactive";
 
   if (
