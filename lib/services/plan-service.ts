@@ -193,9 +193,20 @@ export class PlanService {
   async deletePlan(id: string, organizationId: string): Promise<ApiResponse<MembershipPlan>> {
     const existing = await prisma.membershipPlan.findFirst({ where: { id, organizationId } });
     if (!existing) throw new NotFoundError("plans", id);
-    await this.validateDelete(id);
 
-    const deleted = await prisma.membershipPlan.delete({ where: { id } });
+    // Envolvemos validación y borrado en una misma transacción
+    const deleted = await prisma.$transaction(async (tx) => {
+      const usersWithPlan = await tx.userMembership.count({
+        where: { planId: id },
+      });
+
+      if (usersWithPlan > 0) {
+        throw new ValidationError("Cannot delete plan that is being used by users. Deactivate it instead.");
+      }
+
+      return await tx.membershipPlan.delete({ where: { id } });
+    });
+
     clearCache();
     console.log(`[PlanService] Plan deleted: ${deleted.id} (${deleted.name})`);
 
