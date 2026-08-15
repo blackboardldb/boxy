@@ -16,6 +16,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
     const { user } = auth
+    const activeOrgId = auth.organizationId
     const { id } = await params
 
     const body = await req.json()
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const result = await routineService.completeAssignment(
       id,
       dbUser.id,
+      activeOrgId,
       parsed.data
     )
 

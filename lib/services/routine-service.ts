@@ -318,16 +318,26 @@ export class RoutineService {
   async completeAssignment(
     assignmentId: string,
     userId: string,
+    organizationId: string,
     data: CompleteRoutineInput
   ) {
-    // Verificar que el alumno está asignado a esta rutina
+    // Verificar que el alumno está asignado a esta rutina, e incluir el
+    // organizationId del assignment para validar el tenant activo.
     const member = await prisma.routineAssignmentMember.findUnique({
       where: {
         assignmentId_userId: { assignmentId, userId },
       },
+      include: { assignment: { select: { organizationId: true } } },
     })
 
     if (!member) {
+      throw new Error('No tienes esta rutina asignada')
+    }
+
+    // Bloquear completar rutinas de otro tenant desde el tenant activo.
+    // Mensaje idéntico al de "no asignada" para no filtrar que la rutina
+    // existe en otro centro — mismo criterio que reset-password.
+    if (member.assignment.organizationId !== organizationId) {
       throw new Error('No tienes esta rutina asignada')
     }
 
