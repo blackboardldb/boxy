@@ -1,3 +1,5 @@
+//lib/services/manager-service.ts
+
 import { prisma } from "@/lib/prisma";
 import type { OrgStatus } from "@prisma/client";
 
@@ -65,7 +67,7 @@ function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): 
   const d = new Date(fromDate);
   const currentDay = d.getDate();
   const targetDay = cycle === 'B' ? 25 : 10;
-  
+
   if (currentDay <= targetDay) {
     // Vence este mes
     d.setDate(targetDay);
@@ -121,9 +123,9 @@ export const managerService = {
 
   /** Crea un centro y su primer admin. */
   async createOrganization(
-    data: { 
-      name: string; 
-      slug: string; 
+    data: {
+      name: string;
+      slug: string;
       billingCycle: string;
       email?: string;
       phone?: string;
@@ -290,14 +292,14 @@ export const managerService = {
     await prisma.organization.update({
       where: { id },
       data: {
-        ...(data.name         && { name: data.name }),
-        ...(data.email        !== undefined && { email: data.email }),
-        ...(data.phone        !== undefined && { phone: data.phone }),
-        ...(data.address      !== undefined && { address: data.address }),
-        ...(data.ownerName    !== undefined && { ownerName: data.ownerName }),
+        ...(data.name && { name: data.name }),
+        ...(data.email !== undefined && { email: data.email }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.address !== undefined && { address: data.address }),
+        ...(data.ownerName !== undefined && { ownerName: data.ownerName }),
         ...(data.ownerLastName !== undefined && { ownerLastName: data.ownerLastName }),
-        ...(data.ownerRut     !== undefined && { ownerRut: data.ownerRut }),
-        ...(data.billingPlan  !== undefined && { billingPlan: data.billingPlan }),
+        ...(data.ownerRut !== undefined && { ownerRut: data.ownerRut }),
+        ...(data.billingPlan !== undefined && { billingPlan: data.billingPlan }),
         ...(data.billingCycle !== undefined && { billingCycle: data.billingCycle }),
         ...(data.saasPlanName !== undefined && { saasPlanName: data.saasPlanName }),
         ...(data.overrideMaxActiveStudents !== undefined && { overrideMaxActiveStudents: data.overrideMaxActiveStudents }),
@@ -368,10 +370,10 @@ export const managerService = {
     });
 
     // Retorna en texto plano a la interfaz que lo acaba de generar
-    return { 
-      adminPassword: adminPasswordPlain, 
-      studentPassword: studentPasswordPlain, 
-      coachPassword: coachPasswordPlain 
+    return {
+      adminPassword: adminPasswordPlain,
+      studentPassword: studentPasswordPlain,
+      coachPassword: coachPasswordPlain
     };
   },
 
@@ -385,10 +387,10 @@ export const managerService = {
     if (!org) throw new Error("Centro no encontrado");
 
     let billingPeriodEnd = org.billingPeriodEnd;
-    
+
     // Si se activa manualmente (TRIAL->ACTIVE o SUSPENDED->ACTIVE), recalculamos el próximo vencimiento
     if (status === 'ACTIVE' && org.status !== 'ACTIVE') {
-       billingPeriodEnd = calculateBillingPeriodEnd(org.billingCycle ?? 'A');
+      billingPeriodEnd = calculateBillingPeriodEnd(org.billingCycle ?? 'A');
     }
 
     await prisma.organization.update({
@@ -410,8 +412,8 @@ export const managerService = {
           status === "SUSPENDED"
             ? `Centro suspendido. Razón: ${reason ?? "sin especificar"}`
             : status === "CANCELED"
-            ? "Centro cancelado definitivamente."
-            : `Centro reactivado/activado por el manager. Razón: ${reason ?? "sin especificar"}`,
+              ? "Centro cancelado definitivamente."
+              : `Centro reactivado/activado por el manager. Razón: ${reason ?? "sin especificar"}`,
       },
     });
   },
