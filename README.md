@@ -206,7 +206,6 @@ pnpm db:generate      # Regenerar cliente Prisma
 pnpm db:push          # Sincronizar schema con la BD (sin migraciones)
 pnpm db:studio        # Prisma Studio (explorador visual)
 pnpm db:reset         # Reset completo de BD (¡destructivo!)
-pnpm sync:auth        # Sincronizar usuarios de Supabase Auth con la BD local
 ```
 
 ---
