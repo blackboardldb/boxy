@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     const plans =
       planIds.length > 0
         ? await prisma.membershipPlan.findMany({
-            where: { id: { in: planIds } },
+            where: { id: { in: planIds }, organizationId },
             select: { id: true, name: true, price: true, duration: true, config: true },
           })
         : [];

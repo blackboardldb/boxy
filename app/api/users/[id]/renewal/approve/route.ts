@@ -98,8 +98,10 @@ export async function POST(
 
     if (pendingRenewal.requestedPlanId) {
       // MembershipPlan usa `duration` (no `durationInMonths`) y classLimit vive en config JSON
-      const raw = await prisma.membershipPlan.findUnique({
-        where: { id: pendingRenewal.requestedPlanId },
+      // findFirst con organizationId cierra el mismo vector que en renewal/route.ts:
+      // si el requestedPlanId no pertenece al centro, se usa el fallback de renewalDetails.
+      const raw = await prisma.membershipPlan.findFirst({
+        where: { id: pendingRenewal.requestedPlanId, organizationId: orgId },
         select: { id: true, name: true, price: true, duration: true, config: true },
       });
       if (raw) {

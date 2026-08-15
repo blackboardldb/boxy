@@ -119,14 +119,17 @@ export async function POST(
       }
     }
 
-    // Verificar que el plan existe
-    const plan = await prisma.membershipPlan.findUnique({
-      where: { id: planId },
+    // Verificar que el plan existe Y pertenece al centro del tenant activo.
+    // findFirst con organizationId cierra el vector de cross-tenant plan injection:
+    // un alumno del Centro A no puede usar un planId del Centro B para congelar
+    // un precio distinto en la solicitud de renovación.
+    const plan = await prisma.membershipPlan.findFirst({
+      where: { id: planId, organizationId: activeOrgId },
       select: { id: true, name: true, price: true, duration: true, config: true },
     });
 
     if (!plan) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      return NextResponse.json({ error: "Plan not found" }, { status: 404 } );
     }
 
     // Construir startDate como medianoche UTC para que la comparación con la DB
@@ -152,8 +155,8 @@ export async function POST(
     const currentPlanIdRaw = user.userMembership?.[0]?.planId ?? null;
     let currentPlanId: string | null = null;
     if (currentPlanIdRaw) {
-      const exists = await prisma.membershipPlan.findUnique({
-        where: { id: currentPlanIdRaw },
+      const exists = await prisma.membershipPlan.findFirst({
+        where: { id: currentPlanIdRaw, organizationId: activeOrgId },
         select: { id: true },
       });
       currentPlanId = exists ? currentPlanIdRaw : null;
