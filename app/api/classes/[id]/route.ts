@@ -27,7 +27,8 @@ export async function GET(
     }
 
     // Use ClassService to get class by ID
-    const response = await classService.getClassById(id);
+    // Pasamos el organizationId del auth para prevenir IDOR cross-tenant
+    const response = await classService.getClassById(id, auth.organizationId);
 
     // Return standardized response
     return NextResponse.json(response, {

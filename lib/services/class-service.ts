@@ -119,8 +119,12 @@ export class ClassService {
     );
   }
 
-  async getClassById(id: string): Promise<ApiResponse<ClassSession | null>> {
-    const row = await prisma.classSession.findUnique({ where: { id }, select: defaultSelect });
+  async getClassById(id: string, organizationId: string): Promise<ApiResponse<ClassSession | null>> {
+    const where: any = { id };
+    if (organizationId) where.organizationId = organizationId;
+    
+    // Usamos findFirst porque con organizationId ya no es un query único (PK)
+    const row = await prisma.classSession.findFirst({ where, select: defaultSelect });
     const data = row ? mapToEntity(row as unknown as ClassRowWithRegistrations) : null;
     return createSuccessResponse(data);
   }

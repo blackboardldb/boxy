@@ -38,6 +38,11 @@ export async function POST(
     }
     const { userId } = parsed.data;
 
+    // NOTA DE ARQUITECTURA: La seguridad cross-tenant de este endpoint depende 100%
+    // de que `getUserScopedToOrg` devuelva `null` para alumnos de otros tenants.
+    // Al pasar { isAdmin: true }, se salta ValidationService.canUserRegisterToClass.
+    // Si `getUserScopedToOrg` volviera a ser fail-open, este endpoint permitiría
+    // inyectar alumnos cruzados.
     const result = await classService.registerStudent(classId, userId, { isAdmin: true });
 
     if (!result.success) {

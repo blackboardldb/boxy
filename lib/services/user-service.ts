@@ -290,6 +290,10 @@ export class UserService {
     });
     if (!user) return null;
 
+    // MT: Validar pertenencia al tenant. Si no es miembro de la org, es fail-closed.
+    const belongsToOrg = user.memberships.some((m) => m.organizationId === organizationId);
+    if (!belongsToOrg) return null;
+
     const umRaw = Array.isArray(user.userMembership) ? user.userMembership[0] : user.userMembership;
     const promoted = await promoteScheduledIfReady(user.id, umRaw, user.membershipRenewals);
     if (promoted !== umRaw) (user as any).userMembership = [promoted];
