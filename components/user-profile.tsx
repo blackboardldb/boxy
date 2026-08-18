@@ -53,6 +53,7 @@ export function UserProfile() {
   const [historyReady, setHistoryReady] = useState(false);
 
   // Estados para cambio de contraseña
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -239,8 +240,12 @@ export function UserProfile() {
 
   const savePassword = async () => {
     setPasswordMsg(null);
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordMsg({ ok: false, text: "La contraseña debe tener al menos 6 caracteres." });
+    if (!currentPassword) {
+      setPasswordMsg({ ok: false, text: "Debes ingresar tu contraseña actual." });
+      return;
+    }
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordMsg({ ok: false, text: "La contraseña debe tener al menos 8 caracteres." });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -252,11 +257,12 @@ export function UserProfile() {
       const res = await fetch("/api/me/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       });
       const json = await res.json();
       if (json.success) {
         setPasswordMsg({ ok: true, text: "¡Contraseña actualizada correctamente!" });
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => {
@@ -701,6 +707,7 @@ export function UserProfile() {
                 onClick={() => {
                   setExpandedSection(expandedSection === "password" ? null : "password");
                   setPasswordMsg(null);
+                  setCurrentPassword("");
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
@@ -711,6 +718,17 @@ export function UserProfile() {
             </div>
             {expandedSection === "password" && (
               <div className="mt-4 space-y-4">
+                <div>
+                  <Label htmlFor="current-password" className="text-white">Contraseña actual</Label>
+                  <Input
+                    id="current-password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Ingresa tu contraseña actual"
+                    className="mt-1 bg-white border-zinc-800 text-black"
+                  />
+                </div>
                 <div>
                   <Label htmlFor="new-password" className="text-white">Nueva contraseña</Label>
                   <Input
@@ -742,7 +760,7 @@ export function UserProfile() {
                 <div className="flex gap-2">
                   <button
                     onClick={savePassword}
-                    disabled={isSaving || !newPassword || !confirmPassword}
+                    disabled={isSaving || !currentPassword || !newPassword || !confirmPassword}
                     className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Cambiar contraseña"}
