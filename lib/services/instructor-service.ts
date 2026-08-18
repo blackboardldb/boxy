@@ -278,6 +278,22 @@ export class InstructorService {
     if (duplicate) {
       throw new ValidationError("An instructor with this email already exists in this organization", "email");
     }
+
+    if (data.userId) {
+      const user = await prisma.user.findFirst({
+        where: { id: data.userId, memberships: { some: { organizationId: data.organizationId } } }
+      });
+      if (!user) throw new ValidationError("El usuario no pertenece a este centro.", "userId");
+    }
+
+    if (data.specialties && data.specialties.length > 0) {
+      const validCount = await prisma.discipline.count({
+        where: { id: { in: data.specialties }, organizationId: data.organizationId }
+      });
+      if (validCount !== data.specialties.length) {
+        throw new ValidationError("Una o más especialidades no pertenecen a este centro.", "specialties");
+      }
+    }
   }
 
   // FIX: validación scopeada a organizationId
@@ -295,6 +311,22 @@ export class InstructorService {
       });
       if (duplicate) {
         throw new ValidationError("An instructor with this email already exists in this organization", "email");
+      }
+    }
+
+    if (data.userId) {
+      const user = await prisma.user.findFirst({
+        where: { id: data.userId, memberships: { some: { organizationId: existingRecord.organizationId } } }
+      });
+      if (!user) throw new ValidationError("El usuario no pertenece a este centro.", "userId");
+    }
+
+    if (data.specialties && data.specialties.length > 0) {
+      const validCount = await prisma.discipline.count({
+        where: { id: { in: data.specialties }, organizationId: existingRecord.organizationId }
+      });
+      if (validCount !== data.specialties.length) {
+        throw new ValidationError("Una o más especialidades no pertenecen a este centro.", "specialties");
       }
     }
   }
