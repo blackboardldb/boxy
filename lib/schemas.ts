@@ -397,6 +397,7 @@ export type UpdateInAppAlert = z.infer<typeof updateInAppAlertSchema>;
 
 // Password change schema
 export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "La contraseña actual es obligatoria"),
   newPassword: z
     .string()
     .min(8, "La contraseña debe tener al menos 8 caracteres"),
