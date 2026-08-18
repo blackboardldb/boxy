@@ -124,6 +124,8 @@ export class DisciplineService {
       const orgId = data.organizationId;
       if (!orgId) throw new ValidationError("organizationId is required");
 
+      await validateDefaultCoach(data.defaultCoachId, orgId);
+
       const created = await prisma.discipline.create({
         data: {
           id: data.id,
@@ -154,6 +156,10 @@ export class DisciplineService {
 
       const previousEntity = mapToEntity(previous);
       await validateUpdateData(id, data, previousEntity);
+      
+      if (data.defaultCoachId !== undefined) {
+        await validateDefaultCoach(data.defaultCoachId, organizationId);
+      }
 
       const existingRules = extractRules(previous.cancellationRules);
       const existingCoachId = extractDefaultCoachId(previous.cancellationRules);
@@ -310,6 +316,16 @@ async function validateUpdateData(id: string, data: any, existingRecord: Discipl
       },
     });
     if (duplicate) throw new ValidationError("A discipline with this name already exists", "name");
+  }
+}
+async function validateDefaultCoach(coachId: string | undefined | null, organizationId: string): Promise<void> {
+  if (!coachId) return;
+  const coachBelongsToOrg = await prisma.instructor.findFirst({
+    where: { id: coachId, organizationId },
+    select: { id: true },
+  });
+  if (!coachBelongsToOrg) {
+    throw new ValidationError("El instructor por defecto seleccionado no pertenece a este centro.", "defaultCoachId");
   }
 }
 
