@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PaymentModal } from "../components/payment-modal";
 import { StatusSwitch } from "../components/status-switch";
 import { DefaultPasswords } from "../components/default-passwords";
+import { BrandingUploader } from "../components/branding-uploader";
 
 export default async function CentroDetailPage({
   params,
@@ -127,6 +128,9 @@ export default async function CentroDetailPage({
 
       {/* Default Passwords */}
       <DefaultPasswords orgId={org.id} />
+
+      {/* Branding Uploader */}
+      <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
     </div>
   );
 }

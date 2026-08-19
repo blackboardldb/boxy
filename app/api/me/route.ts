@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
 
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { name: true }
+      select: { name: true, customIconUrl: true }
     });
     const organizationName = org?.name ?? "Centro";
+    const customIconUrl = org?.customIconUrl ?? null;
 
     // 1. Buscar en public.users (alumnos/clientes)
     let dbUser: any = await prisma.user.findUnique({
@@ -279,6 +280,7 @@ export async function GET(request: NextRequest) {
       emergencyContact: dbUser.emergencyContact ?? undefined,
       organizationId,
       organizationName,
+      customIconUrl,
       role: auth.role,
       membership,
       membershipRenewals: dbUser.membershipRenewals,

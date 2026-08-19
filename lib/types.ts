@@ -16,6 +16,7 @@ export interface FitCenterUserProfile {
   gender?: string; // "Femenino"
   avatarId?: string; // "avatar_1"
   organizationName?: string; // Nombre del centro resoluble
+  customIconUrl?: string | null; // Logo personalizado de la organización
 
 
   // NUEVO: Rol del usuario (admin, coach, user/alumno)
