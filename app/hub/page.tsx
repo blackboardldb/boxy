@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { AdminDashboard } from "../../components/admincomponents/admin-dashboard";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { HubLogo } from "@/components/admincomponents/hub-logo";
+import { CenterLogo } from "@/components/CenterLogo";
+import Link from "next/link";
 
 export default async function AdminPage() {
   const headersList = await headers();
@@ -15,14 +16,18 @@ export default async function AdminPage() {
   }
 
   let orgName = "Boxy";
+  let customIconUrl: string | null = null;
   try {
     if (auth.organizationId) {
       const org = await prisma.organization.findUnique({
         where: { id: auth.organizationId },
-        select: { name: true },
+        select: { name: true, customIconUrl: true },
       });
       if (org?.name) {
         orgName = org.name;
+      }
+      if (org?.customIconUrl) {
+        customIconUrl = org.customIconUrl;
       }
     }
   } catch (error) {
@@ -34,7 +39,16 @@ export default async function AdminPage() {
       <div className="mb-4">
         {/* Logo en versión móvil */}
         <div className="block lg:hidden">
-          <HubLogo />
+          <Link href="/hub">
+            <div className="flex justify-start">
+              <div className="p-1 rounded-full flex gap-2 pr-3">
+                <CenterLogo iconUrl={customIconUrl} />
+                <p className="font-bold text-sm tracking-wider uppercase self-center text-black">
+                  {orgName || "Centro"}
+                </p>
+              </div>
+            </div>
+          </Link>
         </div>
         {/* Título en versión desktop */}
         <h1 className="hidden lg:block text-3xl font-bold">{orgName}</h1>
