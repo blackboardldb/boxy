@@ -274,7 +274,28 @@ export const createOrganizationSchema = z.object({
   }),
 });
 
-export const updateOrganizationSchema = createOrganizationSchema.partial();
+// Lista blanca explícita — nunca heredar con .partial() de createOrganizationSchema.
+// Campos de plan/billing/override quedan fuera a propósito: solo el manager los toca,
+// vía endpoints separados bajo /manager/api/, nunca vía este endpoint de admin de centro.
+export const updateOrganizationSchema = z.object({
+  name: z.string().min(1).optional(),
+  settings: z.object({
+    timezone: z.string(),
+    currency: z.string(),
+    language: z.string(),
+    defaultCancellationHours: z.number().min(0),
+    maxBookingsPerDay: z.number().min(1),
+    waitlistEnabled: z.boolean(),
+    operatingHours: z.array(
+      z.object({
+        day: z.string(),
+        open: z.string(),
+        close: z.string(),
+        closed: z.boolean(),
+      })
+    ),
+  }).partial().optional(),
+});
 
 // Registration schemas
 export const classRegistrationSchema = z.object({

@@ -15,7 +15,9 @@ export interface OrgSummary {
   lastPayment: Date | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
-  saasPlanName: "EARLY" | "BASE" | "PRO" | null;
+  saasPlanId: string | null;
+  saasPlanLimit: number | null;
+  plan: { id: string; name: string } | null;
 }
 
 export interface OrgDetail {
@@ -37,7 +39,9 @@ export interface OrgDetail {
   billingPlan: string | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
-  saasPlanName: "EARLY" | "BASE" | "PRO" | null;
+  saasPlanId: string | null;
+  saasPlanLimit: number | null;
+  plan: { id: string; name: string } | null;
   overrideMaxActiveStudents: number | null;
   customIconUrl: string | null;
   customSplashUrl: string | null;
@@ -81,6 +85,13 @@ function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): 
   return d;
 }
 
+async function resolveAndSnapshotPlan(planId: string | null | undefined) {
+  if (!planId) return { saasPlanId: null, saasPlanLimit: null };
+  const plan = await prisma.plan.findUnique({ where: { id: planId } });
+  if (!plan) throw new Error("El plan seleccionado no existe.");
+  return { saasPlanId: plan.id, saasPlanLimit: plan.maxActiveStudents };
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const managerService = {
@@ -93,6 +104,7 @@ export const managerService = {
         skip,
         take: limit,
         include: {
+          plan: true,
           _count: { select: { members: true } },
           payments: {
             orderBy: { paidAt: "desc" },
@@ -116,7 +128,9 @@ export const managerService = {
         lastPayment: org.payments[0]?.paidAt ?? null,
         billingCycle: org.billingCycle,
         billingPeriodEnd: org.billingPeriodEnd,
-        saasPlanName: org.saasPlanName as any,
+        saasPlanId: org.saasPlanId,
+        saasPlanLimit: org.saasPlanLimit,
+        plan: org.plan ? { id: org.plan.id, name: org.plan.name } : null,
       }))
     };
   },
@@ -154,6 +168,13 @@ export const managerService = {
     const defaultStudentPassword = encryptPassword(generateSimplePassword(data.slug));
     const defaultCoachPassword = encryptPassword(generateSimplePassword(data.slug));
 
+    // Obtener plan BASE por defecto
+    const basePlan = await prisma.plan.findUnique({ where: { name: "BASE" } });
+    if (!basePlan) {
+      throw new Error("Plan por defecto 'BASE' no encontrado. Asegúrese de haber corrido el backfill o creado el plan base.");
+    }
+    const defaultPlanSnapshot = { saasPlanId: basePlan.id, saasPlanLimit: basePlan.maxActiveStudents };
+
     // 1. Crear organización primero (para obtener ID)
     const org = await prisma.organization.create({
       data: {
@@ -169,7 +190,7 @@ export const managerService = {
         ownerName: data.ownerName,
         ownerLastName: data.ownerLastName,
         ownerRut: data.ownerRut,
-        saasPlanName: "BASE", // default asignado a todos los nuevos centros
+        ...defaultPlanSnapshot,
         defaultAdminPassword: defaultAdminPassword,
         defaultStudentPassword: defaultStudentPassword,
         defaultCoachPassword: defaultCoachPassword,
@@ -227,6 +248,7 @@ export const managerService = {
     const org = await prisma.organization.findUnique({
       where: { id },
       include: {
+        plan: true,
         // BUG-07: se usa _count en lugar de include de members con PII.
         // El manager sólo necesita saber cuántos miembros hay, no quiénes son.
         _count: { select: { members: true } },
@@ -256,7 +278,9 @@ export const managerService = {
       billingPlan: org.billingPlan,
       billingCycle: org.billingCycle,
       billingPeriodEnd: org.billingPeriodEnd,
-      saasPlanName: org.saasPlanName as any,
+      saasPlanId: org.saasPlanId,
+      saasPlanLimit: org.saasPlanLimit,
+      plan: org.plan ? { id: org.plan.id, name: org.plan.name } : null,
       overrideMaxActiveStudents: org.overrideMaxActiveStudents,
       customIconUrl: org.customIconUrl,
       customSplashUrl: org.customSplashUrl,
@@ -280,7 +304,7 @@ export const managerService = {
       ownerRut?: string;
       billingPlan?: string;
       billingCycle?: string;
-      saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+      saasPlanId?: string | null;
       overrideMaxActiveStudents?: number | null;
       customIconUrl?: string | null;
       customSplashUrl?: string | null;
@@ -289,6 +313,11 @@ export const managerService = {
   ): Promise<void> {
     const org = await prisma.organization.findUnique({ where: { id } });
     if (!org) throw new Error("Centro no encontrado");
+
+    const planSnapshot = data.saasPlanId !== undefined
+      ? await resolveAndSnapshotPlan(data.saasPlanId)
+      : {};
+
     await prisma.organization.update({
       where: { id },
       data: {
@@ -301,7 +330,7 @@ export const managerService = {
         ...(data.ownerRut !== undefined && { ownerRut: data.ownerRut }),
         ...(data.billingPlan !== undefined && { billingPlan: data.billingPlan }),
         ...(data.billingCycle !== undefined && { billingCycle: data.billingCycle }),
-        ...(data.saasPlanName !== undefined && { saasPlanName: data.saasPlanName }),
+        ...planSnapshot,
         ...(data.overrideMaxActiveStudents !== undefined && { overrideMaxActiveStudents: data.overrideMaxActiveStudents }),
         ...(data.customIconUrl !== undefined && { customIconUrl: data.customIconUrl }),
         ...(data.customSplashUrl !== undefined && { customSplashUrl: data.customSplashUrl }),
