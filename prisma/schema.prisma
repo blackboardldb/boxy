@@ -170,6 +170,21 @@ model UserMembership {
   @@schema("public")
 }
 
+model Plan {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  maxActiveStudents Int
+  priceMonthly      Int      @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organizations     Organization[]
+
+  @@map("plans")
+  @@schema("public")
+}
+
 model Organization {
   id                        String                @id @default(cuid())
   name                      String
@@ -215,7 +230,12 @@ model Organization {
   routineAssignments        RoutineAssignment[]
   routineTemplates          RoutineTemplate[]
   events                    SystemEvent[]
+  saasPlanId                String?
+  saasPlanLimit             Int?
+  saasPlanPrice             Int?
+  plan                      Plan?                 @relation(fields: [saasPlanId], references: [id])
 
+  @@index([saasPlanId])
   @@map("organizations")
   @@schema("public")
 }
