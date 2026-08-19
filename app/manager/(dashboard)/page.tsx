@@ -13,6 +13,7 @@ export default async function ManagerPage() {
       name: true,
       slug: true,
       status: true,
+      saasPlanName: true,
       createdAt: true,
       _count: { select: { members: true } },
     },
@@ -53,6 +54,7 @@ export default async function ManagerPage() {
                 <th className="text-left px-4 py-3">Centro</th>
                 <th className="text-left px-4 py-3">Slug</th>
                 <th className="text-left px-4 py-3">Estado</th>
+                <th className="text-left px-4 py-3">Plan</th>
                 <th className="text-left px-4 py-3">Alumnos</th>
                 <th className="text-left px-4 py-3">Registrado</th>
                 <th className="px-4 py-3" />
@@ -67,6 +69,17 @@ export default async function ManagerPage() {
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[org.status] ?? "bg-zinc-700 text-zinc-300"}`}>
                       {org.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {org.saasPlanName ? (
+                      <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-xs font-medium">
+                        {org.saasPlanName}
+                      </span>
+                    ) : (
+                      <span className="bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full text-xs font-medium">
+                        Sin plan
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{org._count.members}</td>
                   <td className="px-4 py-3 text-zinc-500">

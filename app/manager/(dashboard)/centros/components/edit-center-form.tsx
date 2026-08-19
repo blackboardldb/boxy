@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 
@@ -15,7 +15,9 @@ interface Org {
   ownerRut?: string | null;
   billingPlan?: string | null;
   billingCycle?: string | null;
-  saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+  saasPlanId?: string | null;
+  saasPlanLimit?: number | null;
+  saasPlanPrice?: number | null;
   overrideMaxActiveStudents?: number | null;
 }
 
@@ -23,6 +25,8 @@ export function EditCenterForm({ org }: { org: Org }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<{ id: string; name: string; maxActiveStudents: number; priceMonthly: number; isActive: boolean }[]>([]);
+
   const [form, setForm] = useState({
     name:          org.name          ?? "",
     email:         org.email         ?? "",
@@ -33,9 +37,18 @@ export function EditCenterForm({ org }: { org: Org }) {
     ownerRut:      org.ownerRut      ?? "",
     billingPlan:   org.billingPlan   ?? "boxy_base",
     billingCycle:  org.billingCycle  ?? "A",
-    saasPlanName:  org.saasPlanName  ?? "BASE",
+    saasPlanId:    org.saasPlanId    ?? "",
     overrideMaxActiveStudents: org.overrideMaxActiveStudents?.toString() ?? "",
   });
+
+  useEffect(() => {
+    fetch("/manager/api/planes")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) setPlans(json.data);
+      })
+      .catch(console.error);
+  }, []);
 
   const set = (key: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -150,17 +163,42 @@ export function EditCenterForm({ org }: { org: Org }) {
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
           Plan SaaS
         </h2>
+        
+        {org.saasPlanId && (
+          <div className="bg-zinc-800/30 border border-zinc-800 p-4 rounded-lg mb-4 text-sm max-w-2xl">
+            <p className="text-zinc-400 mb-2 font-medium">Snapshot Actual</p>
+            <div className="flex gap-8">
+              <p>
+                Límite: <span className="font-medium text-white">{org.saasPlanLimit ?? "N/A"}</span>
+              </p>
+              <p>
+                Precio: <span className="font-medium text-white">{org.saasPlanPrice != null ? new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(org.saasPlanPrice / 100) : "N/A"}</span>
+              </p>
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-2">
+              Estos valores quedaron congelados al momento de asignar el plan al centro. 
+              Si cambias el plan, se generará un nuevo snapshot con los valores vigentes de hoy.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1">
             <label className="text-xs text-zinc-400">Nivel de Plan</label>
             <select
-              value={form.saasPlanName}
-              onChange={set("saasPlanName")}
+              value={form.saasPlanId ?? ""}
+              onChange={set("saasPlanId")}
               className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
             >
-              <option value="EARLY">EARLY (Máx 40)</option>
-              <option value="BASE">BASE (Máx 80)</option>
-              <option value="PRO">PRO (Máx 150)</option>
+              <option value="">Sin plan</option>
+              {plans
+                .filter(p => p.isActive || p.id === form.saasPlanId)
+                .map(p => {
+                  const formattedPrice = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(p.priceMonthly / 100);
+                  return (
+                    <option key={p.id} value={p.id}>{p.name} (Máx {p.maxActiveStudents}) — {formattedPrice}</option>
+                  );
+                })}
             </select>
           </div>
           <div className="space-y-1">
