@@ -62,7 +62,9 @@ if (!globalForPrisma.prisma) {
         maxWait: 5000,
         timeout: 10000,
       },
-      log: ["error"],
+      // TEMPORAL DIAGNÓSTICO: log: ["query"] para capturar el SQL exacto que falla en el cron.
+      // Revertir a ["error"] una vez identificada la causa raíz.
+      log: ["query", "error"],
     });
   }
 }
