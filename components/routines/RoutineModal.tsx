@@ -7,6 +7,9 @@ import { es } from 'date-fns/locale'
 import { X, Plus, Trash2, Search } from 'lucide-react'
 import { RoutineBlock } from '@/lib/types/routine'
 import { useActiveOrgId } from '@/lib/react-query/use-active-org-id'
+import { usePlans } from '@/lib/react-query/hooks/usePlans'
+
+type AssignMode = 'alumnos' | 'planes'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS INTERNOS
@@ -74,6 +77,12 @@ async function submitAssignment(payload: unknown) {
     }
     throw new Error(errorMessage)
   }
+  return res.json()
+}
+
+async function fetchPlanMembersCount(planIds: string[]) {
+  const res = await fetch(`/api/routines/plan-members-count?planIds=${planIds.join(',')}`)
+  if (!res.ok) throw new Error('Error al contar alumnos')
   return res.json()
 }
 
@@ -331,7 +340,9 @@ export function RoutineModal({
 }) {
   const queryClient = useQueryClient()
   const [mode, setMode] = useState<ModalMode>('day')
+  const [assignMode, setAssignMode] = useState<AssignMode>('alumnos')
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [memberSearch, setMemberSearch] = useState('')
   const [saveAsTemplate, setSaveAsTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
@@ -357,8 +368,16 @@ export function RoutineModal({
   const { data: members = [] } = useQuery({
     queryKey: ['members-for-routine', activeOrgId],
     queryFn: fetchMembers,
-    staleTime: 1000 * 60 * 5, // 5 min — reutilizable en misma sesión, trade-off conocido
-    enabled: !!activeOrgId,   // no disparar sin tenant resuelto
+    staleTime: 1000 * 60 * 5, // 5 min
+    enabled: !!activeOrgId && assignMode === 'alumnos',
+  })
+
+  const { data: plans = [] } = usePlans({ isActive: 'true', enabled: assignMode === 'planes' } as any)
+
+  const { data: preview } = useQuery({
+    queryKey: ['routines', 'plan-members-count', selectedPlanIds],
+    queryFn: () => fetchPlanMembersCount(selectedPlanIds),
+    enabled: assignMode === 'planes' && selectedPlanIds.length > 0,
   })
 
   const filteredMembers = members.filter((m) =>
@@ -367,6 +386,12 @@ export function RoutineModal({
 
   function toggleMember(id: string) {
     setSelectedMemberIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  function togglePlan(id: string) {
+    setSelectedPlanIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
   }
@@ -385,8 +410,13 @@ export function RoutineModal({
   function handleSubmit() {
     setError(null)
 
-    if (selectedMemberIds.length === 0) {
+    if (assignMode === 'alumnos' && selectedMemberIds.length === 0) {
       setError('Debes seleccionar al menos un alumno.')
+      return
+    }
+
+    if (assignMode === 'planes' && selectedPlanIds.length === 0) {
+      setError('Debes seleccionar al menos un plan.')
       return
     }
 
@@ -411,7 +441,9 @@ export function RoutineModal({
         content: { blocks: sanitizeBlocks(dayContent.blocks) },
         location: dayContent.location,
         notes: dayContent.notes,
-        memberUserIds: selectedMemberIds,
+        ...(assignMode === 'planes'
+          ? { planIds: selectedPlanIds }
+          : { memberUserIds: selectedMemberIds }),
         saveAsTemplate,
         templateName: saveAsTemplate ? templateName.trim() : undefined,
       })
@@ -432,7 +464,9 @@ export function RoutineModal({
         location: d.location,
         notes: d.notes,
       })),
-      memberUserIds: selectedMemberIds,
+      ...(assignMode === 'planes'
+        ? { planIds: selectedPlanIds }
+        : { memberUserIds: selectedMemberIds }),
       saveAsTemplate,
       templateName: saveAsTemplate ? templateName.trim() : undefined,
     })
@@ -521,48 +555,97 @@ export function RoutineModal({
             </div>
           )}
 
-          {/* ── Selector de alumnos ── */}
+          {/* ── Selector de asignación ── */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-2">
-              Asignar a{' '}
-              <span className="text-muted-foreground font-normal">
-                ({selectedMemberIds.length} seleccionados)
-              </span>
-            </p>
-            <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Buscar alumno..."
-                value={memberSearch}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                className="w-full rounded-md border border-border bg-background pl-9 pr-3 py-1.5 text-sm"
-              />
-            </div>
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y divide-border">
-              {filteredMembers.length === 0 && (
-                <p className="px-3 py-4 text-xs text-center text-muted-foreground">
-                  No hay alumnos activos
-                </p>
-              )}
-              {filteredMembers.map((m) => {
-                const selected = selectedMemberIds.includes(m.id)
-                return (
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-foreground">Asignar a</p>
+              <div className="flex rounded-lg border border-border p-0.5 gap-0.5">
+                {(['alumnos', 'planes'] as const).map((m) => (
                   <button
-                    key={m.id}
-                    onClick={() => toggleMember(m.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
-                      selected ? 'bg-primary/5' : 'hover:bg-muted'
+                    key={m}
+                    onClick={() => setAssignMode(m)}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                      assignMode === m
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <span className={selected ? 'text-primary font-medium' : 'text-foreground'}>
-                      {m.firstName} {m.lastName}
-                    </span>
-                    {selected && <span className="text-xs text-primary font-bold">✓</span>}
+                    {m === 'alumnos' ? 'Alumnos' : 'Planes'}
                   </button>
-                )
-              })}
+                ))}
+              </div>
             </div>
+
+            {assignMode === 'alumnos' ? (
+              <>
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar alumno..."
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background pl-9 pr-3 py-1.5 text-sm"
+                  />
+                </div>
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                  {filteredMembers.length === 0 && (
+                    <p className="px-3 py-4 text-xs text-center text-muted-foreground">
+                      No hay alumnos activos
+                    </p>
+                  )}
+                  {filteredMembers.map((m) => {
+                    const selected = selectedMemberIds.includes(m.id)
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => toggleMember(m.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
+                          selected ? 'bg-primary/5' : 'hover:bg-muted'
+                        }`}
+                      >
+                        <span className={selected ? 'text-primary font-medium' : 'text-foreground'}>
+                          {m.firstName} {m.lastName}
+                        </span>
+                        {selected && <span className="text-xs text-primary font-bold">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y divide-border mb-2">
+                  {plans.length === 0 && (
+                    <p className="px-3 py-4 text-xs text-center text-muted-foreground">
+                      No hay planes activos
+                    </p>
+                  )}
+                  {plans.map((p) => {
+                    const selected = selectedPlanIds.includes(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => togglePlan(p.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
+                          selected ? 'bg-primary/5' : 'hover:bg-muted'
+                        }`}
+                      >
+                        <span className={selected ? 'text-primary font-medium' : 'text-foreground'}>
+                          {p.name}
+                        </span>
+                        {selected && <span className="text-xs text-primary font-bold">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+                {selectedPlanIds.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {preview ? `Se asignará a ${preview.count} alumnos activos` : 'Calculando alumnos...'}
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           {/* ── Guardar como template ── */}

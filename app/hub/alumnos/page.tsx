@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Edit, Trash2 } from "lucide-react";
+import { Search, Edit, Trash2, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AdminPagination } from "@/components/admincomponents/admin-pagination";
 import { Input } from "@/components/ui/input";
@@ -59,12 +60,12 @@ export default function AlumnosPage() {
   const createUserMutation = useCreateUser();
   const deleteUserMutation = useDeleteUser();
 
-  // Estado de filtros
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [deletingStudent, setDeletingStudent] = useState<FitCenterUserProfile | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const limit = 10;
 
   // React Query
@@ -128,11 +129,51 @@ export default function AlumnosPage() {
   const startIndex = (currentPage - 1) * limit;
   const endIndex = Math.min(startIndex + users.length, totalItems);
 
+  async function handleExport() {
+    setIsExporting(true)
+    const controller = new AbortController()
+    const toastId = toast.loading('Exportando alumnos...', {
+      description: 'Esto puede tardar unos segundos',
+      action: {
+        label: 'Cancelar',
+        onClick: () => controller.abort(),
+      },
+    })
+    try {
+      const res = await fetch('/api/export/alumnos', { signal: controller.signal })
+      if (!res.ok) throw new Error('Error al exportar')
+      const blob = await res.blob()
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `alumnos_${new Date().toISOString().slice(0, 10)}.csv`
+      link.click()
+      toast.success('Descarga completa', { id: toastId })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.dismiss(toastId)
+      } else {
+        toast.error('No se pudo exportar', { id: toastId })
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="p-4 pt-8 md:p-8 space-y-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
         <h1 className="text-3xl font-bold order-2 sm:order-1 ">Gestión de Alumnos</h1>
-        <div className="order-1 sm:order-2 flex end justify-end w-full sm:w-auto">
+        <div className="order-1 sm:order-2 flex items-center gap-2 justify-end w-full sm:w-auto">
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            variant="outline"
+            size="sm"
+            className="rounded-xl flex items-center gap-1.5"
+          >
+            <Download className={`h-4 w-4 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? 'Exportando...' : 'Exportar CSV'}
+          </Button>
         <AddStudentModal
           onAddStudent={async (studentData) => {
             const createdUser = await createUserMutation.mutateAsync(studentData);

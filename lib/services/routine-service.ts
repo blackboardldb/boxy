@@ -198,7 +198,7 @@ export class RoutineService {
     data: CreateRoutineAssignmentInput
   ) {
     // Verificar que todos los userIds pertenecen al centro
-    await this.validateMembersInOrg(organizationId, data.memberUserIds)
+    await this.validateMembersInOrg(organizationId, data.memberUserIds!)
 
     return prisma.$transaction(async (tx) => {
       // Si saveAsTemplate, crear el template primero
@@ -232,7 +232,7 @@ export class RoutineService {
 
       // Crear los miembros asignados
       await tx.routineAssignmentMember.createMany({
-        data: data.memberUserIds.map((userId) => ({
+        data: data.memberUserIds!.map((userId) => ({
           assignmentId: assignment.id,
           userId,
         })),
@@ -248,7 +248,7 @@ export class RoutineService {
     createdByUserId: string,
     data: CreateRoutineWeekInput
   ) {
-    await this.validateMembersInOrg(organizationId, data.memberUserIds)
+    await this.validateMembersInOrg(organizationId, data.memberUserIds!)
 
     return prisma.$transaction(async (tx) => {
       const assignments = []
@@ -266,7 +266,7 @@ export class RoutineService {
         })
 
         await tx.routineAssignmentMember.createMany({
-          data: data.memberUserIds.map((userId) => ({
+          data: data.memberUserIds!.map((userId) => ({
             assignmentId: assignment.id,
             userId,
           })),

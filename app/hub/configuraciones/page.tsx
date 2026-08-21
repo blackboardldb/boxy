@@ -1,209 +1,253 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Logo from "@/components/Logo";
+import { useQuery } from "@tanstack/react-query";
+import { fetchClient } from "@/lib/api-client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Building2,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+  UserRound,
+} from "lucide-react";
 
-import { Edit, Save, X, Globe, Building2, Palette } from "lucide-react";
-import SquareLogo from "@/components/SquareLogo";
-import { useOrganization, useUpdateOrganization } from "@/lib/react-query/hooks/useOrganization";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+type OrgConfig = {
+  name: string;
+  slug: string;
+  status: string;
+  orgType: string;
+  saasPlanName: string | null;
+  saasPlanLimit: number | null;
+  billingCycle: string | null;
+  billingPeriodEnd: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  ownerName: string | null;
+  ownerLastName: string | null;
+  ownerRut: string | null;
+};
 
+function useOrgConfig() {
+  return useQuery({
+    queryKey: ["admin", "org-config"],
+    queryFn: () =>
+      fetchClient<{ org: OrgConfig; alumnosCount: number }>("/admin/org-config"),
+    staleTime: 1000 * 60 * 10,
+  });
+}
 
-export default function ConfiguracionesPage() {
-  const { data: org } = useOrganization();
-  const updateOrgMutation = useUpdateOrganization();
+const STATUS_BADGE: Record<string, string> = {
+  ACTIVE: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  TRIAL: "bg-amber-100 text-amber-700 border-amber-200",
+  SUSPENDED: "bg-red-100 text-red-700 border-red-200",
+  CANCELED: "bg-zinc-100 text-zinc-600 border-zinc-200",
+};
 
-  
-  // States for general info
-  const [centerName, setCenterName] = useState("");
-  const [editingSection, setEditingSection] = useState<string | null>(null);
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: "Activo",
+  TRIAL: "Trial",
+  SUSPENDED: "Suspendido",
+  CANCELED: "Cancelado",
+};
 
-  
-  // States for logos
-  const [logoHorizontalSvg, setLogoHorizontalSvg] = useState("");
-  const [logoSquareSvg, setLogoSquareSvg] = useState("");
-
-  // Sync local state when org data loads
-  useEffect(() => {
-    if (org) {
-      setCenterName(org.name || "");
-      if (org.branding) {
-        const branding = org.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
-        setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
-        setLogoSquareSvg(branding.logoSquareSvg || "");
-      }
-    }
-  }, [org]);
-
-  const handleSave = async () => {
-    if (!org) return;
-    try {
-      await updateOrgMutation.mutateAsync({
-        id: org.id,
-        name: centerName,
-        branding: {
-          ...(org.branding as Record<string, unknown> ?? {}),
-          logoHorizontalSvg,
-          logoSquareSvg,
-        },
-      });
-      setEditingSection(null);
-    } catch (error) {
-      console.error("Error al guardar configuración:", error);
-    }
-  };
-
-  const handleCancel = () => {
-    if (org) {
-      setCenterName(org.name || "");
-      if (org.branding) {
-        const branding = org.branding as { logoHorizontalSvg?: string, logoSvg?: string, logoSquareSvg?: string };
-        setLogoHorizontalSvg(branding.logoHorizontalSvg || branding.logoSvg || "");
-        setLogoSquareSvg(branding.logoSquareSvg || "");
-      }
-    }
-    setEditingSection(null);
-  };
+export default function ConfiguracionPage() {
+  const { data, isLoading } = useOrgConfig();
+  const org = data?.org;
+  const alumnosCount = data?.alumnosCount ?? 0;
+  const planLimit = org?.saasPlanLimit ?? 0;
+  const usagePercentage = planLimit > 0 ? (alumnosCount / planLimit) * 100 : 0;
 
   return (
-    <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuraciones</h1>
-         
-        </div>
+    <div className="p-4 pt-8 md:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">Configuración del Centro</h1>
+        <p className="text-muted-foreground mt-1">
+          Información general y estado de la cuenta.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 max-w-7xl mx-auto">
-        {/* Información del Centro - Airbnb Style */}
-        <Card className="rounded-xl border border-zinc-200 bg-white">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-zinc-50 bg-zinc100 px-6 py-4">
-            <div className="flex items-center gap-3">
-              
-              <div>
-                <CardTitle className="text-lg font-bold">Información del Centro</CardTitle>
-                <CardDescription className="text-xs">Nombre y logotipos principales</CardDescription>
-              </div>
-            </div>
-            {editingSection !== "identity" && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setEditingSection("identity")}
-                className="rounded-xl px-4 border-zinc-200 hover:bg-zinc-50 transition-all font-semibold text-xs"
-              >
-                <Edit className="w-3.5 h-3.5 mr-2" /> Editar
-              </Button>
-            )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Datos Generales */}
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              Datos del Centro
+            </CardTitle>
           </CardHeader>
-          
-          <CardContent className="p-0">
-            {editingSection !== "identity" ? (
-              /* VISTA LECTURA */
-              <div className="divide-y divide-zinc-50">
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre del Centro</p>
-                    <p className="text-lg font-semibold text-zinc-900 italic">{centerName || "No definido"}</p>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Horizontal</p>
-                    <div className="h-12 flex items-center bg-zinc-50/50 rounded-xl px-4 border border-zinc-200 overflow-hidden">
-                      {logoHorizontalSvg ? <Logo size={120} /> : <span className="text-xs text-zinc-400 italic">Sin configurar</span>}
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Logo Cuadrado</p>
-                    <div className="h-12 w-12 flex items-center justify-center bg-zinc-50/50 rounded-xl border border-zinc-200 overflow-hidden">
-                      {logoSquareSvg ? <SquareLogo size={32} /> : <span className="text-[10px] text-zinc-400 italic">N/A</span>}
-                    </div>
-                  </div>
-                </div>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-3/4 rounded-lg" />
+                <Skeleton className="h-4 w-1/2 rounded-lg" />
+                <Skeleton className="h-4 w-2/3 rounded-lg" />
               </div>
             ) : (
-              /* VISTA EDICIÓN */
-              <div className="p-6 space-y-8">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-bold flex items-center gap-2">
-                       <Globe className="w-4 h-4 text-primary" /> Nombre Público del Centro
-                    </Label>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-xl bg-blue-100 text-blue-700 tracking-tighter uppercase">Visible en Login y Dashboard</span>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={centerName}
-                    onChange={(e) => setCenterName(e.target.value)}
-                    placeholder="Ej. BlackSheep CrossFit"
-                    className="w-full p-4 text-sm font-medium border border-zinc-200 rounded-xl bg-white focus:ring-2 focus:ring-primary outline-none transition-all"
-                  />
+              <div className="grid grid-cols-2 gap-y-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Nombre</p>
+                  <p className="font-medium">{org?.name}</p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-bold flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-primary" /> Logo Horizontal (SVG)
-                      </Label>
-                    </div>
-                    <textarea
-                      rows={6}
-                      className="w-full p-4 font-mono text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
-                      placeholder="<svg ...> ... </svg>"
-                      value={logoHorizontalSvg}
-                      onChange={(e) => setLogoHorizontalSvg(e.target.value)}
-                    />
-                    <div className="p-4 border border-dashed border-zinc-200 rounded-xl bg-white">
-                       <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Navbar</p>
-                       <div className="h-10 flex items-center"><Logo size={100} /></div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-bold flex items-center gap-2">
-                        <Palette className="w-4 h-4 text-primary" /> Logo Cuadrado (SVG)
-                      </Label>
-                    </div>
-                    <textarea
-                      rows={6}
-                      className="w-full p-4 font-mono text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:ring-2 focus:ring-primary outline-none transition-all"
-                      placeholder="<svg ...> ... </svg>"
-                      value={logoSquareSvg}
-                      onChange={(e) => setLogoSquareSvg(e.target.value)}
-                    />
-                    <div className="p-4 border border-dashed border-zinc-200 rounded-xl bg-white">
-                       <p className="text-[10px] text-muted-foreground font-bold uppercase mb-2">Previsualización Login</p>
-                       <div className="h-10 flex items-center"><SquareLogo size={40} /></div>
-                    </div>
-                  </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Tipo</p>
+                  <p className="font-medium">
+                    {org?.orgType === "HUB"
+                      ? "Box / Hub"
+                      : org?.orgType === "PERSONAL_TRAINING"
+                      ? "Personal Training"
+                      : org?.orgType}
+                  </p>
                 </div>
-
-                <div className="flex justify-end gap-3 pt-6 border-t border-zinc-50">
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleCancel}
-                    className="rounded-xl px-6 transition-all hover:bg-zinc-100 font-semibold"
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Estado</p>
+                  <span
+                    className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium border ${
+                      STATUS_BADGE[org?.status ?? ""] ?? "bg-zinc-100 text-zinc-600"
+                    }`}
                   >
-                    <X className="w-4 h-4 mr-2" /> Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={updateOrgMutation.isPending}
-                    className="rounded-xl px-8 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 font-bold"
-                  >
-                    {updateOrgMutation.isPending ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Cambios</>}
-                  </Button>
+                    {STATUS_LABEL[org?.status ?? ""] ?? org?.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs mb-0.5">Slug</p>
+                  <p className="font-mono text-xs font-medium">{org?.slug}</p>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
+        {/* Plan y uso */}
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              Plan y Uso
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-7 w-1/3 rounded-lg" />
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-4 w-2/3 rounded-lg" />
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Plan Actual</p>
+                    <p className="text-2xl font-bold">{org?.saasPlanName || "Sin plan"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground mb-0.5">Ciclo</p>
+                    <p className="font-medium text-sm">
+                      {org?.billingCycle ? `Ciclo ${org.billingCycle}` : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Alumnos</span>
+                    <span className="font-medium">
+                      {alumnosCount} / {planLimit || "∞"}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        usagePercentage > 90 ? "bg-destructive" : "bg-primary"
+                      }`}
+                      style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {planLimit
+                      ? `${Math.round(usagePercentage)}% del límite del plan`
+                      : "Sin límite configurado"}
+                  </p>
+                </div>
+
+                {org?.billingPeriodEnd && (
+                  <p className="text-xs text-muted-foreground pt-1 border-t border-border">
+                    Período actual hasta:{" "}
+                    <span className="font-medium text-foreground">
+                      {new Date(org.billingPeriodEnd).toLocaleDateString("es-CL", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Contacto */}
+        <Card className="rounded-xl shadow-sm md:col-span-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserRound className="h-4 w-4 text-muted-foreground" />
+              Contacto y Propietario
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                <div className="flex items-start gap-3">
+                  <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5">Titular</p>
+                    <p className="font-medium">
+                      {[org?.ownerName, org?.ownerLastName].filter(Boolean).join(" ") ||
+                        "No registrado"}
+                    </p>
+                    {org?.ownerRut && (
+                      <p className="text-muted-foreground text-xs mt-0.5">
+                        RUT: {org.ownerRut}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5">Email</p>
+                    <p className="font-medium break-all">{org?.email || "No registrado"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5">Teléfono</p>
+                    <p className="font-medium">{org?.phone || "No registrado"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-0.5">Dirección</p>
+                    <p className="font-medium line-clamp-2">{org?.address || "No registrada"}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-

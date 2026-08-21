@@ -74,7 +74,8 @@ export const CreateRoutineAssignmentSchema = z
     location:        z.string().max(200).optional(),
     notes:           z.string().max(1000).optional(),
     templateId:      z.string().optional(),
-    memberUserIds:   z.array(z.string()).min(1, 'Debe asignar al menos un alumno'),
+    memberUserIds:   z.array(z.string()).min(1).optional(),
+    planIds:         z.array(z.string()).min(1).optional(),
     saveAsTemplate:  z.boolean().optional().default(false),
     templateName:    z.string().max(100).optional(),
   })
@@ -84,6 +85,10 @@ export const CreateRoutineAssignmentSchema = z
       message: 'El nombre del template es requerido al guardar como template',
       path: ['templateName'],
     }
+  )
+  .refine(
+    (d) => !!(d.memberUserIds || d.planIds) && !(d.memberUserIds && d.planIds),
+    { message: 'Envía memberUserIds o planIds, no ambos' }
   )
 
 // Un día dentro del payload de semana
@@ -97,7 +102,8 @@ const RoutineWeekDaySchema = z.object({
 export const CreateRoutineWeekSchema = z
   .object({
     days:           z.array(RoutineWeekDaySchema).min(1).max(7),
-    memberUserIds:  z.array(z.string()).min(1, 'Debe asignar al menos un alumno'),
+    memberUserIds:  z.array(z.string()).min(1).optional(),
+    planIds:        z.array(z.string()).min(1).optional(),
     saveAsTemplate: z.boolean().optional().default(false),
     templateName:   z.string().max(100).optional(),
   })
@@ -107,6 +113,10 @@ export const CreateRoutineWeekSchema = z
       message: 'El nombre del template es requerido al guardar como template',
       path: ['templateName'],
     }
+  )
+  .refine(
+    (d) => !!(d.memberUserIds || d.planIds) && !(d.memberUserIds && d.planIds),
+    { message: 'Envía memberUserIds o planIds, no ambos' }
   )
 
 export const CompleteRoutineSchema = z.object({

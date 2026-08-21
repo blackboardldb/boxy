@@ -105,6 +105,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const mode = body.mode as string
 
+    const resolveMemberIds = async (data: any) => {
+      let memberUserIds = data.memberUserIds || [];
+      if (data.planIds) {
+        const memberships = await prisma.userMembership.findMany({
+          where: {
+            organizationId: activeOrgId,
+            planId: { in: data.planIds },
+            status: "active",
+          },
+          select: { userId: true },
+        });
+        memberUserIds = memberships.map(m => m.userId);
+        if (memberUserIds.length === 0) {
+          throw new Error("Ningún alumno activo en los planes seleccionados");
+        }
+      }
+      return memberUserIds;
+    };
+
     if (mode === 'week') {
       const parsed = CreateRoutineWeekSchema.safeParse(body)
       if (!parsed.success) {
@@ -114,13 +133,17 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      const assignments = await routineService.createWeekAssignments(
-        activeOrgId,
-        dbUser.id,
-        parsed.data
-      )
-
-      return NextResponse.json(assignments, { status: 201 })
+      try {
+        const memberUserIds = await resolveMemberIds(parsed.data);
+        const assignments = await routineService.createWeekAssignments(
+          activeOrgId,
+          dbUser.id,
+          { ...parsed.data, memberUserIds }
+        )
+        return NextResponse.json(assignments, { status: 201 })
+      } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
     }
 
     // Modo día por defecto
@@ -132,13 +155,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const assignment = await routineService.createAssignment(
-      activeOrgId,
-      dbUser.id,
-      parsed.data
-    )
-
-    return NextResponse.json(assignment, { status: 201 })
+    try {
+      const memberUserIds = await resolveMemberIds(parsed.data);
+      const assignment = await routineService.createAssignment(
+        activeOrgId,
+        dbUser.id,
+        { ...parsed.data, memberUserIds }
+      )
+      return NextResponse.json(assignment, { status: 201 })
+    } catch (error: any) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
   } catch (error: unknown) {
     if (error instanceof Error) {
       if (error.message.includes('no pertenecen al centro')) {

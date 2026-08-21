@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/select";
 import { ExpensesManager } from "@/components/admincomponents/expenses-manager";
 import { AdminPagination } from "@/components/admincomponents/admin-pagination";
-import { TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, CreditCard, Download } from "lucide-react";
+import { toast } from "sonner";
 
 export default function FinanzasPage() {
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -26,6 +27,7 @@ export default function FinanzasPage() {
     )}`;
   });
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Parsear mes seleccionado
   const [selectedYear, selectedMonthNum] = selectedMonth.split("-").map(Number);
@@ -34,6 +36,36 @@ export default function FinanzasPage() {
   // Nueva carga de datos unificada (Ingresos + Egresos + Balance)
   const { data: financesData, isLoading } = useFinances(selectedYear, selectedMonthIndex + 1, page);
   const { data: financeCompare } = useAdminFinanceCompare();
+
+  async function handleExport() {
+    setIsExporting(true)
+    const controller = new AbortController()
+    const toastId = toast.loading('Exportando finanzas...', {
+      description: 'Últimos 12 meses — puede tardar unos segundos',
+      action: {
+        label: 'Cancelar',
+        onClick: () => controller.abort(),
+      },
+    })
+    try {
+      const res = await fetch('/api/export/finanzas', { signal: controller.signal })
+      if (!res.ok) throw new Error('Error al exportar')
+      const blob = await res.blob()
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `finanzas_${new Date().toISOString().slice(0, 10)}.csv`
+      link.click()
+      toast.success('Descarga completa', { id: toastId })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.dismiss(toastId)
+      } else {
+        toast.error('No se pudo exportar', { id: toastId })
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const now = new Date();
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -78,18 +110,28 @@ export default function FinanzasPage() {
     <div className="p-4 pt-8 md:p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Finanzas</h1>
-        <Select value={selectedMonth} onValueChange={handleMonthChange}>
-          <SelectTrigger className="w-48 rounded-xl">
-            <SelectValue placeholder="Seleccionar mes" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            {monthOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className={`flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium transition-colors ${isExporting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted'}`}
+          >
+            <Download className={`h-4 w-4 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? 'Exportando...' : 'Exportar CSV'}
+          </button>
+          <Select value={selectedMonth} onValueChange={handleMonthChange}>
+            <SelectTrigger className="w-48 rounded-xl">
+              <SelectValue placeholder="Seleccionar mes" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Cards de resumen normalizadas con el estilo del Dashboard */}
