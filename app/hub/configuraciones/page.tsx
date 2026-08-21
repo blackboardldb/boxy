@@ -139,12 +139,8 @@ export default function ConfiguracionPage() {
 
                   <div className="pt-2">
                     <CopyInput 
-                      label="URL de ingreso (Administradores / Staff)" 
+                      label="URL de Acceso" 
                       value={`${origin}/login`} 
-                    />
-                    <CopyInput 
-                      label="URL de ingreso (Alumnos)" 
-                      value={`${origin}/${org?.slug}`} 
                     />
                   </div>
                 </div>
