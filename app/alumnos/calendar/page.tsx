@@ -363,15 +363,15 @@ function CalendarContent() {
 
   return (
     <>
-      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-black">
-        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-white rounded-t-xl">
+      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-alumno-bg">
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-alumno-surface rounded-t-xl">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-xl font-bold text-gray-900 pb-3 hidden sm:block">
+            <h1 className="text-xl font-bold text-alumno-text pb-3 hidden sm:block">
               Reserva de clases
             </h1>
           </div>
         </div>
-        <div className="  max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white rounded-b-xl">
+        <div className="  max-w-full mx-auto px-4 sm:px-6 pt-1 bg-alumno-surface rounded-b-xl">
           <WeeklyDatePicker
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
@@ -380,7 +380,7 @@ function CalendarContent() {
         </div>
       </div>
 
-      <div className="bg-black min-h-screen pb-28">
+      <div className="bg-alumno-bg min-h-screen pb-28">
 
         {/* Chips de filtro — solo si hay más de una disciplina */}
         {disciplinesInDay.length > 1 && (
@@ -391,7 +391,7 @@ function CalendarContent() {
                 className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                   ${selectedDisciplineId === "all"
                     ? "bg-lime-500 text-black font-semibold"
-                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    : "bg-alumno-chip-bg text-alumno-chip-text hover:bg-alumno-chip-hover"
                   }`}
               >
                 Todo
@@ -403,7 +403,7 @@ function CalendarContent() {
                   className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                     ${selectedDisciplineId === d.id
                       ? "bg-lime-500 text-black font-semibold"
-                      : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                      : "bg-alumno-chip-bg text-alumno-chip-text hover:bg-alumno-chip-hover"
                     }`}
                 >
                   {d.name}
@@ -488,7 +488,7 @@ function CalendarContent() {
 
 export default function CalendarPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-alumno-bg" />}>
       <CalendarContent />
     </Suspense>
   );

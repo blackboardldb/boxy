@@ -23,7 +23,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black">
+    <main className="min-h-screen bg-alumno-bg">
       <section className="p-4 mx-auto space-y-6 max-w-4xl pb-28">
         <UserProfile />
         <Button

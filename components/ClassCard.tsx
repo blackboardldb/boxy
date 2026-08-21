@@ -75,7 +75,7 @@ export function ClassCard({
   const statusInfo = isCancelled
     ? { label: "Cancelada", className: "text-red-500" }
     : isCompleted
-      ? { label: "Finalizada", className: "text-gray-400" }
+      ? { label: "Finalizada", className: "text-alumno-text-subtle" }
       : isInProgress
         ? { label: "Ahora", className: "text-green-600 font-bold" }
         : null;
@@ -106,7 +106,7 @@ export function ClassCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1">
             <h3 className={`font-bold text-xl ${!isInProgress
-              ? "text-gray-900"
+              ? "text-alumno-text"
               : "text-lime-200"
               }`}>{classItem.name}</h3>
             {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
@@ -125,14 +125,14 @@ export function ClassCard({
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-500 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500"></span>
                     </span>
-                    <span className="font-bold uppercase tracking-wide text-xs text-black invert">{statusInfo.label}</span>
+                    <span className="font-bold uppercase tracking-wide text-xs text-alumno-text invert">{statusInfo.label}</span>
                   </span>
                 ) : (
-                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs text-black invert`}>{statusInfo.label}</span>
+                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs text-alumno-text invert`}>{statusInfo.label}</span>
                 )}
               </>
             )}
-            <p className={`${!isInProgress ? "text-black" : "text-white"}`}>
+            <p className={`${!isInProgress ? "text-alumno-text" : "text-white"}`}>
               {formattedTime}
             </p>
           </div>
@@ -140,8 +140,8 @@ export function ClassCard({
       </div>
 
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
-      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-gray-600 ${!isActionable ? "hidden" : ""}  ${!isInProgress
-        ? "text-gray-600"
+      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-alumno-text-muted ${!isActionable ? "hidden" : ""}  ${!isInProgress
+        ? "text-alumno-text-muted"
         : "text-lime-400/70"
         }`}>
 
@@ -208,7 +208,7 @@ export function ClassCard({
               Clase fuera de rango de tu plan actual
             </span>
           ) : (
-            <span className="text-gray-500">No disponible</span>
+            <span className="text-alumno-text-subtle">No disponible</span>
           )}
         </div>
       )}

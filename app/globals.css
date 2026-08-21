@@ -37,6 +37,33 @@
     --color-primary-hover: color-mix(in srgb, var(--color-primary) 85%, black);
     --tenant-radius: 0.5rem;
     --tenant-spacing: 1rem;
+
+    /* ── Alumnos theme tokens (dark mode — the only mode for now) ────── */
+    /* Named after their visual role, not shadcn semantics.               */
+    /* A [data-alumno-theme="light"] block will be added when approved.   */
+    --alumno-bg:           0 0% 4%;           /* black / zinc-950           */
+    --alumno-surface:      0 0% 100% / 0.05;  /* white/5  — cards sobre bg  */
+    --alumno-surface-md:   0 0% 100% / 0.10;  /* white/10 — elementos activos */
+    --alumno-border:       0 0% 100% / 0.10;  /* white/10 — bordes          */
+    --alumno-text:         0 0% 100%;          /* white — texto principal    */
+    --alumno-text-muted:   240 5% 65%;         /* zinc-400 — texto secundario */
+    --alumno-text-subtle:  240 4% 46%;         /* zinc-500 — texto terciario */
+    --alumno-chip-bg:      240 4% 16%;         /* zinc-800 — chips/pills     */
+    --alumno-chip-hover:   240 4% 24%;         /* zinc-700 — hover sobre chips */
+    --alumno-chip-text:    240 5% 84%;         /* zinc-300 — texto en chips  */
+  }
+
+  [data-alumno-theme="light"] {
+    --alumno-bg:           160 100% 99%;       /* #fcfffe */
+    --alumno-surface:      150 7% 95%;         /* #f0f2f1 */
+    --alumno-surface-md:   150 7% 95% / 0.9;   /* #f0f2f1/90 */
+    --alumno-border:       150 7% 85%;         /* un poco más oscuro para bordes */
+    --alumno-text:         240 10% 4%;         /* texto casi negro (contrario a blanco) */
+    --alumno-text-muted:   240 5% 40%;         /* texto secundario (zinc-600) */
+    --alumno-text-subtle:  240 5% 55%;         /* texto terciario (zinc-500) */
+    --alumno-chip-bg:      150 7% 90%;         /* fondo de chips claro */
+    --alumno-chip-hover:   150 7% 85%;         /* hover de chips */
+    --alumno-chip-text:    240 5% 20%;         /* texto sobre chips */
   }
 }
 

@@ -108,17 +108,17 @@ export function RMManager() {
 
         {/* Tabs principales */}
         <Tabs defaultValue="calculator" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-white/10">
+          <TabsList className="grid w-full grid-cols-2 h-auto p-1 bg-alumno-surface-md">
             <TabsTrigger
               value="calculator"
-              className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
+              className="flex items-center gap-2 py-3 text-alumno-chip-text data-[state=active]:text-alumno-bg data-[state=active]:bg-alumno-text"
             >
               <Calculator className="h-4 w-4" />
               Calcular RM
             </TabsTrigger>
             <TabsTrigger
               value="converter"
-              className="flex items-center gap-2 py-3 text-zinc-300 data-[state=active]:text-zinc-950 data-[state=active]:bg-white"
+              className="flex items-center gap-2 py-3 text-alumno-chip-text data-[state=active]:text-alumno-bg data-[state=active]:bg-alumno-text"
             >
               <Scale className="h-4 w-4" />
               Convertir kg - lb
@@ -128,19 +128,19 @@ export function RMManager() {
           {/* Tab de Calculadora */}
           <TabsContent value="calculator" className="space-y-6">
             {/* Input simple para calculadora */}
-            <Card className="bg-white/5  border-0">
+            <Card className="bg-alumno-surface  border-0">
               <CardHeader>
-                <h1 className="flex items-center gap-2 text-white text-xl">
+                <h1 className="flex items-center gap-2 text-alumno-text text-xl">
 
                   Ingresa tu RM
                 </h1>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-alumno-text-muted">
                   Calcula de forma libre o elige un ejercicio y agrega tu 1RM.
                 </p>
 
                 <div className="mt-4">
                   <Select value={selectedExercise} onValueChange={setSelectedExercise}>
-                    <SelectTrigger className="w-full bg-white/10 text-white border-0">
+                    <SelectTrigger className="w-full bg-alumno-surface-md text-alumno-text border-0">
                       <SelectValue placeholder="Selecciona un ejercicio" />
                     </SelectTrigger>
                     <SelectContent>
@@ -155,50 +155,50 @@ export function RMManager() {
                 </div>
 
                 {selectedExercise !== "manual" && (
-                  <div className="mt-4 bg-white/5 rounded-xl p-4">
+                  <div className="mt-4 bg-alumno-surface rounded-xl p-4">
                     <div className="flex items-center justify-between cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-                      <div className="text-white font-medium">
+                      <div className="text-alumno-text font-medium">
                         {LIFT_EXERCISES.find(e => e.key === selectedExercise)?.label}
                       </div>
                       <div className="flex items-center gap-4">
                         {history.length > 0 && (
-                          <span className="text-sm text-zinc-400">
+                          <span className="text-sm text-alumno-text-muted">
                             Último: {history[history.length - 1].weight} {history[history.length - 1].unit}
                           </span>
                         )}
-                        <span className="font-bold text-sm underline text-white">Editar</span>
+                        <span className="font-bold text-sm underline text-alumno-text">Editar</span>
                       </div>
                     </div>
 
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-white/10">
                         {history.length === 0 ? (
-                          <div className="text-center text-zinc-400 py-4 text-sm mb-4">
+                          <div className="text-center text-alumno-text-muted py-4 text-sm mb-4">
                             <p>Agrega tu primer registro</p>
                           </div>
                         ) : (
                           <div className="grid grid-cols-3 gap-2 text-sm mb-6">
                             <div className="flex flex-col">
-                              <span className="text-zinc-500 mb-1">Primer registro</span>
-                              <span className="text-white font-medium">{history[0].weight} {history[0].unit}</span>
-                              <span className="text-zinc-500 text-xs">
+                              <span className="text-alumno-text-subtle mb-1">Primer registro</span>
+                              <span className="text-alumno-text font-medium">{history[0].weight} {history[0].unit}</span>
+                              <span className="text-alumno-text-subtle text-xs">
                                 {new Date(history[0].recordedAt).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
                               </span>
                             </div>
                             {history.length >= 2 && (
                               <div className="flex flex-col">
-                                <span className="text-zinc-500 mb-1">{history.length === 2 ? 'Último' : 'Penúltimo'}</span>
-                                <span className="text-white font-medium">{history[1].weight} {history[1].unit}</span>
-                                <span className="text-zinc-500 text-xs">
+                                <span className="text-alumno-text-subtle mb-1">{history.length === 2 ? 'Último' : 'Penúltimo'}</span>
+                                <span className="text-alumno-text font-medium">{history[1].weight} {history[1].unit}</span>
+                                <span className="text-alumno-text-subtle text-xs">
                                   {new Date(history[1].recordedAt).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
                                 </span>
                               </div>
                             )}
                             {history.length === 3 && (
                               <div className="flex flex-col">
-                                <span className="text-zinc-500 mb-1">Último</span>
-                                <span className="text-white font-medium">{history[2].weight} {history[2].unit}</span>
-                                <span className="text-zinc-500 text-xs">
+                                <span className="text-alumno-text-subtle mb-1">Último</span>
+                                <span className="text-alumno-text font-medium">{history[2].weight} {history[2].unit}</span>
+                                <span className="text-alumno-text-subtle text-xs">
                                   {new Date(history[2].recordedAt).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
                                 </span>
                               </div>
@@ -207,13 +207,13 @@ export function RMManager() {
                         )}
 
                         <div className="mb-6 flex flex-col gap-2">
-                          <Label className="text-zinc-400">Peso</Label>
+                          <Label className="text-alumno-text-muted">Peso</Label>
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
                               value={inputWeight || ""}
                               onChange={(e) => setInputWeight(Number(e.target.value))}
-                              className="bg-white/10 border-white/20 text-white placeholder:text-zinc-500"
+                              className="bg-alumno-surface-md border-alumno-border text-alumno-text placeholder:text-alumno-text-subtle"
                               min="0"
                               step="0.5"
                               placeholder="0"
@@ -223,7 +223,7 @@ export function RMManager() {
                               value={inputUnit}
                               onValueChange={(value: "kg" | "lbs") => setInputUnit(value)}
                             >
-                              <SelectTrigger className="w-24 bg-white/10 border-white/20 text-white">
+                              <SelectTrigger className="w-24 bg-alumno-surface-md border-alumno-border text-alumno-text">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -236,7 +236,7 @@ export function RMManager() {
 
                         <div className="flex gap-2">
                           <Button
-                            className="flex-1 bg-white text-black hover:bg-zinc-200 disabled:opacity-50"
+                            className="flex-1 bg-alumno-text text-alumno-bg hover:opacity-80 disabled:opacity-50"
                             onClick={saveRM}
                             disabled={isSaving || inputWeight <= 0}
                           >
@@ -244,7 +244,7 @@ export function RMManager() {
                           </Button>
                           <Button
                             variant="outline"
-                            className="flex-1 bg-transparent border-white/20 text-white hover:bg-white/10"
+                            className="flex-1 bg-transparent border-alumno-border text-alumno-text hover:bg-alumno-surface-md"
                             onClick={() => setIsExpanded(false)}
                           >
                             Cancelar
@@ -294,7 +294,7 @@ export function RMManager() {
                     <SelectTrigger className="w-24 bg-slate-100 font-bold">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-white">
+                    <SelectContent className="bg-alumno-surface">
                       <SelectItem value="kg" >Kilos</SelectItem>
                       <SelectItem value="lbs" >Libras</SelectItem>
                     </SelectContent>
@@ -306,7 +306,7 @@ export function RMManager() {
 
             {/* Tabla de porcentajes simple */}
             {calculatorValue > 0 && (
-              <Card className="bg-white">
+              <Card className="bg-alumno-surface">
                 <CardHeader>
                   <p className="text-lg font-bold">Tabla de Porcentajes</p>
                 </CardHeader>

@@ -50,16 +50,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <>
+    <div data-alumno-theme={currentUser?.themeMode || "dark"}>
       {showInstallBanner && (
-        <div className="bg-zinc-900 text-white px-4 py-2 flex items-center justify-between sticky top-0 z-[100] animate-in slide-in-from-top duration-300">
+        <div className="bg-alumno-bg text-alumno-text px-4 py-2 flex items-center justify-between sticky top-0 z-[100] animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
-              <Download className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-alumno-surface-md rounded-xl flex items-center justify-center">
+              <Download className="w-4 h-4 text-alumno-text" />
             </div>
             <div>
               <p className="text-xs font-bold">Instalar {centerName}</p>
-              <p className="text-[10px] text-zinc-400">Accede más rápido desde tu pantalla de inicio</p>
+              <p className="text-[10px] text-alumno-text-muted">Accede más rápido desde tu pantalla de inicio</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -73,15 +73,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
             <button
               onClick={() => setShowInstallBanner(false)}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors"
+              className="p-1 hover:bg-alumno-surface-md rounded-full transition-colors"
             >
-              <X className="w-4 h-4 text-zinc-500" />
+              <X className="w-4 h-4 text-alumno-text-subtle" />
             </button>
           </div>
         </div>
       )}
       {!isRenewalPage && <GlobalNav />}
       {children}
-    </>
+    </div>
   );
 }

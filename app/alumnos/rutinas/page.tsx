@@ -225,15 +225,15 @@ export default function RutinasPage() {
 
   return (
     <>
-      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-black">
-        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-white rounded-t-xl">
+      <div className=" px-2 pt-2 rounded-xl  overflow-hidden sticky top-0 z-10 md:max-w-4xl mx-auto bg-alumno-bg">
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-4 bg-alumno-surface rounded-t-xl">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-xl font-bold text-gray-900 pb-3 hidden sm:block">
+            <h1 className="text-xl font-bold text-alumno-text pb-3 hidden sm:block">
               Mis Rutinas
             </h1>
           </div>
         </div>
-        <div className="max-w-full mx-auto px-4 sm:px-6 pt-1 bg-white rounded-b-xl">
+        <div className="max-w-full mx-auto px-4 sm:px-6 pt-1 bg-alumno-surface rounded-b-xl">
           <WeeklyDatePicker
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
@@ -242,7 +242,7 @@ export default function RutinasPage() {
         </div>
       </div>
 
-      <div className="bg-black min-h-screen pb-28">
+      <div className="bg-alumno-bg min-h-screen pb-28">
         <div className="max-w-4xl mx-auto px-4 pt-4 md:px-6">
           {/* Loading */}
           {isLoading && (

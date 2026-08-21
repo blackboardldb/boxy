@@ -121,10 +121,10 @@ export default function Page() {
     : "—";
 
   return (
-    <main className="min-h-screen bg-black">
-      <div className="py-4 px-4 max-w-4xl mx-auto  flex justify-end text-white">
-        <div className="bg-white/10 border border-white/10 border-1 p-1 rounded-full flex gap-2 pr-3">
-          <div className="bg-black rounded-full flex items-center justify-center w-10 h-10">
+    <main className="min-h-screen bg-alumno-bg">
+      <div className="py-4 px-4 max-w-4xl mx-auto  flex justify-end text-alumno-text">
+        <div className="bg-alumno-surface-md border border-alumno-border border-1 p-1 rounded-full flex gap-2 pr-3">
+          <div className="bg-alumno-bg rounded-full flex items-center justify-center w-10 h-10">
           {userLoading ? (
             <CenterLogo loading />
           ) : (

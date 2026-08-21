@@ -155,10 +155,10 @@ export default function WeeklyDatePicker({
   return (
     <div className={`max-w-4xl mx-auto ${className}`}>
       {/* Header */}
-      <div className="pb-4  border-b border-zinc-100">
+      <div className="pb-4  border-b border-alumno-border">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-lg text-zinc-800 mt-1">{getMonthYear()}</p>
+            <p className="text-lg text-alumno-text mt-1">{getMonthYear()}</p>
           </div>
 
           {/* Navigation arrows */}
@@ -166,11 +166,11 @@ export default function WeeklyDatePicker({
             <button
               onClick={goToPreviousWeek}
               disabled={isTransitioning || !canGoPrevious}
-              className={`p-2 rounded-full transition-colors ${!canGoPrevious ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
+              className={`p-2 rounded-full transition-colors ${!canGoPrevious ? 'opacity-30 cursor-not-allowed' : 'hover:bg-alumno-surface-md'}`}
               aria-label="Previous week"
             >
               <svg
-                className="w-5 h-5 md:w-6 md:h-6 text-zinc-600"
+                className="w-5 h-5 md:w-6 md:h-6 text-alumno-text-muted"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -186,11 +186,11 @@ export default function WeeklyDatePicker({
             <button
               onClick={goToNextWeek}
               disabled={isTransitioning || !canGoNext}
-              className={`p-2 rounded-full transition-colors ${!canGoNext ? 'opacity-30 cursor-not-allowed' : 'hover:bg-zinc-100'}`}
+              className={`p-2 rounded-full transition-colors ${!canGoNext ? 'opacity-30 cursor-not-allowed' : 'hover:bg-alumno-surface-md'}`}
               aria-label="Next week"
             >
               <svg
-                className="w-5 h-5 md:w-6 md:h-6 text-zinc-600"
+                className="w-5 h-5 md:w-6 md:h-6 text-alumno-text-muted"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -230,7 +230,7 @@ export default function WeeklyDatePicker({
                 className="flex flex-col items-center"
               >
                 {/* Day label */}
-                <div className="text-xs font-medium text-zinc-500 mb-2 md:mb-3">
+                <div className="text-xs font-medium text-alumno-text-subtle mb-2 md:mb-3">
                   {dayLabels[index]}
                 </div>
 
@@ -243,10 +243,10 @@ export default function WeeklyDatePicker({
                     transition-all duration-200 ease-in-out
                     ${
                       isSelectedDay
-                        ? "bg-black text-white shadow-md"
+                        ? "bg-alumno-text text-alumno-bg shadow-md"
                         : isCurrentDay
-                        ? "bg-blue-100 text-blue-600"
-                        : "text-zinc-700 hover:bg-zinc-100"
+                        ? "bg-alumno-surface-md text-alumno-text"
+                        : "text-alumno-text-muted hover:bg-alumno-surface-md"
                     }
                     active:scale-95
                   `}

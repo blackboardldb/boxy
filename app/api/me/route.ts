@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const org = await prisma.organization.findUnique({
       where: { id: organizationId },
-      select: { name: true, customIconUrl: true }
+      select: { name: true, customIconUrl: true, themeMode: true }
     });
     const organizationName = org?.name ?? "Centro";
     const customIconUrl = org?.customIconUrl ?? null;
@@ -281,6 +281,7 @@ export async function GET(request: NextRequest) {
       organizationId,
       organizationName,
       customIconUrl,
+      themeMode: org?.themeMode ?? "dark",
       role: auth.role,
       membership,
       membershipRenewals: dbUser.membershipRenewals,

@@ -80,7 +80,7 @@ const HomePage: React.FC<HomePageProps> = ({
       <InAppAlerts />
       <BirthdayGreeting userProfile={userProfile} />
       <div className="text-left mt-4 mb-4">
-        <span className="uppercase text-white/80 text-sm font-bold">
+        <span className="uppercase text-alumno-text-muted text-sm font-bold">
           Hola, {userProfile.firstName}
         </span>
         <MotivationalHome />
@@ -115,7 +115,7 @@ const HomePage: React.FC<HomePageProps> = ({
       />
 
       <div className="flex justify-between items-center mb-2">
-        <p className=" uppercase text-white/80 text-xs">Clases inscritas</p>
+        <p className=" uppercase text-alumno-text-muted text-xs">Clases inscritas</p>
         {planStatus === "active" ? (
           <Link href="/alumnos/calendar">
             <Button
@@ -141,19 +141,19 @@ const HomePage: React.FC<HomePageProps> = ({
         )}
       </div>
 
-      <div className="w-full bg-white/5 p-4 pt-2 rounded-xl divide-y divide-zinc-700">
+      <div className="w-full bg-alumno-surface p-4 pt-2 rounded-xl divide-y divide-alumno-border">
         {registeredClasses.length > 0 && planStatus === "active" ? (
           <ClassesHomeCard classes={registeredClasses} />
         ) : (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
+            <Calendar className="w-12 h-12 text-alumno-text-muted mx-auto mb-4" />
             {planStatus === "active" ? (
-              <p className="text-zinc-500 text-base">
+              <p className="text-alumno-text-subtle text-base">
                 Aún no te has inscrito en una clase.
               </p>
             ) : planStatus === "pending" || hasPendingRenewal ? (
               <div className="space-y-2">
-                <p className="text-zinc-400 text-base font-medium">
+                <p className="text-alumno-text-muted text-base font-medium">
                   Pronto podrás reservar tus clases
                 </p>
               </div>
@@ -162,7 +162,7 @@ const HomePage: React.FC<HomePageProps> = ({
                 <p className="text-orange-400 text-base font-medium">
                   Pronto podrás reservar clases
                 </p>
-                <p className="text-zinc-400 text-sm">
+                <p className="text-alumno-text-muted text-sm">
                   Renueva tu plan para continuar entrenando
                 </p>
               </div>

@@ -13,9 +13,9 @@ const DAYS_OF_WEEK = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Vie
 
 function NumberCard({ value, label }: { value: number; label: string }) {
   return (
-    <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
-      <span className="text-4xl font-bold text-white leading-none">{value}</span>
-      <span className="text-xs text-zinc-400 text-center">{label}</span>
+    <div className="bg-alumno-surface rounded-xl p-4 flex flex-col items-center justify-center gap-1">
+      <span className="text-4xl font-bold text-alumno-text leading-none">{value}</span>
+      <span className="text-xs text-alumno-text-muted text-center">{label}</span>
     </div>
   );
 }
@@ -37,10 +37,10 @@ function FavoriteTimeCard({
 }) {
   if (favoriteDayOfWeek === null || favoriteHour === null) {
     return (
-      <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
+      <div className="bg-alumno-surface rounded-xl p-4 flex flex-col items-center justify-center gap-1">
         <span className="text-3xl leading-none">📅</span>
-        <span className="text-sm font-bold text-white leading-tight text-center">Sin datos</span>
-        <span className="text-xs text-zinc-400 text-center">aún</span>
+        <span className="text-sm font-bold text-alumno-text leading-tight text-center">Sin datos</span>
+        <span className="text-xs text-alumno-text-muted text-center">aún</span>
       </div>
     );
   }
@@ -49,10 +49,10 @@ function FavoriteTimeCard({
   const dayName = DAYS_OF_WEEK[favoriteDayOfWeek];
 
   return (
-    <div className="bg-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-1">
+    <div className="bg-alumno-surface rounded-xl p-4 flex flex-col items-center justify-center gap-1">
       <span className="text-3xl leading-none">{emoji}</span>
-      <span className="text-sm font-bold text-white leading-tight text-center">{label}</span>
-      <span className="text-xs text-zinc-400 text-center">
+      <span className="text-sm font-bold text-alumno-text leading-tight text-center">{label}</span>
+      <span className="text-xs text-alumno-text-muted text-center">
         Tu horario fav
       </span>
     </div>
@@ -67,8 +67,8 @@ export function UserStatsBlock({ userId }: UserStatsBlockProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-3 w-full">
-        <Skeleton className="w-full h-24 rounded-xl bg-white/5" />
-        <Skeleton className="w-full h-24 rounded-xl bg-white/5" />
+        <Skeleton className="w-full h-24 rounded-xl bg-alumno-surface" />
+        <Skeleton className="w-full h-24 rounded-xl bg-alumno-surface" />
       </div>
     );
   }

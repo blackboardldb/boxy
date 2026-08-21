@@ -60,34 +60,34 @@ export default function RenewPlanPage() {
   // Show skeleton loading state if data is not ready
   if (userLoading || plansLoading || !currentUser || !plans || plans.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex flex-col">
-        <header className="p-4 border-b border-zinc-700 bg-black">
-          <div className="w-10 h-10 bg-zinc-800 rounded-full animate-pulse"></div>
+      <div className="min-h-screen bg-alumno-bg flex flex-col">
+        <header className="p-4 border-b border-alumno-border bg-alumno-bg">
+          <div className="w-10 h-10 bg-alumno-chip-bg rounded-full animate-pulse"></div>
         </header>
         <main className="flex-1 p-4 md:p-6 max-w-2xl mx-auto w-full">
           <div className="space-y-6">
             {/* Title skeleton */}
-            <div className="h-9 bg-zinc-800 rounded animate-pulse w-64"></div>
+            <div className="h-9 bg-alumno-chip-bg rounded animate-pulse w-64"></div>
 
             {/* Plan selection skeleton */}
-            <div className="bg-zinc-900 p-4 rounded-xl">
-              <div className="h-8 bg-zinc-800 rounded animate-pulse w-40 mb-4"></div>
-              <div className="p-4 border rounded-xl bg-zinc-800 animate-pulse">
-                <div className="h-6 bg-zinc-700 rounded w-32 mb-2"></div>
-                <div className="h-4 bg-zinc-700 rounded w-24"></div>
+            <div className="bg-alumno-chip-bg p-4 rounded-xl">
+              <div className="h-8 bg-alumno-chip-bg rounded animate-pulse w-40 mb-4"></div>
+              <div className="p-4 border rounded-xl bg-alumno-chip-bg animate-pulse">
+                <div className="h-6 bg-alumno-chip-hover rounded w-32 mb-2"></div>
+                <div className="h-4 bg-alumno-chip-hover rounded w-24"></div>
               </div>
             </div>
 
             {/* Payment method skeleton */}
-            <div className="bg-zinc-900 p-4 rounded-xl">
-              <div className="h-8 bg-zinc-800 rounded animate-pulse w-48 mb-4"></div>
+            <div className="bg-alumno-chip-bg p-4 rounded-xl">
+              <div className="h-8 bg-alumno-chip-bg rounded animate-pulse w-48 mb-4"></div>
               <div className="grid grid-cols-2 gap-4">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="p-4 border rounded-xl bg-zinc-800 animate-pulse"
+                    className="p-4 border rounded-xl bg-alumno-chip-bg animate-pulse"
                   >
-                    <div className="h-5 bg-zinc-700 rounded w-20"></div>
+                    <div className="h-5 bg-alumno-chip-hover rounded w-20"></div>
                   </div>
                 ))}
               </div>
@@ -95,7 +95,7 @@ export default function RenewPlanPage() {
 
             {/* Button skeleton */}
             <div className="pt-4">
-              <div className="h-11 bg-zinc-800 rounded animate-pulse w-full"></div>
+              <div className="h-11 bg-alumno-chip-bg rounded animate-pulse w-full"></div>
             </div>
           </div>
         </main>
@@ -211,8 +211,8 @@ export default function RenewPlanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      <header className="p-4 border-b border-zinc-700 bg-black">
+    <div className="min-h-screen bg-alumno-bg flex flex-col">
+      <header className="p-4 border-b border-alumno-border bg-alumno-bg">
         <Button
           variant="ghost"
           size="icon"
@@ -226,7 +226,7 @@ export default function RenewPlanPage() {
         <div className="space-y-6">
           <h1 className="text-3xl font-bold text-white">Renovar Membresía</h1>
           {/* Selección de Plan */}
-          <div className="bg-zinc-900 p-4 rounded-xl">
+          <div className="bg-alumno-chip-bg p-4 rounded-xl">
             <h2 className="text-2xl font-bold text-white mb-2">
               1. Elige tu Plan
             </h2>
@@ -273,7 +273,7 @@ export default function RenewPlanPage() {
                               <h3 className="text-lg font-semibold text-white mb-2">
                                 {getCategoryInfo("monthly")?.label}
                               </h3>
-                              <p className="text-sm text-zinc-400 mb-4">
+                              <p className="text-sm text-alumno-text-muted mb-4">
                                 {getCategoryInfo("monthly")?.description}
                               </p>
                             </div>
@@ -309,7 +309,7 @@ export default function RenewPlanPage() {
                         {groupedPlans.monthly.length > 0 &&
                           groupedPlans.extended.length > 0 && (
                             <div className="my-6">
-                              <div className="border-t border-zinc-700"></div>
+                              <div className="border-t border-alumno-border"></div>
                             </div>
                           )}
 
@@ -320,7 +320,7 @@ export default function RenewPlanPage() {
                               <h3 className="text-lg font-semibold text-white mb-2">
                                 {getCategoryInfo("extended")?.label}
                               </h3>
-                              <p className="text-sm text-zinc-400 mb-4">
+                              <p className="text-sm text-alumno-text-muted mb-4">
                                 {getCategoryInfo("extended")?.description}
                               </p>
                             </div>
@@ -359,11 +359,11 @@ export default function RenewPlanPage() {
             )}
           </div>
           {/* Selección de Método de Pago */}
-          <div className="bg-zinc-900 p-4 rounded-xl ">
+          <div className="bg-alumno-chip-bg p-4 rounded-xl ">
             <h2 className="text-2xl font-bold text-white mb-2">
               2. Elige tu Forma de Pago
             </h2>
-            <p className="text-sm text-gray-400 ">
+            <p className="text-sm text-alumno-text-muted ">
               Contado, débito y crédito se deben pagar presencial en el box
             </p>
 
@@ -396,9 +396,9 @@ export default function RenewPlanPage() {
             </div>
           </div>
           {/* Botón de Confirmación */}
-          <div className="bg-zinc-900 p-4 rounded-xl ">
+          <div className="bg-alumno-chip-bg p-4 rounded-xl ">
             <p className="text-2xl text-center">🚨</p>
-            <p className="text-sm text-center text-gray-400 mt-2">
+            <p className="text-sm text-center text-alumno-text-muted mt-2">
               Esta es una solicitud de renovación, solicita a tu coach aprobar la renovación o escribenos al whatsapp.
             </p>
           </div>

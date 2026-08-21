@@ -62,6 +62,18 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        alumno: {
+          bg:            "hsl(var(--alumno-bg))",
+          surface:       "hsl(var(--alumno-surface))",
+          "surface-md":  "hsl(var(--alumno-surface-md))",
+          border:        "hsl(var(--alumno-border))",
+          text:          "hsl(var(--alumno-text))",
+          "text-muted":  "hsl(var(--alumno-text-muted))",
+          "text-subtle": "hsl(var(--alumno-text-subtle))",
+          "chip-bg":     "hsl(var(--alumno-chip-bg))",
+          "chip-hover":  "hsl(var(--alumno-chip-hover))",
+          "chip-text":   "hsl(var(--alumno-chip-text))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -21,8 +21,8 @@ export default function GlobalNav() {
   };
 
   const getLinkClass = (path: string, extraClass = "") =>
-    [
-      isActive(path) ? "text-lime-500" : "text-zinc-100",
+      [
+      isActive(path) ? "text-lime-500" : "text-alumno-text",
       "transition-colors",
       extraClass,
     ].join(" ");
@@ -61,7 +61,7 @@ export default function GlobalNav() {
   ];
 
   return (
-    <nav className="fixed p-2.5 border border-white/10 bottom-2 inset-x-0 mx-auto rounded-full flex flex-row justify-around w-[90dvw] sm:w-[60dvw] bg-zinc-900/80 backdrop-blur-xl text-center z-30" style={{ marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+    <nav className="fixed p-2.5 border border-alumno-border bottom-2 inset-x-0 mx-auto rounded-full flex flex-row justify-around w-[90dvw] sm:w-[60dvw] bg-alumno-surface backdrop-blur-xl text-center z-30" style={{ marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
       {navItems.map(({ href, icon, label, extraClass }) => (
         <Link key={href} href={href} prefetch={false} className={getLinkClass(href, extraClass)}>
           {icon}

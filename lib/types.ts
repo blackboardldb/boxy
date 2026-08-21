@@ -17,7 +17,7 @@ export interface FitCenterUserProfile {
   avatarId?: string; // "avatar_1"
   organizationName?: string; // Nombre del centro resoluble
   customIconUrl?: string | null; // Logo personalizado de la organización
-
+  themeMode?: "light" | "dark"; // Preferencia visual del centro
 
   // NUEVO: Rol del usuario (admin, coach, user/alumno)
   /**

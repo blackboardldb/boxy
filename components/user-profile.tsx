@@ -332,7 +332,7 @@ export function UserProfile() {
         <div className="overflow-hidden">
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
-              <Avatar className="w-24 h-24 border-4 border-white/10 shadow-lg">
+              <Avatar className="w-24 h-24 border-4 border-alumno-border shadow-lg">
                 <AvatarFallback className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-yellow-200">
                   {userData.firstName?.[0] ?? "?"}
                   {userData.lastName?.[0] ?? "?"}
@@ -341,12 +341,12 @@ export function UserProfile() {
             </div>
 
             <div className="text-center space-y-1">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-alumno-text">
                 {userData.firstName} {userData.lastName}
               </h2>
               {/* HAL-01 Fase 4 Sprint 3.2: startDate de UserMembership reemplaza centerStats.memberSince del JSONB */}
               {(userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince) && (
-                <p className="text-zinc-400">
+                <p className="text-alumno-text-muted">
                   Miembro desde {formatMemberSince(
                     (userData.membership?.startDate ?? userData.membership?.centerStats?.memberSince) as string
                   )}
@@ -357,8 +357,8 @@ export function UserProfile() {
         </div>
         {/* Plan */}
         {userData.membership && (
-          <div className="bg-white/5 rounded-xl p-4">
-            <h3 className="text-lg font-semibold text-white">
+          <div className="bg-alumno-surface rounded-xl p-4">
+            <h3 className="text-lg font-semibold text-alumno-text">
               {userData.membership.membershipType}{" "}
 
               <span
@@ -374,8 +374,8 @@ export function UserProfile() {
 
               {displayStart && displayEnd && (
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Periodo:</span>
-                  <span className="text-white">
+                  <span className="text-alumno-text-muted">Periodo:</span>
+                  <span className="text-alumno-text">
                     {format(parseISO(displayStart.substring(0, 10)), "dd MMM yyyy", { locale: es })}
                     {" - "}
                     {format(parseISO(displayEnd.substring(0, 10)), "dd MMM yyyy", { locale: es })}
@@ -384,8 +384,8 @@ export function UserProfile() {
               )}
               {userData.membership.planConfig && (
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Clases incluidas:</span>
-                  <span className="text-white">
+                  <span className="text-alumno-text-muted">Clases incluidas:</span>
+                  <span className="text-alumno-text">
                     {userData.membership.planConfig.classLimit === 0
                       ? "Ilimitadas"
                       : `${userData.membership.planConfig.classLimit} al mes`}
@@ -394,7 +394,7 @@ export function UserProfile() {
               )}
             </div>
             <div className="flex justify-between items-center mt-4 ">
-              <p className="text-zinc-400 text-sm"> ¿Dudas? Escríbenos </p>
+              <p className="text-alumno-text-muted text-sm"> ¿Dudas? Escríbenos </p>
               <WhatsAppLink phone="56987522551" label="Chatear en Whatsapp" />
             </div>
           </div>
@@ -449,18 +449,18 @@ export function UserProfile() {
           // (La validación de historyReady ya se hace arriba)
 
           return (
-            <div className="bg-white/5 rounded-xl overflow-hidden">
+            <div className="bg-alumno-surface rounded-xl overflow-hidden">
               <button
                 id="plan-history-toggle"
                 onClick={handleOpen}
                 className="w-full flex items-center justify-between p-4 text-left"
               >
                 <div className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-zinc-400" />
-                  <span className="text-lg font-semibold text-white">Historial de planes</span>
+                  <History className="w-5 h-5 text-alumno-text-muted" />
+                  <span className="text-lg font-semibold text-alumno-text">Historial de planes</span>
                 </div>
                 <ChevronRight
-                  className={`w-5 h-5 text-zinc-400 transition-transform duration-200 ${
+                  className={`w-5 h-5 text-alumno-text-muted transition-transform duration-200 ${
                     historyOpen ? 'rotate-90' : ''
                   }`}
                 />
@@ -471,18 +471,18 @@ export function UserProfile() {
                   {historyLoading && displayItems.length === 0 ? (
                     <div className="space-y-3">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="flex items-center gap-3 py-3 border-t border-white/5 first:border-0 first:pt-0">
-                          <div className="w-2 h-2 rounded-full bg-zinc-700 flex-shrink-0" />
+                        <div key={i} className="flex items-center gap-3 py-3 border-t border-alumno-border first:border-0 first:pt-0">
+                          <div className="w-2 h-2 rounded-full bg-alumno-chip-bg flex-shrink-0" />
                           <div className="flex-1 space-y-1.5">
-                            <div className="h-3 bg-zinc-700 rounded w-1/3 animate-pulse" />
-                            <div className="h-2.5 bg-zinc-800 rounded w-1/2 animate-pulse" />
+                            <div className="h-3 bg-alumno-chip-bg rounded w-1/3 animate-pulse" />
+                            <div className="h-2.5 bg-alumno-chip-hover rounded w-1/2 animate-pulse" />
                           </div>
-                          <div className="h-3 bg-zinc-700 rounded w-16 animate-pulse" />
+                          <div className="h-3 bg-alumno-chip-bg rounded w-16 animate-pulse" />
                         </div>
                       ))}
                     </div>
                   ) : displayItems.length === 0 ? (
-                    <p className="text-zinc-500 text-sm py-2">Sin planes registrados.</p>
+                    <p className="text-alumno-text-subtle text-sm py-2">Sin planes registrados.</p>
                   ) : (
                     <div className="space-y-0">
                       {displayItems.map((renewal: any, idx: number) => {
@@ -493,24 +493,24 @@ export function UserProfile() {
                         return (
                           <div
                             key={renewal.id ?? idx}
-                            className="flex items-start gap-3 py-3 border-t border-white/5 first:border-0 first:pt-0"
+                            className="flex items-start gap-3 py-3 border-t border-alumno-border first:border-0 first:pt-0"
                           >
                             <div className="flex flex-col items-center mt-1.5 flex-shrink-0">
-                              <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                              <div className="w-2 h-2 rounded-full bg-alumno-chip-hover" />
                               {idx < displayItems.length - 1 && (
-                                <div className="w-px flex-1 min-h-5 bg-zinc-700/60 mt-1" />
+                                <div className="w-px flex-1 min-h-5 bg-alumno-chip-bg/60 mt-1" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium text-sm">{planName}</p>
+                              <p className="text-alumno-text font-medium text-sm">{planName}</p>
                               {(formattedStart || formattedEnd) && (
-                                <p className="text-zinc-400 text-xs mt-0.5">
+                                <p className="text-alumno-text-muted text-xs mt-0.5">
                                   {formattedStart ?? "—"}{formattedEnd ? ` › ${formattedEnd}` : ""}
                                 </p>
                               )}
                             </div>
                             {amount != null && (
-                              <p className="text-zinc-300 text-sm font-medium flex-shrink-0 tabular-nums">
+                              <p className="text-alumno-chip-text text-sm font-medium flex-shrink-0 tabular-nums">
                                 ${new Intl.NumberFormat("es-CL").format(amount)}
                               </p>
                             )}
@@ -523,7 +523,7 @@ export function UserProfile() {
                           id="plan-history-load-more"
                           onClick={loadMore}
                           disabled={historyLoading}
-                          className="w-full mt-3 py-2 text-sm text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 rounded-lg transition-colors disabled:opacity-50"
+                          className="w-full mt-3 py-2 text-sm text-alumno-text-muted hover:text-alumno-text border border-alumno-border hover:border-alumno-border rounded-lg transition-colors disabled:opacity-50"
                         >
                           {historyLoading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -550,19 +550,19 @@ export function UserProfile() {
 
         {/* Notificaciones App */}
         {permission !== "unsupported" && (
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
 
                 <div>
-                  <p className="text-lg font-semibold text-white">Notificaciones App</p>
-                  <p className="text-sm text-zinc-400">Recibe avisos de clases y cancelaciones</p>
+                  <p className="text-lg font-semibold text-alumno-text">Notificaciones App</p>
+                  <p className="text-sm text-alumno-text-muted">Recibe avisos de clases y cancelaciones</p>
                 </div>
               </div>
               <Switch
                 checked={permission === "granted"}
                 onCheckedChange={togglePush}
-                className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-zinc-700"
+                className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-alumno-chip-bg"
               />
             </div>
           </div>
@@ -571,11 +571,11 @@ export function UserProfile() {
         {/* BSProfileButton — botones nativos del perfil de usuario */}
         <div className="space-y-4">
           {/* Nombre */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Nombre</h3>
-                <p className="text-zinc-400">
+                <h3 className="text-lg font-semibold text-alumno-text">Nombre</h3>
+                <p className="text-alumno-text-muted">
                   {userData.firstName} {userData.lastName}
                 </p>
               </div>
@@ -583,7 +583,7 @@ export function UserProfile() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "name" ? null : "name")}
-                className="text-white hover:bg-white/90"
+                className="text-alumno-text hover:text-alumno-text-muted"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -592,7 +592,7 @@ export function UserProfile() {
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName" className="text-white">Nombre</Label>
+                    <Label htmlFor="firstName" className="text-alumno-text">Nombre</Label>
                     <Input
                       id="firstName"
                       value={editableFirstName}
@@ -601,7 +601,7 @@ export function UserProfile() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="lastName" className="text-white">Apellido</Label>
+                    <Label htmlFor="lastName" className="text-alumno-text">Apellido</Label>
                     <Input
                       id="lastName"
                       value={editableLastName}
@@ -630,14 +630,14 @@ export function UserProfile() {
           </div>
 
           {/* Informacion de Contacto */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Información de Contacto</h3>
-                <p className="text-zinc-400">{userData.email}</p>
+                <h3 className="text-lg font-semibold text-alumno-text">Información de Contacto</h3>
+                <p className="text-alumno-text-muted">{userData.email}</p>
                 {userData.phone && (
                   <div className="flex flex-col gap-1 mt-1">
-                    <p className="text-zinc-400">{userData.phone}</p>
+                    <p className="text-alumno-text-muted">{userData.phone}</p>
 
                   </div>
                 )}
@@ -646,7 +646,7 @@ export function UserProfile() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "contact" ? null : "contact")}
-                className="text-white hover:bg-white/90"
+                className="text-alumno-text hover:text-alumno-text-muted"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -655,19 +655,19 @@ export function UserProfile() {
               <div className="mt-4 space-y-4">
                 {/* Email: solo lectura */}
                 <div>
-                  <Label htmlFor="email-readonly" className="text-white">Email</Label>
+                  <Label htmlFor="email-readonly" className="text-alumno-text">Email</Label>
                   <Input
                     id="email-readonly"
                     type="email"
                     value={userData.email}
                     readOnly
                     disabled
-                    className="mt-1 bg-zinc-700 border-zinc-600 text-zinc-400 cursor-not-allowed"
+                    className="mt-1 bg-alumno-chip-bg border-zinc-600 text-alumno-text-muted cursor-not-allowed"
                   />
-                  <p className="text-xs text-zinc-500 mt-1">El email no puede ser modificado.</p>
+                  <p className="text-xs text-alumno-text-subtle mt-1">El email no puede ser modificado.</p>
                 </div>
                 <div>
-                  <Label htmlFor="phone" className="text-white">Teléfono</Label>
+                  <Label htmlFor="phone" className="text-alumno-text">Teléfono</Label>
                   <PhoneInputCL
                     id="phone"
                     value={editablePhone}
@@ -695,11 +695,11 @@ export function UserProfile() {
           </div>
 
           {/* Seguridad — cambio de contraseña */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Contraseña</h3>
-                <p className="text-zinc-400">Cambiar contraseña</p>
+                <h3 className="text-lg font-semibold text-alumno-text">Contraseña</h3>
+                <p className="text-alumno-text-muted">Cambiar contraseña</p>
               </div>
               <Button
                 variant="ghost"
@@ -711,7 +711,7 @@ export function UserProfile() {
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="text-white hover:bg-white/90"
+                className="text-alumno-text hover:text-alumno-text-muted"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -719,7 +719,7 @@ export function UserProfile() {
             {expandedSection === "password" && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <Label htmlFor="current-password" className="text-white">Contraseña actual</Label>
+                  <Label htmlFor="current-password" className="text-alumno-text">Contraseña actual</Label>
                   <Input
                     id="current-password"
                     type="password"
@@ -730,7 +730,7 @@ export function UserProfile() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="new-password" className="text-white">Nueva contraseña</Label>
+                  <Label htmlFor="new-password" className="text-alumno-text">Nueva contraseña</Label>
                   <Input
                     id="new-password"
                     type="password"
@@ -741,7 +741,7 @@ export function UserProfile() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="confirm-password" className="text-white">Confirmar contraseña</Label>
+                  <Label htmlFor="confirm-password" className="text-alumno-text">Confirmar contraseña</Label>
                   <Input
                     id="confirm-password"
                     type="password"
@@ -777,13 +777,13 @@ export function UserProfile() {
           </div>
 
           {/* Información personal */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Información Personal</h3>
-                {gender && <p className="text-zinc-400">Género: {gender}</p>}
+                <h3 className="text-lg font-semibold text-alumno-text">Información Personal</h3>
+                {gender && <p className="text-alumno-text-muted">Género: {gender}</p>}
                 {dateOfBirth && (
-                  <p className="text-zinc-400">
+                  <p className="text-alumno-text-muted">
                     Nacimiento: {formatDateOfBirth(dateOfBirth)}
                   </p>
                 )}
@@ -792,7 +792,7 @@ export function UserProfile() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "personal" ? null : "personal")}
-                className="text-white hover:bg-white/90"
+                className="text-alumno-text hover:text-alumno-text-muted"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -800,7 +800,7 @@ export function UserProfile() {
             {expandedSection === "personal" && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <Label htmlFor="gender" className="text-white">Género</Label>
+                  <Label htmlFor="gender" className="text-alumno-text">Género</Label>
                   <Select value={editableGender} onValueChange={setEditableGender}>
                     <SelectTrigger className="mt-1 bg-white border-zinc-800 text-black">
                       <SelectValue placeholder="Selecciona tu género" />
@@ -813,7 +813,7 @@ export function UserProfile() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="dateOfBirth" className="text-white">Fecha de nacimiento</Label>
+                  <Label htmlFor="dateOfBirth" className="text-alumno-text">Fecha de nacimiento</Label>
                   <Input
                     id="dateOfBirth"
                     type="date"
@@ -842,17 +842,17 @@ export function UserProfile() {
           </div>
 
           {/* Contacto de emergencia */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-alumno-surface rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white">Contacto de Emergencia</h3>
-                <p className="text-zinc-400">{emergencyContact}</p>
+                <h3 className="text-lg font-semibold text-alumno-text">Contacto de Emergencia</h3>
+                <p className="text-alumno-text-muted">{emergencyContact}</p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setExpandedSection(expandedSection === "emergency" ? null : "emergency")}
-                className="text-white hover:bg-white/90"
+                className="text-alumno-text hover:text-alumno-text-muted"
               >
                 <Edit3 className="w-4 h-4" />
               </Button>
@@ -860,7 +860,7 @@ export function UserProfile() {
             {expandedSection === "emergency" && (
               <div className="mt-4 space-y-4">
                 <div>
-                  <Label htmlFor="emergencyContact" className="text-white">Contacto de emergencia</Label>
+                  <Label htmlFor="emergencyContact" className="text-alumno-text">Contacto de emergencia</Label>
                   <Input
                     id="emergencyContact"
                     value={editableEmergencyContact}

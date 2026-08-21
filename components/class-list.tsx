@@ -47,9 +47,9 @@ export default function ClassList({
     console.error("ClassList: Datos de clases inválidos", classes);
     return (
       <div className={`${className}`}>
-        <div className="text-center py-16">
-          <p className="text-gray-500">Error: Datos de clases inválidos</p>
-        </div>
+        <div className="p-4 text-center">
+        <p className="text-alumno-text-subtle">Error: Datos de clases inválidos</p>
+      </div>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function ClassList({
   return (
     <div className={`${className}`}>
       {/* Header */}
-      <div className="mb-3 text-gray-300">
+      <div className="mb-3 text-alumno-text">
         <span className="text-xs uppercase">{formatDate(selectedDate)}</span>
         <p className="text-base uppercase font-semibold">
           {sortedClasses.length} Clases disponibles
@@ -85,22 +85,22 @@ export default function ClassList({
             />
           ))
         ) : isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 rounded-xl bg-zinc-800 animate-pulse" />
+              <div key={i} className="h-24 rounded-xl bg-alumno-chip-bg animate-pulse" />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-16 border border-zinc-800 rounded-xl">
-            <Calendar className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-            <p className="text-gray-400 text-base">
-              No hay clases disponibles para este día
+        ) : classes.length === 0 ? (
+          <div className="text-center py-16 border border-alumno-border rounded-xl">
+            <Calendar className="w-12 h-12 text-alumno-text-muted mx-auto mb-4" />
+            <p className="text-alumno-text-muted text-base">
+              No hay clases programadas.
             </p>
-            <p className="text-gray-500 text-sm mt-2">
-              Selecciona otro día para ver las clases disponibles
+            <p className="text-alumno-text-subtle text-sm mt-2">
+              Selecciona otro día en el calendario.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
