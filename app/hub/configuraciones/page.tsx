@@ -3,16 +3,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Building2,
-  Users,
   Mail,
   Phone,
   MapPin,
   UserRound,
+  Copy,
+  Check,
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 type OrgConfig = {
   name: string;
@@ -54,12 +57,42 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELED: "Cancelado",
 };
 
+function CopyInput({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success("Enlace copiado al portapapeles");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5 mt-4">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 px-3 py-2 bg-muted rounded-md text-xs truncate border border-border/50 text-muted-foreground">
+          {value}
+        </div>
+        <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={handleCopy}>
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ConfiguracionPage() {
   const { data, isLoading } = useOrgConfig();
   const org = data?.org;
   const alumnosCount = data?.alumnosCount ?? 0;
   const planLimit = org?.saasPlanLimit ?? 0;
   const usagePercentage = planLimit > 0 ? (alumnosCount / planLimit) * 100 : 0;
+
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -81,29 +114,29 @@ export default function ConfiguracionPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-3/4 rounded-lg" />
-                <Skeleton className="h-4 w-1/2 rounded-lg" />
-                <Skeleton className="h-4 w-2/3 rounded-lg" />
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-full rounded-lg" />
+                <Skeleton className="h-6 w-full rounded-lg" />
+                <Skeleton className="h-6 w-full rounded-lg" />
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-y-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Nombre</p>
-                  <p className="font-medium">{org?.name}</p>
+              <div className="flex flex-col space-y-4 text-sm">
+                <div className="flex justify-between items-center py-1 border-b border-border/40">
+                  <span className="text-muted-foreground">Nombre</span>
+                  <span className="font-medium text-right">{org?.name}</span>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Tipo</p>
-                  <p className="font-medium">
+                <div className="flex justify-between items-center py-1 border-b border-border/40">
+                  <span className="text-muted-foreground">Tipo</span>
+                  <span className="font-medium text-right">
                     {org?.orgType === "HUB"
                       ? "Box / Hub"
                       : org?.orgType === "PERSONAL_TRAINING"
                       ? "Personal Training"
                       : org?.orgType}
-                  </p>
+                  </span>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Estado</p>
+                <div className="flex justify-between items-center py-1 border-b border-border/40">
+                  <span className="text-muted-foreground">Estado</span>
                   <span
                     className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium border ${
                       STATUS_BADGE[org?.status ?? ""] ?? "bg-zinc-100 text-zinc-600"
@@ -112,9 +145,16 @@ export default function ConfiguracionPage() {
                     {STATUS_LABEL[org?.status ?? ""] ?? org?.status}
                   </span>
                 </div>
-                <div>
-                  <p className="text-muted-foreground text-xs mb-0.5">Slug</p>
-                  <p className="font-mono text-xs font-medium">{org?.slug}</p>
+
+                <div className="pt-2">
+                  <CopyInput 
+                    label="URL de ingreso (Administradores / Staff)" 
+                    value={`${origin}/login`} 
+                  />
+                  <CopyInput 
+                    label="URL de ingreso (Alumnos)" 
+                    value={`${origin}/${org?.slug}`} 
+                  />
                 </div>
               </div>
             )}
@@ -122,14 +162,19 @@ export default function ConfiguracionPage() {
         </Card>
 
         {/* Plan y uso */}
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Plan y Uso
-            </CardTitle>
+        <Card className="rounded-xl shadow-sm flex flex-col">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <span
+                className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium border ${
+                  STATUS_BADGE[org?.status ?? ""] ?? "bg-zinc-100 text-zinc-600"
+                }`}
+              >
+                {STATUS_LABEL[org?.status ?? ""] ?? org?.status}
+              </span>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-6 pt-2">
             {isLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-7 w-1/3 rounded-lg" />
@@ -138,20 +183,22 @@ export default function ConfiguracionPage() {
               </div>
             ) : (
               <>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Plan Actual</p>
-                    <p className="text-2xl font-bold">{org?.saasPlanName || "Sin plan"}</p>
+                <div className="flex flex-col space-y-4 text-sm">
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground">Plan Actual</span>
+                    <span className="font-bold text-base text-right">
+                      {org?.saasPlanName || "Sin plan"}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground mb-0.5">Ciclo</p>
-                    <p className="font-medium text-sm">
+                  <div className="flex justify-between items-center py-1 border-b border-border/40">
+                    <span className="text-muted-foreground">Ciclo</span>
+                    <span className="font-medium text-right">
                       {org?.billingCycle ? `Ciclo ${org.billingCycle}` : "—"}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2 mt-4 bg-muted/30 p-4 rounded-lg border border-border/50">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Alumnos</span>
                     <span className="font-medium">
@@ -174,7 +221,7 @@ export default function ConfiguracionPage() {
                 </div>
 
                 {org?.billingPeriodEnd && (
-                  <p className="text-xs text-muted-foreground pt-1 border-t border-border">
+                  <p className="text-xs text-muted-foreground pt-2 text-right">
                     Período actual hasta:{" "}
                     <span className="font-medium text-foreground">
                       {new Date(org.billingPeriodEnd).toLocaleDateString("es-CL", {
@@ -200,48 +247,57 @@ export default function ConfiguracionPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                  <Skeleton key={i} className="h-8 w-full rounded-lg" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                <div className="flex items-start gap-3">
-                  <UserRound className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-0.5">Titular</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 text-sm">
+                <div className="flex justify-between items-center py-2 border-b border-border/40">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <UserRound className="h-4 w-4 shrink-0" />
+                    <span>Titular</span>
+                  </div>
+                  <div className="text-right">
                     <p className="font-medium">
                       {[org?.ownerName, org?.ownerLastName].filter(Boolean).join(" ") ||
                         "No registrado"}
                     </p>
                     {org?.ownerRut && (
-                      <p className="text-muted-foreground text-xs mt-0.5">
-                        RUT: {org.ownerRut}
-                      </p>
+                      <p className="text-xs text-muted-foreground">RUT: {org.ownerRut}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-0.5">Email</p>
-                    <p className="font-medium break-all">{org?.email || "No registrado"}</p>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/40">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span>Email</span>
                   </div>
+                  <span className="font-medium text-right break-all">
+                    {org?.email || "No registrado"}
+                  </span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-0.5">Teléfono</p>
-                    <p className="font-medium">{org?.phone || "No registrado"}</p>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/40">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span>Teléfono</span>
                   </div>
+                  <span className="font-medium text-right">
+                    {org?.phone || "No registrado"}
+                  </span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-muted-foreground text-xs mb-0.5">Dirección</p>
-                    <p className="font-medium line-clamp-2">{org?.address || "No registrada"}</p>
+
+                <div className="flex justify-between items-center py-2 border-b border-border/40">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span>Dirección</span>
                   </div>
+                  <span className="font-medium text-right line-clamp-2 max-w-[60%] text-balance">
+                    {org?.address || "No registrada"}
+                  </span>
                 </div>
               </div>
             )}
