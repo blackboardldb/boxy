@@ -296,7 +296,7 @@ export default function ConfiguracionPage() {
           </Card>
 
           {/* Preferencias UI (Placeholder) */}
-          <Card className="rounded-xl shadow-sm border-dashed bg-muted/20">
+          <Card className="rounded-xl shadow-sm border-dashed">
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Palette className="h-4 w-4 text-muted-foreground" />
