@@ -13,6 +13,10 @@ import {
   UserRound,
   Copy,
   Check,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -224,8 +228,8 @@ export default function ConfiguracionPage() {
         </div>
 
         {/* COLUMNA DERECHA */}
-        <div>
-          <Card className="rounded-xl shadow-sm h-full">
+        <div className="space-y-6">
+          <Card className="rounded-xl shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <UserRound className="h-4 w-4 text-muted-foreground" />
@@ -288,6 +292,36 @@ export default function ConfiguracionPage() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Preferencias UI (Placeholder) */}
+          <Card className="rounded-xl shadow-sm border-dashed bg-muted/20">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Palette className="h-4 w-4 text-muted-foreground" />
+                Preferencias de Alumnos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Configura el tema visual por defecto para la aplicación de los alumnos. 
+                  <br />
+                  <span className="text-xs italic opacity-80">(Visualización temporal, a la espera de implementación)</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" disabled className="flex-1 justify-center opacity-60">
+                    <Sun className="h-4 w-4 mr-2" /> Claro
+                  </Button>
+                  <Button variant="outline" size="sm" disabled className="flex-1 justify-center opacity-60">
+                    <Moon className="h-4 w-4 mr-2" /> Oscuro
+                  </Button>
+                  <Button variant="default" size="sm" disabled className="flex-1 justify-center opacity-40">
+                    <Monitor className="h-4 w-4 mr-2" /> Sistema
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
