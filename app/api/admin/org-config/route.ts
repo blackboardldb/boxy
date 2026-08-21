@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
           ownerName: true,
           ownerLastName: true,
           ownerRut: true,
+          themePrimaryColor: true,
+          themeVariant: true,
+          themeMode: true,
         },
       }),
       prisma.organizationMember.count({

@@ -28,6 +28,7 @@ export async function GET(
         suspendedReason: true,
         themePrimaryColor: true,
         themeVariant: true,
+        themeMode: true,
       },
     });
 

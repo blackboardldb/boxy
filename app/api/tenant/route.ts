@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         slug: true,
         themePrimaryColor: true,
         themeVariant: true,
+        themeMode: true,
         // LogoUrl can be added here once it's in the schema
       },
     });
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
       name: org.name,
       themePrimaryColor: org.themePrimaryColor,
       themeVariant: org.themeVariant,
+      themeMode: org.themeMode,
     });
   } catch (error) {
     console.error("[/api/tenant] Public Error:", error);

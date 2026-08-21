@@ -3,12 +3,22 @@ import { z } from "zod";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
 
-const schema = z.object({
-  themePrimaryColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Color debe ser hex de 6 dígitos"),
-  themeVariant: z.number().int().min(1).max(4),
-});
+const schema = z
+  .object({
+    themePrimaryColor: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/, "Color debe ser hex de 6 dígitos")
+      .optional(),
+    themeVariant: z.number().int().min(1).max(4).optional(),
+    themeMode: z.enum(["light", "dark"]).optional(),
+  })
+  .refine(
+    (data) =>
+      data.themePrimaryColor !== undefined ||
+      data.themeVariant !== undefined ||
+      data.themeMode !== undefined,
+    { message: "Debe enviarse al menos un campo a actualizar" }
+  );
 
 export async function PATCH(request: NextRequest) {
   // Guard migrado de lib/auth/require-admin (legacy, basado en redirect()) al
@@ -30,14 +40,19 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const updated = await prisma.organization.update({
-    where: { id: organizationId },
-    data: {
-      themePrimaryColor: parsed.data.themePrimaryColor,
-      themeVariant: parsed.data.themeVariant,
-    },
-    select: { themePrimaryColor: true, themeVariant: true },
-  });
-
-  return NextResponse.json(updated);
+  try {
+    const updated = await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        themePrimaryColor: parsed.data.themePrimaryColor,
+        themeVariant: parsed.data.themeVariant,
+        themeMode: parsed.data.themeMode,
+      },
+      select: { themePrimaryColor: true, themeVariant: true, themeMode: true },
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("[/api/centro/theme] Error:", error);
+    return NextResponse.json({ error: "Database error" }, { status: 503 });
+  }
 }

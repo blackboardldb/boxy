@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +16,6 @@ import {
   Palette,
   Sun,
   Moon,
-  Monitor,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -36,6 +35,9 @@ type OrgConfig = {
   ownerName: string | null;
   ownerLastName: string | null;
   ownerRut: string | null;
+  themePrimaryColor: string;
+  themeVariant: number;
+  themeMode: string;
 };
 
 function useOrgConfig() {
@@ -97,6 +99,22 @@ export default function ConfiguracionPage() {
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  const queryClient = useQueryClient();
+  const themeMutation = useMutation({
+    mutationFn: (newMode: string) =>
+      fetchClient("/centro/theme", {
+        method: "PATCH",
+        body: JSON.stringify({ themeMode: newMode }),
+      }),
+    onSuccess: () => {
+      toast.success("Tema actualizado correctamente");
+      queryClient.invalidateQueries({ queryKey: ["admin", "org-config"] });
+    },
+    onError: () => {
+      toast.error("Error al actualizar el tema");
+    },
+  });
 
   return (
     <div className="p-4 pt-8 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -306,19 +324,26 @@ export default function ConfiguracionPage() {
             <CardContent>
               <div className="flex flex-col gap-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Configura el tema visual por defecto para la aplicación de los alumnos. 
-                  <br />
-                  <span className="text-xs italic opacity-80">(Visualización temporal, a la espera de implementación)</span>
+                  Configura el tema visual por defecto para la aplicación de los alumnos.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" disabled className="flex-1 justify-center opacity-60">
+                  <Button
+                    variant={org?.themeMode === "light" ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1 justify-center"
+                    onClick={() => themeMutation.mutate("light")}
+                    disabled={themeMutation.isPending || !org}
+                  >
                     <Sun className="h-4 w-4 mr-2" /> Claro
                   </Button>
-                  <Button variant="outline" size="sm" disabled className="flex-1 justify-center opacity-60">
+                  <Button
+                    variant={org?.themeMode === "dark" ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1 justify-center"
+                    onClick={() => themeMutation.mutate("dark")}
+                    disabled={themeMutation.isPending || !org}
+                  >
                     <Moon className="h-4 w-4 mr-2" /> Oscuro
-                  </Button>
-                  <Button variant="default" size="sm" disabled className="flex-1 justify-center opacity-40">
-                    <Monitor className="h-4 w-4 mr-2" /> Sistema
                   </Button>
                 </div>
               </div>

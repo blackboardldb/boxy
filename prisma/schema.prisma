@@ -192,6 +192,7 @@ model Organization {
   status                    OrgStatus             @default(TRIAL)
   themePrimaryColor         String                @default("#6366f1")
   themeVariant              Int                   @default(1)
+  themeMode                 String                @default("light") // "light" | "dark", decidido por el centro
   createdAt                 DateTime              @default(now())
   updatedAt                 DateTime              @default(now()) @updatedAt
   suspendedAt               DateTime?
