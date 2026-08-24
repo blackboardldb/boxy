@@ -204,3 +204,74 @@
   /* Capa de ruido generada con SVG se edita en baseFrequency */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3e%3cfilter id='noiseFilter'%3e%3cfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3e%3c/filter%3e%3crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3e%3c/svg%3e");  
 }
+/* ── Membership Card 2 (Separado de los tokens globales) ───────────────────── */
+/* Estas variables (prefijo --mc-) son exclusivas para el componente MembershipCard2.
+   Al separarlas del tema general (--alumno-*) nos aseguramos de no romper los diseños
+   base de la app, permitiendo usar colores, degradados y textos específicos que mantengan 
+   siempre un buen contraste dentro de la tarjeta, independiente del resto del sitio. */
+
+:root {
+  /* ================== ESTADOS DE LA TARJETA (MODO OSCURO) ================== */
+  
+  /* ESTADO: ACTIVO -> Degradado en tonos verde/oliva muy oscuro */
+  --mc-bg-active: rgba(2, 2, 2, 1);
+  --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgba(3, 47, 17, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(16, 77, 37, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(65, 101, 6, 1) 0, transparent 44%);
+  
+  /* ESTADO: PROGRAMADO -> Degradado en tonos azules/petróleo profundos */
+  --mc-bg-scheduled: rgba(0, 0, 0, 1);
+  --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgba(11, 44, 97, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(10, 64, 87, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(12, 138, 152, 1) 0, transparent 44%);
+  
+  /* ESTADO: INACTIVO -> Degradado en tonos rojizos/anaranjados oscuros */
+  --mc-bg-inactive: rgba(2, 2, 2, 1);
+  --mc-grad-inactive: radial-gradient(at 99.12% 6.00%, rgba(89, 10, 10, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(101, 48, 10, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(142, 99, 11, 1) 0, transparent 44%);
+  
+  /* ESTADO: POR DEFECTO -> Gris oscuro sólido sin degradado (zinc-900) */
+  --mc-bg-default: #18181b; 
+  --mc-grad-default: none;
+
+  /* ================== ELEMENTOS Y TEXTOS (MODO OSCURO) ================== */
+  /* Textos blancos para garantizar lectura sobre los fondos negros/oscuros */
+  --mc-text-title: #ffffff;
+  --mc-text-muted: rgba(255, 255, 255, 0.8);
+  --mc-text-faint: rgba(255, 255, 255, 0.5);
+  
+  /* Bordes de la tarjeta y las divisiones internas (líneas sutiles blancas) */
+  --mc-ring: rgba(255, 255, 255, 0.1);
+  
+  /* Colores para el círculo de progreso SVG de las clases (stroke) */
+  --mc-stroke: rgba(255, 255, 255, 1); /* Anillo que se llena */
+  --mc-stroke-muted: rgba(255, 255, 255, 0.2); /* Fondo del anillo */
+}
+
+[data-alumno-theme="light"] {
+  /* ================== ESTADOS DE LA TARJETA (MODO CLARO) ================== */
+  
+  /* ESTADO: ACTIVO -> Fondo verde pastel (green-50) con degradados green-200 */
+  --mc-bg-active: rgba(240, 253, 244, 1); 
+  --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgba(187, 247, 208, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(134, 239, 172, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(163, 230, 53, 1) 0, transparent 44%);
+  
+  /* ESTADO: PROGRAMADO -> Fondo celeste/azul claro (blue-50) con degradados blue-200 */
+  --mc-bg-scheduled: rgba(239, 246, 255, 1); 
+  --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgba(191, 219, 254, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(147, 197, 253, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(125, 211, 252, 1) 0, transparent 44%);
+  
+  /* ESTADO: INACTIVO -> Fondo rosado/rojo claro (red-50) con degradados red-200 */
+  --mc-bg-inactive: rgba(254, 242, 242, 1); 
+  --mc-grad-inactive: radial-gradient(at 99.12% 6.00%, rgba(254, 202, 202, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(252, 165, 165, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(253, 186, 116, 1) 0, transparent 44%);
+  
+  /* ESTADO: POR DEFECTO -> Gris muy claro sólido (zinc-100) */
+  --mc-bg-default: #f4f4f5; 
+  --mc-grad-default: none;
+
+  /* ================== ELEMENTOS Y TEXTOS (MODO CLARO) ================== */
+  /* Al invertir los fondos a colores pasteles claros, los textos deben ser negros/oscuros (zinc-950) */
+  --mc-text-title: #09090b; 
+  --mc-text-muted: rgba(9, 9, 11, 0.7);
+  --mc-text-faint: rgba(9, 9, 11, 0.4);
+  
+  /* Bordes y divisiones usando color oscuro con transparencia (líneas sutiles negras) */
+  --mc-ring: rgba(9, 9, 11, 0.1);
+  
+  /* Círculo de progreso SVG adaptado al modo claro */
+  --mc-stroke: rgba(9, 9, 11, 1); /* Anillo principal oscuro */
+  --mc-stroke-muted: rgba(9, 9, 11, 0.2); /* Fondo del anillo tenue */
+}
