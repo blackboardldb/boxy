@@ -28,6 +28,9 @@ export async function PATCH(request: NextRequest) {
   if ("error" in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
+  if (auth.role !== "ADMIN") {
+    return NextResponse.json({ error: "Sólo administradores pueden editar el tema" }, { status: 403 });
+  }
   const { organizationId } = auth;
 
   const body = await request.json().catch(() => null);

@@ -371,7 +371,14 @@ export async function GET(
       periodHistory,
     };
 
-    return NextResponse.json({ success: true, data: response });
+    return NextResponse.json(
+      { success: true, data: response },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400",
+        },
+      }
+    );
   } catch (error) {
     console.error("[GET /api/users/[id]/stats]", error);
     return NextResponse.json(
