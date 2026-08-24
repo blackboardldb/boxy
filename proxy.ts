@@ -288,7 +288,7 @@ async function handleManagerAuth(
   requestHeaders: Headers,
   pathname: string
 ) {
-  if (pathname === "/manager/login") {
+  if (pathname === "/manager/login" || pathname.startsWith("/manager/api/cron/")) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
