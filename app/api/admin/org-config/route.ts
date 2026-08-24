@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
           slug: true,
           status: true,
           orgType: true,
-          saasPlanName: true,
+          plan: { select: { name: true } },
           saasPlanLimit: true,
           billingCycle: true,
           billingPeriodEnd: true,

@@ -25,7 +25,7 @@ type OrgConfig = {
   slug: string;
   status: string;
   orgType: string;
-  saasPlanName: string | null;
+  plan: { name: string } | null;
   saasPlanLimit: number | null;
   billingCycle: string | null;
   billingPeriodEnd: string | null;
@@ -195,7 +195,7 @@ export default function ConfiguracionPage() {
                   <div className="flex justify-between items-end">
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">Plan Actual</p>
-                      <p className="text-2xl font-bold">{org?.saasPlanName || "Sin plan"}</p>
+                      <p className="text-2xl font-bold">{org?.plan?.name || "Sin plan"}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground mb-0.5">Ciclo</p>

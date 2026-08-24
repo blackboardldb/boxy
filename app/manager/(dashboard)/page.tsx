@@ -13,7 +13,7 @@ export default async function ManagerPage() {
       name: true,
       slug: true,
       status: true,
-      saasPlanName: true,
+      plan: { select: { name: true } },
       createdAt: true,
       _count: { select: { members: true } },
     },
@@ -71,9 +71,9 @@ export default async function ManagerPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {org.saasPlanName ? (
+                    {org.plan?.name ? (
                       <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-xs font-medium">
-                        {org.saasPlanName}
+                        {org.plan.name}
                       </span>
                     ) : (
                       <span className="bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full text-xs font-medium">

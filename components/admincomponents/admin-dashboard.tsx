@@ -25,7 +25,7 @@ interface DashboardStats {
   monthlyRevenue: number;  // Ingresos reales: SUM(membership_renewals.amount) aprobados este mes
   monthlyEgresos: number;  // Egresos: SUM(expenses.monto) del mes
   monthlyBalance: number;  // monthlyRevenue - monthlyEgresos
-  saasPlanName?: "EARLY" | "BASE" | "PRO" | null;
+  saasPlanLimit?: number | null;
   overrideMaxActiveStudents?: number | null;
 }
 
@@ -102,19 +102,12 @@ export function AdminDashboard({ role }: { role: string }) {
     pendingMembers = 0,
     inactiveMembers = 0,
     newThisMonth: newMembersThisMonth = 0,
-    saasPlanName,
+    saasPlanLimit,
     overrideMaxActiveStudents,
   } = dashboardStats || {};
 
   // Calcular Límite
-  const PLAN_LIMITS: Record<string, number> = {
-    EARLY: 40,
-    BASE: 80,
-    PRO: 150,
-  };
-  
-  const planLimit = saasPlanName && PLAN_LIMITS[saasPlanName] ? PLAN_LIMITS[saasPlanName] : null;
-  const effectiveLimit = overrideMaxActiveStudents ?? planLimit;
+  const effectiveLimit = overrideMaxActiveStudents ?? saasPlanLimit ?? null;
   const currentActive = activeMembers + scheduledMembers;
   
   const remainingSpots = effectiveLimit !== null ? (effectiveLimit + 3) - currentActive : null;

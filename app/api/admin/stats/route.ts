@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       newThisMonth:     bigint;
       monthlyRevenue:   number | null;
       monthlyEgresos:   number | null;
-      saasPlanName:     string | null;
+      saasPlanLimit:    number | null;
       overrideMaxActiveStudents: number | null;
     };
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
             AND "organizationId" = ${organizationId}
         ),
         org_info AS (
-          SELECT "saasPlanName", "overrideMaxActiveStudents"
+          SELECT "saasPlanLimit", "overrideMaxActiveStudents"
           FROM "organizations"
           WHERE id = ${organizationId}
         )
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         mc."newThisMonth",
         rv."monthlyRevenue",
         eg."monthlyEgresos",
-        oi."saasPlanName",
+        oi."saasPlanLimit",
         oi."overrideMaxActiveStudents"
       FROM membership_counts mc
       CROSS JOIN renewal_pending rp
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         monthlyRevenue,  // Caja real: SUM(membership_renewals.amount) aprobados este mes
         monthlyEgresos,  // Egresos: SUM(expenses.monto) del mes
         monthlyBalance: monthlyRevenue - monthlyEgresos,
-        saasPlanName: row.saasPlanName ?? null,
+        saasPlanLimit: row.saasPlanLimit ?? null,
         overrideMaxActiveStudents: row.overrideMaxActiveStudents ?? null,
       },
     });

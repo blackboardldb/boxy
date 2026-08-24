@@ -466,24 +466,17 @@ export class UserService {
         // 1. Lock de fila para asegurar atomicidad en la cuenta de activos
         if (role === "ALUMNO") {
           const orgData: any[] = await tx.$queryRaw`
-            SELECT "saasPlanName", "overrideMaxActiveStudents"
+            SELECT "saasPlanLimit", "overrideMaxActiveStudents"
             FROM "organizations"
             WHERE id = ${orgId}
             FOR UPDATE
           `;
           if (!orgData.length) throw new Error("Organization not found");
 
-          const planName = orgData[0].saasPlanName;
+          const saasPlanLimit = orgData[0].saasPlanLimit;
           const overrideLimit = orgData[0].overrideMaxActiveStudents;
 
-          const PLAN_LIMITS: Record<string, number> = {
-            EARLY: 40,
-            BASE: 80,
-            PRO: 150,
-          };
-
-          const planLimit = planName && PLAN_LIMITS[planName] ? PLAN_LIMITS[planName] : null;
-          const effectiveLimit = overrideLimit ?? planLimit;
+          const effectiveLimit = overrideLimit ?? saasPlanLimit;
 
           if (effectiveLimit !== null) {
             const activeCount = await tx.organizationMember.count({
