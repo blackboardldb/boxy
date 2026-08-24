@@ -9,9 +9,9 @@ export default async function EditarCentroPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireManager();
+  const manager = await requireManager();
   const { id } = await params;
-  const org = await managerService.getById(id);
+  const org = await managerService.getById(id, manager.role);
   if (!org) notFound();
 
   return (

@@ -8,9 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireManager();
+    const manager = await requireManager();
     const { id } = await params;
-    const org = await managerService.getById(id);
+    const org = await managerService.getById(id, manager.role);
     
     if (!org) {
       return NextResponse.json({ error: "Centro no encontrado" }, { status: 404 });

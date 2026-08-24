@@ -244,7 +244,7 @@ export const managerService = {
   },
 
   /** Detalle completo de un centro (sin PII de miembros). */
-  async getById(id: string): Promise<OrgDetail | null> {
+  async getById(id: string, role: "OWNER" | "SUPPORT" = "SUPPORT"): Promise<OrgDetail | null> {
     const org = await prisma.organization.findUnique({
       where: { id },
       include: {
@@ -259,6 +259,8 @@ export const managerService = {
 
     if (!org) return null;
 
+    const isOwner = role === "OWNER";
+
     return {
       id: org.id,
       name: org.name,
@@ -269,12 +271,12 @@ export const managerService = {
       themePrimaryColor: org.themePrimaryColor,
       themeVariant: org.themeVariant,
       createdAt: org.createdAt,
-      email: org.email,
-      phone: org.phone,
-      address: org.address,
-      ownerName: org.ownerName,
-      ownerLastName: org.ownerLastName,
-      ownerRut: org.ownerRut,
+      email: isOwner ? org.email : null,
+      phone: isOwner ? org.phone : null,
+      address: isOwner ? org.address : null,
+      ownerName: isOwner ? org.ownerName : null,
+      ownerLastName: isOwner ? org.ownerLastName : null,
+      ownerRut: isOwner ? org.ownerRut : null,
       billingPlan: org.billingPlan,
       billingCycle: org.billingCycle,
       billingPeriodEnd: org.billingPeriodEnd,
