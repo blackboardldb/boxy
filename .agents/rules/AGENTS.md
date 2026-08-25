@@ -11,7 +11,7 @@
 - El sistema debe fallar ruidosamente (`throw Error`), no silenciosamente.
 - Todo fix de seguridad debe ser fail-closed por defecto.
 - Toda consulta a Prisma que cruce datos de tenant debe estar fuertemente tipada y filtrar por `organizationId`. `where: any` está prohibido.
-- Ver `SECURITY.md` para los patrones prohibidos específicos y su origen.
+- Ver `docs/SECURITY.md` para los patrones prohibidos específicos y su origen.
 
 ## Regla 2 — Protocolo de cambios
 
