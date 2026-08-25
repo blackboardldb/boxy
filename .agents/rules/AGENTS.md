@@ -1,16 +1,25 @@
 # Reglas de Agente para Boxy
 
-Este archivo define las reglas de comportamiento estrictas para cualquier agente que opere en el workspace de Boxy.
+## Regla 0 — Documentación obligatoria antes de trabajar
 
-## Regla 0: El Backlog y la Deuda Técnica
-- **MANDATORIO:** ANTES de iniciar cualquier tarea o responder a un nuevo requerimiento, debes leer el archivo `BACKLOG.md` en la raíz del proyecto.
-- **MANDATORIO:** Ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Si surge algo durante una sesión que no se resuelve inmediatamente, debes registrarlo en `BACKLOG.md` usando el formato estricto: **Qué falta → Por qué importa → Qué NO hacer**.
+- **MANDATORIO:** antes de iniciar cualquier tarea, leer `ARCHITECTURE.md` (estado actual del sistema) y `BACKLOG.md` (deuda pendiente).
+- **MANDATORIO:** ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Registrar en `BACKLOG.md` con el formato: **Qué falta → Por qué importa → Qué NO hacer**.
+- Si se cierra un ítem del backlog, tacharlo ahí — no dejarlo "implícitamente resuelto" sin actualizar el documento.
 
-## Regla 1: Protocolo de Seguridad
+## Regla 1 — Protocolo de seguridad
+
 - El sistema debe fallar ruidosamente (`throw Error`), no silenciosamente.
-- Todo parche de seguridad debe asegurar un comportamiento `fail-closed`.
-- Toda consulta a la base de datos que cruce tenants debe estar fuertemente tipada y filtrar por `organizationId`. El uso de `where: any` está estrictamente prohibido.
+- Todo fix de seguridad debe ser fail-closed por defecto.
+- Toda consulta a Prisma que cruce datos de tenant debe estar fuertemente tipada y filtrar por `organizationId`. `where: any` está prohibido.
+- Ver `SECURITY.md` para los patrones prohibidos específicos y su origen.
 
-## Regla 2: Protocolo de Cambios
-- Siempre presenta un `diff` y espera aprobación explícita del usuario ANTES de aplicar cambios en archivos críticos (auth, permisos, finanzas).
-- Confirma tus asunciones con consultas directas a la base de datos (vía scripts de Prisma) o mediante `grep` antes de tocar el código.
+## Regla 2 — Protocolo de cambios
+
+- Presentar el diff completo y esperar aprobación explícita antes de aplicar cambios en archivos críticos (auth, permisos, finanzas, schema de base de datos).
+- Confirmar asunciones con evidencia real (grep, query SQL directa, `tsc --noEmit`) antes de tocar código — nunca asumir el estado del código o la base de datos sin verificarlo.
+- Un cambio "urgente" no exime de mostrar el diff — la urgencia justifica la prioridad, no saltarse la revisión.
+
+## Regla 3 — Verificación post-cambio
+
+- Ningún hallazgo se cierra solo con narración de que "se aplicó" — se cierra con evidencia cruda: resultado de `tsc --noEmit`, salida de una query, log de un test real.
+- Si el cambio toca datos existentes (migración, backfill), correr una query de verificación después y pegar el resultado antes de continuar.

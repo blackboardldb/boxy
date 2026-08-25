@@ -1,28 +1,45 @@
-# Decisiones de Arquitectura y Negocio (Boxy)
+# Boxy — Decisiones de Arquitectura y Negocio
 
-*Última actualización: 24 de agosto de 2026*
+> Registro de decisiones deliberadas y su razón. No es un historial de bugs (ver CHANGELOG.md).
 
-Este documento consolida las reglas activas que rigen cómo se construye y mantiene Boxy. Sustituye y consolida documentos históricos como `APP_MANAGER.md` y retrospectivas anteriores. Cualquier desarrollo futuro debe apegarse a estas convenciones.
+## Datos y modelo
 
-## 1. Arquitectura de Datos y Estado
+| Decisión | Razón |
+|---|---|
+| Tenancy lógico (`organizationId`), sin RLS | RLS con `adapter-pg` requiere inyectar JWT claims por conexión — complejo en serverless. Toda la protección recae en capa aplicativa. |
+| Snapshot inmutable para planes SaaS | Editar la plantilla no debe afectar retroactivamente a centros ya asignados. Mismo patrón usado para snapshots de `UserMembership`. |
+| Pagos manuales, sin pasarela integrada | Decisión de negocio válida — Boxy opera como CRM/ERP de conciliación, no como procesador de pagos. |
+| Precios en CLP ×100 (centavos) | Consistencia técnica con `OrganizationPayment.amount`, no porque CLP tenga subdivisión real en circulación. |
 
-- **Snapshots Inmutables para Planes SaaS:** La lógica de negocio no debe recalcular límites basándose en nombres de planes. Se lee la columna `saasPlanLimit` (y similares) que funciona como un snapshot inmutable en la base de datos para cada centro. La relación `plan.name` se usa única y exclusivamente para propósitos de presentación en UI.
-- **Unidades Monetarias:** Todos los valores monetarios (ej. CLP) se manejan internamente en su unidad base (centavos/enteros absolutos) para evitar errores de precisión flotante.
+## Seguridad
 
-## 2. Protocolos de Seguridad y Aislamiento Multitenant (P0)
+| Decisión | Razón |
+|---|---|
+| Fail-closed por defecto en roles | Si una función recibe un rol opcional y no se pasa, asume el rol de menor privilegio (`SUPPORT`), no el de mayor. |
+| PII enmascarada devuelve `null`, no string ofuscado | Separación de dato y presentación — la UI decide cómo mostrar ausencia de dato. |
+| `organizationId` siempre del header del proxy, nunca del JWT ni del body | El JWT puede estar desfasado hasta 1h; el body lo controla el cliente. |
+| Fallo ruidoso ante violación de reglas de negocio/seguridad | `throw Error` explícito en vez de degradación silenciosa — mismo criterio en todo el proyecto (ej. plan inexistente al crear organización). |
 
-- **Aislamiento por Tenant Obligatorio:** Toda consulta a la base de datos (Prisma) que pueda cruzar información entre centros DEBE incluir explícitamente `organizationId` en su filtro `where`. 
-- **Prohibición de `where: any`:** El uso de tipos `any` para construir filtros dinámicos de Prisma está estrictamente prohibido, ya que abre la puerta a vulnerabilidades IDOR. Los filtros deben construirse con objetos fuertemente tipados.
-- **Enmascaramiento de PII por Rol (Fail-Closed):** Los datos sensibles (PII) de los centros (teléfonos, correos, RUT, nombres) solo se exponen al rol `OWNER`. Si una función recibe un rol, por defecto asume `SUPPORT` (comportamiento *fail-closed*) y enmascara los campos devolviendo `null`.
-- **Fallo Ruidoso:** El sistema debe fallar ruidosamente (`throw Error`) ante cualquier violación de reglas de negocio o seguridad. No silenciar errores de autenticación o autorización.
+## Archivos y Branding
 
-## 3. Manejo de Archivos y Branding
+| Decisión | Razón |
+|---|---|
+| Solo PNG real (magic bytes), no por extensión/MIME declarado | El cliente no es fuente confiable del tipo de archivo. |
+| Splash screen (`customSplashUrl`) descartado por ahora | Ver BACKLOG.md — un splash no tiene margen de "skeleton" como un ícono de header; mostrar el default en cada carga sería peor que no tener splash. |
+| Escalado a 512px en cliente (Canvas), no en servidor | Evita agregar librerías de procesamiento de imágenes pesadas al backend; el re-rasterizado además sanitiza metadata oculta como bonus. |
 
-- **Formatos Estrictos:** Para el branding (`customIconUrl`), se acepta única y exclusivamente formato PNG real.
-- **Validación de Archivos:** Las subidas deben validarse comprobando los "magic bytes" (firma hexadecimal del archivo), limitando el tamaño máximo (ej. 2MB) y validando dimensiones de forma manual antes de subir a Storage. No confiar únicamente en el MIME type que envía el cliente.
+## Convenciones de API
 
-## 4. Convenciones de API y Ruteo
+| Decisión | Razón |
+|---|---|
+| Endpoints de superadmin bajo `/manager/api/` | Namespace separado del resto de la app, con su propio guard (`requireManager`) y su propia tabla de usuarios (`manager_users`, independiente de `organization_members`). |
+| Excepciones de proxy lo más restrictivas posible | Un bypass amplio (`startsWith`) sin control interno propio deja rutas futuras expuestas por accidente. |
+| Cron protegido por `CRON_SECRET`, validado en el propio endpoint | El bypass del proxy no es la única barrera — el endpoint debe defenderse solo, sin asumir que el proxy lo protege. |
 
-- **Estructura Manager:** Todo endpoint exclusivo de administración de la plataforma vive bajo `/manager/api/`. 
-- **Guards de Autenticación:** Se utiliza `requireManager()` (o equivalentes) que no solo valida la sesión, sino que extrae e inyecta el `role` y el contexto necesario para las consultas posteriores.
-- **Crons y Bypass de Proxy:** Las excepciones en el proxy (ej. `/manager/api/cron/`) deben ser lo más restrictivas posible. Si una ruta se excluye de la validación de sesión, **debe** implementar su propio mecanismo de seguridad fuerte independiente (ej. validación contra `CRON_SECRET`).
+## Explícitamente descartado
+
+| Qué | Por qué |
+|---|---|
+| Realtime (Supabase) | Inerte por RLS sin policies, sin valor percibido sobre "refetch al reenfocar". Eliminado del código, no solo desactivado. |
+| `.partial()` heredado entre schemas Zod de create/update | Un campo agregado a `create` para otro propósito quedaría automáticamente editable vía `update` sin que nadie lo decida — se usa lista blanca explícita en su lugar. |
+| Strings ofuscados para enmascarar PII | Ver tabla de Seguridad arriba. |
