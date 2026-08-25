@@ -1,10 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 export async function GET(req: Request) {
   try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      console.error("[GET /manager/api/cron/billing] CRON_SECRET no configurado");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expectedToken = `Bearer ${cronSecret}`;
+
+    if (!authHeader || authHeader.length !== expectedToken.length) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(authHeader),
+      Buffer.from(expectedToken)
+    );
+
+    if (!isValid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

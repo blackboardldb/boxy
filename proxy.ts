@@ -282,13 +282,15 @@ export async function proxy(request: NextRequest) {
   return finalResponse;
 }
 
+const CRON_ROUTES = new Set(["/manager/api/cron/billing"]);
+
 /** Maneja auth para las rutas /manager sin contexto de tenant */
 async function handleManagerAuth(
   request: NextRequest,
   requestHeaders: Headers,
   pathname: string
 ) {
-  if (pathname === "/manager/login" || pathname.startsWith("/manager/api/cron/")) {
+  if (pathname === "/manager/login" || CRON_ROUTES.has(pathname)) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
