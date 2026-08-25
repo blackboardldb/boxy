@@ -2,8 +2,8 @@
 
 ## Regla 0 — Documentación obligatoria antes de trabajar
 
-- **MANDATORIO:** antes de iniciar cualquier tarea, leer `ARCHITECTURE.md` (estado actual del sistema) y `BACKLOG.md` (deuda pendiente).
-- **MANDATORIO:** ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Registrar en `BACKLOG.md` con el formato: **Qué falta → Por qué importa → Qué NO hacer**.
+- **MANDATORIO:** antes de iniciar cualquier tarea, leer `docs/ARCHITECTURE.md` (estado actual del sistema) y `docs/BACKLOG.md` (deuda pendiente).
+- **MANDATORIO:** ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Registrar en `docs/BACKLOG.md` con el formato: **Qué falta → Por qué importa → Qué NO hacer**.
 - Si se cierra un ítem del backlog, tacharlo ahí — no dejarlo "implícitamente resuelto" sin actualizar el documento.
 
 ## Regla 1 — Protocolo de seguridad

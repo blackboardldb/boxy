@@ -3,8 +3,8 @@
 Este archivo define las reglas de comportamiento estrictas para cualquier agente Gemini que opere en el workspace de Boxy. Las reglas son idénticas a las de AGENTS.md.
 
 ## Regla 0: El Backlog y la Deuda Técnica
-- **MANDATORIO:** ANTES de iniciar cualquier tarea o responder a un nuevo requerimiento, debes leer el archivo `BACKLOG.md` en la raíz del proyecto.
-- **MANDATORIO:** Ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Si surge algo durante una sesión que no se resuelve inmediatamente, debes registrarlo en `BACKLOG.md` usando el formato estricto: **Qué falta → Por qué importa → Qué NO hacer**.
+- **MANDATORIO:** ANTES de iniciar cualquier tarea o responder a un nuevo requerimiento, debes leer el archivo `docs/BACKLOG.md` en el proyecto.
+- **MANDATORIO:** Ningún ticket "no bloqueante", decisión pospuesta o deuda técnica debe quedar solo en la memoria del chat. Si surge algo durante una sesión que no se resuelve inmediatamente, debes registrarlo en `docs/BACKLOG.md` usando el formato estricto: **Qué falta → Por qué importa → Qué NO hacer**.
 
 ## Regla 1: Protocolo de Seguridad
 - El sistema debe fallar ruidosamente (`throw Error`), no silenciosamente.
