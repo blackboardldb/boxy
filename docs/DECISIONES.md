@@ -41,5 +41,6 @@
 | Qué | Por qué |
 |---|---|
 | Realtime (Supabase) | Inerte por RLS sin policies, sin valor percibido sobre "refetch al reenfocar". Eliminado del código, no solo desactivado. |
+| `customSplashUrl` | iOS no usa el manifest para splash (requiere `apple-touch-startup-image` por cada resolución de dispositivo, no una sola imagen como el logo). Alcance real mayor al estimado inicialmente para un feature de baja frecuencia de uso en B2B. Si se reconsidera, evaluar desde cero — no reutilizar el patrón de `customIconUrl`. |
 | `.partial()` heredado entre schemas Zod de create/update | Un campo agregado a `create` para otro propósito quedaría automáticamente editable vía `update` sin que nadie lo decida — se usa lista blanca explícita en su lugar. |
 | Strings ofuscados para enmascarar PII | Ver tabla de Seguridad arriba. |

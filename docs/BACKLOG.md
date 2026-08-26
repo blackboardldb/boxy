@@ -48,9 +48,4 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - ~~**Qué NO hacer:** No confiar en excepciones heredadas por prefijo si la ruta puede escalar. Tratarlo con el mismo rigor que las excepciones genéricas (`.partial()`) en Zod.~~
   - **Resolución (25 de agosto de 2026):** Se implementó una whitelist explícita (`CRON_ROUTES = new Set(["/manager/api/cron/billing"])`) en `proxy.ts`, y se robusteció la validación en el handler con `crypto.timingSafeEqual` y chequeo de existencia de la variable de entorno.
 
-## Producto / UX
 
-- [ ] **`customSplashUrl` — pospuesto por diseño, no implementado**
-  - **Qué falta:** Definir y (si corresponde) construir la subida de imagen de splash y el endpoint de configuración.
-  - **Por qué importa:** Quedó como parte del modelo de datos (`Organization`) pero nunca se hizo interfaz. Antes de implementarlo, hay que validar en un dispositivo real cómo Chrome/Safari cachean el splash de una PWA instalada (suele fijarse en el manifest y no recargarse en cada apertura, lo cual podría resolver el problema de timing de raíz).
-  - **Qué NO hacer:** No replicar la estrategia que usamos para el logo (`customIconUrl`). Un splash screen no tiene el mismo margen para manejar el timing de carga (no se puede mostrar un "skeleton" en un splash, y revertir al default en cada recarga si el custom no cargó a tiempo sería peor que no tener splash). Se descartó por esto mismo.

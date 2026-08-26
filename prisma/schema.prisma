@@ -210,7 +210,6 @@ model Organization {
   operatingHours            Json?
   orgType                   String                @default("HUB")
   timezone                  String                @default("America/Santiago")
-  saasPlanName              SaasPlan?
   overrideMaxActiveStudents Int?
   customIconUrl             String?
   customSplashUrl           String?

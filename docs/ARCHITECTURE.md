@@ -98,7 +98,7 @@ Unidad monetaria: CLP, almacenado ×100 (convención de consistencia técnica he
 
 ## 8. Branding
 
-Solo `customIconUrl` está implementado (subida de PNG por el superadmin desde `/manager/centros/[id]`). `customSplashUrl` existe en el schema pero sin implementar — ver BACKLOG.md antes de retomarlo.
+Solo `customIconUrl` está implementado (subida de PNG por el superadmin desde `/manager/centros/[id]`). `customSplashUrl` existe en el schema pero fue descartado deliberadamente — ver DECISIONES.md, tabla "Explícitamente descartado". El campo puede quedar sin uso en el schema (no bloquea nada) o eliminarse en una limpieza futura si se desea.
 
 Validaciones de archivo: magic bytes reales de PNG, peso ≤2MB, dimensiones máximas vía parsing manual del header IHDR (sin librerías de imagen). Escalado adicional a 512px en cliente vía Canvas API. Bucket de Supabase Storage `orgs`, público, con restricciones nativas de tipo/tamaño como segunda capa.
 
