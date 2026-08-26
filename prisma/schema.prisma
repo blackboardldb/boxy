@@ -522,14 +522,6 @@ enum OrgStatus {
   @@schema("public")
 }
 
-enum SaasPlan {
-  EARLY
-  BASE
-  PRO
-
-  @@schema("public")
-}
-
 enum MemberRole {
   ALUMNO
   COACH
