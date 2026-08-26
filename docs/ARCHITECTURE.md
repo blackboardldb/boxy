@@ -122,4 +122,19 @@ Boxy no usa Supabase Realtime. Fue implementado, encontrado inerte (RLS activo s
 
 ## 13. Schema `auth` en Prisma
 
-`schema.prisma` declara 22 modelos mapeados a `@@schema("auth")` (tablas internas de Supabase). Esto causa que el motor de migraciones de Prisma los incluya en cualquier baseline generado. Riesgo: un `prisma migrate reset` intentaría recrear el schema `auth` completo, pudiendo chocar con lo que Supabase gestiona internamente. Sin solución aplicada — ver BACKLOG.md.
+`schema.prisma` declara 22 modelos mapeados a `@@schema("auth")` (tablas internas de Supabase). Esto causa que el motor de migraciones de Prisma los incluya en cualquier baseline generado.
+
+**Resuelto parcialmente (26 ago 2026):** Prisma ya no trackea el schema `auth` 
+(`schemas = ["public"]`, modelos removidos). Esto evita que *futuras* migraciones 
+generen DDL sobre `auth`.
+
+**Riesgo residual, sin resolver:** la migración histórica `0_init/migration.sql` 
+SÍ contiene DDL de `auth` (43 sentencias). No se editó ese archivo porque el 
+proyecto no tiene entorno de staging (dev conecta directo a producción) y 
+coordinar `migrate resolve` sin poder probarlo primero es más riesgo que beneficio.
+
+**PROHIBIDO mientras esto no se resuelva:** ejecutar `prisma migrate reset` o 
+`prisma migrate dev` en este proyecto, bajo ninguna circunstancia. El entorno de 
+desarrollo apunta a la misma base de datos de producción — un reset destruye datos 
+reales. Usar únicamente `prisma migrate deploy` (nunca resetea, solo aplica 
+migraciones nuevas en orden) o el flujo manual de `db-migrations.md` para índices.

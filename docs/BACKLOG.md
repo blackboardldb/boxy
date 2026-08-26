@@ -8,10 +8,26 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
 
 ## Pendientes de Infraestructura y BD
 
-- [ ] **`@@schema("auth")` en Prisma**
-  - **Qué falta:** Implementar la "Opción B" (renombrar los modelos o ignorarlos en Prisma Client).
-  - **Por qué importa:** Actualmente, Prisma intenta manejar modelos que le pertenecen a Supabase Auth. Un `migrate reset` o `migrate dev` futuro podría destruir o alterar la configuración del tenant sin darnos cuenta.
-  - **Qué NO hacer:** No intentar usar la Opción A (`schemas = ["public"]`) con el preview feature `multiSchema`; Prisma exige estrictamente que todos los esquemas usados en las relaciones estén explícitamente declarados en el datasource, por lo que parcializar falla en validación.
+- [x] ~~**`@@schema("auth")` en Prisma — modelos removidos de schema.prisma**~~
+  - **Resolución (26 ago 2026):** `schemas = ["public"]`, `multiSchema` removido, 
+    22 modelos/9 enums de `auth` borrados de `schema.prisma`. Verificado con 
+    `prisma validate` y `tsc --noEmit` limpios.
+  - **Qué NO se hizo (a propósito):** No se editó `0_init/migration.sql` pese a 
+    contener DDL de `auth`. Editarlo requiere `migrate resolve --applied 0_init` 
+    coordinado exactamente contra producción, sin poder ensayarlo en staging 
+    primero. Se prefirió mitigar con prohibición documentada (ver ARCHITECTURE.md 
+    §13) hasta que exista staging.
+
+- [ ] **Crear base de datos de staging**
+  - **Qué falta:** Segunda BD (mismo proyecto Supabase o uno nuevo) para separar 
+    desarrollo de producción.
+  - **Por qué importa:** Hoy dev conecta directo a producción. Cualquier comando 
+    destructivo de Prisma corrido por error, o cualquier prueba con datos, afecta 
+    datos reales de centros/alumnos. Bloquea además poder resolver el riesgo 
+    residual de `0_init` (ver ítem de arriba) con seguridad.
+  - **Qué NO hacer:** No crearla ahora — proyecto en fase de pruebas activa, la 
+    fricción de sincronizar staging en cada merge se evaluó y se decidió postergar 
+    a propósito hasta que el desarrollo se estabilice. No es negligencia, es secuencia.
 
 - [ ] **`DROP COLUMN saasPlanName`**
   - **Qué falta:** Ejecutar el borrado físico de la columna en la BD con una migración documentada de Prisma.
