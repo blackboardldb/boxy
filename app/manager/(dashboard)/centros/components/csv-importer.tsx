@@ -92,7 +92,13 @@ const STATUS_CONFIG: Record<
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export function CsvImporter({ orgId }: { orgId: string }) {
+export function CsvImporter({
+  orgId,
+  managerRole,
+}: {
+  orgId: string;
+  managerRole: "OWNER" | "SUPPORT";
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parsed and validated rows (before import)
@@ -105,6 +111,22 @@ export function CsvImporter({ orgId }: { orgId: string }) {
   const [results, setResults] = useState<RowResult[]>([]);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [fatalError, setFatalError] = useState<string | null>(null);
+
+  // ── Guard de permisos (defensa en profundidad — el backend ya bloquea con 403) ─
+  if (managerRole !== "OWNER") {
+    return (
+      <div className="border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
+          📥 Importar alumnos por CSV
+        </div>
+        <div className="p-4">
+          <p className="text-xs text-zinc-500">
+            Solo el propietario del centro puede importar alumnos. Contactá al OWNER para ejecutar esta operación.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Paso 1: Parsear y validar el CSV en el cliente ──────────────────────────
 

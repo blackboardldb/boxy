@@ -13,7 +13,7 @@ export default async function CentroDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireManager();
+  const manager = await requireManager();
   const { id } = await params;
 
   // BUG-07: se usa _count en lugar de include de members con PII.
@@ -133,8 +133,8 @@ export default async function CentroDetailPage({
       {/* Branding Uploader */}
       <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
 
-      {/* Importador CSV de alumnos — OWNER only (el componente es visible para todos, el backend valida) */}
-      <CsvImporter orgId={org.id} />
+      {/* Importador CSV de alumnos — OWNER only (la prop oculta la UI para SUPPORT; el backend valida con 403) */}
+      <CsvImporter orgId={org.id} managerRole={manager.role} />
     </div>
   );
 }
