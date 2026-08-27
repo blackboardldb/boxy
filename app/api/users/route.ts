@@ -6,6 +6,7 @@ import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { createUserSchema } from "@/lib/schemas";
 import { toMidnightUTC } from "@/lib/utils/dates";
+import { decryptPassword } from "@/lib/utils/encryption";
 import type { MemberRole } from "@prisma/client";
 
 // Whitelist: valores permitidos en body.role → enum MemberRole de Prisma.
@@ -184,13 +185,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Caso A — email nuevo en el sistema
-    // 1. Crear en Supabase Auth y capturar el UUID (authId)
+    // 1. Resolver la contraseña del tenant antes de tocar Auth
+    const org = await prisma.organization.findUnique({
+      where: { id: activeOrgId },
+      select: { defaultStudentPassword: true },
+    });
+    if (!org?.defaultStudentPassword) {
+      return NextResponse.json(
+        { success: false, error: "El centro no tiene contraseña por defecto configurada. Configúrala desde el panel de administración." },
+        { status: 500 }
+      );
+    }
+    const plainStudentPassword = decryptPassword(org.defaultStudentPassword);
+    if (plainStudentPassword.startsWith("Error")) {
+      throw new Error(`[POST /api/users] No se pudo desencriptar defaultStudentPassword del centro ${activeOrgId}.`);
+    }
+
+    // 2. Crear en Supabase Auth y capturar el UUID (authId)
     let authId: string;
     try {
       console.log("[POST /api/users] Creando usuario en Supabase Auth:", emailLowerCase);
       authId = await createAuthUser(
         emailLowerCase,
-        toAuthRole(body.role), // BUG-ROLE-01 fix: contraseña por defecto según rol real
+        toAuthRole(body.role),
+        plainStudentPassword,
         {
           firstName: body.firstName,
           lastName: body.lastName,

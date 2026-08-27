@@ -27,59 +27,37 @@ export function createAdminClient() {
 }
 
 /**
- * HAL-12b: Contraseñas por defecto según rol — leídas de env vars sin fallback.
- * Si alguna variable falta, el servidor falla en boot con un error claro
- * en vez de correr con credenciales expuestas en el código fuente.
+ * Crea un usuario en Supabase Authentication con la contraseña explícita del tenant.
+ * La contraseña DEBE provenir de Organization.defaultStudentPassword/defaultCoachPassword/
+ * defaultAdminPassword, desencriptada con decryptPassword() antes de llamar a esta función.
+ * No existe ningún fallback global — si no llega una contraseña válida, falla ruidosamente.
  *
- * Variables requeridas:
- *   DEFAULT_PASSWORD_ALUMNO   (ej: ddd)
- *   DEFAULT_PASSWORD_COACH    (ej: ddd)
- *   DEFAULT_PASSWORD_ADMIN    (ej: ddd)
- */
-const alumnoPassword = process.env.DEFAULT_PASSWORD_ALUMNO;
-const coachPassword  = process.env.DEFAULT_PASSWORD_COACH;
-const adminPassword  = process.env.DEFAULT_PASSWORD_ADMIN;
-
-if (!alumnoPassword || !coachPassword || !adminPassword) {
-  const missing = [
-    !alumnoPassword && "DEFAULT_PASSWORD_ALUMNO",
-    !coachPassword  && "DEFAULT_PASSWORD_COACH",
-    !adminPassword  && "DEFAULT_PASSWORD_ADMIN",
-  ].filter(Boolean);
-  throw new Error(
-    `[admin.ts] Faltan variables de entorno requeridas: ${missing.join(", ")}. Configúralas en Vercel y en .env local.`
-  );
-}
-
-const DEFAULT_PASSWORDS: Record<"alumno" | "coach" | "admin", string> = {
-  alumno: alumnoPassword,
-  coach:  coachPassword,
-  admin:  adminPassword,
-};
-
-/**
- * Crea un usuario en Supabase Authentication con la contraseña por defecto según su rol.
- * También inserta la fila en `public.profiles` con el rol dado.
- *
- * @param email    Email del usuario
- * @param role     Rol en la tabla profiles ("alumno" | "coach" | "admin")
- * @param metadata Metadata adicional (nombre, apellido, etc.)
+ * @param email           Email del usuario
+ * @param role            Rol en auth metadata ("alumno" | "coach" | "admin")
+ * @param explicitPassword Contraseña en texto plano ya desencriptada del tenant (obligatoria)
+ * @param metadata        Metadata adicional (nombre, apellido, etc.)
+ * @param organizationId  ID de la organización para app_metadata
  * @returns El ID del usuario creado en auth.users
  */
 export async function createAuthUser(
   email: string,
   role: "alumno" | "coach" | "admin",
+  explicitPassword: string,
   metadata?: { firstName?: string; lastName?: string },
   organizationId?: string
 ): Promise<string> {
-  const supabase = createAdminClient();
+  if (!explicitPassword) {
+    throw new Error(
+      "[admin.ts] createAuthUser requiere explicitPassword — la contraseña debe venir del tenant (Organization.defaultStudentPassword/defaultCoachPassword/defaultAdminPassword), sin ningún fallback global."
+    );
+  }
 
-  const defaultPassword = DEFAULT_PASSWORDS[role];
+  const supabase = createAdminClient();
 
   // 1. Crear usuario en auth.users con la contraseña por defecto según rol
   const { data, error } = await supabase.auth.admin.createUser({
     email,
-    password: defaultPassword,
+    password: explicitPassword,
     email_confirm: true, // Confirmar email automáticamente (no requiere verificación)
     user_metadata: {
       firstName: metadata?.firstName ?? "",

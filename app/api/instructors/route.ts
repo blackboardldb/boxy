@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { instructorService } from "@/lib/services/instructor-service";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { createAuthUser } from "@/lib/supabase/admin";
 import { requireAdminFast, requireAuthFast } from "@/lib/supabase/auth-guard";
 import { createInstructorSchema } from "@/lib/schemas";
+import { decryptPassword } from "@/lib/utils/encryption";
 
 
 export async function GET(request: NextRequest) {
@@ -89,10 +91,28 @@ export async function POST(request: NextRequest) {
     const authRole: "coach" | "admin" =
       body.role === "admin" ? "admin" : "coach";
 
-    // 1. Crear en Supabase Authentication con contraseña por defecto
+    // 1. Resolver contraseña del tenant según el rol
+    const passwordField = authRole === "admin" ? "defaultAdminPassword" : "defaultCoachPassword";
+    const org = await prisma.organization.findUnique({
+      where: { id: activeOrgId },
+      select: { [passwordField]: true },
+    }) as Record<string, string | null> | null;
+    const encryptedPassword = org?.[passwordField] ?? null;
+    if (!encryptedPassword) {
+      return NextResponse.json(
+        { success: false, error: `El centro no tiene contraseña por defecto de ${authRole} configurada.` },
+        { status: 500 }
+      );
+    }
+    const plainPassword = decryptPassword(encryptedPassword);
+    if (plainPassword.startsWith("Error")) {
+      throw new Error(`[POST /api/instructors] No se pudo desencriptar ${passwordField} del centro ${activeOrgId}.`);
+    }
+
+    // 2. Crear en Supabase Authentication con contraseña del tenant
     //    Esto permite que el instructor/coach/admin pueda iniciar sesión
     try {
-      await createAuthUser(body.email, authRole, {
+      await createAuthUser(body.email, authRole, plainPassword, {
         firstName: body.firstName,
         lastName: body.lastName,
       }, activeOrgId);

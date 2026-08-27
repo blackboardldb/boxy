@@ -7,9 +7,11 @@ const CENTER_NAME = "Centro 1";
 const CENTER_SLUG = "centro1";
 const PHONE = "12345678";
 
-// Ensure passwords exist in env, else fallback for dev/test
-const ADMIN_PASSWORD = process.env.DEFAULT_PASSWORD_ADMIN || "Admin123!";
-const ALUMNO_PASSWORD = process.env.DEFAULT_PASSWORD_ALUMNO || "Alumno123!";
+// Contraseñas estáticas de desarrollo — no conectar este script a BD de producción.
+// Estos valores son deliberadamente hardcodeados aquí: el script de seed no conoce
+// el tenant, por lo que no puede leer Organization.defaultAdminPassword.
+const ADMIN_PASSWORD  = "Admin123!";
+const ALUMNO_PASSWORD = "Alumno123!";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;

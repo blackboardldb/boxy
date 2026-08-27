@@ -164,9 +164,14 @@ export const managerService = {
       return crypto.randomInt(0, 2) === 1 ? `${slug}@${nums}` : `${slug}${nums}@`;
     };
 
-    const defaultAdminPassword = encryptPassword(generateSimplePassword(data.slug));
-    const defaultStudentPassword = encryptPassword(generateSimplePassword(data.slug));
-    const defaultCoachPassword = encryptPassword(generateSimplePassword(data.slug));
+    // Generamos cada contraseña aleatoria y retenemos el texto plano del admin
+    // para pasárselo a createAuthUser sin releer la BD.
+    const plainAdminPass   = generateSimplePassword(data.slug);
+    const plainStudentPass = generateSimplePassword(data.slug);
+    const plainCoachPass   = generateSimplePassword(data.slug);
+    const defaultAdminPassword   = encryptPassword(plainAdminPass);
+    const defaultStudentPassword = encryptPassword(plainStudentPass);
+    const defaultCoachPassword   = encryptPassword(plainCoachPass);
 
     // Obtener plan BASE por defecto
     const basePlan = await prisma.plan.findUnique({ where: { name: "BASE" } });
@@ -197,12 +202,13 @@ export const managerService = {
       },
     });
 
-    // 2. Crear admin en Supabase Auth
+    // 2. Crear admin en Supabase Auth — usa la contraseña plain del tenant (no env vars)
     let authId: string;
     try {
       authId = await createAuthUser(
         adminData.email,
-        "admin", // minúscula para createAuthUser
+        "admin",
+        plainAdminPass,
         { firstName: adminData.firstName, lastName: adminData.lastName },
         org.id
       );

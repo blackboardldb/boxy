@@ -27,3 +27,12 @@
 | — | Fix: PII de manager enmascarada por rol (`OWNER`/`SUPPORT`) | `tsc --noEmit` limpio |
 | — | Purga de `saasPlanName` en TypeScript (6 archivos) | Grep final: 0 resultados |
 | — | Consolidación `CenterLogo` + fix de carga lenta de logo | Prueba visual (sin salto en hub, skeleton en alumnos) |
+
+## 2026-08-26
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| — | Fix crítico: `createAuthUser` usaba contraseñas globales de env vars en lugar de contraseñas por tenant — erradicado `DEFAULT_PASSWORDS` de `admin.ts`, `explicitPassword` ahora parámetro obligatorio; 3 call-sites productivos actualizados (`api/users`, `api/instructors`, `manager-service`) + 2 scripts de seed con hardcode; vars `DEFAULT_PASSWORD_*` eliminadas de `.env` | `tsc --noEmit` limpio (0 call-sites viejos); control de flujo confirma Caso B (usuario multi-tenant) no pasa por `createAuthUser` |
+| — | Fix: `@@schema("auth")` — modelos `auth.*` removidos de `schema.prisma`, `multiSchema` desactivado | `prisma validate` + `tsc --noEmit` limpios |
+| — | Fix: rate-limit en `me/change-password` — 5 intentos fallidos en 15 min = 429, via `SystemEvent` por `(organizationId, userId)` | `tsc --noEmit` limpio |
+| — | Fix: proxy — whitelist explícita de rutas de cron (`CRON_ROUTES = new Set(...)`) + `crypto.timingSafeEqual` en `CRON_SECRET` | `tsc --noEmit` limpio |

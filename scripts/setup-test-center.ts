@@ -6,14 +6,17 @@ const STUDENT_EMAIL = "mpf.bup@gmail.com";
 const CENTER_NAME = "bsfit";
 const CENTER_SLUG = "bsfit";
 
-const ADMIN_PASSWORD = process.env.DEFAULT_PASSWORD_ADMIN!;
-const ALUMNO_PASSWORD = process.env.DEFAULT_PASSWORD_ALUMNO!;
+// Contraseñas estáticas de desarrollo — no conectar este script a BD de producción.
+// Estos valores son deliberadamente hardcodeados aquí: el script de seed no conoce
+// el tenant, por lo que no puede leer Organization.defaultAdminPassword.
+const ADMIN_PASSWORD  = "Admin123!";
+const ALUMNO_PASSWORD = "Alumno123!";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-if (!supabaseUrl || !serviceRoleKey || !ADMIN_PASSWORD || !ALUMNO_PASSWORD) {
-  console.error("❌ Faltan variables de entorno");
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error("❌ Faltan variables de entorno SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
   process.exit(1);
 }
 
