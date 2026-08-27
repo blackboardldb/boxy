@@ -37,3 +37,13 @@
 | — | Fix: rate-limit en `me/change-password` — 5 intentos fallidos en 15 min = 429, via `SystemEvent` por `(organizationId, userId)` | `tsc --noEmit` limpio |
 | — | Fix: proxy — whitelist explícita de rutas de cron (`CRON_ROUTES = new Set(...)`) + `crypto.timingSafeEqual` en `CRON_SECRET` | `tsc --noEmit` limpio |
 | — | Auditoría de seguridad post-fix contraseñas | Historial Git comprobó 0 exposición de variables productivas (ej. `CenterWelcome67@`). Query en DB comprobó 0 usuarios con `authId: ""` |
+
+## 2026-08-27
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| `0c5d31e` | `DROP COLUMN saasPlanName` de la BD | `prisma validate` y `tsc --noEmit` limpios |
+| `7718ab0` | Erradicar variables globales `DEFAULT_PASSWORD_*` en creación de usuarios (incluyendo backfill) | 0 dependencias globales, uso de `Organization.defaultStudentPassword` |
+| `7718ab0` | Refactor script `create-auth-for-existing-users.ts` (contraseña por tenant y fix `authId: "dummy*"`) | Queries correctas a DB; skips ruidosos operativos |
+| `7718ab0` | Script de reconciliación Auth/Prisma (`reconcile-auth-prisma.ts`) | Contraste de `supabase.auth.admin.listUsers` vs `prisma.user` |
+| `4410a06` | Fix: re-lanzar redirects de Next.js (`requireManager`) en endpoints API via `rethrowIfRedirect` | Aplicado de forma transversal a los 9 endpoints en `/manager/api/` |
