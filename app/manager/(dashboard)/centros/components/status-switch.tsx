@@ -89,7 +89,7 @@ export function StatusSwitch({
 
   if (currentStatus === "CANCELED") {
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium cursor-not-allowed opacity-75 ${statusColors.CANCELED}`}>
+      <span className={`flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium cursor-not-allowed opacity-75 border border-transparent ${statusColors.CANCELED}`}>
         CANCELED
       </span>
     );
@@ -105,7 +105,7 @@ export function StatusSwitch({
       }
     }}>
       <DialogTrigger asChild>
-        <button className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-opacity hover:opacity-80 ${statusColors[currentStatus] || statusColors.CANCELED}`}>
+        <button className={`flex items-center justify-center h-9 px-4 rounded-lg text-sm font-medium cursor-pointer transition-opacity hover:opacity-80 border border-transparent ${statusColors[currentStatus] || statusColors.CANCELED}`}>
           {currentStatus} ▾
         </button>
       </DialogTrigger>

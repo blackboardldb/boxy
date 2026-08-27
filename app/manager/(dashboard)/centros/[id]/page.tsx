@@ -54,7 +54,7 @@ export default async function CentroDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href={`/manager/centros/${org.id}/editar`}
-            className="px-4 py-1.5 border border-zinc-700 text-sm rounded-lg hover:bg-zinc-900 transition-colors"
+            className="flex items-center justify-center h-9 px-4 border border-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-900 transition-colors"
           >
             Editar
           </Link>
