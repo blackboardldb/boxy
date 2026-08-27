@@ -6,6 +6,7 @@ import { PaymentModal } from "../components/payment-modal";
 import { StatusSwitch } from "../components/status-switch";
 import { DefaultPasswords } from "../components/default-passwords";
 import { BrandingUploader } from "../components/branding-uploader";
+import { CsvImporter } from "../components/csv-importer";
 
 export default async function CentroDetailPage({
   params,
@@ -131,6 +132,9 @@ export default async function CentroDetailPage({
 
       {/* Branding Uploader */}
       <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
+
+      {/* Importador CSV de alumnos — OWNER only (el componente es visible para todos, el backend valida) */}
+      <CsvImporter orgId={org.id} />
     </div>
   );
 }
