@@ -7,6 +7,7 @@ import { StatusSwitch } from "../components/status-switch";
 import { DefaultPasswords } from "../components/default-passwords";
 import { BrandingUploader } from "../components/branding-uploader";
 import { CsvImporter } from "../components/csv-importer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function CentroDetailPage({
   params,
@@ -95,46 +96,62 @@ export default async function CentroDetailPage({
         </div>
       </div>
 
-      {/* Pagos */}
-      <div className="border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 flex items-center justify-between">
-          <span>💳 Historial de pagos</span>
-          <PaymentModal organizationId={org.id} />
+      {/* Tabs de Gestión */}
+      <Tabs defaultValue="pagos" className="w-full">
+        <div className="w-full overflow-x-auto pb-2 -mb-2">
+          <TabsList className="w-max min-w-full justify-start h-auto p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+            <TabsTrigger value="pagos" className="px-4 py-2 text-sm rounded-lg whitespace-nowrap data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all">💳 Pagos</TabsTrigger>
+            <TabsTrigger value="accesos" className="px-4 py-2 text-sm rounded-lg whitespace-nowrap data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all">🔐 Accesos</TabsTrigger>
+            <TabsTrigger value="branding" className="px-4 py-2 text-sm rounded-lg whitespace-nowrap data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all">🎨 Branding</TabsTrigger>
+            <TabsTrigger value="importar" className="px-4 py-2 text-sm rounded-lg whitespace-nowrap data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all">📥 Importar</TabsTrigger>
+          </TabsList>
         </div>
-        {org.payments.length === 0 ? (
-          <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin pagos registrados</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-zinc-500 text-xs">
-              <tr>
-                <th className="text-left px-4 py-2">Fecha</th>
-                <th className="text-left px-4 py-2">Monto</th>
-                <th className="text-left px-4 py-2">Método</th>
-                <th className="text-left px-4 py-2">Notas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {org.payments.map((p: any) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 text-zinc-400">{new Date(p.paidAt).toLocaleDateString("es-CL")}</td>
-                  <td className="px-4 py-3 font-mono">{(p.amount / 100).toLocaleString("es-CL")} {p.currency}</td>
-                  <td className="px-4 py-3 text-zinc-500">{p.method ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-600">{p.notes ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
 
-      {/* Default Passwords */}
-      <DefaultPasswords orgId={org.id} />
+        <TabsContent value="pagos" className="mt-6">
+          <div className="border border-zinc-800 rounded-xl overflow-hidden">
+            <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 flex items-center justify-between">
+              <span>💳 Historial de pagos</span>
+              <PaymentModal organizationId={org.id} />
+            </div>
+            {org.payments.length === 0 ? (
+              <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin pagos registrados</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="text-zinc-500 text-xs">
+                  <tr>
+                    <th className="text-left px-4 py-2">Fecha</th>
+                    <th className="text-left px-4 py-2">Monto</th>
+                    <th className="text-left px-4 py-2">Método</th>
+                    <th className="text-left px-4 py-2">Notas</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {org.payments.map((p: any) => (
+                    <tr key={p.id}>
+                      <td className="px-4 py-3 text-zinc-400">{new Date(p.paidAt).toLocaleDateString("es-CL")}</td>
+                      <td className="px-4 py-3 font-mono">{(p.amount / 100).toLocaleString("es-CL")} {p.currency}</td>
+                      <td className="px-4 py-3 text-zinc-500">{p.method ?? "—"}</td>
+                      <td className="px-4 py-3 text-zinc-600">{p.notes ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </TabsContent>
 
-      {/* Branding Uploader */}
-      <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
+        <TabsContent value="accesos" className="mt-6">
+          <DefaultPasswords orgId={org.id} />
+        </TabsContent>
 
-      {/* Importador CSV de alumnos — OWNER only (la prop oculta la UI para SUPPORT; el backend valida con 403) */}
-      <CsvImporter orgId={org.id} managerRole={manager.role} />
+        <TabsContent value="branding" className="mt-6">
+          <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
+        </TabsContent>
+
+        <TabsContent value="importar" className="mt-6">
+          <CsvImporter orgId={org.id} managerRole={manager.role} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
