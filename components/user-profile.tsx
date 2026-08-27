@@ -562,7 +562,7 @@ export function UserProfile() {
               <Switch
                 checked={permission === "granted"}
                 onCheckedChange={togglePush}
-                className="data-[state=checked]:bg-lime-500 data-[state=unchecked]:bg-alumno-chip-bg"
+                className="data-[state=checked]:bg-[var(--alumno-primary)] data-[state=unchecked]:bg-alumno-chip-bg"
               />
             </div>
           </div>
@@ -614,7 +614,7 @@ export function UserProfile() {
                   <button
                     onClick={saveNameInfo}
                     disabled={isSaving}
-                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Guardar"}
                   </button>
@@ -679,7 +679,7 @@ export function UserProfile() {
                   <button
                     onClick={saveContactInfo}
                     disabled={isSaving}
-                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Guardar"}
                   </button>
@@ -761,7 +761,7 @@ export function UserProfile() {
                   <button
                     onClick={savePassword}
                     disabled={isSaving || !currentPassword || !newPassword || !confirmPassword}
-                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Cambiar contraseña"}
                   </button>
@@ -826,7 +826,7 @@ export function UserProfile() {
                   <button
                     onClick={savePersonalInfo}
                     disabled={isSaving}
-                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Guardar"}
                   </button>
@@ -873,7 +873,7 @@ export function UserProfile() {
                   <button
                     onClick={saveEmergencyContactInfo}
                     disabled={isSaving}
-                    className="bg-lime-500 hover:bg-lime-400 text-black font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
+                    className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] font-semibold text-sm px-4 py-2 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-1 focus:ring-offset-zinc-900 transition-colors"
                   >
                     {isSaving ? "Guardando..." : "Guardar"}
                   </button>

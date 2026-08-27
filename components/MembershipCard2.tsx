@@ -122,7 +122,7 @@ export function MembershipCard2({
           planStatus !== "pending" &&
           !hasPendingRenewal && (
             <Link href="/alumnos/renovar-plan">
-              <Button variant="secondary" className="bg-orange-500 text-white hover:bg-orange-600">
+              <Button variant="secondary" className="bg-[var(--alumno-destructive)] text-[var(--alumno-destructive-text)] hover:bg-[var(--alumno-destructive-hover)]">
                 Renovar
               </Button>
             </Link>

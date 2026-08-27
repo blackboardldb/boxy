@@ -204,7 +204,7 @@ export default function RegistrationModal({
               <Button
                 onClick={handleConfirm}
                 disabled={isProcessing || (isLimitReached && !isConfirmed)}
-                className="bg-lime-500 hover:bg-lime-400 text-black rounded-xl font-bold"
+                className="bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] rounded-xl font-bold"
               >
                 {isProcessing ? "Procesando..." : "Confirmar reserva"}
               </Button>

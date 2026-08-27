@@ -1,0 +1,517 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
+}
+
+model User {
+  id                        String                    @id @default(cuid())
+  firstName                 String
+  lastName                  String
+  email                     String                    @unique
+  authId                    String                    @unique
+  phone                     String?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @default(now()) @updatedAt
+  dateOfBirth               DateTime?
+  emergencyContact          String?
+  gender                    String?
+  deletedAt                 DateTime?
+  classRegistrations        ClassRegistration[]
+  membershipRenewals        MembershipRenewal[]
+  memberships               OrganizationMember[]
+  routineAssignmentMembers  RoutineAssignmentMember[] @relation("RoutineAssignmentMembers")
+  routineAssignmentsCreated RoutineAssignment[]       @relation("RoutineAssignmentsCreated")
+  routineTemplatesCreated   RoutineTemplate[]         @relation("RoutineTemplatesCreated")
+  userLifts                 UserLift[]
+  userMembership            UserMembership[]
+  monthlyStats              UserMonthlyStat[]
+
+  @@index([email])
+  @@index([deletedAt])
+  @@index([authId])
+  @@map("users")
+  @@schema("public")
+}
+
+model ClassSession {
+  id              String              @id @default(cuid())
+  organizationId  String
+  disciplineId    String
+  name            String
+  dateTime        DateTime
+  durationMinutes Int
+  instructorId    String
+  capacity        Int
+  status          String              @default("scheduled")
+  notes           String?
+  isGenerated     Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  registrations   ClassRegistration[]
+  discipline      Discipline          @relation(fields: [disciplineId], references: [id])
+  instructor      Instructor          @relation(fields: [instructorId], references: [id])
+
+  @@index([dateTime])
+  @@index([disciplineId])
+  @@index([instructorId])
+  @@index([status])
+  @@index([organizationId])
+  @@index([organizationId, dateTime])
+  @@map("class_sessions")
+  @@schema("public")
+}
+
+model Discipline {
+  id                String         @id @default(cuid())
+  organizationId    String
+  name              String
+  description       String?
+  color             String         @default("#3b82f6")
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  schedule          Json?
+  cancellationRules Json?
+  capacity          Int            @default(15)
+  durationMinutes   Int            @default(60)
+  classes           ClassSession[]
+
+  @@unique([organizationId, name])
+  @@index([isActive])
+  @@index([organizationId])
+  @@map("disciplines")
+  @@schema("public")
+}
+
+model Instructor {
+  id             String         @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  role           String         @default("instructor")
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  profile        Json?
+  organizationId String
+  classes        ClassSession[]
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([email])
+  @@index([isActive])
+  @@index([role])
+  @@map("instructors")
+  @@schema("public")
+}
+
+model MembershipPlan {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  price           Float
+  duration        Int
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  features        Json?
+  config          Json?
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  userMemberships UserMembership[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([price])
+  @@map("membership_plans")
+  @@schema("public")
+}
+
+model UserMembership {
+  userId             String
+  organizationId     String
+  planId             String?
+  status             String          @default("pending")
+  startDate          DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  monthlyPrice       Float?
+  membershipType     String?
+  classLimit         Int             @default(0)
+  disciplineAccess   String          @default("all")
+  allowedDisciplines String[]        @default([])
+  canFreeze          Boolean         @default(false)
+  freezeDurationDays Int             @default(0)
+  autoRenews         Boolean         @default(false)
+  allowCancellation  Boolean         @default(true)
+  cancellationHours  Int             @default(6)
+  maxBookingsPerDay  Int             @default(3)
+  autoWaitlist       Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  plan               MembershipPlan? @relation(fields: [planId], references: [id])
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, organizationId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@map("user_memberships")
+  @@schema("public")
+}
+
+model Plan {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  maxActiveStudents Int
+  priceMonthly      Int      @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organizations     Organization[]
+
+  @@map("plans")
+  @@schema("public")
+}
+
+model Organization {
+  id                        String                @id @default(cuid())
+  name                      String
+  slug                      String                @unique
+  status                    OrgStatus             @default(TRIAL)
+  themePrimaryColor         String                @default("#6366f1")
+  themeVariant              Int                   @default(1)
+  themeMode                 String                @default("light") // "light" | "dark", decidido por el centro
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @default(now()) @updatedAt
+  suspendedAt               DateTime?
+  suspendedReason           String?
+  address                   String?
+  billingPeriodEnd          DateTime?
+  billingPlan               String?
+  email                     String?
+  ownerLastName             String?
+  ownerName                 String?
+  ownerRut                  String?
+  phone                     String?
+  billingCycle              String?
+  defaultCancellationHours  Int                   @default(6)
+  description               String?
+  operatingHours            Json?
+  orgType                   String                @default("HUB")
+  timezone                  String                @default("America/Santiago")
+  saasPlanName              SaasPlan?
+  overrideMaxActiveStudents Int?
+  customIconUrl             String?
+  customSplashUrl           String?
+  allowCustomBranding       Boolean               @default(false)
+  defaultAdminPassword      String?
+  defaultStudentPassword    String?
+  defaultCoachPassword      String?
+  encryptionKeyVersion      Int                   @default(1)
+  expenses                  Expense[]
+  inAppAlerts               InAppAlert[]
+  instructors               Instructor[]
+  membershipPlans           MembershipPlan[]
+  membershipRenewals        MembershipRenewal[]
+  members                   OrganizationMember[]
+  payments                  OrganizationPayment[]
+  pushSubscriptions         PushSubscription[]
+  routineAssignments        RoutineAssignment[]
+  routineTemplates          RoutineTemplate[]
+  events                    SystemEvent[]
+  saasPlanId                String?
+  saasPlanLimit             Int?
+  saasPlanPrice             Int?
+  plan                      Plan?                 @relation(fields: [saasPlanId], references: [id])
+
+  @@index([saasPlanId])
+  @@map("organizations")
+  @@schema("public")
+}
+
+model ClassRegistration {
+  id           String       @id @default(cuid())
+  userId       String
+  classId      String
+  status       String       @default("registered")
+  registeredAt DateTime     @default(now())
+  cancelledAt  DateTime?
+  notes        String?
+  class        ClassSession @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+  @@index([userId])
+  @@index([classId])
+  @@index([status])
+  @@map("class_registrations")
+  @@schema("public")
+}
+
+model MembershipRenewal {
+  id              String       @id @default(cuid())
+  userId          String
+  currentPlanId   String?
+  requestedPlanId String?
+  status          String       @default("pending")
+  paymentMethod   String?
+  requestedAt     DateTime     @default(now())
+  processedAt     DateTime?
+  startDate       DateTime?
+  notes           String?
+  renewalDetails  Json?
+  amount          Float?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([userId, startDate, status])
+  @@index([organizationId, userId, status, requestedAt], map: "membership_renewals_organizationId_userId_status_requestedAt_id")
+  @@map("membership_renewals")
+  @@schema("public")
+}
+
+model UserLift {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  exerciseKey    String
+  weight         Float
+  unit           String
+  recordedAt     DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, exerciseKey, recordedAt])
+  @@map("user_lifts")
+  @@schema("public")
+}
+
+model UserMonthlyStat {
+  id              String   @id @default(cuid())
+  userId          String
+  organizationId  String
+  periodStart     DateTime @db.Date
+  periodEnd       DateTime @db.Date
+  classesAttended Int      @default(0)
+  classesLimit    Int      @default(0)
+  planName        String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+  @@index([userId, periodStart(sort: Desc)])
+  @@index([organizationId])
+  @@map("user_monthly_stats")
+  @@schema("public")
+}
+
+model Expense {
+  id             String       @id @default(cuid())
+  motivo         String
+  fecha          DateTime
+  monto          Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([fecha])
+  @@index([createdAt])
+  @@map("expenses")
+  @@schema("public")
+}
+
+model InAppAlert {
+  id             String        @id @default(cuid())
+  title          String
+  content        String
+  type           String
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([startDate, endDate])
+  @@map("in_app_alerts")
+  @@schema("public")
+}
+
+model PushSubscription {
+  id             String       @id @default(cuid())
+  userId         String
+  subscription   Json
+  createdAt      DateTime     @default(now())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([userId, organizationId])
+  @@map("push_subscriptions")
+  @@schema("public")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MemberRole   @default(ALUMNO)
+  status         String       @default("active")
+  joinedAt       DateTime     @default(now())
+  formaDePago    String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([organizationId, status])
+  @@map("organization_members")
+  @@schema("public")
+}
+
+model OrganizationPayment {
+  id             String       @id @default(cuid())
+  organizationId String
+  amount         Int
+  currency       String       @default("CLP")
+  paidAt         DateTime
+  method         String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("organization_payments")
+  @@schema("public")
+}
+
+model SystemEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  type           String
+  message        String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("system_events")
+  @@schema("public")
+}
+
+model ManagerUser {
+  id        String      @id @default(cuid())
+  authId    String      @unique
+  email     String      @unique
+  role      ManagerRole @default(SUPPORT)
+  createdAt DateTime    @default(now())
+
+  @@index([authId])
+  @@map("manager_users")
+  @@schema("public")
+}
+
+model Exercise {
+  id             String   @id @default(dbgenerated("gen_random_uuid()"))
+  name           String
+  category       String?
+  muscleGroup    String?
+  description    String?
+  isCustom       Boolean  @default(false)
+  organizationId String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([category])
+  @@index([muscleGroup])
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("exercises")
+  @@schema("public")
+}
+
+model RoutineTemplate {
+  id              String              @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId  String
+  name            String
+  description     String?
+  content         Json
+  isActive        Boolean             @default(true)
+  createdByUserId String
+  createdAt       DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+  assignments     RoutineAssignment[]
+  createdBy       User                @relation("RoutineTemplatesCreated", fields: [createdByUserId], references: [id])
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdByUserId])
+  @@index([isActive])
+  @@map("routine_templates")
+  @@schema("public")
+}
+
+model RoutineAssignment {
+  id              String                    @id @default(dbgenerated("gen_random_uuid()"))
+  organizationId  String
+  assignedDate    DateTime                  @db.Date
+  content         Json
+  location        String?
+  notes           String?
+  templateId      String?
+  createdByUserId String
+  createdAt       DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime                  @default(now()) @updatedAt @db.Timestamptz(6)
+  members         RoutineAssignmentMember[]
+  createdBy       User                      @relation("RoutineAssignmentsCreated", fields: [createdByUserId], references: [id])
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template        RoutineTemplate?          @relation(fields: [templateId], references: [id])
+
+  @@index([organizationId])
+  @@index([assignedDate])
+  @@index([organizationId, assignedDate])
+  @@index([templateId])
+  @@index([createdByUserId])
+  @@map("routine_assignments")
+  @@schema("public")
+}
+
+model RoutineAssignmentMember {
+  id           String            @id @default(dbgenerated("gen_random_uuid()"))
+  assignmentId String
+  userId       String
+  completedAt  DateTime?         @db.Timestamptz(6)
+  memberNotes  String?
+  createdAt    DateTime          @default(now()) @db.Timestamptz(6)
+  assignment   RoutineAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User              @relation("RoutineAssignmentMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+  @@index([userId])
+  @@index([assignmentId])
+  @@index([userId, completedAt])
+  @@map("routine_assignment_members")
+  @@schema("public")
+}
+

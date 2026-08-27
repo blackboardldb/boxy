@@ -22,7 +22,7 @@ export default function GlobalNav() {
 
   const getLinkClass = (path: string, extraClass = "") =>
       [
-      isActive(path) ? "text-lime-500" : "text-alumno-text",
+      isActive(path) ? "text-[var(--alumno-primary)]" : "text-alumno-text",
       "transition-colors",
       extraClass,
     ].join(" ");

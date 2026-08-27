@@ -73,7 +73,7 @@ export function ClassCard({
 
   // Lógica de estado simplificada para el span
   const statusInfo = isCancelled
-    ? { label: "Cancelada", className: "text-red-500" }
+    ? { label: "Cancelada", className: "text-[var(--alumno-destructive)]" }
     : isCompleted
       ? { label: "Finalizada", className: "text-alumno-text-subtle" }
       : isInProgress
@@ -122,8 +122,8 @@ export function ClassCard({
                 {isInProgress ? (
                   <span className="flex items-center gap-1.5 mr-2 text-lime-600">
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-500 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--alumno-primary)] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--alumno-primary)]"></span>
                     </span>
                     <span className="font-bold uppercase tracking-wide text-xs text-alumno-text invert">{statusInfo.label}</span>
                   </span>
@@ -142,7 +142,7 @@ export function ClassCard({
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
       <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-alumno-text-muted ${!isActionable ? "hidden" : ""}  ${!isInProgress
         ? "text-alumno-text-muted"
-        : "text-lime-400/70"
+        : "text-[var(--alumno-primary)]/70"
         }`}>
 
 
@@ -179,12 +179,12 @@ export function ClassCard({
         <div className="mt-3 flex gap-2">
           <button
             onClick={handleAction}
+            style={{ 
+              backgroundImage: isRegistered ? "var(--alumno-destructive-gradient)" : "var(--alumno-primary-gradient)",
+              color: isRegistered ? "var(--alumno-destructive-text)" : "var(--alumno-primary-text)"
+            }}
             className={`
-              flex-1 p-2.5 rounded-xl text-base font-bold transition-colors duration-200
-              ${isRegistered
-                ? "bg-gradient-to-r from-rose-700 to-red-500 text-white hover:bg-red-700"
-                : "bg-gradient-to-r from-lime-400 to-green-400 text-black hover:bg-lime-400"
-              }
+              flex-1 p-2.5 rounded-xl text-base font-bold transition-opacity duration-200 hover:opacity-90
             `}
           >
             {isRegistered ? "Cancelar clase" : "Inscribir clase"}

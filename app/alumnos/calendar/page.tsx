@@ -18,8 +18,6 @@ import {
 } from "date-fns";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Suspense } from "react";
-
-import { Skeleton } from "@/components/ui/skeleton";
 import { ClassSession, FormattedClassItem } from "@/lib/types";
 import {
   formatWeekday,
@@ -40,22 +38,22 @@ function CalendarContent() {
   const pathname = usePathname();
 
   const today = useMemo(() => startOfDay(new Date()), []);
-  
+
   const initialDate = useMemo(() => {
     const dayParam = searchParams.get("day");
     if (!dayParam) return today;
-    
+
     const parsedDate = parseISO(dayParam);
     if (isNaN(parsedDate.getTime())) return today;
-    
+
     const realCurrentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
     const maxDate = new Date(realCurrentWeekStart);
     maxDate.setDate(realCurrentWeekStart.getDate() + 13); // Current week (7) + Next week (7) = 14 days, max date is index 13
-    
+
     if (parsedDate < realCurrentWeekStart || parsedDate > maxDate) {
       return today;
     }
-    
+
     return startOfDay(parsedDate);
   }, [searchParams, today]);
 
@@ -390,7 +388,7 @@ function CalendarContent() {
                 onClick={() => setSelectedDisciplineId("all")}
                 className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                   ${selectedDisciplineId === "all"
-                    ? "bg-lime-500 text-black font-semibold"
+                    ? "bg-[var(--alumno-primary)] text-[var(--alumno-primary-text)] font-semibold"
                     : "bg-alumno-chip-bg text-alumno-chip-text hover:bg-alumno-chip-hover"
                   }`}
               >
@@ -402,7 +400,7 @@ function CalendarContent() {
                   onClick={() => setSelectedDisciplineId(d.id)}
                   className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
                     ${selectedDisciplineId === d.id
-                      ? "bg-lime-500 text-black font-semibold"
+                      ? "bg-[var(--alumno-primary)] text-[var(--alumno-primary-text)] font-semibold"
                       : "bg-alumno-chip-bg text-alumno-chip-text hover:bg-alumno-chip-hover"
                     }`}
                 >

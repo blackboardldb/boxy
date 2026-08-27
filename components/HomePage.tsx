@@ -120,7 +120,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <Link href="/alumnos/calendar">
             <Button
               variant="link"
-              className="text-lime-400 text-sm font-semibold px-0"
+              className="text-[var(--alumno-primary)] text-sm font-semibold px-0"
             >
               Gestionar clases
             </Button>
@@ -133,7 +133,7 @@ const HomePage: React.FC<HomePageProps> = ({
           <Link href="/alumnos/renovar-plan">
             <Button
               variant="link"
-              className="text-orange-400 text-sm font-semibold px-0"
+              className="text-[var(--alumno-destructive)] text-sm font-semibold px-0"
             >
               Renovar plan
             </Button>
@@ -159,7 +159,7 @@ const HomePage: React.FC<HomePageProps> = ({
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-orange-400 text-base font-medium">
+                <p className="text-[var(--alumno-destructive)] text-base font-medium">
                   Pronto podrás reservar clases
                 </p>
                 <p className="text-alumno-text-muted text-sm">

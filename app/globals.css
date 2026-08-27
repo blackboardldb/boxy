@@ -30,102 +30,101 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    /* ── Boxy Tenant Theme ─────────────────────────────────────────────── */
-    /* Overridden per-org via inline style on the layout root div          */
-    --color-primary: #6366f1;
-    --color-primary-light: color-mix(in srgb, var(--color-primary) 15%, transparent);
-    --color-primary-hover: color-mix(in srgb, var(--color-primary) 85%, black);
-    --tenant-radius: 0.5rem;
-    --tenant-spacing: 1rem;
-
     /* ── Alumnos theme tokens (dark mode — the only mode for now) ────── */
     /* Named after their visual role, not shadcn semantics.               */
     /* A [data-alumno-theme="light"] block will be added when approved.   */
-    --alumno-bg:           0 0% 4%;           /* black / zinc-950           */
-    --alumno-surface:      0 0% 100% / 0.05;  /* white/5  — cards sobre bg  */
-    --alumno-surface-md:   0 0% 100% / 0.10;  /* white/10 — elementos activos */
-    --alumno-border:       0 0% 100% / 0.10;  /* white/10 — bordes          */
-    --alumno-text:         0 0% 100%;          /* white — texto principal    */
-    --alumno-text-muted:   240 5% 65%;         /* zinc-400 — texto secundario */
-    --alumno-text-subtle:  240 4% 46%;         /* zinc-500 — texto terciario */
-    --alumno-chip-bg:      240 4% 16%;         /* zinc-800 — chips/pills     */
-    --alumno-chip-hover:   240 4% 24%;         /* zinc-700 — hover sobre chips */
-    --alumno-chip-text:    240 5% 84%;         /* zinc-300 — texto en chips  */
+    --alumno-bg: 0 0% 4%;
+    /* black / zinc-950           */
+    --alumno-surface: 0 0% 100% / 0.05;
+    /* white/5  — cards sobre bg  */
+    --alumno-surface-md: 0 0% 100% / 0.10;
+    /* white/10 — elementos activos */
+    --alumno-border: 0 0% 100% / 0.10;
+    /* white/10 — bordes          */
+    --alumno-text: 0 0% 100%;
+    /* white — texto principal    */
+
+    /* ── Alumnos Actions & Highlights ──────────────────────────────────── */
+    /* -- Botones y Acciones Primarias (Ej: Botón Reservar, Tabs Activos) -- */
+    --alumno-primary: #84cc16;
+    /* lime-500 */
+    --alumno-primary-hover: #65a30d;
+    /* lime-600 */
+    --alumno-primary-text: #000000;
+
+    /* -- Botones con Degradado (Ej: Botón en Card de Calendario/Rutina) -- */
+    --alumno-primary-gradient: linear-gradient(to right, #a3e635, #4ade80);
+    /* from-lime-400 to-green-400 */
+
+    /* -- Botones Destructivos o Críticos (Ej: Cancelar Clase, Alertas) -- */
+    --alumno-destructive: #ef4444;
+    /* red-500 */
+    --alumno-destructive-hover: #b91c1c;
+    /* red-700 */
+    --alumno-destructive-gradient: linear-gradient(to right, #be123c, #ef4444);
+    /* from-rose-700 to-red-500 */
+    --alumno-destructive-text: #ffffff;
+
+    --alumno-text-muted: 240 5% 65%;
+    /* zinc-400 — texto secundario */
+    --alumno-text-subtle: 240 4% 46%;
+    /* zinc-500 — texto terciario */
+    --alumno-chip-bg: 240 4% 16%;
+    /* zinc-800 — chips/pills     */
+    --alumno-chip-hover: 240 4% 24%;
+    /* zinc-700 — hover sobre chips */
+    --alumno-chip-text: 240 5% 84%;
+    /* zinc-300 — texto en chips  */
   }
 
   [data-alumno-theme="light"] {
-    --alumno-bg:           160 100% 99%;       /* #fcfffe */
-    --alumno-surface:      150 7% 95%;         /* #f0f2f1 */
-    --alumno-surface-md:   150 7% 95% / 0.9;   /* #f0f2f1/90 */
-    --alumno-border:       150 7% 85%;         /* un poco más oscuro para bordes */
-    --alumno-text:         240 10% 4%;         /* texto casi negro (contrario a blanco) */
-    --alumno-text-muted:   240 5% 40%;         /* texto secundario (zinc-600) */
-    --alumno-text-subtle:  240 5% 55%;         /* texto terciario (zinc-500) */
-    --alumno-chip-bg:      150 7% 90%;         /* fondo de chips claro */
-    --alumno-chip-hover:   150 7% 85%;         /* hover de chips */
-    --alumno-chip-text:    240 5% 20%;         /* texto sobre chips */
+    --alumno-bg: 160 100% 99%;
+    /* #fcfffe */
+    --alumno-surface: 150 7% 95%;
+    /* #f0f2f1 */
+    --alumno-surface-md: 150 7% 95% / 0.9;
+    /* #f0f2f1/90 */
+    --alumno-border: 150 7% 85%;
+    /* un poco más oscuro para bordes */
+    --alumno-text: 240 10% 4%;
+    /* texto casi negro (contrario a blanco) */
+    --alumno-text-muted: 240 5% 40%;
+    /* texto secundario (zinc-600) */
+    --alumno-text-subtle: 240 5% 55%;
+    /* texto terciario (zinc-500) */
+    --alumno-chip-bg: 150 7% 90%;
+    /* fondo de chips claro */
+    --alumno-chip-hover: 150 7% 85%;
+    /* hover de chips */
+    --alumno-chip-text: 240 5% 20%;
+    /* texto sobre chips */
+
+    /* ── Alumnos Actions & Highlights (MODO CLARO) ─────────────────────── */
+    /* -- Botones y Acciones Primarias -- */
+    --alumno-primary: #3b5321;
+    /* Morado solicitado */
+    --alumno-primary-hover: #507726;
+    /* Morado más oscuro al pasar el mouse */
+    --alumno-primary-text: #ffffff;
+    /* Texto blanco para contraste con morado */
+
+    /* -- Botones con Degradado (Ej: Botón en Card de Calendario/Rutina) -- */
+    --alumno-primary-gradient: linear-gradient(to right, #507726, #3b5321);
+
+    /* -- Botones Destructivos o Críticos -- */
+    --alumno-destructive: #ef4444;
+    --alumno-destructive-hover: #b91c1c;
+    --alumno-destructive-gradient: linear-gradient(to right, #be123c, #ef4444);
+    --alumno-destructive-text: #ffffff;
   }
 }
-
-/* ── Boxy Theme Variants ──────────────────────────────────────────────────── */
-/* Each variant defines border-radius and spacing density                     */
-
-[data-variant="1"] {
-  --tenant-radius: 0.25rem;     /* Sharp — minimal, corporate */
-  --tenant-spacing: 0.875rem;
-}
-
-[data-variant="2"] {
-  --tenant-radius: 0.625rem;    /* Rounded — balanced, modern */
-  --tenant-spacing: 1rem;
-}
-
-[data-variant="3"] {
-  --tenant-radius: 1rem;        /* Soft — friendly, approachable */
-  --tenant-spacing: 1.125rem;
-}
-
-[data-variant="4"] {
-  --tenant-radius: 1.5rem;      /* Pill — playful, energetic */
-  --tenant-spacing: 1.25rem;
-}
-
-/* ── Tenant-aware utility classes ────────────────────────────────────────── */
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: var(--tenant-radius);
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  transition: background-color 0.15s ease, transform 0.1s ease;
-}
-.btn-primary:hover {
-  background-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-}
-.btn-primary:active {
-  transform: translateY(0);
-}
-
-.card-tenant {
-  border-radius: var(--tenant-radius);
-  padding: var(--tenant-spacing);
-}
-
-.accent-primary {
-  color: var(--color-primary);
-}
-
-.bg-primary-light {
-  background-color: var(--color-primary-light);
-}
-
 
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -148,18 +147,23 @@
 
   /* Ocultar scrollbar en todos los elementos — scroll sigue funcionando */
   * {
-    scrollbar-width: none;        /* Firefox */
-    -ms-overflow-style: none;     /* IE / Edge legacy */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE / Edge legacy */
   }
+
   *::-webkit-scrollbar {
-    display: none;                /* Chrome / Safari / iOS */
+    display: none;
+    /* Chrome / Safari / iOS */
   }
 
   /* html y body: evitar el bounce de rubber-band en los extremos */
   html,
   body {
     overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch; /* momentum scroll nativo en iOS */
+    -webkit-overflow-scrolling: touch;
+    /* momentum scroll nativo en iOS */
   }
 
   /* Evitar selección accidental de texto al hacer tap rápido */
@@ -179,31 +183,32 @@
 
 
 .fancy {
-  display: inline; 
-  white-space: normal; 
-  
-  --deco-height: 0.35em; 
+  display: inline;
+  white-space: normal;
+
+  --deco-height: 0.35em;
   --deco-spacing: 0.2em;
 
   padding-bottom: var(--deco-spacing);
-  
-  
+
+
   background-image: url("data:image/svg+xml,%3Csvg width='100' height='64' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg clip-path='url(%23a)'%3E%3Cpath d='M-17 30.5C-1 22 72-4 54 13 37.9 28.2-2.5 57.5 16 55.5s72-29 104-40' stroke='%2300FDCF' stroke-width='10'/%3E%3C/g%3E%3Cdefs%3E%3CclipPath id='a'%3E%3Cpath fill='currentColor' d='M0 0h100v64H0z'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
   background-repeat: repeat-x;
   background-size: auto var(--deco-height);
-  background-position: 0 100%; 
+  background-position: 0 100%;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   margin-bottom: 1rem;
-  
+
 }
 
 .bg-noise {
   /* Color de fondo */
-  background-color: #000; 
+  background-color: #000;
   /* Capa de ruido generada con SVG se edita en baseFrequency */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3e%3cfilter id='noiseFilter'%3e%3cfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3e%3c/filter%3e%3crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3e%3c/svg%3e");  
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3e%3cfilter id='noiseFilter'%3e%3cfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3e%3c/filter%3e%3crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3e%3c/svg%3e");
 }
+
 /* ── Membership Card 2 (Separado de los tokens globales) ───────────────────── */
 /* Estas variables (prefijo --mc-) son exclusivas para el componente MembershipCard2.
    Al separarlas del tema general (--alumno-*) nos aseguramos de no romper los diseños
@@ -212,21 +217,21 @@
 
 :root {
   /* ================== ESTADOS DE LA TARJETA (MODO OSCURO) ================== */
-  
+
   /* ESTADO: ACTIVO -> Degradado en tonos verde/oliva muy oscuro */
   --mc-bg-active: rgba(2, 2, 2, 1);
   --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgba(3, 47, 17, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(16, 77, 37, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(65, 101, 6, 1) 0, transparent 44%);
-  
+
   /* ESTADO: PROGRAMADO -> Degradado en tonos azules/petróleo profundos */
   --mc-bg-scheduled: rgba(0, 0, 0, 1);
   --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgba(11, 44, 97, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(10, 64, 87, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(12, 138, 152, 1) 0, transparent 44%);
-  
+
   /* ESTADO: INACTIVO -> Degradado en tonos rojizos/anaranjados oscuros */
   --mc-bg-inactive: rgba(2, 2, 2, 1);
   --mc-grad-inactive: radial-gradient(at 99.12% 6.00%, rgba(89, 10, 10, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(101, 48, 10, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(142, 99, 11, 1) 0, transparent 44%);
-  
+
   /* ESTADO: POR DEFECTO -> Gris oscuro sólido sin degradado (zinc-900) */
-  --mc-bg-default: #18181b; 
+  --mc-bg-default: #18181b;
   --mc-grad-default: none;
 
   /* ================== ELEMENTOS Y TEXTOS (MODO OSCURO) ================== */
@@ -234,44 +239,48 @@
   --mc-text-title: #ffffff;
   --mc-text-muted: rgba(255, 255, 255, 0.8);
   --mc-text-faint: rgba(255, 255, 255, 0.5);
-  
+
   /* Bordes de la tarjeta y las divisiones internas (líneas sutiles blancas) */
   --mc-ring: rgba(255, 255, 255, 0.1);
-  
+
   /* Colores para el círculo de progreso SVG de las clases (stroke) */
-  --mc-stroke: rgba(255, 255, 255, 1); /* Anillo que se llena */
-  --mc-stroke-muted: rgba(255, 255, 255, 0.2); /* Fondo del anillo */
+  --mc-stroke: rgba(255, 255, 255, 1);
+  /* Anillo que se llena */
+  --mc-stroke-muted: rgba(255, 255, 255, 0.2);
+  /* Fondo del anillo */
 }
 
 [data-alumno-theme="light"] {
   /* ================== ESTADOS DE LA TARJETA (MODO CLARO) ================== */
-  
+
   /* ESTADO: ACTIVO -> Fondo verde pastel (green-50) con degradados green-200 */
-  --mc-bg-active: rgba(240, 253, 244, 1); 
+  --mc-bg-active: rgba(240, 253, 244, 1);
   --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgba(187, 247, 208, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(134, 239, 172, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(163, 230, 53, 1) 0, transparent 44%);
-  
+
   /* ESTADO: PROGRAMADO -> Fondo celeste/azul claro (blue-50) con degradados blue-200 */
-  --mc-bg-scheduled: rgba(239, 246, 255, 1); 
+  --mc-bg-scheduled: rgba(239, 246, 255, 1);
   --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgba(191, 219, 254, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(147, 197, 253, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(125, 211, 252, 1) 0, transparent 44%);
-  
+
   /* ESTADO: INACTIVO -> Fondo rosado/rojo claro (red-50) con degradados red-200 */
-  --mc-bg-inactive: rgba(254, 242, 242, 1); 
+  --mc-bg-inactive: rgba(254, 242, 242, 1);
   --mc-grad-inactive: radial-gradient(at 99.12% 6.00%, rgba(254, 202, 202, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(252, 165, 165, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(253, 186, 116, 1) 0, transparent 44%);
-  
+
   /* ESTADO: POR DEFECTO -> Gris muy claro sólido (zinc-100) */
-  --mc-bg-default: #f4f4f5; 
+  --mc-bg-default: #f4f4f5;
   --mc-grad-default: none;
 
   /* ================== ELEMENTOS Y TEXTOS (MODO CLARO) ================== */
   /* Al invertir los fondos a colores pasteles claros, los textos deben ser negros/oscuros (zinc-950) */
-  --mc-text-title: #09090b; 
+  --mc-text-title: #09090b;
   --mc-text-muted: rgba(9, 9, 11, 0.7);
   --mc-text-faint: rgba(9, 9, 11, 0.4);
-  
+
   /* Bordes y divisiones usando color oscuro con transparencia (líneas sutiles negras) */
   --mc-ring: rgba(9, 9, 11, 0.1);
-  
+
   /* Círculo de progreso SVG adaptado al modo claro */
-  --mc-stroke: rgba(9, 9, 11, 1); /* Anillo principal oscuro */
-  --mc-stroke-muted: rgba(9, 9, 11, 0.2); /* Fondo del anillo tenue */
+  --mc-stroke: rgba(9, 9, 11, 1);
+  /* Anillo principal oscuro */
+  --mc-stroke-muted: rgba(9, 9, 11, 0.2);
+  /* Fondo del anillo tenue */
 }

@@ -96,7 +96,7 @@ export function WeightConverter() {
               variant="outline"
               size="icon"
               onClick={handleSwapUnits}
-              className="h-12 w-12 rounded-full hover:rotate-180 transition-transform duration-300 bg-lime-500 hover:bg-lime-600 text-black"
+              className="h-12 w-12 rounded-full hover:rotate-180 transition-transform duration-300 bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)]"
             >
               <ArrowUpDown className="h-5 w-5" />
             </Button>

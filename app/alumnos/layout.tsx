@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div data-alumno-theme={currentUser?.themeMode || "dark"}>
+    <div data-alumno-theme={currentUser?.themeMode || "dark"} className="min-h-screen bg-alumno-bg">
       {showInstallBanner && (
         <div className="bg-alumno-bg text-alumno-text px-4 py-2 flex items-center justify-between sticky top-0 z-[100] animate-in slide-in-from-top duration-300">
           <div className="flex items-center gap-3">

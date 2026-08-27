@@ -405,7 +405,7 @@ export default function RenewPlanPage() {
           <div className="pt-4">
             <Button
               size="lg"
-              className="w-full bg-lime-500 hover:bg-lime-400 text-black disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[var(--alumno-primary)] hover:bg-[var(--alumno-primary-hover)] text-[var(--alumno-primary-text)] disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedPlanId || !selectedPayment || isLoading}
               onClick={handleConfirmRenewal}
             >
