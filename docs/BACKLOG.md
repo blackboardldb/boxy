@@ -38,10 +38,10 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
     - No migrar todo el flujo de golpe — empezar solo con staging para migraciones de schema (el caso de uso más riesgoso hoy), no necesariamente replicar todo el pipeline de CI/CD desde el día uno.
   - **Qué NO hacer:** No crear staging apurado solo para "tener la casilla marcada" — si la sincronización entre ambientes no se diseña bien desde el principio, genera más fricción y falsos positivos ("funcionó en staging pero no en prod" por drift entre ambas) que el problema que resuelve.
 
-- [ ] **`DROP COLUMN saasPlanName`**
-  - **Qué falta:** Ejecutar el borrado físico de la columna en la BD con una migración documentada de Prisma.
-  - **Por qué importa:** La columna ya fue desenchufada de TypeScript para erradicar la doble fuente de verdad (ahora se usa el snapshot validado `saasPlanLimit` y la relación `plan.name`). Mantenerla viva indefinidamente genera confusión semántica en la DB.
-  - **Qué NO hacer:** No borrar la columna en el mismo sprint en el que se limpia el código. Esperar a confirmar la estabilidad absoluta en producción (0 referencias rotas) antes de lanzar el drop irreversible.
+- [x] ~~**`DROP COLUMN saasPlanName`**~~
+  - ~~**Qué falta:** Ejecutar el borrado físico de la columna en la BD con una migración documentada de Prisma.~~
+  - ~~**Por qué importa:** La columna ya fue desenchufada de TypeScript para erradicar la doble fuente de verdad (ahora se usa el snapshot validado `saasPlanLimit` y la relación `plan.name`). Mantenerla viva indefinidamente genera confusión semántica en la DB.~~
+  - ~~**Resolución (27 ago 2026):** Ya se ejecutó en producción (`0c5d31e`), comprobado con `prisma validate` y `tsc --noEmit`.~~
 
 ## Seguridad y Arquitectura
 
@@ -57,33 +57,20 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - ~~**Qué NO hacer:** No confiar en excepciones heredadas por prefijo si la ruta puede escalar. Tratarlo con el mismo rigor que las excepciones genéricas (`.partial()`) en Zod.~~
   - **Resolución (25 de agosto de 2026):** Se implementó una whitelist explícita (`CRON_ROUTES = new Set(["/manager/api/cron/billing"])`) en `proxy.ts`, y se robusteció la validación en el handler con `crypto.timingSafeEqual` y chequeo de existencia de la variable de entorno.
 
-- [ ] **Erradicar uso de `DEFAULT_PASSWORD_*` de variables de entorno en creación de usuarios**
-  - **Qué falta:** Modificar `createAuthUser` en `lib/supabase/admin.ts` y el endpoint `POST /api/users` para que utilicen la contraseña cifrada por tenant (`defaultStudentPassword`, etc. en la tabla `Organization`), erradicando la lectura global de `process.env.DEFAULT_PASSWORD_ALUMNO`.
-  - **Por qué importa:** Actualmente, la creación de alumnos (y pronto el CSV) asigna la contraseña global heredada en lugar de la generada única para ese centro (tenant). Esto rompe la seguridad y el diseño de contraseñas por tenant.
-  - **Qué NO hacer:** No hacer un fallback a las variables de entorno si la del tenant falta; fallar ruidosamente si un centro no tiene configurada su contraseña por defecto. No logear la contraseña desencriptada.
-  - **Resolución (26 ago 2026):** Aplicado en 4 archivos productivos (`admin.ts`, `api/users/route.ts`, `api/instructors/route.ts`, `manager-service.ts`) + 2 scripts de seed con hardcode. Ver ticket de backfill abajo para `create-auth-for-existing-users.ts`.
+- [x] ~~**Erradicar uso de `DEFAULT_PASSWORD_*` de variables de entorno en creación de usuarios**~~
+  - ~~**Qué falta:** Modificar `createAuthUser` en `lib/supabase/admin.ts` y el endpoint `POST /api/users` para que utilicen la contraseña cifrada por tenant (`defaultStudentPassword`, etc. en la tabla `Organization`), erradicando la lectura global de `process.env.DEFAULT_PASSWORD_ALUMNO`.~~
+  - ~~**Por qué importa:** Actualmente, la creación de alumnos (y pronto el CSV) asigna la contraseña global heredada en lugar de la generada única para ese centro (tenant). Esto rompe la seguridad y el diseño de contraseñas por tenant.~~
+  - ~~**Qué NO hacer:** No hacer un fallback a las variables de entorno si la del tenant falta; fallar ruidosamente si un centro no tiene configurada su contraseña por defecto. No logear la contraseña desencriptada.~~
+  - ~~**Resolución (27 ago 2026):** Aplicado en todo el código productivo y en el script de backfill (`create-auth-for-existing-users.ts`).~~
 
-- [ ] **Refactorizar `scripts/create-auth-for-existing-users.ts` para usar contraseña por tenant**
-  - **Qué falta:** El script lee `DEFAULT_PASSWORD_ALUMNO` de env vars (contraseña global) para crear usuarios en Auth. Debe cambiarse para leer `Organization.defaultStudentPassword` del primer `OrganizationMember` del usuario y desencriptarla. Diseño aprobado:
-    1. Añadir `include: { memberships: { take: 1, select: { organizationId: true } } }` al `findMany` de usuarios.
-    2. Por cada usuario nuevo a crear: consultar `prisma.organization.findUnique` → `decryptPassword` → pasar a `supabase.auth.admin.createUser`.
-    3. Si `memberships` está vacío: log `"SKIP — sin centro asignado, no se puede determinar la contraseña"` y continuar.
-    4. Si `defaultStudentPassword` es null en ese centro: idem, log y skip ruidoso.
-    5. Si el usuario pertenece a más de 1 centro: log explícito `"Usando password de organización X (de N encontradas) para <email> — verificar manualmente si el usuario pertenece a otro centro"` y usar el primero (`memberships[0]`).
-  - **Por qué importa:** El script es de backfill (puede tocar usuarios reales), así que aplicarle un hardcode reproduce exactamente el bug que estamos cerrando, solo que en otro archivo.
-  - **Qué NO hacer:** No poner ningún fallback ni hardcode si no se puede resolver la contraseña del tenant. No logear el texto plano de la contraseña.
+- [x] ~~**Refactorizar `scripts/create-auth-for-existing-users.ts` para usar contraseña por tenant**~~
+  - ~~**Resolución (27 ago 2026):** Refactorizado para usar `Organization.defaultStudentPassword`, con logs detallados, skips ruidosos si no hay centro o password, y usando la contraseña del primer centro si hay múltiples.~~
 
-- [ ] **Bug: `create-auth-for-existing-users.ts` filtra por `authId: ""` en vez de `authId: null`**
-  - **Qué falta:** La query de Prisma en línea 68 usa `where: { authId: "" }`, pero el campo `authId` es `String` no-nullable en el schema — los usuarios sin Auth real probablemente tienen `authId: null` o un UUID inválido, no un string vacío. Verificar con una query directa si hay usuarios con `authId: ""` en producción y corregir el filtro al valor real que usa el sistema.
-  - **Por qué importa:** Si el filtro no captura a los usuarios que realmente necesitan backfill, el script corre pero no hace nada — silencioso y peligroso.
-  - **Qué NO hacer:** No asumir que el sistema nunca guarda `authId: ""` sin verificar antes con una query directa.
-  - **Verificación ejecutada (27 ago 2026):** `prisma.user.count({ where: { authId: "" } })` → **0**. No hay usuarios con string vacío hoy.
+- [x] ~~**Bug: `create-auth-for-existing-users.ts` filtra por `authId: ""` en vez de `authId: null`**~~
+  - ~~**Resolución (27 ago 2026):** Verificado en base de datos que los usuarios sin Auth válido tienen un `authId` que empieza con `"dummy"` (ej. `dummy1`, `dummy2`). El script fue actualizado para usar `authId: { startsWith: "dummy" }`.~~
 
-- [ ] **Script de reconciliación Auth/Prisma — detectar usuarios huérfanos**
-  - **Qué falta:** Un script que compare `auth.users` de Supabase contra `users.authId` en Prisma e identifique UUIDs que existen en Auth sin contraparte en Prisma (rollback fallido en `createOrAttachStudent`).
-  - **Por qué importa:** Si `deleteAuthUser` falla durante el rollback, el huérfano queda solo en `console.error` (Vercel logs, efímeros). Un email huérfano en Auth queda bloqueado permanentemente — Supabase no permite re-crearlo.
-  - **Qué NO hacer:** No hacerlo como `SystemEvent` en el momento del fallo — si la BD está en mal estado, también puede fallar. Debe ser una operación independiente.
-  - **Diseño:** `supabase.auth.admin.listUsers()` paginado vs `prisma.user.findMany({ select: { authId: true } })` → diff → log/export de UUIDs a revisar.
+- [x] ~~**Script de reconciliación Auth/Prisma — detectar usuarios huérfanos**~~
+  - ~~**Resolución (27 ago 2026):** Creado en `scripts/reconcile-auth-prisma.ts`. Descarga todos los usuarios paginados de Supabase Auth, los contrasta contra `authId` en Prisma y loguea (en formato legible) los UUIDs que existen en Auth pero no en Prisma.~~
 
 - [ ] **`requireManager()` — redirects de Next.js atrapados por catch genérico en API routes**
   - **Qué falta:** Todos los endpoints en `/manager/api/` envuelven `requireManager()` en un `try/catch` que no distingue el error especial de `redirect()` de Next.js (digest `NEXT_REDIRECT;...`) de un error real. Si la sesión es inválida, el catch genérico lo trata como fallo interno y responde 500 en vez de dejar que la redirección a `/manager/login` ocurra. Confirmado con evidencia real: `getRedirectError('/manager/login', 'replace').digest === "NEXT_REDIRECT;replace;/manager/login;307;"` (27 ago 2026).

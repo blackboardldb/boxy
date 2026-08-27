@@ -18,6 +18,7 @@ import { createClient } from "@supabase/supabase-js";
 import { PrismaClient } from "@prisma/client";
 
 import { prisma } from "../lib/prisma";
+import { decryptPassword } from "../lib/utils/encryption";
 
 function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,7 +31,7 @@ function createAdminClient() {
   });
 }
 
-const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD_ALUMNO;
+
 
 /** Carga todos los usuarios de Supabase Auth con paginación, retorna mapa email→id */
 async function buildAuthUserMap(supabase: ReturnType<typeof createAdminClient>): Promise<Map<string, string>> {
@@ -55,23 +56,27 @@ async function buildAuthUserMap(supabase: ReturnType<typeof createAdminClient>):
 }
 
 async function run() {
-  if (!DEFAULT_PASSWORD) {
-    throw new Error("Falta DEFAULT_PASSWORD_ALUMNO en el entorno.");
-  }
+
 
   const supabase = createAdminClient();
 
   // 1. Cargar mapa de Auth en memoria (una sola vez)
   const authMap = await buildAuthUserMap(supabase);
 
-  // 2. Traer todos los activos sin authId desde Prisma
+  // 2. Traer todos los activos sin authId válido desde Prisma (tienen "dummyX")
   const users = await prisma.user.findMany({
-    where: { deletedAt: null, authId: "" },
-    select: { id: true, email: true, firstName: true, lastName: true },
+    where: { deletedAt: null, authId: { startsWith: "dummy" } },
+    select: { 
+      id: true, 
+      email: true, 
+      firstName: true, 
+      lastName: true,
+      memberships: { select: { organizationId: true } }
+    },
     orderBy: { email: "asc" },
   });
 
-  console.log(`Usuarios activos sin authId en Prisma: ${users.length}\n`);
+  console.log(`Usuarios activos con authId 'dummy' en Prisma: ${users.length}\n`);
 
   let creados = 0;
   let vinculados = 0;
@@ -92,10 +97,43 @@ async function run() {
       continue;
     }
 
+    // Resolver password del tenant
+    if (user.memberships.length === 0) {
+      console.log(`⏭️  SKIP         ${user.email} — sin centro asignado, no se puede determinar la contraseña.`);
+      errores++;
+      continue;
+    }
+
+    if (user.memberships.length > 1) {
+      console.warn(`⚠️  MÚLTIPLES   ${user.email} — pertenece a ${user.memberships.length} centros. Usando la contraseña del centro ${user.memberships[0].organizationId}. Verificar manualmente.`);
+    }
+
+    const orgId = user.memberships[0].organizationId;
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { defaultStudentPassword: true }
+    });
+
+    if (!org || !org.defaultStudentPassword) {
+      console.log(`⏭️  SKIP         ${user.email} — el centro ${orgId} no tiene defaultStudentPassword configurada.`);
+      errores++;
+      continue;
+    }
+
+    let password = "";
+    try {
+      password = decryptPassword(org.defaultStudentPassword);
+      if (password.startsWith("Error")) throw new Error(password);
+    } catch (e) {
+      console.error(`❌ ERROR      ${user.email} — Error al desencriptar password del centro ${orgId}.`);
+      errores++;
+      continue;
+    }
+
     // No existe → crear cuenta nueva en Auth
     const { data, error } = await supabase.auth.admin.createUser({
       email: emailLower,
-      password: DEFAULT_PASSWORD,
+      password: password,
       email_confirm: true,
       user_metadata: {
         firstName: user.firstName,
@@ -109,8 +147,6 @@ async function run() {
       errores++;
       continue;
     }
-
-
 
     // Persistir authId en Prisma
     await prisma.user.update({
@@ -130,14 +166,14 @@ async function run() {
 
   // ── Verificación final ────────────────────────────────────────────────────
   const sinAuthIdActivos = await prisma.user.count({
-    where: { authId: "", deletedAt: null },
+    where: { authId: { startsWith: "dummy" }, deletedAt: null },
   });
 
   console.log(`\n── Verificación ─────────────────────────`);
-  console.log(`Usuarios activos sin authId: ${sinAuthIdActivos}`);
+  console.log(`Usuarios activos con authId 'dummy': ${sinAuthIdActivos}`);
 
   if (sinAuthIdActivos > 0) {
-    console.warn(`\n⚠️  Aún hay ${sinAuthIdActivos} usuarios activos sin authId. Revisar los errores arriba.`);
+    console.warn(`\n⚠️  Aún hay ${sinAuthIdActivos} usuarios activos con authId dummy. Revisar los skips o errores arriba.`);
     await prisma.$disconnect();
     process.exit(1);
   } else {
