@@ -36,3 +36,4 @@
 | — | Fix: `@@schema("auth")` — modelos `auth.*` removidos de `schema.prisma`, `multiSchema` desactivado | `prisma validate` + `tsc --noEmit` limpios |
 | — | Fix: rate-limit en `me/change-password` — 5 intentos fallidos en 15 min = 429, via `SystemEvent` por `(organizationId, userId)` | `tsc --noEmit` limpio |
 | — | Fix: proxy — whitelist explícita de rutas de cron (`CRON_ROUTES = new Set(...)`) + `crypto.timingSafeEqual` en `CRON_SECRET` | `tsc --noEmit` limpio |
+| — | Auditoría de seguridad post-fix contraseñas | Historial Git comprobó 0 exposición de variables productivas (ej. `CenterWelcome67@`). Query en DB comprobó 0 usuarios con `authId: ""` |
