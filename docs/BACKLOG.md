@@ -77,3 +77,10 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - **Qué falta:** La query de Prisma en línea 68 usa `where: { authId: "" }`, pero el campo `authId` es `String` no-nullable en el schema — los usuarios sin Auth real probablemente tienen `authId: null` o un UUID inválido, no un string vacío. Verificar con una query directa si hay usuarios con `authId: ""` en producción y corregir el filtro al valor real que usa el sistema.
   - **Por qué importa:** Si el filtro no captura a los usuarios que realmente necesitan backfill, el script corre pero no hace nada — silencioso y peligroso.
   - **Qué NO hacer:** No asumir que el sistema nunca guarda `authId: ""` sin verificar antes con una query directa.
+  - **Verificación ejecutada (27 ago 2026):** `prisma.user.count({ where: { authId: "" } })` → **0**. No hay usuarios con string vacío hoy.
+
+- [ ] **Script de reconciliación Auth/Prisma — detectar usuarios huérfanos**
+  - **Qué falta:** Un script que compare `auth.users` de Supabase contra `users.authId` en Prisma e identifique UUIDs que existen en Auth sin contraparte en Prisma (rollback fallido en `createOrAttachStudent`).
+  - **Por qué importa:** Si `deleteAuthUser` falla durante el rollback, el huérfano queda solo en `console.error` (Vercel logs, efímeros). Un email huérfano en Auth queda bloqueado permanentemente — Supabase no permite re-crearlo.
+  - **Qué NO hacer:** No hacerlo como `SystemEvent` en el momento del fallo — si la BD está en mal estado, también puede fallar. Debe ser una operación independiente.
+  - **Diseño:** `supabase.auth.admin.listUsers()` paginado vs `prisma.user.findMany({ select: { authId: true } })` → diff → log/export de UUIDs a revisar.
