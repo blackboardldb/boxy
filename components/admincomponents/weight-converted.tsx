@@ -142,13 +142,13 @@ export function WeightConverter() {
             {conversionTable.map((row, index) => [
               <div
                 key={`lb-${index}`}
-                className="text-center py-2 hover:bg-muted/50 rounded transition-colors"
+                className="text-center py-2 hover:bg-slate-50 rounded transition-colors"
               >
                 {row.lb} lb
               </div>,
               <div
                 key={`kg-${index}`}
-                className="text-center py-2 hover:bg-muted/50 rounded transition-colors font-medium"
+                className="text-center py-2 hover:bg-slate-50 rounded transition-colors font-medium"
               >
                 {row.kg} kg
               </div>,

@@ -15,11 +15,11 @@ import { RoutineAssignmentForMember, RoutineContent, RoutineBlock } from '@/lib/
 function RoutineBlockCard({ block }: { block: RoutineBlock }) {
   if (block.kind === 'text') {
     return (
-      <div className="rounded-lg border border-border bg-muted/30 p-4">
-        <p className="text-sm font-semibold text-foreground mb-1">{block.title}</p>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{block.body}</p>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm font-semibold text-zinc-900 mb-1">{block.title}</p>
+        <p className="text-sm text-slate-600 whitespace-pre-wrap">{block.body}</p>
         {block.notes && (
-          <p className="text-xs text-muted-foreground mt-2 italic">{block.notes}</p>
+          <p className="text-xs text-slate-600 mt-2 italic">{block.notes}</p>
         )}
         {block.videoUrls && block.videoUrls.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -29,7 +29,7 @@ function RoutineBlockCard({ block }: { block: RoutineBlock }) {
                 href={v.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-primary underline"
+                className="text-xs text-[var(--alumno-primary)] underline"
               >
                 {v.label}
               </a>
@@ -42,37 +42,37 @@ function RoutineBlockCard({ block }: { block: RoutineBlock }) {
 
   // kind === 'exercise'
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-sm font-semibold text-foreground mb-2">{block.title}</p>
-      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <p className="text-sm font-semibold text-zinc-900 mb-2">{block.title}</p>
+      <div className="flex flex-wrap gap-3 text-sm text-slate-600">
         {block.sets && (
-          <span className="rounded-md bg-muted px-2 py-0.5">
+          <span className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5">
             {block.sets} series
           </span>
         )}
         {block.reps && (
-          <span className="rounded-md bg-muted px-2 py-0.5">
+          <span className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5">
             {block.reps} reps
           </span>
         )}
         {block.duration && (
-          <span className="rounded-md bg-muted px-2 py-0.5">
+          <span className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5">
             {block.duration}s
           </span>
         )}
         {block.rest && (
-          <span className="rounded-md bg-muted px-2 py-0.5">
+          <span className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5">
             Descanso {block.rest}s
           </span>
         )}
         {block.weight && (
-          <span className="rounded-md bg-muted px-2 py-0.5">
+          <span className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5">
             {block.weight}
           </span>
         )}
       </div>
       {block.notes && (
-        <p className="text-xs text-muted-foreground mt-2 italic">{block.notes}</p>
+        <p className="text-xs text-slate-600 mt-2 italic">{block.notes}</p>
       )}
       {block.videoUrls && block.videoUrls.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
@@ -82,7 +82,7 @@ function RoutineBlockCard({ block }: { block: RoutineBlock }) {
               href={v.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-primary underline"
+              className="text-xs text-[var(--alumno-primary)] underline"
             >
               {v.label}
             </a>
@@ -112,7 +112,7 @@ function RoutineCard({
 
   return (
     <div className={`rounded-xl border p-4 transition-all ${
-      isCompleted ? 'border-green-500/40 bg-green-500/5' : 'border-border bg-card'
+      isCompleted ? 'border-green-500/40 bg-green-500/5' : 'border-slate-200 bg-white'
     }`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
@@ -120,9 +120,9 @@ function RoutineCard({
           <div className="flex items-center gap-2 mb-1">
             {isCompleted
               ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-              : <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+              : <Circle className="h-4 w-4 text-slate-600 shrink-0" />
             }
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-sm font-medium text-zinc-900">
               {/* ⚠️ parseISO del slice(0,10) — NO new Date(): evita shift UTC→local en Chile */}
               {format(
                 new Date((typeof routine.assignedDate === 'string'
@@ -135,7 +135,7 @@ function RoutineCard({
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
+          <div className="flex flex-wrap gap-3 text-xs text-slate-600 mt-1">
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
               {routine.createdBy.firstName} {routine.createdBy.lastName}
@@ -151,7 +151,7 @@ function RoutineCard({
 
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-xs text-primary underline shrink-0"
+          className="text-xs text-[var(--alumno-primary)] underline shrink-0"
         >
           {expanded ? 'Cerrar' : `Ver rutina (${content.blocks.length} bloques)`}
         </button>
@@ -159,7 +159,7 @@ function RoutineCard({
 
       {/* Nota general del día */}
       {routine.notes && (
-        <p className="text-xs text-muted-foreground mt-2 italic">{routine.notes}</p>
+        <p className="text-xs text-slate-600 mt-2 italic">{routine.notes}</p>
       )}
 
       {/* Bloques expandidos */}
@@ -275,7 +275,7 @@ export default function RutinasPage() {
           {/* Sin rutinas */}
           {!isLoading && currentRoutines.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-slate-600 text-sm">
                 No tienes rutinas asignadas para este día.
               </p>
             </div>

@@ -73,9 +73,9 @@ export function ClassCard({
 
   // Lógica de estado simplificada para el span
   const statusInfo = isCancelled
-    ? { label: "Cancelada", className: "text-[var(--alumno-destructive)]" }
+    ? { label: "Cancelada", className: "text-red-500" }
     : isCompleted
-      ? { label: "Finalizada", className: "text-alumno-text-subtle" }
+      ? { label: "Finalizada", className: "text-slate-500" }
       : isInProgress
         ? { label: "Ahora", className: "text-green-600 font-bold" }
         : null;
@@ -83,9 +83,9 @@ export function ClassCard({
   return (
     <div
       className={`
-        border rounded-xl p-3 transition-all duration-200 relative
+        border rounded-xl p-3 transition-all duration-200 relative shadow-md 
         ${isInProgress
-          ? "border-2 border-lime-900 hover:shadow-md bg-lime-950"
+          ? "border-2 border-lime-900 bg-lime-950 hover:shadow-lg"
           : !isActionable
             ? "opacity-50 bg-white border-gray-100"
             : "border-gray-100 hover:shadow-md hover:border-gray-300 bg-white"
@@ -106,8 +106,8 @@ export function ClassCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1">
             <h3 className={`font-bold text-xl ${!isInProgress
-              ? "text-alumno-text"
-              : "text-lime-200"
+              ? "text-zinc-900"
+              : "text-lime-700"
               }`}>{classItem.name}</h3>
             {classItem.disciplineId === CUSTOM_DISCIPLINE_ID && (
               <span className="text-[10px] uppercase tracking-wider font-semibold text-lime-600 bg-lime-50 px-2 py-0.5 rounded-full">
@@ -125,14 +125,14 @@ export function ClassCard({
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--alumno-primary)] opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--alumno-primary)]"></span>
                     </span>
-                    <span className="font-bold uppercase tracking-wide text-xs text-alumno-text invert">{statusInfo.label}</span>
+                    <span className="font-bold uppercase tracking-wide text-xs text-white">{statusInfo.label}</span>
                   </span>
                 ) : (
-                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs text-alumno-text invert`}>{statusInfo.label}</span>
+                  <span className={`${statusInfo.className} mr-2 font-bold uppercase tracking-wide text-xs text-white`}>{statusInfo.label}</span>
                 )}
               </>
             )}
-            <p className={`${!isInProgress ? "text-alumno-text" : "text-white"}`}>
+            <p className={`${!isInProgress ? "text-zinc-900" : "text-white"}`}>
               {formattedTime}
             </p>
           </div>
@@ -140,9 +140,9 @@ export function ClassCard({
       </div>
 
       {/* Metadata - Se oculta si no es accionable (clase pasada, plan pendiente, etc.) */}
-      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-alumno-text-muted ${!isActionable ? "hidden" : ""}  ${!isInProgress
-        ? "text-alumno-text-muted"
-        : "text-[var(--alumno-primary)]/70"
+      <div className={`flex items-center gap-4 w-full mt-2 mb-4 text-sm text-slate-600 ${!isActionable ? "hidden" : ""}  ${!isInProgress
+        ? "text-slate-600"
+        : "text-[var(--alumno-primary)]/80"
         }`}>
 
 
@@ -179,7 +179,7 @@ export function ClassCard({
         <div className="mt-3 flex gap-2">
           <button
             onClick={handleAction}
-            style={{ 
+            style={{
               backgroundImage: isRegistered ? "var(--alumno-destructive-gradient)" : "var(--alumno-primary-gradient)",
               color: isRegistered ? "var(--alumno-destructive-text)" : "var(--alumno-primary-text)"
             }}
@@ -208,7 +208,7 @@ export function ClassCard({
               Clase fuera de rango de tu plan actual
             </span>
           ) : (
-            <span className="text-alumno-text-subtle">No disponible</span>
+            <span className="text-slate-500">No disponible</span>
           )}
         </div>
       )}

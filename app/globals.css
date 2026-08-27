@@ -46,14 +46,14 @@
 
     /* ── Alumnos Actions & Highlights ──────────────────────────────────── */
     /* -- Botones y Acciones Primarias (Ej: Botón Reservar, Tabs Activos) -- */
-    --alumno-primary: #84cc16;
+    --alumno-primary: #00daff;
     /* lime-500 */
-    --alumno-primary-hover: #65a30d;
+    --alumno-primary-hover: #00daff;
     /* lime-600 */
     --alumno-primary-text: #000000;
 
     /* -- Botones con Degradado (Ej: Botón en Card de Calendario/Rutina) -- */
-    --alumno-primary-gradient: linear-gradient(to right, #a3e635, #4ade80);
+    --alumno-primary-gradient: linear-gradient(to right, #0671ff, #00daff);
     /* from-lime-400 to-green-400 */
 
     /* -- Botones Destructivos o Críticos (Ej: Cancelar Clase, Alertas) -- */
@@ -101,15 +101,15 @@
 
     /* ── Alumnos Actions & Highlights (MODO CLARO) ─────────────────────── */
     /* -- Botones y Acciones Primarias -- */
-    --alumno-primary: #3b5321;
+    --alumno-primary: #da5700;
     /* Morado solicitado */
-    --alumno-primary-hover: #507726;
+    --alumno-primary-hover: #da5700;
     /* Morado más oscuro al pasar el mouse */
     --alumno-primary-text: #ffffff;
     /* Texto blanco para contraste con morado */
 
     /* -- Botones con Degradado (Ej: Botón en Card de Calendario/Rutina) -- */
-    --alumno-primary-gradient: linear-gradient(to right, #507726, #3b5321);
+    --alumno-primary-gradient: linear-gradient(to right, #da5700, #da5700);
 
     /* -- Botones Destructivos o Críticos -- */
     --alumno-destructive: #ef4444;
@@ -220,11 +220,11 @@
 
   /* ESTADO: ACTIVO -> Degradado en tonos verde/oliva muy oscuro */
   --mc-bg-active: rgba(2, 2, 2, 1);
-  --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgba(3, 47, 17, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(16, 77, 37, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(65, 101, 6, 1) 0, transparent 44%);
+  --mc-grad-active: radial-gradient(at 99.12% 6.00%, rgb(28, 9, 91) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgb(7, 11, 108) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgb(26, 152, 161) 0, transparent 44%);
 
   /* ESTADO: PROGRAMADO -> Degradado en tonos azules/petróleo profundos */
   --mc-bg-scheduled: rgba(0, 0, 0, 1);
-  --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgba(11, 44, 97, 1) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgba(10, 64, 87, 1) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgba(12, 138, 152, 1) 0, transparent 44%);
+  --mc-grad-scheduled: radial-gradient(at 99.12% 6.00%, rgb(6, 25, 56) 0, transparent 50%), radial-gradient(at 2.32% 88.50%, rgb(5, 44, 61) 0, transparent 57%), radial-gradient(at 88.38% 113.33%, rgb(12, 52, 152) 0, transparent 44%);
 
   /* ESTADO: INACTIVO -> Degradado en tonos rojizos/anaranjados oscuros */
   --mc-bg-inactive: rgba(2, 2, 2, 1);

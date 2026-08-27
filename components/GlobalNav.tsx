@@ -21,42 +21,44 @@ export default function GlobalNav() {
   };
 
   const getLinkClass = (path: string, extraClass = "") =>
-      [
-      isActive(path) ? "text-[var(--alumno-primary)]" : "text-alumno-text",
-      "transition-colors",
+    [
+      isActive(path)
+        ? "text-[var(--alumno-primary)] bg-[color-mix(in_srgb,var(--alumno-primary)_10%,transparent)] rounded-2xl py-2"
+        : "text-alumno-text hover:bg-alumno-surface-md rounded-xl py-2",
+      "transition-all duration-200 flex flex-col items-center justify-center",
       extraClass,
     ].join(" ");
 
   const navItems: NavItem[] = [
     {
       href: "/alumnos",
-      icon: <House className="w-6 h-6 mx-auto" />,
+      icon: <House className="w-6 h-6 " />,
       label: "Inicio",
-      extraClass: "w-14 h-12 block",
+      extraClass: "w-14 h-auto",
     },
     {
       href: "/alumnos/calendar",
-      icon: <Calendar className="w-6 h-6 mx-auto" />,
+      icon: <Calendar className="w-6 h-6 " />,
       label: "Clases",
-      extraClass: "w-14 h-12 block",
+      extraClass: "w-14 h-auto",
     },
     {
       href: "/alumnos/rutinas",
-      icon: <Dumbbell className="w-6 h-6 mx-auto" />,
+      icon: <Dumbbell className="w-6 h-6 " />,
       label: "Rutinas",
-      extraClass: "w-14 h-12 block",
+      extraClass: "w-14 h-auto",
     },
     {
       href: "/alumnos/recursos",
-      icon: <CalculatorIcon className="w-6 h-6 mx-auto" />,
+      icon: <CalculatorIcon className="w-6 h-6 " />,
       label: "Recursos",
-      extraClass: "w-14 h-12 block",
+      extraClass: "w-14 h-auto",
     },
     {
       href: "/alumnos/profile",
-      icon: <CircleUser className="w-6 h-6 mx-auto" />,
+      icon: <CircleUser className="w-6 h-6 " />,
       label: "Perfil",
-      extraClass: "w-14 h-12 block",
+      extraClass: "w-14 h-auto",
     },
   ];
 

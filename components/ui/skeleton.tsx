@@ -22,11 +22,13 @@ export function SkeletonHomePage() {
     <main className="min-h-screen bg-black">
       {/* Logo (igual que en la UI real) */}
       <div className="p-4 max-w-4xl mx-auto text-white">
-        {/* El componente real Logo debe ser renderizado en el archivo de página, no aquí */}
-        <Logo />
+        <div className="flex items-center justify-end w-full h-10">
+          <Skeleton className="h-14 w-30 bg-zinc-700 rounded-full" />
+
+        </div>
         {/* Cabecera de usuario */}
-        <div className="text-left my-6">
-          <span className="uppercase text-lime-400 text-xs">Hola</span>
+        <div className="text-left mt-6 mb-2">
+
           <div className="text-white text-3xl sm:text-4xl font font-semibold text-wrap max-w-80 md:max-w-sm mb-6 sm:mb-12">
             <Skeleton className="h-8 max-w-44 bg-zinc-700 rounded-xl" />
           </div>
