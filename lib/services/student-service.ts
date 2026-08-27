@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createAuthUser, deleteAuthUser } from "@/lib/supabase/admin";
 import { toMidnightUTC } from "@/lib/utils/dates";
-import { MemberRole, User } from "@prisma/client";
+import { MemberRole } from "@prisma/client";
 
 const ROLE_MAP: Record<string, MemberRole> = {
   user:  "ALUMNO",
@@ -58,7 +58,10 @@ export const studentService = {
     // Verificar si el usuario ya existe globalmente
     const existingUser = await prisma.user.findUnique({
       where: { email: emailLowerCase },
-      include: { memberships: true }
+      select: {
+        id: true,
+        memberships: { select: { organizationId: true } }
+      }
     });
 
     if (existingUser) {
@@ -174,7 +177,12 @@ export const studentService = {
         select: { id: true, name: true, price: true, duration: true, config: true },
       });
       if (!planData) {
-        await deleteAuthUser(authId).catch(() => {});
+        await deleteAuthUser(authId).catch((rollbackErr) => {
+          console.error(
+            `[studentService] CRÍTICO: rollback de Auth falló para authId=${authId} (plan no encontrado). Usuario huérfano posible en Supabase Auth.`,
+            rollbackErr
+          );
+        });
         return { status: "error", reason: `Plan con id '${input.planId}' no encontrado.` };
       }
     }
@@ -184,7 +192,12 @@ export const studentService = {
     const planConfig      = (planData?.config ?? {}) as Record<string, unknown>;
 
     if (input.registrarIngreso && (!input.formaDePago || !planData)) {
-      await deleteAuthUser(authId).catch(() => {});
+      await deleteAuthUser(authId).catch((rollbackErr) => {
+        console.error(
+          `[studentService] CRÍTICO: rollback de Auth falló para authId=${authId} (validación post-auth). Usuario huérfano posible en Supabase Auth.`,
+          rollbackErr
+        );
+      });
       return { status: "error", reason: "Para registrar un ingreso se requiere un plan y una forma de pago." };
     }
 
@@ -260,7 +273,12 @@ export const studentService = {
       return { status: "created", userId: newUser.id, user: newUser };
     } catch (dbError: any) {
       console.error("[studentService] Error BD, rollback en Auth:", dbError);
-      await deleteAuthUser(authId).catch(() => {});
+      await deleteAuthUser(authId).catch((rollbackErr) => {
+        console.error(
+          `[studentService] CRÍTICO: rollback de Auth falló para authId=${authId} (error de BD). Usuario huérfano posible en Supabase Auth.`,
+          rollbackErr
+        );
+      });
       return { status: "error", reason: "Error al crear el perfil de usuario en base de datos.", error: dbError };
     }
   }
