@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 export async function POST(
   req: Request,
@@ -89,6 +90,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, customIconUrl });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[POST /manager/api/centros/[id]/branding]", error);
     return NextResponse.json(
       { error: error.message || "Error al subir el logo" },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { managerService } from "@/lib/services/manager-service";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 export async function PATCH(
   req: Request,
@@ -18,6 +19,7 @@ export async function PATCH(
     await managerService.updateInfo(id, body);
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[PATCH /manager/api/centros/[id]/info]", error);
     return NextResponse.json(
       { error: error.message || "Error al actualizar centro" },

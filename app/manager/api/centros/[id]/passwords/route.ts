@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { managerService } from "@/lib/services/manager-service";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 export async function GET(
   req: Request,
@@ -17,6 +18,7 @@ export async function GET(
     const passwords = await managerService.getDefaultPasswords(id, managerId);
     return NextResponse.json({ success: true, passwords });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[GET /manager/api/centros/[id]/passwords]", error);
     return NextResponse.json(
       { error: error.message || "Error al obtener contraseñas" },
@@ -38,6 +40,7 @@ export async function POST(
     const passwords = await managerService.resetDefaultPasswords(id, managerId);
     return NextResponse.json({ success: true, passwords });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[POST /manager/api/centros/[id]/passwords]", error);
     return NextResponse.json(
       { error: error.message || "Error al restablecer contraseñas" },

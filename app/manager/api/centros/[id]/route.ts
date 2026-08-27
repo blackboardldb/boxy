@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { managerService } from "@/lib/services/manager-service";
 import type { OrgStatus } from "@prisma/client";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 export async function GET(
   req: Request,
@@ -18,6 +19,7 @@ export async function GET(
     
     return NextResponse.json(org);
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[GET /manager/api/centros/[id]]", error);
     return NextResponse.json({ error: "Error al obtener centro" }, { status: 500 });
   }
@@ -46,6 +48,7 @@ export async function PATCH(
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[PATCH /manager/api/centros/[id]]", error);
     return NextResponse.json({ error: error.message || "Error al actualizar estado" }, { status: 500 });
   }

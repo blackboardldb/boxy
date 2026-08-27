@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 const createPlanSchema = z.object({
   name: z.string().min(1).max(50),
@@ -18,6 +19,7 @@ export async function GET() {
     });
     return NextResponse.json({ success: true, data: plans });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     return NextResponse.json({ error: error.message }, { status: error.status ?? 500 });
   }
 }
@@ -42,6 +44,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ success: true, data: plan }, { status: 201 });
   } catch (error: any) {
+    rethrowIfRedirect(error);
     return NextResponse.json({ error: error.message }, { status: error.status ?? 500 });
   }
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth/require-manager";
 import { decryptPassword } from "@/lib/utils/encryption";
 import { studentService } from "@/lib/services/student-service";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 // Schema acotado para las filas del CSV
 // Hardcoded al caso de uso del importador: alumnos únicamente.
@@ -17,21 +18,7 @@ const batchImportSchema = z.array(
   })
 );
 
-/** Re-lanza el error si es un redirect interno de Next.js (NEXT_REDIRECT).
- *  requireManager() usa redirect("/manager/login") para rechazar usuarios inválidos.
- *  Esa excepción tiene un digest especial y no debe ser tratada como un error de
- *  la aplicación — si la atrapamos en el catch general, el framework no puede
- *  convertirla en la respuesta 307 esperada.
- */
-function rethrowIfRedirect(error: unknown): void {
-  if (
-    error instanceof Error &&
-    typeof (error as any).digest === "string" &&
-    (error as any).digest.startsWith("NEXT_REDIRECT")
-  ) {
-    throw error;
-  }
-}
+
 
 export async function POST(
   req: Request,

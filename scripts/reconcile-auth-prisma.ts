@@ -49,7 +49,7 @@ async function run() {
 
   console.log("2. Obteniendo todos los authId de Prisma...");
   const prismaUsers = await prisma.user.findMany({
-    where: { authId: { not: "" } }, // Para excluir posibles valores vacíos
+    where: { authId: { not: { startsWith: "dummy" } } }, // Para excluir los placeholders
     select: { authId: true },
   });
 

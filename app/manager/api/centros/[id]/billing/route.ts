@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireManager } from "@/lib/auth/require-manager";
 import { managerService } from "@/lib/services/manager-service";
+import { rethrowIfRedirect } from "@/lib/utils/next-helpers";
 
 export async function POST(
   req: Request,
@@ -27,6 +28,7 @@ export async function POST(
     
     return NextResponse.json(payment);
   } catch (error: any) {
+    rethrowIfRedirect(error);
     console.error("[POST /manager/api/centros/[id]/billing]", error);
     return NextResponse.json({ error: "Error al registrar pago" }, { status: 500 });
   }
