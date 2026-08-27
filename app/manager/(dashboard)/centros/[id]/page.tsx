@@ -79,7 +79,7 @@ export default async function CentroDetailPage({
           <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
             📋 Eventos recientes
           </div>
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-zinc-800 max-h-96 overflow-y-auto">
             {org.events.length === 0 ? (
               <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin eventos</p>
             ) : (
