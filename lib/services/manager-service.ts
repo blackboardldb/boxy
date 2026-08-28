@@ -147,6 +147,9 @@ export const managerService = {
       ownerName?: string;
       ownerLastName?: string;
       ownerRut?: string;
+      country?: string;
+      region?: string;
+      city?: string;
     },
     adminData: { email: string; firstName: string; lastName: string }
   ) {
@@ -195,6 +198,9 @@ export const managerService = {
         ownerName: data.ownerName,
         ownerLastName: data.ownerLastName,
         ownerRut: data.ownerRut,
+        country: data.country || "Chile",
+        region: data.region,
+        city: data.city,
         ...defaultPlanSnapshot,
         defaultAdminPassword: defaultAdminPassword,
         defaultStudentPassword: defaultStudentPassword,

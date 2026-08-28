@@ -232,6 +232,9 @@ model Organization {
   saasPlanId                String?
   saasPlanLimit             Int?
   saasPlanPrice             Int?
+  country                   String?               @default("Chile")
+  region                    String?
+  city                      String?
   plan                      Plan?                 @relation(fields: [saasPlanId], references: [id])
 
   @@index([saasPlanId])

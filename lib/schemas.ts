@@ -256,6 +256,9 @@ export const organizationSchema = z.object({
 
 export const createOrganizationSchema = z.object({
   name: z.string().min(1),
+  country: z.string().optional().default("Chile"),
+  region: z.string().optional(),
+  city: z.string().optional(),
   settings: z.object({
     timezone: z.string(),
     currency: z.string(),
@@ -279,6 +282,9 @@ export const createOrganizationSchema = z.object({
 // vía endpoints separados bajo /manager/api/, nunca vía este endpoint de admin de centro.
 export const updateOrganizationSchema = z.object({
   name: z.string().min(1).optional(),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  city: z.string().optional(),
   settings: z.object({
     timezone: z.string(),
     currency: z.string(),

@@ -32,6 +32,8 @@ export default function NuevoCentroPage() {
     adminEmail: "",
     adminFirstName: "",
     adminLastName: "",
+    region: "",
+    city: "",
   });
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,6 +124,47 @@ export default function NuevoCentroPage() {
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-400 focus:outline-none focus:border-zinc-500"
               />
               <p className="text-xs text-zinc-500">subdominio: {formData.slug || "..."}.boxy.app</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-300">Región</label>
+              <select
+                name="region"
+                value={formData.region}
+                onChange={handleChange}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+              >
+                <option value="">Selecciona una región</option>
+                <option value="Arica y Parinacota">Arica y Parinacota</option>
+                <option value="Tarapacá">Tarapacá</option>
+                <option value="Antofagasta">Antofagasta</option>
+                <option value="Atacama">Atacama</option>
+                <option value="Coquimbo">Coquimbo</option>
+                <option value="Valparaíso">Valparaíso</option>
+                <option value="Metropolitana de Santiago">Metropolitana de Santiago</option>
+                <option value="Libertador General Bernardo O'Higgins">Libertador General Bernardo O'Higgins</option>
+                <option value="Maule">Maule</option>
+                <option value="Ñuble">Ñuble</option>
+                <option value="Biobío">Biobío</option>
+                <option value="La Araucanía">La Araucanía</option>
+                <option value="Los Ríos">Los Ríos</option>
+                <option value="Los Lagos">Los Lagos</option>
+                <option value="Aysén del General Carlos Ibáñez del Campo">Aysén del General Carlos Ibáñez del Campo</option>
+                <option value="Magallanes y de la Antártica Chilena">Magallanes y de la Antártica Chilena</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-300">Ciudad</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                placeholder="Ej. Santiago"
+              />
             </div>
           </div>
 

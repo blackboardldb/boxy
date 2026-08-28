@@ -13,6 +13,8 @@ interface Org {
   ownerName?: string | null;
   ownerLastName?: string | null;
   ownerRut?: string | null;
+  region?: string | null;
+  city?: string | null;
   billingPlan?: string | null;
   billingCycle?: string | null;
   saasPlanId?: string | null;
@@ -35,6 +37,8 @@ export function EditCenterForm({ org }: { org: Org }) {
     ownerName:     org.ownerName     ?? "",
     ownerLastName: org.ownerLastName ?? "",
     ownerRut:      org.ownerRut      ?? "",
+    region:        org.region        ?? "",
+    city:          org.city          ?? "",
     billingPlan:   org.billingPlan   ?? "boxy_base",
     billingCycle:  org.billingCycle  ?? "A",
     saasPlanId:    org.saasPlanId    ?? "",
@@ -109,6 +113,36 @@ export function EditCenterForm({ org }: { org: Org }) {
           <div className="space-y-1 sm:col-span-2">
             <label className="text-xs text-zinc-400">Dirección</label>
             <Input value={form.address} onChange={set("address")} className="bg-zinc-900 border-zinc-700" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">Región</label>
+            <select
+              value={form.region}
+              onChange={set("region")}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            >
+              <option value="">Selecciona una región</option>
+              <option value="Arica y Parinacota">Arica y Parinacota</option>
+              <option value="Tarapacá">Tarapacá</option>
+              <option value="Antofagasta">Antofagasta</option>
+              <option value="Atacama">Atacama</option>
+              <option value="Coquimbo">Coquimbo</option>
+              <option value="Valparaíso">Valparaíso</option>
+              <option value="Metropolitana de Santiago">Metropolitana de Santiago</option>
+              <option value="Libertador General Bernardo O'Higgins">Libertador General Bernardo O'Higgins</option>
+              <option value="Maule">Maule</option>
+              <option value="Ñuble">Ñuble</option>
+              <option value="Biobío">Biobío</option>
+              <option value="La Araucanía">La Araucanía</option>
+              <option value="Los Ríos">Los Ríos</option>
+              <option value="Los Lagos">Los Lagos</option>
+              <option value="Aysén del General Carlos Ibáñez del Campo">Aysén del General Carlos Ibáñez del Campo</option>
+              <option value="Magallanes y de la Antártica Chilena">Magallanes y de la Antártica Chilena</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">Ciudad</label>
+            <Input value={form.city} onChange={set("city")} className="bg-zinc-900 border-zinc-700" placeholder="Ej. Santiago" />
           </div>
         </div>
       </section>
