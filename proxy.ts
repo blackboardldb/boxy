@@ -65,6 +65,7 @@ export async function proxy(request: NextRequest) {
     !slug &&
     !isManagerRoute &&
     (pathname === "/" ||
+      pathname === "/legal" ||
       pathname.startsWith("/_next") ||
       pathname.startsWith("/api/") ||
       pathname.startsWith("/favicon") ||
