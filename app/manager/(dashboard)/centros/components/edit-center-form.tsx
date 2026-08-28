@@ -13,6 +13,7 @@ interface Org {
   ownerName?: string | null;
   ownerLastName?: string | null;
   ownerRut?: string | null;
+  country?: string | null;
   region?: string | null;
   city?: string | null;
   billingPlan?: string | null;
@@ -37,6 +38,7 @@ export function EditCenterForm({ org }: { org: Org }) {
     ownerName:     org.ownerName     ?? "",
     ownerLastName: org.ownerLastName ?? "",
     ownerRut:      org.ownerRut      ?? "",
+    country:       org.country       ?? "Chile",
     region:        org.region        ?? "",
     city:          org.city          ?? "",
     billingPlan:   org.billingPlan   ?? "boxy_base",
@@ -113,6 +115,10 @@ export function EditCenterForm({ org }: { org: Org }) {
           <div className="space-y-1 sm:col-span-2">
             <label className="text-xs text-zinc-400">Dirección</label>
             <Input value={form.address} onChange={set("address")} className="bg-zinc-900 border-zinc-700" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">País</label>
+            <Input value={form.country} onChange={set("country")} className="bg-zinc-900 border-zinc-700" />
           </div>
           <div className="space-y-1">
             <label className="text-xs text-zinc-400">Región</label>

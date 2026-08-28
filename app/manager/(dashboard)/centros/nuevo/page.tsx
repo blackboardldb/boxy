@@ -32,6 +32,7 @@ export default function NuevoCentroPage() {
     adminEmail: "",
     adminFirstName: "",
     adminLastName: "",
+    country: "Chile",
     region: "",
     city: "",
   });
@@ -127,7 +128,17 @@ export default function NuevoCentroPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-zinc-300">País</label>
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+              />
+            </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-zinc-300">Región</label>
               <select
