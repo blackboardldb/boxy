@@ -8,6 +8,16 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
 
 ## Pendientes de Infraestructura y BD
 
+- [ ] **Campos de ubicación en el frontend del Manager**
+  - **Qué falta:** Agregar los inputs de formulario para `country`, `region` y `city` en las vistas de creación (`app/manager/(dashboard)/centros/nuevo/page.tsx`) y edición (`app/manager/(dashboard)/centros/components/edit-center-form.tsx`) de centros.
+  - **Por qué importa:** El backend (`manager-service.ts`) y la base de datos (Prisma) ya soportan completamente estos campos, pero actualmente no se pueden modificar visualmente desde el panel del superadmin.
+  - **Qué NO hacer:** No crear componentes complejos de select dependientes (ej. si elige región X, mostrar ciudades de X) todavía — empezar con simples inputs de texto para destrabar la edición de datos básicos.
+
+- [ ] **Soporte multi-moneda / Internacionalización (Pendiente a largo plazo)**
+  - **Qué falta:** Desacoplar la lógica de moneda (actualmente hardcodeada a CLP x100) y el país por defecto ("Chile") a nivel global.
+  - **Por qué importa:** Con la reciente inclusión de los campos geográficos a la organización, la plataforma técnica ya permite segmentar por país, pero los módulos de pagos, suscripciones e integraciones siguen asumiendo Chile.
+  - **Qué NO hacer:** No agregar columnas de `currency` a cada tabla. Manejar una configuración global por tenant.
+
 - [ ] **Crear base de datos de staging**
   - **Qué falta:** Segunda base de datos (mismo proyecto Supabase con un branch/instancia separada, o proyecto Supabase nuevo) desconectada de producción, para que desarrollo y pruebas dejen de correr directo contra datos reales.
   - **Por qué importa:**

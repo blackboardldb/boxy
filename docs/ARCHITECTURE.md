@@ -53,6 +53,7 @@ Ubicación: `lib/supabase/auth-guard.ts`
 ```
 Organization
   orgType, status (TRIAL|ACTIVE|SUSPENDED|CANCELED), billingCycle (A|B), billingPeriodEnd
+  country, region, city → ubicación geográfica del centro
   saasPlanId, saasPlanLimit, saasPlanPrice → snapshot inmutable (ver sección 7)
   defaultAdminPassword / defaultStudentPassword / defaultCoachPassword → cifrados AES-256-GCM
   customIconUrl → branding (ver sección 8)
