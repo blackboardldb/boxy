@@ -15,10 +15,10 @@ export default function RootLandingPage() {
           BOXY
         </span>
         <a
-          href="/manager/login"
-          className="text-zinc-500 hover:text-zinc-300 transition-colors text-sm"
+          href="mailto:hola@boxy.app"
+          className="text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-800"
         >
-          Manager →
+          Contáctanos
         </a>
       </nav>
 
@@ -78,10 +78,10 @@ export default function RootLandingPage() {
       <footer className="px-6 py-6 border-t border-zinc-900 flex items-center justify-between text-xs text-zinc-600">
         <span>© {new Date().getFullYear()} Boxy</span>
         <a
-          href="/manager/login"
+          href="/legal"
           className="hover:text-zinc-400 transition-colors"
         >
-          Acceso manager
+          Legal y Privacidad
         </a>
       </footer>
     </main>
