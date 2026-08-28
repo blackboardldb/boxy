@@ -36,6 +36,9 @@ export interface OrgDetail {
   ownerName: string | null;
   ownerLastName: string | null;
   ownerRut: string | null;
+  country: string | null;
+  region: string | null;
+  city: string | null;
   billingPlan: string | null;
   billingCycle: string | null;
   billingPeriodEnd: Date | null;
@@ -289,6 +292,9 @@ export const managerService = {
       ownerName: isOwner ? org.ownerName : null,
       ownerLastName: isOwner ? org.ownerLastName : null,
       ownerRut: isOwner ? org.ownerRut : null,
+      country: org.country,
+      region: org.region,
+      city: org.city,
       billingPlan: org.billingPlan,
       billingCycle: org.billingCycle,
       billingPeriodEnd: org.billingPeriodEnd,
@@ -316,6 +322,9 @@ export const managerService = {
       ownerName?: string;
       ownerLastName?: string;
       ownerRut?: string;
+      country?: string | null;
+      region?: string | null;
+      city?: string | null;
       billingPlan?: string;
       billingCycle?: string;
       saasPlanId?: string | null;
@@ -342,6 +351,9 @@ export const managerService = {
         ...(data.ownerName !== undefined && { ownerName: data.ownerName }),
         ...(data.ownerLastName !== undefined && { ownerLastName: data.ownerLastName }),
         ...(data.ownerRut !== undefined && { ownerRut: data.ownerRut }),
+        ...(data.country !== undefined && { country: data.country }),
+        ...(data.region !== undefined && { region: data.region }),
+        ...(data.city !== undefined && { city: data.city }),
         ...(data.billingPlan !== undefined && { billingPlan: data.billingPlan }),
         ...(data.billingCycle !== undefined && { billingCycle: data.billingCycle }),
         ...planSnapshot,

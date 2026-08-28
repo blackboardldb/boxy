@@ -11,9 +11,9 @@ export default function RootLandingPage() {
     <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between border-b border-zinc-900">
-        <span className="font-mono font-bold text-xl tracking-tight">
+        <a href="/" className="font-mono font-bold text-xl tracking-tight text-white hover:text-indigo-400 transition-colors">
           BOXY
-        </span>
+        </a>
         <a
           href="mailto:hola@boxy.app"
           className="text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-800"
@@ -75,14 +75,12 @@ export default function RootLandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-6 border-t border-zinc-900 flex items-center justify-between text-xs text-zinc-600">
+      <footer className="px-6 py-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
         <span>© {new Date().getFullYear()} Boxy</span>
-        <a
-          href="/legal"
-          className="hover:text-zinc-400 transition-colors"
-        >
-          Legal y Privacidad
-        </a>
+        <div className="flex gap-4">
+          <a href="/legal" className="hover:text-zinc-400 transition-colors">Legal y Privacidad</a>
+          <a href="/terminos" className="hover:text-zinc-400 transition-colors">Términos de Uso</a>
+        </div>
       </footer>
     </main>
   );

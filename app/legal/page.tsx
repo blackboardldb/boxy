@@ -7,14 +7,22 @@ export const metadata: Metadata = {
 
 export default function LegalPage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white py-12 px-6">
-      <div className="max-w-3xl mx-auto space-y-12">
-        <nav>
-          <Link href="/" className="text-zinc-500 hover:text-white text-sm transition-colors">
-            ← Volver a Boxy
-          </Link>
-        </nav>
-        
+    <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
+      {/* Nav */}
+      <nav className="px-6 py-5 flex items-center justify-between border-b border-zinc-900">
+        <a href="/" className="font-mono font-bold text-xl tracking-tight text-white hover:text-indigo-400 transition-colors">
+          BOXY
+        </a>
+        <a
+          href="mailto:hola@boxy.app"
+          className="text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-800"
+        >
+          Contáctanos
+        </a>
+      </nav>
+
+      <div className="flex-1 py-12 px-6">
+        <div className="max-w-3xl mx-auto space-y-12">
         <header className="space-y-4">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Legal y Privacidad</h1>
           <p className="text-zinc-400 font-mono text-sm">Última actualización: Agosto 2026</p>
@@ -66,7 +74,17 @@ export default function LegalPage() {
             </p>
           </section>
         </div>
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="px-6 py-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
+        <span>© {new Date().getFullYear()} Boxy</span>
+        <div className="flex gap-4">
+          <a href="/legal" className="hover:text-zinc-400 transition-colors">Legal y Privacidad</a>
+          <a href="/terminos" className="hover:text-zinc-400 transition-colors">Términos de Uso</a>
+        </div>
+      </footer>
     </main>
   );
 }
