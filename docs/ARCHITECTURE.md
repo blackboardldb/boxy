@@ -84,6 +84,18 @@ Un mismo email puede pertenecer a múltiples centros con roles distintos.
 - **`UserMembership`** — plan/estado en ese centro específico.
 - **`MembershipRenewal`** — historial de pagos en ese centro específico.
 
+**Cambio de tenant activo — mecanismo real:** no existe selector client-side
+que cambie `organizationId` dentro de la misma sesión de React (confirmado:
+sin `switchOrg`/`setActiveOrg` en todo el codebase). El tenant se resuelve
+únicamente por subdominio (§3) — cambiar de centro implica navegar a otro
+subdominio, lo que fuerza un hard reload del navegador. **Consecuencia:** el
+`queryClient` de TanStack Query nunca sobrevive un cambio de tenant, y nunca
+se comparte entre tenants. Cualquier invalidación de cache sin `organizationId`
+(ej. `["me"]` sin scope) no es un vector de fuga cross-tenant mientras este
+mecanismo siga siendo así — si en el futuro se introduce un selector de
+organización sin recarga completa, esta garantía deja de ser válida y hay que
+re-auditar todas las invalidaciones globales de query keys.
+
 **Consecuencia de identidad global en Supabase Auth:** `auth.users` es una fila por email, un solo password hash. Resetear la contraseña de un alumno bicentrado afecta su acceso a *todos* sus centros, no solo al que ejecutó el reset. Esto es una propiedad de Supabase Auth, no un bug — debe comunicarse en la UI cuando aplique (ver BACKLOG.md).
 
 ## 7. Planes SaaS — snapshot inmutable
@@ -139,3 +151,14 @@ coordinar `migrate resolve` sin poder probarlo primero es más riesgo que benefi
 desarrollo apunta a la misma base de datos de producción — un reset destruye datos 
 reales. Usar únicamente `prisma migrate deploy` (nunca resetea, solo aplica 
 migraciones nuevas en orden) o el flujo manual de `db-migrations.md` para índices.
+
+## 14. Suspensión de Centros (V1)
+
+Cuando un centro no renueva su suscripción, su `status` pasa a `SUSPENDED`.
+El bloqueo se ejecuta directamente en el middleware de Next.js (`proxy.ts`) para proteger las rutas a nivel subdominio, bajo la siguiente lógica:
+
+1. **Visibilidad inteligente por rol**: Se extrae el rol de la sesión de Supabase (JWT).
+   - **Administradores y Coaches (`ADMIN`, `COACH`)**: Tienen el pase exento (`isExemptRole`). Se les permite entrar al dashboard (`/hub`) donde ven un banner persistente global en el layout informando la suspensión.
+   - **Alumnos y visitas (`ALUMNO` o anónimo)**: Cualquier request a rutas protegidas se redirige a `/suspended` (página de bloqueo total).
+2. **APIs bloqueadas para alumnos**: Si la petición empieza con `/api/` (ej. llamadas de React Query) y el rol no está exento, el proxy devuelve una respuesta `JSON 503` en lugar de hacer un *rewrite* a la página HTML de `/suspended`. Esto evita errores de parseo o crasheos de cliente.
+3. **Trade-off de seguridad**: El middleware extrae el rol del JWT `user.app_metadata.role`, el cual confía en la firma criptográfica localmente sin golpear la base de datos de permisos (`OrganizationMember`). Esto implica que si un admin fue degradado recientemente, podría conservar acceso exento a `/hub` por hasta 1 hora (TTL del JWT). Es un riesgo residual asumido a cambio del beneficio en latencia.

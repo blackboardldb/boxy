@@ -155,10 +155,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Centro suspendido → página suspendida
-  if (org.status === "SUSPENDED") {
-    return NextResponse.rewrite(new URL("/suspended", request.url));
-  }
+
 
   // Inyectar contexto del tenant en headers
   requestHeaders.set("x-organization-id", org.id);
@@ -222,6 +219,37 @@ export async function proxy(request: NextRequest) {
   if (user) {
     const role = user.app_metadata?.role as string | undefined;
     if (role) requestHeaders.set("x-user-role", role.toLowerCase());
+  }
+
+  // ── Bloqueo de Centro Suspendido (Inteligente por rol) ───────────────────
+  // Nota sobre seguridad (trade-off aceptado): el rol se lee del JWT, el cual puede tener
+  // un desfase de hasta 1h si alguien fue degradado. Se asume como un riesgo bajo
+  // comparable al caché del tenant en la cookie.
+  if (org.status === "SUSPENDED") {
+    const role = user?.app_metadata?.role as string | undefined;
+    
+    // Permitir acceso solo a ADMIN y COACH, y a la ruta de login.
+    const isExemptRole = role === "ADMIN" || role === "COACH";
+    
+    if (!isLoginRoute && !isExemptRole) {
+      // Para llamadas de API, devolver 503 JSON para evitar romper fetchClient con HTML.
+      if (pathname.startsWith("/api/")) {
+        const blockedResponse = NextResponse.json(
+          { error: "No se pudo procesar tu solicitud en este momento. El servicio está temporalmente inactivo." },
+          { status: 503 }
+        );
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          blockedResponse.cookies.set(cookie.name, cookie.value);
+        });
+        return blockedResponse;
+      }
+      
+      const blockedResponse = NextResponse.rewrite(new URL("/suspended", request.url));
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        blockedResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return blockedResponse;
+    }
   }
 
   // Proteger /hub — solo ADMIN y COACH

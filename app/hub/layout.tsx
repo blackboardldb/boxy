@@ -5,6 +5,7 @@ import { CenterLogo } from "@/components/CenterLogo";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { OrgSuspendedAlert } from "@/components/admincomponents/org-suspended-alert";
 
 export default async function AdminLayout({
   children,
@@ -18,7 +19,7 @@ export default async function AdminLayout({
   const org = organizationId
     ? await prisma.organization.findUnique({
         where: { id: organizationId },
-        select: { name: true, customIconUrl: true },
+        select: { name: true, customIconUrl: true, status: true },
       })
     : null;
 
@@ -55,6 +56,8 @@ export default async function AdminLayout({
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col overflow-x-hidden">
+        {org?.status === "SUSPENDED" && <OrgSuspendedAlert />}
+        
         {/* Content — extra bottom padding so the floating nav never covers content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar pb-14 sm:pb-0">
           {children}

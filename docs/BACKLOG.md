@@ -37,3 +37,17 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
     - Una vez creado: primer uso debería ser precisamente sanear `0_init/migration.sql` (el ítem que quedó documentado como riesgo residual).
     - No migrar todo el flujo de golpe — empezar solo con staging para migraciones de schema.
   - **Qué NO hacer:** No crear staging apurado solo para "tener la casilla marcada" — si la sincronización entre ambientes no se diseña bien desde el principio, genera más fricción y falsos positivos que el problema que resuelve.
+
+## Pendientes de Correctitud y Finanzas
+
+- [x] ~~**`today` en `finance-compare` y `stats` puede leer el mes incorrecto a fin de mes en Chile**~~
+  - **Qué falta:** En `app/api/admin/finance-compare/route.ts` y `app/api/admin/stats/route.ts`, el "mes actual" se calcula con `today.getUTCFullYear()` y `today.getUTCMonth()`. A las 21:00-23:59 del último día del mes en Santiago, `today` en UTC ya es el día 1 del mes siguiente — los rangos de mes quedan desplazados.
+  - **Por qué importa:** Un admin que revisa el dashboard a esa hora verá datos del mes equivocado. En fin de mes puede ocultar o mostrar ingresos incorrectamente.
+  - **Fix correcto:** Se reemplazó el uso nativo de `Date` por `getCurrentChileTime()` (que usa `toZonedTime(new Date(), "America/Santiago")` internamente) y *crucialmente* se leen sus componentes usando `.getUTCFullYear()` y `.getUTCMonth()` (los getters UTC son mandatorios porque `toZonedTime` desplaza el timestamp UTC interno; los getters locales reintroducirían el bug según el TZ de la máquina).
+  - **Qué NO hacer:** No cambiar `getUTCMonth()` por `getMonth()` — en Vercel el servidor también corre en UTC, el problema sería idéntico. Hay que hacer la conversión explícita a `America/Santiago` primero.
+
+
+## Reglas de negocio para /hub en centros SUSPENDED
+- **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
+- **Por qué importa:** Hoy "admin pasa" solo resuelve visibilidad (puede ver su dashboard y pagar), pero no restringe operación — un centro podría seguir operando con normalidad plena sin pagarle a Boxy, salvo por el banner.
+- **Qué NO hacer:** No bloquear todo `/hub` de forma ciega (eso ya lo evita el fix actual) ni tampoco dejarlo 100% abierto sin ninguna restricción — ambos extremos son fáciles de implementar mal rápido; hace falta decidir la lista de acciones restringidas antes de tocar código.
