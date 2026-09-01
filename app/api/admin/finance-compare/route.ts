@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { startOfMonthChile, getCurrentChileTime } from "@/lib/utils";
 
 // GET /api/admin/finance-compare
 // Retorna ingresos, egresos y balance del mes actual y el mes anterior
@@ -17,11 +18,15 @@ export async function GET(request: NextRequest) {
     }
     const { organizationId } = auth;
 
-    // ⚠️ Siempre UTC — evita discrepancias localhost vs Vercel
-    const today              = new Date();
-    const firstOfMonth       = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(),     1));
-    const firstOfNextMonth   = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
-    const firstOfPrevMonth   = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
+    // Rango de mes en horario de Chile — ver lib/utils.ts
+    // toZonedTime() desplaza el timestamp UTC internamente; los getters correctos
+    // para leer el resultado son los *UTC* (getUTCFullYear/getUTCMonth), no los
+    // locales — los locales dependerían del TZ del proceso (UTC-4 en esta máquina,
+    // UTC+0 en Vercel), reintrouduciendo exactamente el bug que quisimos cerrar.
+    const todayChile       = getCurrentChileTime();
+    const firstOfMonth     = startOfMonthChile(todayChile.getUTCFullYear(), todayChile.getUTCMonth());
+    const firstOfNextMonth = startOfMonthChile(todayChile.getUTCFullYear(), todayChile.getUTCMonth() + 1);
+    const firstOfPrevMonth = startOfMonthChile(todayChile.getUTCFullYear(), todayChile.getUTCMonth() - 1);
 
     type CompareRow = {
       currentRevenue:  number | null;

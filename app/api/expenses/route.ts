@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { createExpenseSchema } from "@/lib/schemas";
+import { startOfMonthChile, endOfMonthChile } from "@/lib/utils";
 
 // Tipo para el egreso
 export type Expense = {
@@ -33,9 +34,10 @@ export async function GET(request: NextRequest) {
         const targetYear = parseInt(year);
         const targetMonth = parseInt(month); // 0-indexed
 
-        // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
-        const startDate = new Date(Date.UTC(targetYear, targetMonth, 1));
-        const endDate   = new Date(Date.UTC(targetYear, targetMonth + 1, 1)); // límite exclusivo
+        // targetMonth es 0-indexed (convención existente en este endpoint).
+        // Rango de mes en horario de Chile — ver lib/utils.ts
+        const startDate = startOfMonthChile(targetYear, targetMonth);
+        const endDate   = endOfMonthChile(targetYear, targetMonth); // límite exclusivo
 
         dbExpenses = await prisma.expense.findMany({
           where: {

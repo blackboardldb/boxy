@@ -212,31 +212,45 @@ export class ClassService {
       });
       if (isReg && isReg.status === "registered") throw new ValidationError("Ya estás inscrito/a en esta clase");
 
-      if (!options.isAdmin) {
-        const targetDay = classSession.dateTime.toISOString().split("T")[0];
-        const queryStart = new Date(`${targetDay}T00:00:00`);
-        const queryEnd = new Date(`${targetDay}T23:59:59`);
-        const dayRegistrations = await prisma.classRegistration.findMany({
-          where: {
-            userId,
-            status: "registered",
-            class: {
-              organizationId: classSession.organizationId,
-              dateTime: { gte: queryStart, lte: queryEnd },
-            },
-          },
-          include: { class: true },
-        });
-        const validation = await ValidationService.canUserRegisterToClass(
-          userId,
-          classSession as unknown as ClassSession,
-          dayRegistrations.map((r) => r.class) as unknown as ClassSession[]
-        );
-        if (!validation.canRegister) throw new ValidationError(validation.reason || "Validation failed");
-      }
+      // targetDay se calcula aquí: sólo formateo de string, no toca DB.
+      const targetDay = classSession.dateTime.toISOString().split("T")[0];
 
-      // === ZONA CRÍTICA: lock + re-check + count + insert, todo atómico ===
+      // === ZONA CRÍTICA: advisory lock + límite diario + lock de clase + cupo + insert, todo atómico ===
       const updatedRecord = await prisma.$transaction(async (tx) => {
+        if (!options.isAdmin) {
+          // Advisory lock por usuario+día: serializa cualquier intento de
+          // registro concurrente del MISMO usuario sin importar a qué clase
+          // distinta apunte cada request. Se libera solo al terminar la
+          // transacción (commit o rollback) — no puede quedar colgado.
+          // Orden fijo: advisory lock de usuario ANTES del FOR UPDATE de clase
+          // → evita deadlock por adquisición en orden inverso.
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId} || ${targetDay})::bigint)`;
+
+          const queryStart = new Date(`${targetDay}T00:00:00`);
+          const queryEnd = new Date(`${targetDay}T23:59:59`);
+
+          const dayRegistrations = await tx.classRegistration.findMany({
+            where: {
+              userId,
+              status: "registered",
+              class: {
+                organizationId: classSession.organizationId,
+                dateTime: { gte: queryStart, lte: queryEnd },
+              },
+            },
+            include: { class: true },
+          });
+
+          const validation = await ValidationService.canUserRegisterToClass(
+            userId,
+            classSession as unknown as ClassSession,
+            dayRegistrations.map((r) => r.class) as unknown as ClassSession[],
+            tx
+          );
+          if (!validation.canRegister) throw new ValidationError(validation.reason || "Validation failed");
+        }
+
+        // Bloqueo a nivel de CLASE — complementario al advisory lock de usuario
         await tx.$queryRaw`SELECT id FROM class_sessions WHERE id = ${classId} FOR UPDATE`;
 
         const liveSession = await tx.classSession.findUnique({

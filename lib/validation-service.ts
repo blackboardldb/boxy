@@ -1,4 +1,6 @@
 import { prisma } from "./prisma";
+import type { PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import {
   parseISO,
   addMinutes,
@@ -51,7 +53,8 @@ export class ValidationService {
   static async canUserRegisterToClass(
     userId: string,
     classSession: ClassSession,
-    allClassSessions?: ClassSession[]
+    allClassSessions?: ClassSession[],
+    db: Prisma.TransactionClient | PrismaClient = prisma
   ): Promise<{ canRegister: boolean; reason?: string }> {
     const now = new Date();
     const classStart = typeof classSession.dateTime === 'string' 
@@ -67,7 +70,7 @@ export class ValidationService {
       return { canRegister: false, reason: "La clase ya finalizó" };
     }
 
-    const isUserRegistered = await prisma.classRegistration.findFirst({
+    const isUserRegistered = await db.classRegistration.findFirst({
       where: { classId: classSession.id, userId, status: 'registered' }
     });
     if (isUserRegistered) {
@@ -80,7 +83,7 @@ export class ValidationService {
       return { canRegister: false, reason: "No hay cupos disponibles" };
     }
 
-    const userMembership = await prisma.userMembership.findUnique({
+    const userMembership = await db.userMembership.findUnique({
       where: { userId_organizationId: { userId, organizationId: classSession.organizationId } },
     });
 
@@ -91,7 +94,7 @@ export class ValidationService {
     let remainingClasses = 0;
     if (userMembership.classLimit && userMembership.classLimit > 0) {
       const periodStart = userMembership.currentPeriodStart ? new Date(userMembership.currentPeriodStart) : new Date(0);
-      const classesUsed = await prisma.classRegistration.count({
+      const classesUsed = await db.classRegistration.count({
         where: { userId, status: 'registered', class: { organizationId: classSession.organizationId, dateTime: { gte: periodStart } } }
       });
       remainingClasses = Math.max(0, userMembership.classLimit - classesUsed);
@@ -154,7 +157,7 @@ export class ValidationService {
       });
     } else {
       try {
-        const registrations = await prisma.classRegistration.findMany({
+        const registrations = await db.classRegistration.findMany({
           where: {
             userId: userId,
             status: 'registered',

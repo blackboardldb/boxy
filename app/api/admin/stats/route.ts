@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { startOfMonthChile, getCurrentChileTime } from "@/lib/utils";
 
 // ── Fuente de Verdad Unificada ──────────────────────────────────────────────
 // monthlyRevenue = SUM(amount) de membership_renewals WHERE status='approved'
@@ -27,10 +28,15 @@ export async function GET(request: NextRequest) {
     }
     const { organizationId } = auth;
 
-    // ⚠️  Siempre UTC — evita discrepancia localhost (UTC-4) vs Vercel (UTC+0)
-    const today            = new Date();
-    const firstOfMonth     = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
-    const firstOfNextMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
+    // Rango de mes en horario de Chile — ver lib/utils.ts
+    // toZonedTime() desplaza el timestamp UTC internamente; los getters correctos
+    // para leer el resultado son los *UTC* (getUTCFullYear/getUTCMonth), no los
+    // locales — los locales dependerían del TZ del proceso (UTC-4 en esta máquina,
+    // UTC+0 en Vercel), reintroduciendo exactamente el bug que quisimos cerrar.
+    const today            = new Date(); // instante absoluto para comparaciones SQL
+    const todayChile       = getCurrentChileTime(); // mes/año en horario chileno
+    const firstOfMonth     = startOfMonthChile(todayChile.getUTCFullYear(), todayChile.getUTCMonth());
+    const firstOfNextMonth = startOfMonthChile(todayChile.getUTCFullYear(), todayChile.getUTCMonth() + 1);
 
     // ── Query única con CTE — elimina 2 roundtrips al connection pooler ──────
     // Antes: 3 queries seriales (~5s total en producción con pooler transaction mode)

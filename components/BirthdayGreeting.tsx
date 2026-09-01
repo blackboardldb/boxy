@@ -14,6 +14,9 @@ export function BirthdayGreeting({ userProfile }: BirthdayGreetingProps) {
     setIsMounted(true);
     if (!userProfile.dateOfBirth) return;
 
+    let cancelled = false;
+    let confettiInterval: NodeJS.Timeout | null = null;
+
     // dateOfBirth is "YYYY-MM-DD"
     const parts = userProfile.dateOfBirth.split("-");
     if (parts.length !== 3) return;
@@ -33,6 +36,8 @@ export function BirthdayGreeting({ userProfile }: BirthdayGreetingProps) {
       if (!prefersReducedMotion) {
         // dynamic import of canvas-confetti
         import("canvas-confetti").then((module) => {
+          if (cancelled) return;
+          
           const confetti = module.default;
           const duration = 3000;
           const animationEnd = Date.now() + duration;
@@ -42,11 +47,12 @@ export function BirthdayGreeting({ userProfile }: BirthdayGreetingProps) {
             return Math.random() * (max - min) + min;
           }
 
-          const interval = setInterval(function () {
+          confettiInterval = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
-              return clearInterval(interval);
+              if (confettiInterval) clearInterval(confettiInterval);
+              return;
             }
 
             const particleCount = 50 * (timeLeft / duration);
@@ -56,6 +62,11 @@ export function BirthdayGreeting({ userProfile }: BirthdayGreetingProps) {
         });
       }
     }
+
+    return () => {
+      cancelled = true;
+      if (confettiInterval) clearInterval(confettiInterval);
+    };
   }, [userProfile.dateOfBirth]);
 
   if (!isMounted || !isBirthday) return null;

@@ -2,9 +2,18 @@ import { requireManager } from "@/lib/auth/require-manager";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PaymentModal } from "./centros/components/payment-modal";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default async function ManagerPage() {
   await requireManager();
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const suspendedRecently = await prisma.systemEvent.findMany({
+    where: { type: "org_suspended", createdAt: { gte: sevenDaysAgo } },
+    include: { organization: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
 
   const organizations = await prisma.organization.findMany({
     orderBy: { createdAt: "desc" },
@@ -28,6 +37,19 @@ export default async function ManagerPage() {
 
   return (
     <div className="space-y-6">
+      {suspendedRecently.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Atención: Centros suspendidos recientemente</AlertTitle>
+          <AlertDescription>
+            Se han suspendido {suspendedRecently.length} {suspendedRecently.length === 1 ? "centro" : "centros"} por falta de pago en los últimos 7 días:{" "}
+            <span className="font-medium">
+              {suspendedRecently.map((event) => event.organization.name).join(", ")}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold">Centros</h1>

@@ -35,6 +35,7 @@
 | Endpoints de superadmin bajo `/manager/api/` | Namespace separado del resto de la app, con su propio guard (`requireManager`) y su propia tabla de usuarios (`manager_users`, independiente de `organization_members`). |
 | Excepciones de proxy lo más restrictivas posible | Un bypass amplio (`startsWith`) sin control interno propio deja rutas futuras expuestas por accidente. |
 | Cron protegido por `CRON_SECRET`, validado en el propio endpoint | El bypass del proxy no es la única barrera — el endpoint debe defenderse solo, sin asumir que el proxy lo protege. |
+| `invalidateQueries(["me"])` sin scope de `organizationId` en `useClasses.ts` | Auditado y descartado como riesgo: no hay selector de tenant client-side, cambiar de centro siempre implica navegar a otro subdominio (hard reload), por lo que el `queryClient` nunca persiste entre tenants. Además `["me"]` no está parametrizado en ningún lado del codebase (`meKeys.me = ["me"]`) — invalidar `["me", activeOrgId]` sería un no-op silencioso porque no matchea la key real cacheada. Cambiarlo habría roto la UI de cupos (`centerStats`) sin resolver ningún problema real. |
 
 ## Explícitamente descartado
 

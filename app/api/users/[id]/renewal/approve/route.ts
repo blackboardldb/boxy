@@ -10,6 +10,7 @@ import { z } from "zod";
 
 const approveRenewalSchema = z.object({
   startDate: z.string().min(1).optional(),
+  notes: z.string().optional(),
 });
 
 export async function POST(
@@ -185,7 +186,9 @@ export async function POST(
           processedAt: new Date(),
           amount: planData.price, // ← monto guardado para historial
           organizationId: orgId!, // ← denormalización para RLS e índices
-          notes: `Aprobado. Período: ${periodStart} → ${periodEnd}`,
+          ...(parsed.data.notes !== undefined 
+            ? { notes: parsed.data.notes } 
+            : { notes: `Aprobado. Período: ${periodStart} → ${periodEnd}` }),
           startDate: new Date(periodStart + "T00:00:00"), // ← fix: necesario para historial y periodsCompleted
           renewalDetails: {
             // Preservar datos originales de la solicitud

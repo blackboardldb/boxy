@@ -733,7 +733,7 @@ const handleStartDateChange = (newDate: string) => {
             {/* HISTORIAL DE PLANES */}
             <AccordionItem value="planes" className="border border-zinc-100 bg-white rounded-xl shadow-sm overflow-hidden px-1">
               <AccordionTrigger className="px-4 hover:no-underline hover:bg-zinc-50 font-semibold tracking-tight text-lg py-4">
-                Historial de Planes
+                Historial de Planes y Pagos
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4 pt-0 border-t border-zinc-100">
                 <div className="pt-3 max-h-[420px] overflow-y-auto space-y-2 pr-1">

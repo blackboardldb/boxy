@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
+import { startOfMonthChile, endOfMonthChile } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,11 +26,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(limitParam);
     const skip = (page - 1) * limit;
 
-    // ⚠️  Siempre UTC — evita la discrepancia localhost (UTC-4) vs Vercel (UTC+0)
-    //     new Date(year, month-1, 1) usa hora local del servidor, desplazando el
-    //     límite del mes 4 horas entre entornos. Date.UTC() es invariante.
-    const startDate = new Date(Date.UTC(year, month - 1, 1));
-    const endDate   = new Date(Date.UTC(year, month, 1));
+    // Rango de mes en horario de Chile (no UTC) — un pago a las 22:00 del
+    // 31/08 en Chile no debe contarse como septiembre.
+    // month es 1-indexed (query param), restamos 1 para pasarlo a 0-indexed.
+    const startDate = startOfMonthChile(year, month - 1);
+    const endDate   = endOfMonthChile(year, month - 1);
 
     // Ingresos — _sum nativo
     const [ingresosAgg, ingresosList, methodsAgg] = await Promise.all([

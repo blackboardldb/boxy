@@ -78,6 +78,8 @@ export function UserApproval() {
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [approveNotes, setApproveNotes] = useState("");
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectedUsers, setShowRejectedUsers] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<PendingUser | null>(null);
@@ -154,7 +156,10 @@ export function UserApproval() {
       const res = await fetch(`/api/users/${user.id}/renewal/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate: hoyStr }),
+        body: JSON.stringify({ 
+          startDate: hoyStr,
+          ...(approveNotes.trim() ? { notes: approveNotes.trim() } : {})
+        }),
       });
       const json = await res.json();
 
@@ -170,6 +175,8 @@ export function UserApproval() {
         description: `${user.firstName} ${user.lastName} ha sido aprobado exitosamente.`,
       });
       setShowDetails(false);
+      setShowApproveDialog(false);
+      setApproveNotes("");
     } catch (err: any) {
       toast({
         title: "Error",
@@ -491,7 +498,10 @@ export function UserApproval() {
 
                         <Button
                           size="sm"
-                          onClick={() => handleApproveUser(user)}
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setShowApproveDialog(true);
+                          }}
                           className="bg-green-600 hover:bg-green-700 rounded-xl"
                         >
                           Aprobar
@@ -673,7 +683,10 @@ export function UserApproval() {
                   Cerrar
                 </Button>
                 <Button
-                  onClick={() => handleApproveUser(selectedUser)}
+                  onClick={() => {
+                    setShowDetails(false);
+                    setShowApproveDialog(true);
+                  }}
                   className="bg-green-600 hover:bg-green-700 rounded-xl"
                 >
                   Aprobar Usuario
@@ -681,6 +694,53 @@ export function UserApproval() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de aprobación */}
+      <Dialog
+        open={showApproveDialog}
+        onOpenChange={(open) => setShowApproveDialog(open)}
+      >
+        <DialogContent className="rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Aprobar Pago / Renovación</DialogTitle>
+            <DialogDescription>
+              Se aprobará la membresía del usuario. Puedes registrar una referencia de pago opcional.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="approve-notes">Referencia / comprobante (opcional)</Label>
+               <Input
+                id="approve-notes"
+                value={approveNotes}
+                onChange={(e) => setApproveNotes(e.target.value)}
+                placeholder="Ej: Transferencia BancoEstado #1234"
+                className="rounded-xl mt-2"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowApproveDialog(false);
+                  setApproveNotes("");
+                }}
+                className="rounded-xl"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => selectedUser && handleApproveUser(selectedUser)}
+                className="bg-green-600 hover:bg-green-700 rounded-xl"
+              >
+                Aprobar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

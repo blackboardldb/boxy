@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 export const STUDENT_STATES = {
   ACTIVE: "active",
@@ -651,6 +651,41 @@ export function startOfDayChile(dateStr: string): Date {
  */
 export function endOfDayChile(dateStr: string): Date {
   return fromZonedTime(`${dateStr}T23:59:59.999`, ORGANIZATION_TIMEZONE);
+}
+
+// month0 es 0-indexed (convención nativa de JS: enero=0), puede desbordar
+// (-1, 12, 13...) — se normaliza igual que Date.UTC lo haría nativamente.
+function _monthStartChile(year: number, month0: number): Date {
+  const normalized = new Date(Date.UTC(year, month0, 1));
+  const y = normalized.getUTCFullYear();
+  const m = normalized.getUTCMonth(); // ya normalizado, 0-11
+  const mm = String(m + 1).padStart(2, "0");
+  return fromZonedTime(`${y}-${mm}-01T00:00:00.000`, ORGANIZATION_TIMEZONE);
+}
+
+/**
+ * Devuelve el instante UTC del primer momento del mes indicado en Chile.
+ * month0 es 0-indexed (enero=0). Acepta desbordamientos (-1, 12, etc.).
+ */
+export function startOfMonthChile(year: number, month0: number): Date {
+  return _monthStartChile(year, month0);
+}
+
+/**
+ * Devuelve el instante UTC del primer momento del mes siguiente en Chile.
+ * Úsalo como límite exclusivo (lt) para abarcar el mes completo.
+ * month0 es 0-indexed (enero=0). Acepta desbordamientos.
+ */
+export function endOfMonthChile(year: number, month0: number): Date {
+  return _monthStartChile(year, month0 + 1);
+}
+
+/**
+ * Devuelve la fecha y hora actual pero ajustada a la zona horaria de Chile.
+ * Útil para obtener el año/mes/día actual desde la perspectiva del huso horario local.
+ */
+export function getCurrentChileTime(): Date {
+  return toZonedTime(new Date(), ORGANIZATION_TIMEZONE);
 }
 
 /**
