@@ -4,7 +4,7 @@ import { requireAuthFast } from "@/lib/supabase/auth-guard";
 import { resolveInternalUser } from "@/lib/services/resolve-internal-user";
 import { z } from "zod";
 import { toMidnightUTC } from "@/lib/utils/dates";
-import { calcularFechaTerminoMembresia } from "@/lib/utils";
+import { calcularFechaTerminoMembresia, formatDateChile } from "@/lib/utils";
 
 // HAL-01 Fase 4: Crea un registro en la tabla MembershipRenewal (fuente de verdad).
 // Ya no escribe en el JSONB membership.pendingRenewal.
@@ -168,6 +168,11 @@ export async function POST(
     const effectiveDuration   = planDuration   ?? plan.duration;
     const effectiveName       = planName       ?? plan.name;
 
+    // FIX (ARCHITECTURE.md §15): Comparación segura en horario chileno
+    const startString = startDateNormalized ? formatDateChile(startDateNormalized) : null;
+    const todayString = formatDateChile(new Date());
+    const isFuture = startString && todayString < startString;
+
     // ── Lógica de upsert en autoApprove ────────────────────────────────────────────
     // REGLA DE NEGOCIO: si ya existe un renewal aprobado para este
     // (userId, organizationId, startDate), actualizarlo en lugar de crear uno nuevo.
@@ -176,7 +181,7 @@ export async function POST(
       currentPlanId,
       requestedPlanId: planId,
       paymentMethod,
-      status:      autoApprove ? "approved" : "pending",
+      status:      autoApprove ? (isFuture ? "scheduled" : "approved") : "pending",
       processedAt: processedAtDate,
       startDate:   startDateNormalized,
       amount:         autoApprove && effectivePrice > 0 ? effectivePrice : null,
@@ -207,7 +212,7 @@ export async function POST(
           where: {
             userId,
             organizationId: orgId,
-            status: { in: ['approved', 'superseded'] },
+            status: { in: ['approved', 'superseded', 'scheduled'] },
             startDate: startDateNormalized,
           },
         });
@@ -236,7 +241,7 @@ export async function POST(
         await tx.userMembership.upsert({
           where: { userId_organizationId: { userId, organizationId: orgId } },
           update: {
-            status: "active",
+            status: isFuture ? "scheduled" : "active",
             planId: planId,
             membershipType: effectiveName,
             monthlyPrice: effectivePrice,
@@ -256,7 +261,7 @@ export async function POST(
           create: {
             userId,
             organizationId: orgId,
-            status: "active",
+            status: isFuture ? "scheduled" : "active",
             planId: planId,
             membershipType: effectiveName,
             monthlyPrice: effectivePrice,

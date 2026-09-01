@@ -151,6 +151,12 @@ async function promoteScheduledIfReady(
   if (userMembership?.status === "scheduled") {
     const startDateStr = userMembership.currentPeriodStart ?? userMembership.startDate;
     const startDate = startDateStr ? new Date(startDateStr) : null;
+    
+    // ADVERTENCIA (Deuda Técnica): Esta comparación asume implícitamente que
+    // `startDate` siempre se guardó usando `toMidnightUTC()` (T00:00:00.000Z).
+    // Extraer `.toISOString().split("T")[0]` asume que la fecha UTC y la fecha calendario coinciden.
+    // Si en el futuro `startDate` se guarda con una hora real (ej. hora de pago),
+    // esto se desalineará cerca de la medianoche en Chile frente a UTC.
     const isReady = startDate !== null && todayDate >= new Date(startDate.toISOString().split("T")[0] + "T00:00:00");
 
     if (isReady) {

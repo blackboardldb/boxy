@@ -168,3 +168,62 @@ Cuando un centro tiene `status === "SUSPENDED"`, el bloqueo se ejecuta directame
    - **Alumnos y visitas (`ALUMNO` o anónimo)**: Cualquier request a rutas protegidas se redirige a `/suspended` (página de bloqueo total).
 2. **APIs bloqueadas para alumnos**: Si la petición empieza con `/api/` (ej. llamadas de React Query) y el rol no está exento, el proxy devuelve una respuesta `JSON 503` en lugar de hacer un *rewrite* a la página HTML de `/suspended`. Esto evita errores de parseo o crasheos de cliente.
 3. **Trade-off de seguridad**: El middleware extrae el rol del JWT `user.app_metadata.role`, el cual confía en la firma criptográfica localmente sin golpear la base de datos de permisos (`OrganizationMember`). Esto implica que si un admin fue degradado recientemente, podría conservar acceso exento a `/hub` por hasta 1 hora (TTL del JWT). Es un riesgo residual asumido a cambio del beneficio en latencia.
+
+## 15. Membresías — Bug conocido: Auto-Approve sin validación de fecha futura
+
+> **Estado:** Bug confirmado, pendiente de fix. Ver BACKLOG.md para el ticket de corrección.
+
+### El problema
+
+El endpoint de renovación manual `POST /api/users/[id]/renewal` (`app/api/users/[id]/renewal/route.ts`) acepta un flag `autoApprove: true` que los administradores usan para asignar planes directamente sin flujo de aprobación. El bug es que este flujo **activa la membresía de forma inmediata sin importar si `startDate` es una fecha futura**.
+
+El código actual hace esto:
+
+```typescript
+// MembershipRenewal — siempre "approved", incluso si startDate es mañana
+status: autoApprove ? "approved" : "pending",
+
+// UserMembership — siempre "active", incluso si startDate es mañana
+await tx.userMembership.upsert({
+  update: { status: "active", ... }
+})
+```
+
+### Por qué rompe el sistema
+
+El mecanismo de promoción lazy en `lib/services/user-service.ts` solo promueve membresías que están en estado `"scheduled"`:
+
+```typescript
+if (userMembership?.status === "scheduled") {
+  // ...verifica si hoy >= startDate...
+  // ...si sí, promueve a "active"
+}
+```
+
+Si el plan llega con `status: "active"` desde el inicio, la promoción lazy lo ignora — el plan no pasa por el estado intermedio `scheduled` y el usuario accede a beneficios antes de que comience su período real.
+
+### La corrección correcta
+
+```typescript
+// FIX: Comparación segura en horario chileno usando YYYY-MM-DD
+const startString = startDateNormalized ? formatDateChile(startDateNormalized) : null;
+const todayString = formatDateChile(new Date());
+const isFuture = startString && todayString < startString;
+
+// MembershipRenewal
+status: autoApprove ? (isFuture ? "scheduled" : "approved") : "pending",
+
+// UserMembership
+status: isFuture ? "scheduled" : "active",
+```
+
+### Invariante que debe mantenerse
+
+| Estado en `MembershipRenewal` | Estado en `UserMembership` | Significado |
+|---|---|---|
+| `pending`   | `pending`   | Alumno solicitó, admin no ha aprobado |
+| `scheduled` | `scheduled` | Admin aprobó, pero el período aún no comienza |
+| `approved`  | `active`    | Admin aprobó y el período ya comenzó |
+| `superseded`| *(no aplica)* | Renovación histórica reemplazada por una nueva |
+
+**Regla**: nunca debe existir un `MembershipRenewal.status = "approved"` cuyo `startDate` sea estrictamente futuro y cuyo correspondiente `UserMembership.status` sea `"active"`. Eso indica un período activo que no ha comenzado aún.
