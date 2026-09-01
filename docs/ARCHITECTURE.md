@@ -154,8 +154,14 @@ migraciones nuevas en orden) o el flujo manual de `db-migrations.md` para índic
 
 ## 14. Suspensión de Centros (V1)
 
-Cuando un centro no renueva su suscripción, su `status` pasa a `SUSPENDED`.
-El bloqueo se ejecuta directamente en el middleware de Next.js (`proxy.ts`) para proteger las rutas a nivel subdominio, bajo la siguiente lógica:
+### Lógica de Facturación y Ciclos de Pago
+La organización se suspende automáticamente si no paga su suscripción de Boxy. El ciclo de pago depende del campo `billingCycle` de la organización:
+- **Ciclo A:** Vence el día **10** de cada mes.
+- **Ciclo B:** Vence el día **25** de cada mes.
+El cálculo (`calculateBillingPeriodEnd`) proyecta la fecha límite exacta. Existe un cron job diario (`/manager/api/cron/billing`) que busca todos los centros en estado `ACTIVE` o `TRIAL` cuya fecha límite (`billingPeriodEnd`) haya sido superada (`< hoy`). **No hay período de gracia en código:** si el cron corre y la fecha está vencida, el centro pasa inmediatamente a `status: "SUSPENDED"` y `suspendedReason: "auto_suspended_billing"`.
+
+### Bloqueo de Acceso (Middleware)
+Cuando un centro tiene `status === "SUSPENDED"`, el bloqueo se ejecuta directamente en el middleware de Next.js (`proxy.ts`) para proteger las rutas a nivel subdominio, bajo la siguiente lógica:
 
 1. **Visibilidad inteligente por rol**: Se extrae el rol de la sesión de Supabase (JWT).
    - **Administradores y Coaches (`ADMIN`, `COACH`)**: Tienen el pase exento (`isExemptRole`). Se les permite entrar al dashboard (`/hub`) donde ven un banner persistente global en el layout informando la suspensión.
