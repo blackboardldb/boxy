@@ -37,6 +37,13 @@
 | Cron protegido por `CRON_SECRET`, validado en el propio endpoint | El bypass del proxy no es la única barrera — el endpoint debe defenderse solo, sin asumir que el proxy lo protege. |
 | `invalidateQueries(["me"])` sin scope de `organizationId` en `useClasses.ts` | Auditado y descartado como riesgo: no hay selector de tenant client-side, cambiar de centro siempre implica navegar a otro subdominio (hard reload), por lo que el `queryClient` nunca persiste entre tenants. Además `["me"]` no está parametrizado en ningún lado del codebase (`meKeys.me = ["me"]`) — invalidar `["me", activeOrgId]` sería un no-op silencioso porque no matchea la key real cacheada. Cambiarlo habría roto la UI de cupos (`centerStats`) sin resolver ningún problema real. |
 
+### 5. Retención de `--webpack` en desarrollo (Turbopack deshabilitado)
+- **Fecha:** Agosto 2026
+- **Contexto:** En Next.js 15+, Turbopack es el empaquetador por defecto.
+- **Decisión:** Se mantiene el uso de `next dev --webpack` y el límite de memoria `NODE_OPTIONS='--max-old-space-size=4096'`.
+- **Causa:** Aunque Webpack en Next.js consume ~2.6GB de RAM en este proyecto (mitigado por el max-old-space-size), Turbopack presenta un *deadlock* o cuelgue infinito silencioso ("no renderiza nunca") al compilar rutas de servidor que interactúan con el motor de Prisma (Rust).
+- **Consecuencia:** Se asume el alto consumo de memoria local a cambio de estabilidad en el ciclo de HMR. El log `[PRISMA] CREATING NEW PRISMA CLIENT INSTANCE!` múltiple es consecuencia directa de Webpack/Next aislando procesos en local; no es un memory leak de la base de datos, no afecta a producción (Vercel Serverless).
+
 ## Explícitamente descartado
 
 | Qué | Por qué |

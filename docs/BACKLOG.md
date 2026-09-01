@@ -46,6 +46,20 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - **Fix correcto:** Se reemplazó el uso nativo de `Date` por `getCurrentChileTime()` (que usa `toZonedTime(new Date(), "America/Santiago")` internamente) y *crucialmente* se leen sus componentes usando `.getUTCFullYear()` y `.getUTCMonth()` (los getters UTC son mandatorios porque `toZonedTime` desplaza el timestamp UTC interno; los getters locales reintroducirían el bug según el TZ de la máquina).
   - **Qué NO hacer:** No cambiar `getUTCMonth()` por `getMonth()` — en Vercel el servidor también corre en UTC, el problema sería idéntico. Hay que hacer la conversión explícita a `America/Santiago` primero.
 
+- [x] ~~**¿Ya se revirtió el flag `--webpack` del `package.json` porque Turbopack solucionó el OOM?**~~
+  - **Resolución:** No se revirtió ni se debe revertir por ahora.
+  - **Evidencia Cruda:** En pruebas manuales, Turbopack consume muy poca RAM (200MB) pero se cuelga infinitamente al compilar ciertas rutas del servidor. Log de la falla:
+    ```text
+    [PROXY] Request: GET /api/tenant/bsfit
+    GET /api/admin/renewals?status=pending 200 in 4.2s
+    [PRISMA] CREATING NEW PRISMA CLIENT INSTANCE!
+    [heap] rss=253MB heapUsed=219MB
+    GET /api/tenant/bsfit 200 in 858ms (next.js: 48ms, proxy.ts: 3ms, application-code: 807ms)
+    ^C
+    ```
+    *(El request del HTML principal a `/hub` quedó colgado eternamente hasta matar el proceso).*
+  - **Por qué importa:** El flag `--webpack` (junto con `--max-old-space-size=4096`) es la mitigación activa para evitar el deadlock de Turbopack. El alto uso de RAM reportado localmente (2.6GB) y los logs múltiples de Prisma (`CREATING NEW PRISMA CLIENT INSTANCE!`) son el comportamiento normal esperado del compilador Webpack de Next.js aislando procesos.
+  - **Qué NO hacer:** No forzar Turbopack ni borrar el límite de memoria bajo la falsa premisa de un "memory leak".
 
 ## Reglas de negocio para /hub en centros SUSPENDED
 - **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
