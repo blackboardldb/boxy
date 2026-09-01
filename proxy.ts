@@ -250,6 +250,21 @@ export async function proxy(request: NextRequest) {
       });
       return blockedResponse;
     }
+    
+    // NUEVO: Regla de Modo Solo-Lectura para roles exentos (ADMIN/COACH) en centro suspendido
+    if (isExemptRole && pathname.startsWith("/api/")) {
+      const method = request.method.toUpperCase();
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+        const blockedResponse = NextResponse.json(
+          { error: "Operación no permitida. El centro se encuentra temporalmente suspendido." },
+          { status: 403 }
+        );
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          blockedResponse.cookies.set(cookie.name, cookie.value);
+        });
+        return blockedResponse;
+      }
+    }
   }
 
   // Proteger /hub — solo ADMIN y COACH
