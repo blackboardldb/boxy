@@ -128,7 +128,7 @@ export default function Page() {
           {userLoading ? (
             <CenterLogo loading />
           ) : (
-            <CenterLogo iconUrl={currentUser?.customIconUrl ?? null} />
+            <CenterLogo iconUrl={currentUser?.customIconUrl ?? null} iconUpdatedAt={currentUser?.orgUpdatedAt} />
           )}
           </div>
           {/* agregar nombre del centro */}

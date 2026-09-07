@@ -17,17 +17,21 @@ export default async function AdminPage() {
 
   let orgName = "Boxy";
   let customIconUrl: string | null = null;
+  let orgUpdatedAt: Date | null = null;
   try {
     if (auth.organizationId) {
       const org = await prisma.organization.findUnique({
         where: { id: auth.organizationId },
-        select: { name: true, customIconUrl: true },
+        select: { name: true, customIconUrl: true, updatedAt: true },
       });
       if (org?.name) {
         orgName = org.name;
       }
       if (org?.customIconUrl) {
         customIconUrl = org.customIconUrl;
+      }
+      if (org?.updatedAt) {
+        orgUpdatedAt = org.updatedAt;
       }
     }
   } catch (error) {
@@ -42,7 +46,7 @@ export default async function AdminPage() {
           <Link href="/hub">
             <div className="flex justify-start">
               <div className="p-1 rounded-full flex gap-2 pr-3">
-                <CenterLogo iconUrl={customIconUrl} />
+                <CenterLogo iconUrl={customIconUrl} iconUpdatedAt={orgUpdatedAt} />
                 <p className="font-bold text-sm tracking-wider uppercase self-center text-black">
                   {orgName || "Centro"}
                 </p>

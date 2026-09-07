@@ -1,4 +1,7 @@
 import type React from "react";
+// Force-dynamic: evita que Next.js cachee el layout y sirva un customIconUrl stale.
+// El logo se sube desde Manager y debe reflejarse de inmediato en el Hub.
+export const dynamic = "force-dynamic";
 import { Navigation } from "../../components/admincomponents/navigation";
 import { MobileAdminNav } from "../../components/admincomponents/mobile-nav-admin-v2";
 import { CenterLogo } from "@/components/CenterLogo";
@@ -19,7 +22,7 @@ export default async function AdminLayout({
   const org = organizationId
     ? await prisma.organization.findUnique({
         where: { id: organizationId },
-        select: { name: true, customIconUrl: true, status: true },
+        select: { name: true, customIconUrl: true, status: true, updatedAt: true },
       })
     : null;
 
@@ -40,7 +43,7 @@ export default async function AdminLayout({
             <Link href="/hub">
               <div className="py-2 px-2 flex justify-start">
                 <div className="p-1 rounded-full flex gap-3 pr-3 hover:bg-zinc-50 transition-colors">
-                  <CenterLogo iconUrl={org?.customIconUrl ?? null} />
+                  <CenterLogo iconUrl={org?.customIconUrl ?? null} iconUpdatedAt={org?.updatedAt} />
                   <p className="font-bold text-sm tracking-wider uppercase self-center text-black">
                     {org?.name || "Centro"}
                   </p>

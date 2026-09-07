@@ -80,10 +80,7 @@ export async function POST(
       .from("orgs")
       .getPublicUrl(filePath);
 
-    let customIconUrl = publicUrlData.publicUrl;
-    customIconUrl = customIconUrl.includes("?") 
-      ? `${customIconUrl}&v=${Date.now()}`
-      : `${customIconUrl}?v=${Date.now()}`;
+    const customIconUrl = publicUrlData.publicUrl;
 
     // 5. Actualizar la base de datos
     await prisma.organization.update({
