@@ -72,8 +72,6 @@ export function BrandingUploader({ orgId, initialIconUrl }: { orgId: string, ini
 
       setCurrentIcon(json.customIconUrl);
       setFile(null);
-      // Reset el input de file manualmente, o vía reference, pero ya pusimos null a la variable
-      // Forzamos refresh para los server components si es necesario
       router.refresh();
     } catch (err: any) {
       setError(err.message);
