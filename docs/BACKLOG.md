@@ -70,3 +70,19 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
 - **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
 - **Por qué importa:** Hoy "admin pasa" solo resuelve visibilidad (puede ver su dashboard y pagar), pero no restringe operación — un centro podría seguir operando con normalidad plena sin pagarle a Boxy, salvo por el banner.
 - **Qué NO hacer:** No bloquear todo `/hub` de forma ciega (eso ya lo evita el fix actual) ni tampoco dejarlo 100% abierto sin ninguna restricción — ambos extremos son fáciles de implementar mal rápido; hace falta decidir la lista de acciones restringidas antes de tocar código.
+
+## Auditoría de Caché y Estado Local (PWA)
+
+- [x] ~~**Bug UI Stale Data (PWA / Mobile)**~~
+  - ~~**Qué falta:**~~
+    - ~~Eliminar `refetchOnWindowFocus: false` del `provider.tsx` de React Query (idealmente pasarlo a `true` que es el default o dejarlo explícito).~~
+    - ~~Limpiar los overrides de `refetchOnWindowFocus: false` en los hooks individuales (como en `useMe.ts`).~~
+    - ~~Evaluar agregar un listener a nivel global en la App (ej. en el Provider) para el evento `visibilitychange` de la PWA que dispare `queryClient.invalidateQueries()` al salir del estado `hidden` (Safari iOS a veces no dispara el event listener estándar de window focus al volver desde background).~~
+  - ~~**Por qué importa:** Boxy no tiene Supabase Realtime activo. La estrategia oficial de actualización de datos documentada se basa en "refetch-on-refocus", pero actualmente está deshabilitada en código, dejando a las apps instaladas como PWA completamente estáticas tras volver del modo suspensión.~~
+  - ~~**Qué NO hacer:** No reintroducir Supabase Realtime para arreglar esto (fue descartado deliberadamente). No alterar la configuración de Server-Side Cache, ya que actualmente todo corre por cliente y es seguro.~~
+
+- [x] ~~**Bug Mutaciones Frontend que no invalidan caché**~~
+  - ~~**Qué falta:** Refactorizar el uso directo de `fetchClient` (POST) en `app/alumnos/renovar-plan/page.tsx` para que utilice un hook `useMutation`. Ejecutar la invalidación de las query keys relevantes (ej. `meKeys.me`, `renewals`) en el callback de `onSuccess`.~~
+    ~~*(Nota: Se realizó un barrido exhaustivo con `grep` sobre todo el directorio `app/` y `components/`. El único endpoint de mutación que no utiliza `useMutation` ni invalida caché es `renovar-plan/page.tsx`).*~~
+  - ~~**Por qué importa:** Tras una renovación o mutación importante, los datos cacheados por React Query quedarán desactualizados en la memoria. Si el usuario navega a otra vista tras la mutación y el `staleTime` no ha expirado, verá los datos antiguos. Esto se agrava enormemente con el bug de PWA documentado arriba.~~
+  - ~~**Qué NO hacer:** No re-inyectar `unstable_cache` en el servidor, todo se maneja desde el cliente. No forzar un `window.location.reload()` para saltear el problema; la solución en React/Next.js es invalidar el Query Client correctamente.~~

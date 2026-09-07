@@ -145,6 +145,7 @@ export function useMyBookings(userId: string | undefined, startDate?: string) {
         `/users/${userId}/classes${startDate ? `?${searchParams.toString()}` : ""}`
       ).then((res) => res.data ?? []),
     staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: true,
     enabled: !!activeOrgId && Boolean(userId),
   });
 }

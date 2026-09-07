@@ -37,7 +37,7 @@ export function useMe(options?: { enabled?: boolean }) {
     gcTime: 1000 * 60 * 5,    // 5 min en caché inactiva
     retry: 1,
     refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     enabled: options?.enabled ?? true,
   });
 }

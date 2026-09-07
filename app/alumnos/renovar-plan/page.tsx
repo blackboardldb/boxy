@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { fetchClient } from "@/lib/api-client";
+import { useInvalidateMe } from "@/lib/react-query/hooks/useMe";
+import { useQueryClient } from "@tanstack/react-query";
+import { renewalKeys } from "@/lib/react-query/hooks/useRenewals";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
@@ -26,6 +29,8 @@ export default function RenewPlanPage() {
   const { data: plans, isLoading: plansLoading } = usePlans({ isActive: "true" });
   const { toast } = useToast();
   const { handleAsyncError } = useErrorHandler();
+  const queryClient = useQueryClient();
+  const invalidateMe = useInvalidateMe();
 
   const { currentUser, isLoading: userLoading } = useCurrentUser();
 
@@ -162,6 +167,10 @@ export default function RenewPlanPage() {
           paymentMethod: selectedPayment,
         }),
       });
+
+      // Invalidar caché para que /alumnos muestre el estado actualizado
+      await invalidateMe();
+      queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
 
       // Cambiar a estado de completando
       setRenewalStep("completing");

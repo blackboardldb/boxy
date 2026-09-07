@@ -23,11 +23,14 @@ import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { useDisciplines } from "@/lib/react-query/hooks/useDisciplines";
 import { usePlanHistory } from "@/lib/react-query/hooks/usePlanHistory";
+import { useQueryClient } from "@tanstack/react-query";
+import { renewalKeys } from "@/lib/react-query/hooks/useRenewals";
 
 export default function StudentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // React Query
   const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
@@ -266,6 +269,7 @@ const handleStartDateChange = (newDate: string) => {
       );
 
       await updateUserMutation.mutateAsync({ id: student.id, data: changes });
+      queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
 
       const updated = { ...student, ...changes } as FitCenterUserProfile;
       setStudent(updated);

@@ -15,6 +15,11 @@ import { calcularFechaTerminoMembresia, calcularClasesSegunDuracion } from "@/li
 import { useUser, useUpdateUser } from "@/lib/react-query/hooks/useUsers";
 import { usePlans } from "@/lib/react-query/hooks/usePlans";
 import { useMyBookings } from "@/lib/react-query/hooks/useClasses";
+import { useQueryClient } from "@tanstack/react-query";
+import { meKeys } from "@/lib/react-query/hooks/useMe";
+import { renewalKeys } from "@/lib/react-query/hooks/useRenewals";
+import { userKeys } from "@/lib/react-query/hooks/useUsers";
+import { useActiveOrgId } from "@/lib/react-query/use-active-org-id";
 
 export default function NuevoPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -25,6 +30,8 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
   const { data: fetchedUser, isLoading } = useUser(resolvedParams.id);
   const { data: plans = [] } = usePlans({ limit: 100 });
   const updateUserMutation = useUpdateUser();
+  const queryClient = useQueryClient();
+  const orgId = useActiveOrgId();
 
   const [student, setStudent] = useState<FitCenterUserProfile | null>(null);
   const [registrarIngreso, setRegistrarIngreso] = useState(true); // Marcado por defecto
@@ -201,6 +208,13 @@ export default function NuevoPlanPage({ params }: { params: Promise<{ id: string
             }),
           });
         }
+
+        if (orgId) {
+          queryClient.invalidateQueries({ queryKey: meKeys.me });
+          queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
+          queryClient.invalidateQueries({ queryKey: userKeys.detail(orgId, student.id) });
+        }
+
         toast({ title: "Plan Asignado", description: "El nuevo plan fue asignado correctamente." });
         router.push(`/hub/alumnos/${student.id}`);
       } else {
