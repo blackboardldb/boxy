@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { ChangePasswordForm } from "./components/change-password-form";
 
 type OrgConfig = {
   name: string;
@@ -349,6 +350,9 @@ export default function ConfiguracionPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Seguridad — cambio de contraseña del admin */}
+          <ChangePasswordForm />
         </div>
       </div>
     </div>
