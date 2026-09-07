@@ -89,10 +89,10 @@ function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): 
 }
 
 async function resolveAndSnapshotPlan(planId: string | null | undefined) {
-  if (!planId) return { saasPlanId: null, saasPlanLimit: null };
+  if (!planId) return { saasPlanId: null, saasPlanLimit: null, saasPlanPrice: null };
   const plan = await prisma.plan.findUnique({ where: { id: planId } });
   if (!plan) throw new Error("El plan seleccionado no existe.");
-  return { saasPlanId: plan.id, saasPlanLimit: plan.maxActiveStudents };
+  return { saasPlanId: plan.id, saasPlanLimit: plan.maxActiveStudents, saasPlanPrice: plan.priceMonthly };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────

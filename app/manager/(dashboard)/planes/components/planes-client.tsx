@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 
@@ -141,6 +141,12 @@ function PlanRow({ plan, onUpdate }: { plan: any; onUpdate: (id: string, updates
   const [name, setName] = useState(plan.name);
   const [limit, setLimit] = useState(plan.maxActiveStudents.toString());
   const [price, setPrice] = useState((plan.priceMonthly / 100).toString());
+
+  useEffect(() => {
+    setName(plan.name);
+    setLimit(plan.maxActiveStudents.toString());
+    setPrice((plan.priceMonthly / 100).toString());
+  }, [plan]);
 
   const handleSave = () => {
     onUpdate(plan.id, { name, maxActiveStudents: parseInt(limit), priceMonthly: parseInt(price) * 100 });
