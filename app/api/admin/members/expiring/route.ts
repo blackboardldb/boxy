@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminFast } from "@/lib/supabase/auth-guard";
 import { prisma } from "@/lib/prisma";
+import { getTodayInTimezone } from "@/lib/utils/dates";
 
 // HAL-01 Fase 4 Sprint 2.1: Migrado de $queryRaw JSONB a query Prisma sobre UserMembership.
 export async function GET(request: NextRequest) {
@@ -18,8 +19,13 @@ export async function GET(request: NextRequest) {
 
     const { organizationId } = auth;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Leer timezone de la org para anclar "hoy" al calendario local del centro,
+    // no al UTC del servidor (que diferiría 3-4h en Vercel → corte erróneo de medianoche).
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { timezone: true },
+    });
+    const today = getTodayInTimezone(org?.timezone ?? "America/Santiago");
 
     // ANTES: $queryRaw con membership->>'currentPeriodEnd' >= today
     // AHORA: query relacional sobre UserMembership

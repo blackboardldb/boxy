@@ -52,3 +52,30 @@ export function toDateString(
   if (typeof value === "string") return value.substring(0, 10);
   return value.toISOString().split("T")[0];
 }
+
+/**
+ * Retorna la fecha de "hoy a medianoche UTC" anclada al día calendario
+ * de la zona horaria especificada (por defecto: America/Santiago).
+ *
+ * PROBLEMA QUE RESUELVE:
+ *   `new Date(); today.setHours(0,0,0,0)` usa la hora local del servidor.
+ *   En Vercel (UTC), esto produce una medianoche UTC ≠ medianoche en Chile,
+ *   lo que hace que los cortes de "expira hoy" sean erróneos por 3-4 horas
+ *   durante cada noche.
+ *
+ * CÓMO FUNCIONA:
+ *   1. Obtiene el string "YYYY-MM-DD" en la timezone de la org (p.ej. "2025-09-07").
+ *   2. Construye `Date` con ese string + "T00:00:00.000Z" → medianoche UTC
+ *      correspondiente al mismo día calendario en la zona horaria indicada.
+ *
+ * @example
+ *   // Son las 22:00 UTC = 18:00 Chile (no es día siguiente aún en Chile)
+ *   getTodayInTimezone("America/Santiago") // → 2025-09-07T00:00:00.000Z
+ *   new Date().setHours(0,0,0,0)           // → 2025-09-07T00:00:00.000Z (local, incorrecto en Vercel)
+ */
+export function getTodayInTimezone(timezone = "America/Santiago"): Date {
+  const now = new Date();
+  const localDateStr = new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(now);
+  // localDateStr → "YYYY-MM-DD"
+  return new Date(localDateStr + "T00:00:00.000Z");
+}
