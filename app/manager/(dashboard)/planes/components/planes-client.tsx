@@ -148,6 +148,15 @@ function PlanRow({ plan, onUpdate }: { plan: any; onUpdate: (id: string, updates
     setPrice((plan.priceMonthly / 100).toString());
   }, [plan]);
 
+  const handleCancel = () => {
+    // Resetear explícitamente los inputs a los valores actuales del servidor
+    // para que no queden "sucios" si el usuario abre edición de nuevo sin cambios del padre
+    setName(plan.name);
+    setLimit(plan.maxActiveStudents.toString());
+    setPrice((plan.priceMonthly / 100).toString());
+    setEditing(false);
+  };
+
   const handleSave = () => {
     onUpdate(plan.id, { name, maxActiveStudents: parseInt(limit), priceMonthly: parseInt(price) * 100 });
     setEditing(false);
@@ -189,7 +198,7 @@ function PlanRow({ plan, onUpdate }: { plan: any; onUpdate: (id: string, updates
         {editing ? (
           <div className="flex gap-2 ml-auto">
             <button onClick={handleSave} className="text-xs text-blue-400 hover:text-blue-300">Guardar</button>
-            <button onClick={() => setEditing(false)} className="text-xs text-zinc-400 hover:text-white">Cancelar</button>
+            <button onClick={handleCancel} className="text-xs text-zinc-400 hover:text-white">Cancelar</button>
           </div>
         ) : (
           <button onClick={() => setEditing(true)} className="text-xs text-zinc-500 hover:text-white ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Editar</button>
