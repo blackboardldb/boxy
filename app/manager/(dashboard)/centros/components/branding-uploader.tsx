@@ -4,12 +4,28 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
-export function BrandingUploader({ orgId, initialIconUrl }: { orgId: string, initialIconUrl: string | null }) {
+export function BrandingUploader({ orgId, initialIconUrl, orgUpdatedAt }: { 
+  orgId: string; 
+  initialIconUrl: string | null;
+  orgUpdatedAt?: Date | string | null;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // currentIcon stores the raw URL; versioning is applied at render time
   const [currentIcon, setCurrentIcon] = useState<string | null>(initialIconUrl);
+  // After a successful upload, we have a fresh timestamp from the server response
+  const [uploadedAt, setUploadedAt] = useState<number | null>(null);
   const router = useRouter();
+
+  // Build the versioned URL: prefer post-upload timestamp, fall back to orgUpdatedAt
+  function buildVersionedUrl(url: string | null): string | null {
+    if (!url) return null;
+    const ts = uploadedAt ?? (orgUpdatedAt ? new Date(orgUpdatedAt).getTime() : null);
+    if (!ts) return url;
+    const base = url.replace(/[?&]v=\d+/, "").replace(/[?&]t=\d+/, "");
+    return base.includes("?") ? `${base}&v=${ts}` : `${base}?v=${ts}`;
+  }
 
   const handleUpload = async () => {
     if (!file) return;
@@ -71,6 +87,7 @@ export function BrandingUploader({ orgId, initialIconUrl }: { orgId: string, ini
       }
 
       setCurrentIcon(json.customIconUrl);
+      setUploadedAt(Date.now());
       setFile(null);
       router.refresh();
     } catch (err: any) {
@@ -88,7 +105,7 @@ export function BrandingUploader({ orgId, initialIconUrl }: { orgId: string, ini
       <div className="px-4 py-6 space-y-4">
         {currentIcon ? (
           <div className="flex items-center gap-4">
-            <img src={currentIcon} alt="Current Logo" className="w-16 h-16 object-contain bg-black rounded-lg border border-zinc-800" />
+            <img src={buildVersionedUrl(currentIcon)!} alt="Current Logo" className="w-16 h-16 object-contain bg-black rounded-lg border border-zinc-800" />
             <span className="text-zinc-500 text-sm">Logo actual</span>
           </div>
         ) : (

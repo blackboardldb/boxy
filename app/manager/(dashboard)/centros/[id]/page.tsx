@@ -9,6 +9,10 @@ import { BrandingUploader } from "../components/branding-uploader";
 import { CsvImporter } from "../components/csv-importer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+// Force-dynamic: garantiza que customIconUrl siempre se lea fresco de Prisma
+// tras una subida de logo desde el mismo panel.
+export const dynamic = "force-dynamic";
+
 export default async function CentroDetailPage({
   params,
 }: {
@@ -145,7 +149,7 @@ export default async function CentroDetailPage({
         </TabsContent>
 
         <TabsContent value="branding" className="mt-6">
-          <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} />
+          <BrandingUploader orgId={org.id} initialIconUrl={org.customIconUrl} orgUpdatedAt={org.updatedAt} />
         </TabsContent>
 
         <TabsContent value="importar" className="mt-6">
