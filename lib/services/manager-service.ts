@@ -81,25 +81,30 @@ function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): 
   // Desplaza el timestamp interno para que los getters UTC devuelvan la hora de Chile
   const zoned = toZonedTime(fromDate, "America/Santiago");
 
-  const currentDay = zoned.getUTCDate();
+  // currentDay está disponible para logging/debug pero ya no se usa en la condición.
+  const currentDay = zoned.getUTCDate(); // eslint-disable-line @typescript-eslint/no-unused-vars
   let currentMonth  = zoned.getUTCMonth();
   let currentYear   = zoned.getUTCFullYear();
 
-  const targetDay = cycle === 'B' ? 25 : 10;
+  const cutoffDay = cycle === 'B' ? 25 : 10;
 
-  // Si estamos en el día límite o lo superamos, proyectar al mes siguiente.
-  // Usar >= (no <=) garantiza que pagar el mismo día de corte extiende al próximo ciclo.
-  if (currentDay >= targetDay) {
-    currentMonth++;
-    if (currentMonth > 11) {
-      currentMonth = 0;
-      currentYear++;
-    }
+  // Siempre proyecta al próximo mes. Esto garantiza:
+  // 1. Activaciones nuevas (create / updateStatus / primer pago): mínimo ~30 días
+  //    de cobertura real, simétrico entre Ciclo A y B sin importar el día de alta.
+  // 2. Renovaciones (stacking en registerPayment): baseDate llega como el día de
+  //    corte anterior (10 o 25), así "avanzar un mes" es exactamente sumar un ciclo.
+  // Bug anterior: la condición `currentDay >= targetDay` siempre era true para
+  // Ciclo A (targetDay=10 → cualquier día >= 10), y para Ciclo B fallaba en días
+  // 1-14 dando ciclos cortos (11-24 días).
+  currentMonth++;
+  if (currentMonth > 11) {
+    currentMonth = 0;
+    currentYear++;
   }
 
   const y = currentYear;
   const m = String(currentMonth + 1).padStart(2, "0");
-  const d = String(targetDay).padStart(2, "0");
+  const d = String(cutoffDay).padStart(2, "0");
 
   // endOfDayChile construye el instante UTC correcto para las 23:59:59.999 en Chile
   return endOfDayChile(`${y}-${m}-${d}`);
@@ -516,7 +521,16 @@ export const managerService = {
       const org = await tx.organization.findUnique({ where: { id: organizationId } });
       if (org) {
         const cycle = org.billingCycle ?? 'A';
-        const newBillingEnd = calculateBillingPeriodEnd(cycle, data.paidAt ?? new Date());
+
+        // Stacking: si el centro ya tiene un vencimiento futuro válido, acumulamos
+        // desde esa fecha (el cliente pagó adelantado o en ventana de gracia).
+        // Si está vencido/suspendido, iniciamos desde la fecha de pago.
+        let baseDate = data.paidAt ?? new Date();
+        if (org.billingPeriodEnd && new Date(org.billingPeriodEnd) > baseDate) {
+          baseDate = new Date(org.billingPeriodEnd);
+        }
+
+        const newBillingEnd = calculateBillingPeriodEnd(cycle, baseDate);
 
         const isSuspended = org.status === 'SUSPENDED';
 
