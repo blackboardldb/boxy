@@ -1,12 +1,23 @@
 # Backlog y Deuda Técnica (Boxy)
-*Última actualización: 27 de agosto de 2026*
+*Última actualización: 07 de septiembre de 2026*
 
 Este documento registra los hallazgos, decisiones pospuestas y deuda técnica identificada durante las sesiones de auditoría y desarrollo. **Ningún ticket "no bloqueante" debe quedar solo en la memoria del chat.**
 
 Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reconstruir la discusión original:
 **Qué falta → Por qué importa → Qué NO hacer (decisiones descartadas).**
 
-## Pendientes de Infraestructura y BD
+## Pendientes de Correctitud y Finanzas
+
+- [x] ~~**Bug crítico: `calculateBillingPeriodEnd` usa horario UTC crudo y tiene un off-by-one en el día exacto del ciclo**~~
+  - ~~**Qué falta:** `calculateBillingPeriodEnd` (`lib/services/manager-service.ts`) usa `new Date()`, `d.getDate()` y `d.setHours(23,59,59,999)` sin convertir a horario de Chile. El cron de suspensión (`app/manager/api/cron/billing/route.ts`) compara contra `new Date()` crudo también. Esto suspende centros en horario prime (20:00-21:00 hrs Chile) en vez de a medianoche, y además puede dar o quitar un mes completo de margen dependiendo de si el pago cae antes o después de las 20-21hrs Chile del día límite.~~
+  - ~~**Por qué importa:** Corta el acceso de un negocio real en pleno horario de clases vespertinas — el peor momento posible para un gimnasio. Puede además otorgar un mes gratis o cero días de gracia dependiendo de la hora exacta del pago, de forma no determinista para el usuario.~~
+  - ~~**Qué NO hacer:** No usar `getMonth()`/`getDate()`/`getHours()` nativos ni asumir que "restar horas" alcanza — ya se corrigió un bug idéntico en `finance-compare`/`stats` (ver entrada de agosto) usando `toZonedTime(..., "America/Santiago")` primero y **luego** los getters UTC sobre el resultado zonificado. Aplicar el mismo patrón acá, no reinventar la conversión.~~
+
+- [ ] **Comportamiento del Cron de facturación: `TRIAL` centers con `billingPeriodEnd: NULL`**
+  - **Qué falta:** Definir si los centros en estado `TRIAL` que aún no tienen una fecha de corte de facturación asignada (`billingPeriodEnd: NULL`) deben ser suspendidos tras cierto tiempo o si el limbo indefinido es intencional.
+  - **Por qué importa:** Actualmente, 4 centros están en la base de datos con `billingPeriodEnd: NULL`. El cron de facturación usa la comparación `billingPeriodEnd: { lt: hoy }`, lo cual ignora silenciosamente todos los registros `NULL`. Esto significa que un centro en `TRIAL` sin fecha de corte nunca será suspendido automáticamente.
+  - **Qué NO hacer:** No agregar fallbacks como `OR: [{ billingPeriodEnd: { lt: hoy } }, { billingPeriodEnd: null }]` en el cron a menos que el negocio confirme que los centros sin configurar deban suspenderse.
+
 
 - [x] ~~**Campos de ubicación en el frontend del Manager**~~
   - ~~**Qué falta:** Agregar los inputs de formulario para `country`, `region` y `city` en las vistas de creación (`app/manager/(dashboard)/centros/nuevo/page.tsx`) y edición (`app/manager/(dashboard)/centros/components/edit-center-form.tsx`) de centros.~~

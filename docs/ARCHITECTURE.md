@@ -158,8 +158,12 @@ migraciones nuevas en orden) o el flujo manual de `db-migrations.md` para índic
 La organización se suspende automáticamente si no paga su suscripción de Boxy. El ciclo de pago depende del campo `billingCycle` de la organización:
 - **Ciclo A:** Vence el día **10** de cada mes.
 - **Ciclo B:** Vence el día **25** de cada mes.
-El cálculo (`calculateBillingPeriodEnd`) proyecta la fecha límite exacta. Existe un cron job diario (`/manager/api/cron/billing`) que busca todos los centros en estado `ACTIVE` o `TRIAL` cuya fecha límite (`billingPeriodEnd`) haya sido superada (`< hoy`). **No hay período de gracia en código:** si el cron corre y la fecha está vencida, el centro pasa inmediatamente a `status: "SUSPENDED"` y `suspendedReason: "auto_suspended_billing"`.
 
+El cálculo (`calculateBillingPeriodEnd`) proyecta la fecha límite exacta al **final del día (23:59:59.999) en horario de Chile**. Existe un cron job diario (`/manager/api/cron/billing`) que busca todos los centros en estado `ACTIVE` o `TRIAL` cuya fecha límite (`billingPeriodEnd`) haya sido superada (`< hoy`). 
+
+**Supuesto Operativo de Infraestructura (Timezone):** Para que las proyecciones de fecha límite en Chile funcionen correctamente con `date-fns-tz`, el sistema asume de forma estricta que el proceso de Node (ej. el entorno Serverless de Vercel) corre con el entorno predeterminado **`TZ=UTC`**. Si se sobrescribe el `TZ` a nivel de servidor, los cálculos se desplazarán incorrectamente.
+
+**No hay período de gracia en código:** si el cron corre y la fecha está vencida (tras pasar la medianoche en Chile), el centro pasa inmediatamente a `status: "SUSPENDED"` y `suspendedReason: "auto_suspended_billing"`.
 ### Bloqueo de Acceso (Middleware)
 Cuando un centro tiene `status === "SUSPENDED"`, el bloqueo se ejecuta directamente en el middleware de Next.js (`proxy.ts`) para proteger las rutas a nivel subdominio, bajo la siguiente lógica:
 
@@ -169,43 +173,18 @@ Cuando un centro tiene `status === "SUSPENDED"`, el bloqueo se ejecuta directame
 2. **APIs bloqueadas para alumnos**: Si la petición empieza con `/api/` (ej. llamadas de React Query) y el rol no está exento, el proxy devuelve una respuesta `JSON 503` en lugar de hacer un *rewrite* a la página HTML de `/suspended`. Esto evita errores de parseo o crasheos de cliente.
 3. **Trade-off de seguridad**: El middleware extrae el rol del JWT `user.app_metadata.role`, el cual confía en la firma criptográfica localmente sin golpear la base de datos de permisos (`OrganizationMember`). Esto implica que si un admin fue degradado recientemente, podría conservar acceso exento a `/hub` por hasta 1 hora (TTL del JWT). Es un riesgo residual asumido a cambio del beneficio en latencia.
 
-## 15. Membresías — Bug conocido: Auto-Approve sin validación de fecha futura
+## 15. Membresías — Comportamiento documentado: Auto-Approve con fecha futura
 
-> **Estado:** Bug confirmado, pendiente de fix. Ver BACKLOG.md para el ticket de corrección.
+> **Estado:** Comportamiento documentado (Bug resuelto).
 
-### El problema
+### El comportamiento
 
-El endpoint de renovación manual `POST /api/users/[id]/renewal` (`app/api/users/[id]/renewal/route.ts`) acepta un flag `autoApprove: true` que los administradores usan para asignar planes directamente sin flujo de aprobación. El bug es que este flujo **activa la membresía de forma inmediata sin importar si `startDate` es una fecha futura**.
+El endpoint de renovación manual `POST /api/users/[id]/renewal` (`app/api/users/[id]/renewal/route.ts`) acepta un flag `autoApprove: true` que los administradores usan para asignar planes directamente sin flujo de aprobación. 
 
-El código actual hace esto:
-
-```typescript
-// MembershipRenewal — siempre "approved", incluso si startDate es mañana
-status: autoApprove ? "approved" : "pending",
-
-// UserMembership — siempre "active", incluso si startDate es mañana
-await tx.userMembership.upsert({
-  update: { status: "active", ... }
-})
-```
-
-### Por qué rompe el sistema
-
-El mecanismo de promoción lazy en `lib/services/user-service.ts` solo promueve membresías que están en estado `"scheduled"`:
+La lógica implementada evalúa de forma segura en horario chileno si la fecha de inicio es futura respecto a hoy. Si es así, asigna el estado `"scheduled"` en lugar de `"active"` (y `"scheduled"` en lugar de `"approved"` para el historial), garantizando que los beneficios no se adelanten:
 
 ```typescript
-if (userMembership?.status === "scheduled") {
-  // ...verifica si hoy >= startDate...
-  // ...si sí, promueve a "active"
-}
-```
-
-Si el plan llega con `status: "active"` desde el inicio, la promoción lazy lo ignora — el plan no pasa por el estado intermedio `scheduled` y el usuario accede a beneficios antes de que comience su período real.
-
-### La corrección correcta
-
-```typescript
-// FIX: Comparación segura en horario chileno usando YYYY-MM-DD
+// Comparación segura en horario chileno usando YYYY-MM-DD
 const startString = startDateNormalized ? formatDateChile(startDateNormalized) : null;
 const todayString = formatDateChile(new Date());
 const isFuture = startString && todayString < startString;

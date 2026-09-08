@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import type { OrgStatus } from "@prisma/client";
+import { toZonedTime } from "date-fns-tz";
+import { endOfDayChile } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,22 +72,37 @@ export interface OrgDetail {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// ADVERTENCIA: esta función asume que el proceso Node corre con TZ=UTC (comportamiento
+// por defecto de Vercel Serverless). Si el runtime cambia de TZ, los getters UTC de
+// `toZonedTime` dejan de representar la hora de Chile correctamente. No usar getters
+// locales (getDate/getMonth) como alternativa — ver docs/BACKLOG.md, ticket
+// "calculateBillingPeriodEnd" para la explicación detallada y los pivotes de verificación.
 function calculateBillingPeriodEnd(cycle: string, fromDate: Date = new Date()): Date {
-  const d = new Date(fromDate);
-  const currentDay = d.getDate();
+  // Desplaza el timestamp interno para que los getters UTC devuelvan la hora de Chile
+  const zoned = toZonedTime(fromDate, "America/Santiago");
+
+  const currentDay = zoned.getUTCDate();
+  let currentMonth  = zoned.getUTCMonth();
+  let currentYear   = zoned.getUTCFullYear();
+
   const targetDay = cycle === 'B' ? 25 : 10;
 
-  if (currentDay <= targetDay) {
-    // Vence este mes
-    d.setDate(targetDay);
-  } else {
-    // Vence el próximo mes
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(targetDay);
+  // Si estamos en el día límite o lo superamos, proyectar al mes siguiente.
+  // Usar >= (no <=) garantiza que pagar el mismo día de corte extiende al próximo ciclo.
+  if (currentDay >= targetDay) {
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
   }
-  // Al final del día
-  d.setHours(23, 59, 59, 999);
-  return d;
+
+  const y = currentYear;
+  const m = String(currentMonth + 1).padStart(2, "0");
+  const d = String(targetDay).padStart(2, "0");
+
+  // endOfDayChile construye el instante UTC correcto para las 23:59:59.999 en Chile
+  return endOfDayChile(`${y}-${m}-${d}`);
 }
 
 async function resolveAndSnapshotPlan(planId: string | null | undefined) {
