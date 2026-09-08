@@ -32,8 +32,19 @@ export async function GET(req: NextRequest) {
           themeMode: true,
         },
       }),
-      prisma.organizationMember.count({
-        where: { organizationId: auth.organizationId, role: "ALUMNO" },
+      prisma.userMembership.count({
+        where: { 
+          organizationId: auth.organizationId, 
+          status: "active",
+          user: {
+            memberships: {
+              some: {
+                organizationId: auth.organizationId,
+                role: "ALUMNO",
+              }
+            }
+          }
+        },
       }),
     ]);
 

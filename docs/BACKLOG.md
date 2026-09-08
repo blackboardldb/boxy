@@ -34,10 +34,11 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - **Qué NO hacer:** No crear staging apurado solo para "tener la casilla marcada" — si la sincronización entre ambientes no se diseña bien desde el principio, genera más fricción y falsos positivos que el problema que resuelve.
 
 
-- [ ] **Auditoría: búsqueda de otros usos de `OrganizationMember.status="active"` como proxy de "plan activo"**
-  - **Qué falta:** El cambio de hoy (`87a99e0`) corrigió la métrica de alumnos activos en el panel manager y la validación de límite al crear usuarios. Pero puede haber otros lugares en la codebase que usen `OrganizationMember.status = "active" + role = "ALUMNO"` creyendo que eso equivale a "tiene un plan pagado vigente", cuando en realidad ese campo solo indica pertenencia al centro.
-  - **Por qué importa:** La confusión entre `OrganizationMember` (pertenencia/acceso) y `UserMembership` (plan pagado) es un vector de lógica incorrecta — por ejemplo, límites de capacidad mal calculados o reportes financieros inflados.
-  - **Qué NO hacer:** No reemplazar todos los usos a ciegas — `OrganizationMember.status = "active"` SÍ es correcto para guards de acceso y pertenencia. Solo cambiar donde la intención sea "alumnos con plan activo".
+
+- [x] ~~**Auditoría: búsqueda de otros usos de `OrganizationMember.status="active"` como proxy de "plan activo"**~~
+  - ~~**Qué falta:** Se encontró que el endpoint `GET /api/admin/org-config` (usado por el panel de configuración del gimnasio) también inflaba el contador de uso del límite del plan SaaS usando el conteo total de `OrganizationMember`. Fue corregido (commit `b17a780` aprox) para usar `UserMembership.status = "active"`. Las exportaciones CSV y lógicas de pertenencia (asignación de rutinas, stats, reseteo de password) usan `OrganizationMember` correctamente para validar pertenencia al centro, sin implicar pagos. Auditoría completada y limpia.~~
+  - ~~**Por qué importa:** La confusión entre `OrganizationMember` (pertenencia/acceso) y `UserMembership` (plan pagado) es un vector de lógica incorrecta — por ejemplo, límites de capacidad mal calculados o reportes financieros inflados.~~
+  - ~~**Qué NO hacer:** No reemplazar todos los usos a ciegas — `OrganizationMember.status = "active"` SÍ es correcto para guards de acceso y pertenencia. Solo cambiar donde la intención sea "alumnos con plan activo".~~
 
 
 - [x] ~~**Bug crítico: `calculateBillingPeriodEnd` usa horario UTC crudo y tiene un off-by-one en el día exacto del ciclo**~~
