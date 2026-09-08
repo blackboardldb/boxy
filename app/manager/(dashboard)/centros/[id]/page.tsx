@@ -27,6 +27,7 @@ export default async function CentroDetailPage({
   const org = await prisma.organization.findUnique({
     where: { id },
     include: {
+      plan: { select: { name: true } },
       _count: { select: { members: true } },
       payments: { orderBy: { paidAt: "desc" }, take: 20 },
       events: { orderBy: { createdAt: "desc" }, take: 50 },
@@ -34,6 +35,21 @@ export default async function CentroDetailPage({
   });
 
   if (!org) notFound();
+
+  const activeStudents = await prisma.userMembership.count({
+    where: {
+      organizationId: id,
+      status: "active",
+      user: {
+        memberships: {
+          some: {
+            organizationId: id,
+            role: "ALUMNO",
+          },
+        },
+      },
+    },
+  });
 
   const statusColors: Record<string, string> = {
     TRIAL: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -71,11 +87,25 @@ export default async function CentroDetailPage({
         {/* Conteo de Miembros — BUG-07: no se expone lista de PII */}
         <div className="border border-zinc-800 rounded-xl overflow-hidden">
           <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
-            👥 Miembros
+            👥 Miembros Totales
           </div>
           <div className="px-4 py-6 text-center">
             <p className="text-3xl font-bold">{org._count.members}</p>
-            <p className="text-zinc-500 text-sm mt-1">miembros registrados</p>
+            <p className="text-zinc-500 text-sm mt-1">Cuentas creadas (histórico)</p>
+          </div>
+        </div>
+
+        {/* Plan SaaS y Uso */}
+        <div className="border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 flex justify-between">
+            <span>💼 Plan SaaS</span>
+            <span className="text-zinc-500 font-mono text-xs mt-0.5">{org.plan?.name || "Sin plan asignado"}</span>
+          </div>
+          <div className="px-4 py-6 text-center flex flex-col justify-center h-[104px]">
+            <p className="text-3xl font-bold">
+              {activeStudents} <span className="text-zinc-500 text-lg font-normal">/ {org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? "∞"}</span>
+            </p>
+            <p className="text-zinc-500 text-sm mt-1">Alumnos activos</p>
           </div>
         </div>
 
@@ -84,7 +114,7 @@ export default async function CentroDetailPage({
           <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
             📋 Eventos recientes
           </div>
-          <div className="divide-y divide-zinc-800 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-zinc-800 max-h-72 overflow-y-auto">
             {org.events.length === 0 ? (
               <p className="px-4 py-6 text-zinc-600 text-sm text-center">Sin eventos</p>
             ) : (

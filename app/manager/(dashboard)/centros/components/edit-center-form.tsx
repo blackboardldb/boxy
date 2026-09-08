@@ -31,19 +31,19 @@ export function EditCenterForm({ org }: { org: Org }) {
   const [plans, setPlans] = useState<{ id: string; name: string; maxActiveStudents: number; priceMonthly: number; isActive: boolean }[]>([]);
 
   const [form, setForm] = useState({
-    name:          org.name          ?? "",
-    email:         org.email         ?? "",
-    phone:         org.phone         ?? "",
-    address:       org.address       ?? "",
-    ownerName:     org.ownerName     ?? "",
+    name: org.name ?? "",
+    email: org.email ?? "",
+    phone: org.phone ?? "",
+    address: org.address ?? "",
+    ownerName: org.ownerName ?? "",
     ownerLastName: org.ownerLastName ?? "",
-    ownerRut:      org.ownerRut      ?? "",
-    country:       org.country       ?? "Chile",
-    region:        org.region        ?? "",
-    city:          org.city          ?? "",
-    billingPlan:   org.billingPlan   ?? "boxy_base",
-    billingCycle:  org.billingCycle  ?? "A",
-    saasPlanId:    org.saasPlanId    ?? "",
+    ownerRut: org.ownerRut ?? "",
+    country: org.country ?? "Chile",
+    region: org.region ?? "",
+    city: org.city ?? "",
+    billingPlan: org.billingPlan ?? "boxy_base",
+    billingCycle: org.billingCycle ?? "A",
+    saasPlanId: org.saasPlanId ?? "",
     overrideMaxActiveStudents: org.overrideMaxActiveStudents?.toString() ?? "",
   });
 
@@ -181,10 +181,6 @@ export function EditCenterForm({ org }: { org: Org }) {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">Plan</label>
-            <Input value={form.billingPlan} onChange={set("billingPlan")} className="bg-zinc-900 border-zinc-700" />
-          </div>
-          <div className="space-y-1">
             <label className="text-xs text-zinc-400">Ciclo</label>
             <select
               value={form.billingCycle}
@@ -201,9 +197,9 @@ export function EditCenterForm({ org }: { org: Org }) {
       {/* Plan SaaS */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-          Plan SaaS
+          PLAN
         </h2>
-        
+
         {org.saasPlanId && (
           <div className="bg-zinc-800/30 border border-zinc-800 p-4 rounded-lg mb-4 text-sm max-w-2xl">
             <p className="text-zinc-400 mb-2 font-medium">Snapshot Actual</p>
@@ -216,7 +212,7 @@ export function EditCenterForm({ org }: { org: Org }) {
               </p>
             </div>
             <p className="text-[10px] text-zinc-500 mt-2">
-              Estos valores quedaron congelados al momento de asignar el plan al centro. 
+              Estos valores quedaron congelados al momento de asignar el plan al centro.
               Si cambias el plan, se generará un nuevo snapshot con los valores vigentes de hoy.
             </p>
           </div>
@@ -243,12 +239,12 @@ export function EditCenterForm({ org }: { org: Org }) {
           </div>
           <div className="space-y-1">
             <label className="text-xs text-zinc-400">Override de Límite (Alumnos Activos)</label>
-            <Input 
-              type="number" 
-              placeholder="Opcional" 
-              value={form.overrideMaxActiveStudents} 
-              onChange={set("overrideMaxActiveStudents")} 
-              className="bg-zinc-900 border-zinc-700" 
+            <Input
+              type="number"
+              placeholder="Opcional"
+              value={form.overrideMaxActiveStudents}
+              onChange={set("overrideMaxActiveStudents")}
+              className="bg-zinc-900 border-zinc-700"
             />
             <p className="text-[10px] text-zinc-500 leading-tight mt-1">
               Si se define, este valor reemplazará el límite del plan seleccionado.

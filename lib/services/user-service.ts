@@ -485,11 +485,18 @@ export class UserService {
           const effectiveLimit = overrideLimit ?? saasPlanLimit;
 
           if (effectiveLimit !== null) {
-            const activeCount = await tx.organizationMember.count({
+            const activeCount = await tx.userMembership.count({
               where: {
                 organizationId: orgId,
                 status: "active",
-                role: "ALUMNO",
+                user: {
+                  memberships: {
+                    some: {
+                      organizationId: orgId,
+                      role: "ALUMNO",
+                    },
+                  },
+                },
               }
             });
 
