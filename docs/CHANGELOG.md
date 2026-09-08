@@ -2,6 +2,13 @@
 
 > Registro cronológico de fixes y features con referencia a commit. Ver ARCHITECTURE.md para el estado actual del sistema (no este documento).
 
+## 2026-09-07
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| `baebf48` | Fix crítico: `calculateBillingPeriodEnd` usa getters UTC sobre `toZonedTime` e incluye `endOfDayChile` para aislar el cálculo del TZ de la máquina. | Corridas locales y en `TZ=UTC` aisladas. Tipado verificado. |
+| `50b648c` | Fix crítico: `autoApprove` activa membresías futuras como `active` de inmediato | Comprobación manual de código implementado |
+
 ## 2026-08-24
 
 | Commit | Cambio | Verificación |
