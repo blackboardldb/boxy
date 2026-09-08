@@ -27,7 +27,7 @@ export default async function CentroDetailPage({
   const org = await prisma.organization.findUnique({
     where: { id },
     include: {
-      plan: { select: { name: true } },
+      plan: { select: { name: true, maxActiveStudents: true } },
       _count: { select: { members: true } },
       payments: { orderBy: { paidAt: "desc" }, take: 20 },
       events: { orderBy: { createdAt: "desc" }, take: 50 },
@@ -84,28 +84,99 @@ export default async function CentroDetailPage({
 
       {/* Tabs (static — Fase 5 full implementation) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Conteo de Miembros — BUG-07: no se expone lista de PII */}
-        <div className="border border-zinc-800 rounded-xl overflow-hidden">
+        {/* Datos del Centro */}
+        <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/30">
           <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
-            👥 Miembros Totales
+            🏢 Datos del Centro
           </div>
-          <div className="px-4 py-6 text-center">
-            <p className="text-3xl font-bold">{org._count.members}</p>
-            <p className="text-zinc-500 text-sm mt-1">Cuentas creadas (histórico)</p>
+          <div className="p-4 space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+              <div>
+                <p className="text-xs text-zinc-500">Nombre Titular</p>
+                <p className="font-medium text-zinc-300 mt-0.5">
+                  {org.ownerName || org.ownerLastName ? `${org.ownerName || ""} ${org.ownerLastName || ""}`.trim() : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500">RUT</p>
+                <p className="font-medium text-zinc-300 mt-0.5">{org.ownerRut || "—"}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-xs text-zinc-500">Email Contacto</p>
+                <p className="font-medium text-zinc-300 mt-0.5 truncate">{org.email || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500">Teléfono</p>
+                <p className="font-medium text-zinc-300 mt-0.5">{org.phone || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500">Tipo / Registro</p>
+                <p className="font-medium text-zinc-300 mt-0.5">
+                  {org.orgType} <span className="text-zinc-600 font-normal">| {new Date(org.createdAt).toLocaleDateString("es-CL")}</span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Plan SaaS y Uso */}
-        <div className="border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 flex justify-between">
-            <span>💼 Plan SaaS</span>
-            <span className="text-zinc-500 font-mono text-xs mt-0.5">{org.plan?.name || "Sin plan asignado"}</span>
+        <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-900/30">
+          <div className="bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300">
+            💼 Plan SaaS y Uso
           </div>
-          <div className="px-4 py-6 text-center flex flex-col justify-center h-[104px]">
-            <p className="text-3xl font-bold">
-              {activeStudents} <span className="text-zinc-500 text-lg font-normal">/ {org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? "∞"}</span>
-            </p>
-            <p className="text-zinc-500 text-sm mt-1">Alumnos activos</p>
+          <div className="p-4 space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Plan Actual</p>
+                <p className="font-medium text-sm text-zinc-200">{org.plan?.name || "Sin plan asignado"}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-zinc-500 mb-0.5">Ciclo</p>
+                <p className="font-medium text-sm text-zinc-200">Ciclo {org.billingCycle || "A"}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-500">Alumnos</span>
+                <span className="font-medium text-zinc-300">
+                  {activeStudents} / {org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? "∞"}
+                </span>
+              </div>
+              <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    (org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 0) > 0 && 
+                    (activeStudents / (org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 1)) * 100 > 90 
+                      ? "bg-red-500" 
+                      : "bg-indigo-500"
+                  }`}
+                  style={{ width: `${Math.min(((org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 0) > 0 ? (activeStudents / (org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 1)) * 100 : 0), 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-zinc-500">
+                {(org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 0) > 0
+                  ? `${Math.round((activeStudents / (org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 1)) * 100)}% del límite del plan`
+                  : "Sin límite configurado"}
+              </p>
+            </div>
+
+            <div className="pt-2 border-t border-zinc-800/50 space-y-2">
+              <p className="text-xs text-zinc-400">
+                Período actual hasta:{" "}
+                <span className="font-medium text-zinc-300">
+                  {org.billingPeriodEnd ? new Date(org.billingPeriodEnd).toLocaleDateString("es-CL", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }) : "—"}
+                </span>
+              </p>
+              <p className="text-xs text-zinc-400">
+                Cuentas creadas (histórico):{" "}
+                <span className="font-medium text-zinc-300">{org._count.members}</span>
+              </p>
+            </div>
           </div>
         </div>
 
