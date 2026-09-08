@@ -1,85 +1,77 @@
 import type { Metadata } from "next";
+import ScrollTextEmoji from "@/components/ScrollTextEmoji";
 
 export const metadata: Metadata = {
-  title: "Boxy — Plataforma para centros deportivos",
+  title: "Bukly — Plataforma para centros deportivos",
   description:
-    "Gestiona tu centro deportivo con Boxy. Clases, alumnos, pagos y más en una sola plataforma.",
+    "Gestiona tu centro deportivo con Bukly. Clases, alumnos, pagos y más en una sola plataforma.",
 };
 
 export default function RootLandingPage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <main className="min-h-screen bg-black text-yellow-400 flex flex-col overflow-x-hidden">
       {/* Nav */}
       <nav className="px-6 py-5 flex items-center justify-between border-b border-zinc-900">
-        <a href="/" className="font-mono font-bold text-xl tracking-tight text-white hover:text-indigo-400 transition-colors">
-          BOXY
+        <a href="/" className="font-mono font-bold text-xl tracking-tight hover:text-white transition-colors inline-flex gap-2 items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="175.363" height="291.984" className="size-10" viewBox="0 0 175.363 291.984">
+            <g id="Grupo_1" data-name="Grupo 1" transform="translate(0 56.661)">
+              <path id="Trazado_1" data-name="Trazado 1" d="M81.35-39.666q20.655-12.071,26.9-14.9a16.974,16.974,0,0,1,6.684-1.78c2.957,0,8.417,1.7,15.374,7.088A77.226,77.226,0,0,1,145.048-33.5c5.726,7.873,8.33,15.627,8.33,23.071V42.98c0,3.541-1.3,7.634-5.086,11.729-2.384,2.578-6.278,5.493-11.751,8.624q2.448,2.586,5.02,5.771C149.989,79.569,153.7,89.236,153.7,97.663v70.578c0,1.951-.56,6.344-5.9,9.978-3.951,2.688-35.654,21.623-55.407,29.29-14.441,5.605-65.2,4.908-66.454-5.414C24.571,190.886,5.217-29.788,5.217-29.788L52.168-55.33a10.306,10.306,0,0,1,8.968-.563A47.114,47.114,0,0,1,77.827-43.982,42.377,42.377,0,0,1,81.35-39.666Z" transform="translate(21.667 0)" fillRule="evenodd" />
+              <path id="Trazado_2" data-name="Trazado 2" d="M53.185-29.2Q89.11-50.5,91.812-50.5t9.061,4.928A67.028,67.028,0,0,1,113.59-31.9q6.358,8.742,6.358,17.008v53.41q0,7.312-26.07,18.44,6.676,1.908,16.532,14.147t9.855,22.1v70.578q0,2.543-34.812,16.055-21.1,8.188-32.269,11.414c-4.842,1.4-36.1,9.518-38.151,9.518-5.193,0,0-41.12,0-53.837V-5.676Q15.035-22.844,2-25.705V-32.7L34.11-50.821a36.963,36.963,0,0,1,13.035,9.379Q53.185-34.925,53.185-29.2ZM69.4,164.093q6.04,0,12.4-5.087V109.728Q81.8,86.2,65.584,86.2q-6.358,0-12.4,4.769v49.6Q53.185,164.092,69.4,164.093ZM81.8,2.59a28.588,28.588,0,0,0-3.656-14.783q-3.656-6.2-10.491-6.2T53.185-8.855V56.954Q81.8,49.005,81.8,22.618Z" transform="translate(8.306 24.254)" fill="#ffe800" />
+              <path id="Trazado_3" data-name="Trazado 3" d="M66.532-35.826q20.655-12.071,26.9-14.9a16.974,16.974,0,0,1,6.684-1.78c2.957,0,8.417,1.7,15.374,7.088a77.226,77.226,0,0,1,14.739,15.755c5.726,7.873,8.33,15.627,8.33,23.071V46.82c0,3.541-1.3,7.634-5.086,11.729-2.384,2.578-6.278,5.493-11.751,8.624q2.448,2.586,5.02,5.771c8.427,10.466,12.134,20.132,12.134,28.559v70.578c0,1.951-.56,6.343-5.9,9.977-3.951,2.688-15.735,8.019-35.488,15.686q-21.663,8.408-33.139,11.708c-5.2,1.5-38.814,9.922-41.01,9.922-3.922,0-10.97-3.118-12.225-13.441-1.363-11.208,1.919-40.274,1.919-50.7V2.63c0-5.325-.895-9.075-4.938-9.962A10.307,10.307,0,0,1,0-17.4v-6.994a10.306,10.306,0,0,1,5.241-8.975L37.351-51.49a10.305,10.305,0,0,1,8.968-.563A47.114,47.114,0,0,1,63.01-40.142,42.38,42.38,0,0,1,66.532-35.826ZM61.492-20.9q0-5.723-6.041-12.24a36.963,36.963,0,0,0-13.035-9.379L10.306-24.394V-17.4Q23.341-14.538,23.341,2.63v152.6c0,12.717-5.193,53.837,0,53.837,2.046,0,33.308-8.12,38.151-9.518q11.172-3.226,32.269-11.414,34.812-13.512,34.812-16.055V101.5q0-9.855-9.855-22.1T102.185,65.26q26.069-11.127,26.07-18.44V-6.59q0-8.266-6.358-17.008a67.028,67.028,0,0,0-12.717-13.671q-6.358-4.928-9.061-4.928T61.492-20.9ZM90.1,10.9V30.924q0,26.388-28.612,34.335V-.549q7.63-9.538,14.465-9.537t10.491,6.2A28.588,28.588,0,0,1,90.1,10.9ZM79.8,10.9A18.485,18.485,0,0,0,77.57,1.348,1.875,1.875,0,0,0,75.957.219c-.738,0-1.347.625-2.137,1.243A20.2,20.2,0,0,0,71.8,3.3V48.989c5.269-4.339,8-10.305,8-18.064ZM77.705,172.4q-16.214,0-16.214-23.526v-49.6q6.04-4.769,12.4-4.769,16.214,0,16.214,23.526v49.278Q83.746,172.4,77.705,172.4Zm0-10.306a5.857,5.857,0,0,0,2.092-.41V118.034a32.632,32.632,0,0,0-1.037-9.079c-.775-2.624-2.287-4.141-4.871-4.141a6.991,6.991,0,0,0-2.092.329v43.729a32.634,32.634,0,0,0,1.037,9.079C73.61,160.576,75.122,162.092,77.705,162.092Z" transform="translate(0 15.948)" fillRule="evenodd" />
+            </g>
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="179.795" height="42.884" className="size-16" viewBox="0 0 179.795 42.884">
+            <g id="Grupo_2" data-name="Grupo 2" transform="translate(0 13.339)">
+              <path id="Unión_1" data-name="Unión 1" d="M-948.1-520.927l1.5-6.535a66.59,66.59,0,0,0,16.065,2.043c7.851,0,10.528-1.861,10.165-6.943l-.091-.227a53.225,53.225,0,0,1-14.612,2.36c-10.8,0-14.749-3.313-14.749-10.937v-9.62h8.532v8.3c0,3.812,1.86,5.218,8.259,5.218a66.629,66.629,0,0,0,12.252-1.225v-12.3h8.577v18.015c0,10.528-5.9,13.977-18.923,13.977A68.833,68.833,0,0,1-948.1-520.927Zm-95.434-16.972v-12.887H-1035v11.435c0,3.54,2.451,5.218,7.306,5.218a49.045,49.045,0,0,0,12.615-2.132v-14.521h8.532v23.143h-7.488l-.5-2.768a44.829,44.829,0,0,1-15.973,3.4C-1038.905-527.008-1043.535-530.185-1043.535-537.9Zm80.777,10.256v-34.035h8.577v34.035Zm-13.115,0-10.982-8.713h-6.535v8.713h-8.577v-34.035h8.577v18.334h6.671l10.346-7.442h11.436L-979.5-539.851l15.157,12.208Zm-116.127,0v-30.949h34.443c6.217,0,9.575,2.269,9.575,7.579,0,3.857-1.769,6.171-5.219,7.078,4.176.953,6.354,3.359,6.354,8.033,0,5.9-3.586,8.259-10.664,8.259Zm9.076-6.4h23.552c2.768,0,3.993-.635,3.993-2.858,0-2.178-1.452-2.813-3.766-2.813h-23.779Zm0-12.162h23.008c2.042,0,3.4-.816,3.4-2.722s-1.089-2.723-3.631-2.723h-22.781Z" transform="translate(1092 548.339)" fill="#ffe800" />
+            </g>
+          </svg>
+
+
         </a>
         <a
-          href="mailto:hola@boxy.app"
-          className="text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-800"
+          href="mailto:hola@bukly.app"
+          className="text-zinc-400 hover:text-yellow-400 transition-colors text-sm font-medium bg-zinc-900 hover:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-800"
         >
           Contáctanos
         </a>
       </nav>
 
-      {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-24 text-center gap-8">
-        <div className="space-y-4 max-w-2xl">
-          <div className="inline-block px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-2">
-            Plataforma SaaS · Multi-tenant
-          </div>
-          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight">
-            Tu centro.
-            <br />
-            <span className="text-indigo-400">Tu plataforma.</span>
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-lg mx-auto">
-            Boxy le da a cada centro deportivo su propio espacio digital —
-            con clases, alumnos, pagos y un diseño completamente personalizado.
-          </p>
-        </div>
+      <ScrollTextEmoji />
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
+      {/* CTA Section (Permite completar el scroll de la animación previa) */}
+      <section className="py-40 px-6 flex flex-col items-center justify-center text-center gap-8 bg-yellow-400 relative z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" width="175.363" height="291.984" className="size-32" viewBox="0 0 175.363 291.984">
+          <g id="Grupo_1" data-name="Grupo 1" transform="translate(0 56.661)">
+            <path id="Trazado_1" data-name="Trazado 1" d="M81.35-39.666q20.655-12.071,26.9-14.9a16.974,16.974,0,0,1,6.684-1.78c2.957,0,8.417,1.7,15.374,7.088A77.226,77.226,0,0,1,145.048-33.5c5.726,7.873,8.33,15.627,8.33,23.071V42.98c0,3.541-1.3,7.634-5.086,11.729-2.384,2.578-6.278,5.493-11.751,8.624q2.448,2.586,5.02,5.771C149.989,79.569,153.7,89.236,153.7,97.663v70.578c0,1.951-.56,6.344-5.9,9.978-3.951,2.688-35.654,21.623-55.407,29.29-14.441,5.605-65.2,4.908-66.454-5.414C24.571,190.886,5.217-29.788,5.217-29.788L52.168-55.33a10.306,10.306,0,0,1,8.968-.563A47.114,47.114,0,0,1,77.827-43.982,42.377,42.377,0,0,1,81.35-39.666Z" transform="translate(21.667 0)" fillRule="evenodd" />
+            <path id="Trazado_2" data-name="Trazado 2" d="M53.185-29.2Q89.11-50.5,91.812-50.5t9.061,4.928A67.028,67.028,0,0,1,113.59-31.9q6.358,8.742,6.358,17.008v53.41q0,7.312-26.07,18.44,6.676,1.908,16.532,14.147t9.855,22.1v70.578q0,2.543-34.812,16.055-21.1,8.188-32.269,11.414c-4.842,1.4-36.1,9.518-38.151,9.518-5.193,0,0-41.12,0-53.837V-5.676Q15.035-22.844,2-25.705V-32.7L34.11-50.821a36.963,36.963,0,0,1,13.035,9.379Q53.185-34.925,53.185-29.2ZM69.4,164.093q6.04,0,12.4-5.087V109.728Q81.8,86.2,65.584,86.2q-6.358,0-12.4,4.769v49.6Q53.185,164.092,69.4,164.093ZM81.8,2.59a28.588,28.588,0,0,0-3.656-14.783q-3.656-6.2-10.491-6.2T53.185-8.855V56.954Q81.8,49.005,81.8,22.618Z" transform="translate(8.306 24.254)" fill="#ffe800" />
+            <path id="Trazado_3" data-name="Trazado 3" d="M66.532-35.826q20.655-12.071,26.9-14.9a16.974,16.974,0,0,1,6.684-1.78c2.957,0,8.417,1.7,15.374,7.088a77.226,77.226,0,0,1,14.739,15.755c5.726,7.873,8.33,15.627,8.33,23.071V46.82c0,3.541-1.3,7.634-5.086,11.729-2.384,2.578-6.278,5.493-11.751,8.624q2.448,2.586,5.02,5.771c8.427,10.466,12.134,20.132,12.134,28.559v70.578c0,1.951-.56,6.343-5.9,9.977-3.951,2.688-15.735,8.019-35.488,15.686q-21.663,8.408-33.139,11.708c-5.2,1.5-38.814,9.922-41.01,9.922-3.922,0-10.97-3.118-12.225-13.441-1.363-11.208,1.919-40.274,1.919-50.7V2.63c0-5.325-.895-9.075-4.938-9.962A10.307,10.307,0,0,1,0-17.4v-6.994a10.306,10.306,0,0,1,5.241-8.975L37.351-51.49a10.305,10.305,0,0,1,8.968-.563A47.114,47.114,0,0,1,63.01-40.142,42.38,42.38,0,0,1,66.532-35.826ZM61.492-20.9q0-5.723-6.041-12.24a36.963,36.963,0,0,0-13.035-9.379L10.306-24.394V-17.4Q23.341-14.538,23.341,2.63v152.6c0,12.717-5.193,53.837,0,53.837,2.046,0,33.308-8.12,38.151-9.518q11.172-3.226,32.269-11.414,34.812-13.512,34.812-16.055V101.5q0-9.855-9.855-22.1T102.185,65.26q26.069-11.127,26.07-18.44V-6.59q0-8.266-6.358-17.008a67.028,67.028,0,0,0-12.717-13.671q-6.358-4.928-9.061-4.928T61.492-20.9ZM90.1,10.9V30.924q0,26.388-28.612,34.335V-.549q7.63-9.538,14.465-9.537t10.491,6.2A28.588,28.588,0,0,1,90.1,10.9ZM79.8,10.9A18.485,18.485,0,0,0,77.57,1.348,1.875,1.875,0,0,0,75.957.219c-.738,0-1.347.625-2.137,1.243A20.2,20.2,0,0,0,71.8,3.3V48.989c5.269-4.339,8-10.305,8-18.064ZM77.705,172.4q-16.214,0-16.214-23.526v-49.6q6.04-4.769,12.4-4.769,16.214,0,16.214,23.526v49.278Q83.746,172.4,77.705,172.4Zm0-10.306a5.857,5.857,0,0,0,2.092-.41V118.034a32.632,32.632,0,0,0-1.037-9.079c-.775-2.624-2.287-4.141-4.871-4.141a6.991,6.991,0,0,0-2.092.329v43.729a32.634,32.634,0,0,0,1.037,9.079C73.61,160.576,75.122,162.092,77.705,162.092Z" transform="translate(0 15.948)" fillRule="evenodd" />
+          </g>
+        </svg>
+
+
+
+        <h2 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter text-black uppercase max-w-5xl leading-tight">
+          Si tu día es <br className="hidden md:block" />
+          <span className="text-black/70">clases, alumnos y caja,</span> <br className="hidden md:block" />
+          esto es para ti.
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <a
-            href="mailto:hola@boxy.app"
-            className="px-6 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 transition-colors font-semibold text-sm"
+            href="mailto:hola@bukly.app"
+            className="px-10 py-5 rounded-full bg-black text-white font-black uppercase tracking-widest text-sm hover:bg-zinc-800 transition-colors shadow-2xl"
           >
-            ¿Eres un centro? Contáctanos
+            Hablemos
           </a>
-          <div className="text-zinc-500 text-sm px-4 py-3 rounded-xl border border-zinc-800 max-w-xs text-center">
-            ¿Eres alumno? Accede desde la URL de tu centro:
-            <br />
-            <code className="text-zinc-400 font-mono text-xs">tucentro.boxy.app</code>
-          </div>
-        </div>
 
-        {/* Feature pills */}
-        <div className="flex flex-wrap gap-2 justify-center mt-4">
-          {[
-            "🗓️ Clases y horarios",
-            "👥 Gestión de alumnos",
-            "💳 Control de pagos",
-            "🎨 Marca propia",
-            "📱 PWA nativa",
-            "🔒 Multi-tenant seguro",
-          ].map((f) => (
-            <span
-              key={f}
-              className="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs"
-            >
-              {f}
-            </span>
-          ))}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="px-6 py-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-600 gap-4">
-        <span>© {new Date().getFullYear()} Boxy</span>
+        <span>© {new Date().getFullYear()} Bukly</span>
         <div className="flex gap-4">
-          <a href="/legal" className="hover:text-zinc-400 transition-colors">Legal y Privacidad</a>
-          <a href="/terminos" className="hover:text-zinc-400 transition-colors">Términos de Uso</a>
+          <a href="/legal" className="hover:text-yellow-400 transition-colors">Legal y Privacidad</a>
+          <a href="/terminos" className="hover:text-yellow-400 transition-colors">Términos de Uso</a>
         </div>
       </footer>
     </main>
