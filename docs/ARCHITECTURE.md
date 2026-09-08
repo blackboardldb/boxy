@@ -180,9 +180,9 @@ Cuando un centro tiene `status === "SUSPENDED"`, el bloqueo se ejecuta directame
 
 1. **Visibilidad inteligente por rol**: Se extrae el rol de la sesión de Supabase (JWT).
    - **Administradores y Coaches (`ADMIN`, `COACH`)**: Tienen el pase exento (`isExemptRole`). Se les permite entrar al dashboard (`/hub`) donde ven un banner persistente global en el layout informando la suspensión.
-   - **Alumnos y visitas (`ALUMNO` o anónimo)**: Cualquier request a rutas protegidas se redirige a `/suspended` (página de bloqueo total).
-2. **APIs bloqueadas para alumnos**: Si la petición empieza con `/api/` (ej. llamadas de React Query) y el rol no está exento, el proxy devuelve una respuesta `JSON 503` en lugar de hacer un *rewrite* a la página HTML de `/suspended`. Esto evita errores de parseo o crasheos de cliente.
-3. **Trade-off de seguridad**: El middleware extrae el rol del JWT `user.app_metadata.role`, el cual confía en la firma criptográfica localmente sin golpear la base de datos de permisos (`OrganizationMember`). Esto implica que si un admin fue degradado recientemente, podría conservar acceso exento a `/hub` por hasta 1 hora (TTL del JWT). Es un riesgo residual asumido a cambio del beneficio en latencia.
+2. **Bloqueo de Mutaciones (Admin/Coach)**: Aunque tengan acceso a `/hub`, el proxy intercepta peticiones que no sean `GET` (mutaciones: POST, PUT, DELETE, etc.) hacia endpoints `/api/*` y las bloquea devolviendo un `JSON 403`. Esto permite operar en modo lectura estricta y descargar CSVs, pero no crear clases, alumnos, ni registrar pagos manuales.
+3. **Bloqueo Total para Alumnos**: Si la petición es de un rol no exento (Alumno o anónimo), se redirige a `/suspended` (página de bloqueo total). Si era una petición `/api/` (ej. llamadas de React Query), devuelve un `JSON 503` para evitar crasheos en el cliente.
+4. **Trade-off de seguridad**: El middleware extrae el rol del JWT `user.app_metadata.role`, el cual confía en la firma criptográfica localmente sin golpear la base de datos de permisos (`OrganizationMember`). Esto implica que si un admin fue degradado recientemente, podría conservar acceso de solo lectura a `/hub` por hasta 1 hora (TTL del JWT). Es un riesgo residual asumido a cambio del beneficio en latencia.
 
 ## 15. Membresías — Comportamiento documentado: Auto-Approve con fecha futura
 
