@@ -86,6 +86,7 @@ export function useCreateEgreso(year: number, month: number) {
         });
         queryClient.invalidateQueries({ queryKey: financeKeys.all(orgId) });
         queryClient.invalidateQueries({ queryKey: adminStatsKeys.stats(orgId) });
+        queryClient.invalidateQueries({ queryKey: adminStatsKeys.financeCompare(orgId) });
       }
     },
   });
@@ -110,6 +111,7 @@ export function useDeleteEgreso(year: number, month: number) {
         });
         queryClient.invalidateQueries({ queryKey: financeKeys.all(orgId) });
         queryClient.invalidateQueries({ queryKey: adminStatsKeys.stats(orgId) });
+        queryClient.invalidateQueries({ queryKey: adminStatsKeys.financeCompare(orgId) });
       }
     },
   });

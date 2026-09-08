@@ -30,6 +30,7 @@ export function useApproveRenewal() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["finances"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "finance-compare"] });
     },
   });
 }
@@ -46,6 +47,7 @@ export function useRejectRenewal() {
       queryClient.invalidateQueries({ queryKey: renewalKeys.pending() });
       queryClient.invalidateQueries({ queryKey: ["finances"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "finance-compare"] });
     },
   });
 }
