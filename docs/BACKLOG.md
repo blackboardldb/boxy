@@ -13,11 +13,15 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - ~~**Por qué importa:** Corta el acceso de un negocio real en pleno horario de clases vespertinas — el peor momento posible para un gimnasio. Puede además otorgar un mes gratis o cero días de gracia dependiendo de la hora exacta del pago, de forma no determinista para el usuario.~~
   - ~~**Qué NO hacer:** No usar `getMonth()`/`getDate()`/`getHours()` nativos ni asumir que "restar horas" alcanza — ya se corrigió un bug idéntico en `finance-compare`/`stats` (ver entrada de agosto) usando `toZonedTime(..., "America/Santiago")` primero y **luego** los getters UTC sobre el resultado zonificado. Aplicar el mismo patrón acá, no reinventar la conversión.~~
 
-- [ ] **Comportamiento del Cron de facturación: `TRIAL` centers con `billingPeriodEnd: NULL`**
-  - **Qué falta:** Definir si los centros en estado `TRIAL` que aún no tienen una fecha de corte de facturación asignada (`billingPeriodEnd: NULL`) deben ser suspendidos tras cierto tiempo o si el limbo indefinido es intencional.
-  - **Por qué importa:** Actualmente, 4 centros están en la base de datos con `billingPeriodEnd: NULL`. El cron de facturación usa la comparación `billingPeriodEnd: { lt: hoy }`, lo cual ignora silenciosamente todos los registros `NULL`. Esto significa que un centro en `TRIAL` sin fecha de corte nunca será suspendido automáticamente.
-  - **Qué NO hacer:** No agregar fallbacks como `OR: [{ billingPeriodEnd: { lt: hoy } }, { billingPeriodEnd: null }]` en el cron a menos que el negocio confirme que los centros sin configurar deban suspenderse.
+- [x] ~~**Fix preventivo: desfase de zona horaria en `ClassSession.dateTime` — calendar, registro y validación de cupos**~~
+  - ~~**Qué faltaba:** Tres archivos usaban `toISOString().split("T")[0]` para extraer el "día" de un instante real de clase, lo que devuelve el día en UTC, no en Chile. Una clase a las 21:30 del lunes en Chile es 00:30 UTC del martes — el código los confundía.~~
+  - ~~**Por qué importaba:** Clases programadas entre las 21:00 y 23:59 Chile habrían sido: (1) invisibles en el calendario del alumno, (2) contabilizadas en el cupo del día *siguiente*, (3) bloqueadas por el advisory lock del día incorrecto.~~
+  - ~~**Por qué no se detectó antes:** Ningún gimnasio había programado clases en esa franja (confirmado: 0 de 160 sesiones en BD). El bug era preventivo, no un incendio activo. "Sin quejas" no significaba "sin bug".~~
+  - ~~**Archivos corregidos:** `lib/services/class-service.ts`, `app/api/users/[id]/classes/route.ts`, `lib/validation-service.ts`.~~
+  - ~~**Qué NO hacer:** No extender este mismo fix a `RoutineAssignment.assignedDate` (tipo `@db.Date`, Prisma lo coerciona a medianoche UTC) ni a `UserMembership.(currentPeriodStart/End)` (proxy de strings `YYYY-MM-DD`, el fix rompería la normalización). Ver §9 de `ARCHITECTURE.md` para la distinción completa.~~
 
+- [x] ~~**Comportamiento del Cron de facturación: `TRIAL` centers con `billingPeriodEnd: NULL`**~~
+  - ~~**Decisión de Negocio (07-Sep):** "NO LO VAMOS A USAR EN PRODUCCIÓN". No se requiere acción. El cron ignora silenciosamente estos registros.~~
 
 - [x] ~~**Campos de ubicación en el frontend del Manager**~~
   - ~~**Qué falta:** Agregar los inputs de formulario para `country`, `region` y `city` en las vistas de creación (`app/manager/(dashboard)/centros/nuevo/page.tsx`) y edición (`app/manager/(dashboard)/centros/components/edit-center-form.tsx`) de centros.~~
@@ -48,6 +52,14 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
     - Una vez creado: primer uso debería ser precisamente sanear `0_init/migration.sql` (el ítem que quedó documentado como riesgo residual).
     - No migrar todo el flujo de golpe — empezar solo con staging para migraciones de schema.
   - **Qué NO hacer:** No crear staging apurado solo para "tener la casilla marcada" — si la sincronización entre ambientes no se diseña bien desde el principio, genera más fricción y falsos positivos que el problema que resuelve.
+
+## Reglas de negocio para /hub en centros SUSPENDED
+- [x] ~~**Definir qué puede hacer el admin en `/hub` cuando está suspendido**~~
+  - ~~**Decisión de Negocio:** Solo vista lectura y descargar los CSVs de alumnos y finanzas. Ya implementado.~~
+
+- [ ] **Restricciones de operación en estado SUSPENDED**
+  - **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
+  - **Qué NO hacer:** No bloquear todo `/hub` de forma ciega ni tampoco dejarlo 100% abierto sin ninguna restricción — hace falta decidir la lista de acciones restringidas antes de tocar código.
 
 ## Pendientes de Correctitud y Finanzas
 

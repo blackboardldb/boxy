@@ -9,6 +9,12 @@
 | `baebf48` | Fix crítico: `calculateBillingPeriodEnd` usa getters UTC sobre `toZonedTime` e incluye `endOfDayChile` para aislar el cálculo del TZ de la máquina. | Corridas locales y en `TZ=UTC` aisladas. Tipado verificado. |
 | `50b648c` | Fix crítico: `autoApprove` activa membresías futuras como `active` de inmediato | Comprobación manual de código implementado |
 
+## 2026-09-08
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| *(pendiente)* | Fix preventivo: desfase UTC en `ClassSession.dateTime` — 3 archivos (`class-service.ts`, `classes/route.ts`, `validation-service.ts`) usaban `toISOString().split("T")[0]` que devuelve el día en UTC en vez del día en Chile. Fix: `Intl.DateTimeFormat` para extracción del día + `startOfDayChile`/`endOfDayChile` para rangos. | `tsc --noEmit` limpio. Query en BD: 0 sesiones afectadas (bug preventivo). |
+
 ## 2026-08-24
 
 | Commit | Cambio | Verificación |

@@ -119,7 +119,18 @@ Componente de consumo: `CenterLogo` (compartido entre `/hub` y `/alumnos`). Resu
 
 ## 9. Manejo de fechas
 
-Rangos de fecha para operaciones de calendario deben usar `startOfDayChile`/`endOfDayChile` (`lib/utils.ts`), no `new Date(...)` con string ISO fijo en UTC — evita desfases de zona horaria en horario chileno. **Estado real:** implementado en `class-service.ts`. No confirmado como aplicado en todos los endpoints que tocan fechas — verificar antes de asumir cobertura total.
+Rangos de fecha para operaciones de calendario deben usar `startOfDayChile`/`endOfDayChile` (`lib/utils.ts`), no `new Date(...)` con string ISO fijo en UTC — evita desfases de zona horaria en horario chileno. Para extraer el "día local" de un instante `Date` de Prisma, usar `new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" }).format(date)` — **nunca** `date.toISOString().split("T")[0]` que devuelve el día en UTC.
+
+**Cobertura confirmada** (08-Sep-2026) en los 3 archivos que manejan `ClassSession.dateTime` como instante real:
+- `lib/services/class-service.ts` — `registerToClass`: extracción del día para advisory lock y límite diario.
+- `app/api/users/[id]/classes/route.ts` — listado de clases del alumno en el calendario.
+- `lib/validation-service.ts` — filtrado en memoria para el validador de cupos.
+
+**Nota de contexto:** El bug era preventivo — nunca se manifestó en los datos existentes porque ningún gimnasio había programado clases en la franja 21:00-23:59 Chile (confirmado con query directa: 160 sesiones revisadas, 0 en esa franja). Con beta testers reales que pueden programar clases nocturnas, el desfase habría hecho invisible esas clases en el calendario del alumno y contabilizado el cupo diario en el día UTC siguiente, no en el día Chile correcto.
+
+**Modelos exentos de este patrón** (NO cambiar a `startOfDayChile`/`endOfDayChile`):
+- `RoutineAssignment.assignedDate` — tipo Postgres `@db.Date`, Prisma lo coerciona a `00:00.000Z`. Inyectar un instante con hora real (`03:00Z`) rompería las comparaciones.
+- `UserMembership.(currentPeriodStart/End, startDate)` — se usan como proxies para strings `YYYY-MM-DD` via `.toISOString().split('T')[0]`. Cambiar a instantes de Chile introduciría ruido en ese mecanismo.
 
 ## 10. Manejo de errores
 

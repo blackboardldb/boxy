@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ErrorHandler } from "@/lib/errors/handler";
 import { prisma } from "@/lib/prisma";
 import { requireAuthFast } from "@/lib/supabase/auth-guard";
+import { startOfDayChile, endOfDayChile } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,
@@ -57,23 +58,23 @@ export async function GET(
           class: {
             organizationId,
             dateTime: {
-              gte: new Date(`${startDate}T00:00:00`),
-              lte: new Date(`${endDate}T23:59:59`),
+              gte: startOfDayChile(startDate as string),
+              lte: endOfDayChile(endDate as string),
             },
           },
         },
       });
     }
 
-    const parseSafeDate = (dateStr: string | null) => {
+    // Normaliza el string de fecha a "YYYY-MM-DD" para pasarlo a los helpers de Chile.
+    const parseSafeDateStr = (dateStr: string | null) => {
       if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
-      const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-      const d = new Date(cleanDate);
-      return isNaN(d.getTime()) ? null : d;
+      const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      return /^\d{4}-\d{2}-\d{2}$/.test(clean) ? clean : null;
     };
 
-    const start = parseSafeDate(startDate);
-    const end = parseSafeDate(endDate);
+    const startStr = parseSafeDateStr(startDate);
+    const endStr = parseSafeDateStr(endDate);
 
     const registrationsWithDetails = await prisma.classRegistration.findMany({
       where: {
@@ -82,16 +83,10 @@ export async function GET(
         class: {
           organizationId,
           status: { not: 'cancelled' },
-          ...(start || end ? {
+          ...(startStr || endStr ? {
             dateTime: {
-              ...(start ? { gte: start } : {}),
-              ...(end ? {
-                lte: (() => {
-                  const date = new Date(end);
-                  date.setHours(23, 59, 59, 999);
-                  return date;
-                })()
-              } : {})
+              ...(startStr ? { gte: startOfDayChile(startStr) } : {}),
+              ...(endStr ? { lte: endOfDayChile(endStr) } : {})
             }
           } : {})
         }

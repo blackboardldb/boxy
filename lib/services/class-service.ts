@@ -212,8 +212,12 @@ export class ClassService {
       });
       if (isReg && isReg.status === "registered") throw new ValidationError("Ya estás inscrito/a en esta clase");
 
-      // targetDay se calcula aquí: sólo formateo de string, no toca DB.
-      const targetDay = classSession.dateTime.toISOString().split("T")[0];
+      // targetDay se extrae en horario local de Chile. Si se usara toISOString(), una clase
+      // a las 21:00 Chile devolvería la fecha del día siguiente (UTC). Esto afectaría tanto
+      // el advisory lock como el conteo diario de cupos.
+      const targetDay = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Santiago",
+      }).format(classSession.dateTime);
 
       // === ZONA CRÍTICA: advisory lock + límite diario + lock de clase + cupo + insert, todo atómico ===
       const updatedRecord = await prisma.$transaction(async (tx) => {
@@ -226,8 +230,8 @@ export class ClassService {
           // → evita deadlock por adquisición en orden inverso.
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId} || ${targetDay})::bigint)`;
 
-          const queryStart = new Date(`${targetDay}T00:00:00`);
-          const queryEnd = new Date(`${targetDay}T23:59:59`);
+          const queryStart = startOfDayChile(targetDay);
+          const queryEnd = endOfDayChile(targetDay);
 
           const dayRegistrations = await tx.classRegistration.findMany({
             where: {

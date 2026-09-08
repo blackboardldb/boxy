@@ -144,15 +144,19 @@ export class ValidationService {
     }
 
     let targetDayClasses: ClassSession[] = [];
-    const targetDate = typeof classSession.dateTime === 'string' 
-      ? classSession.dateTime.split("T")[0]
-      : (classSession.dateTime as Date).toISOString().split("T")[0];
+    // La rama string es código defensivo — en producción dateTime siempre llega como Date
+    // desde Prisma. NO copiar el split("T")[0] como patrón para strings ISO con hora
+    // — sufre el mismo desfase UTC. Solo es seguro si el string ya es "YYYY-MM-DD".
+    const chileFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago" });
+    const targetDate = typeof classSession.dateTime === 'string'
+      ? classSession.dateTime.split("T")[0]  // acepta solo "YYYY-MM-DD", no ISO completo con hora
+      : chileFormatter.format(classSession.dateTime as Date);
 
     if (allClassSessions) {
       targetDayClasses = allClassSessions.filter((session) => {
         const sessionDate = typeof session.dateTime === 'string'
-          ? session.dateTime.split("T")[0]
-          : (session.dateTime as Date).toISOString().split("T")[0];
+          ? session.dateTime.split("T")[0]  // idem — solo "YYYY-MM-DD"
+          : chileFormatter.format(session.dateTime as Date);
         return sessionDate === targetDate;
       });
     } else {
