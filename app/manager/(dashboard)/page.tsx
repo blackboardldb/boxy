@@ -15,18 +15,41 @@ export default async function ManagerPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const organizations = await prisma.organization.findMany({
+  const organizationsRaw = await prisma.organization.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       name: true,
       slug: true,
       status: true,
-      plan: { select: { name: true } },
+      plan: { select: { name: true, maxActiveStudents: true } },
+      saasPlanLimit: true,
+      overrideMaxActiveStudents: true,
+      billingPeriodEnd: true,
       createdAt: true,
-      _count: { select: { members: true } },
     },
   });
+
+  const organizations = await Promise.all(
+    organizationsRaw.map(async (org) => {
+      const activeCount = await prisma.userMembership.count({
+        where: {
+          organizationId: org.id,
+          status: "active",
+          user: {
+            memberships: {
+              some: {
+                organizationId: org.id,
+                role: "ALUMNO",
+              },
+            },
+          },
+        },
+      });
+      const effectiveLimit = org.overrideMaxActiveStudents ?? org.saasPlanLimit ?? org.plan?.maxActiveStudents ?? 0;
+      return { ...org, activeCount, effectiveLimit };
+    })
+  );
 
   const statusColors: Record<string, string> = {
     TRIAL: "bg-yellow-500/20 text-yellow-400",
@@ -74,19 +97,20 @@ export default async function ManagerPage() {
             <thead className="bg-zinc-900 text-zinc-400">
               <tr>
                 <th className="text-left px-4 py-3">Centro</th>
-                <th className="text-left px-4 py-3">Slug</th>
                 <th className="text-left px-4 py-3">Estado</th>
                 <th className="text-left px-4 py-3">Plan</th>
                 <th className="text-left px-4 py-3">Alumnos</th>
-                <th className="text-left px-4 py-3">Registrado</th>
+                <th className="text-left px-4 py-3">Renovación</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {organizations.map((org) => (
                 <tr key={org.id} className="hover:bg-zinc-900/50 transition-colors">
-                  <td className="px-4 py-3 font-medium">{org.name}</td>
-                  <td className="px-4 py-3 font-mono text-zinc-400">{org.slug}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{org.name}</div>
+                    <div className="text-xs text-zinc-500 font-mono mt-0.5">{org.slug}</div>
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[org.status] ?? "bg-zinc-700 text-zinc-300"}`}>
                       {org.status}
@@ -103,9 +127,13 @@ export default async function ManagerPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{org._count.members}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-zinc-300">{org.activeCount}</span>
+                    <span className="text-zinc-500 mx-1">/</span>
+                    <span className="text-zinc-500">{org.effectiveLimit > 0 ? org.effectiveLimit : "∞"}</span>
+                  </td>
                   <td className="px-4 py-3 text-zinc-500">
-                    {new Date(org.createdAt).toLocaleDateString("es-CL")}
+                    {org.billingPeriodEnd ? new Date(org.billingPeriodEnd).toLocaleDateString("es-CL") : "—"}
                   </td>
                   <td className="px-4 py-3 text-right space-x-3">
                     <PaymentModal organizationId={org.id} />
