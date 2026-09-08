@@ -35,6 +35,11 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
 
 
 
+- [ ] **Bug residual: `endOfDayChile` fija el corte a `T23:59:59.999Z` (UTC), no a medianoche en Chile**
+  - **Qué falta:** La función `endOfDayChile` (usada en `calculateBillingPeriodEnd`) construye el instante de corte con `T23:59:59.999Z` en UTC. Chile está en UTC-3 (o UTC-4 en invierno), por lo tanto el acceso se corta entre las **19:59 y 20:59 hora local**, no a medianoche. Un gimnasio que vence "el día 10" pierde acceso la tarde-noche del día 10.
+  - **Por qué importa:** El centro paga por el día 10 completo y pierde acceso ~4 horas antes del fin del día. No es riesgo de datos, pero es un UX bug para centros en el día exacto de su corte.
+  - **Qué NO hacer:** No crear otro helper sin verificar `endOfDayChile`. Ver el patrón de `toZonedTime` + `fromZonedTime` ya documentado en este backlog para construir correctamente el instante UTC equivalente a `23:59:59` en `America/Santiago`.
+
 - [x] ~~**Auditoría: búsqueda de otros usos de `OrganizationMember.status="active"` como proxy de "plan activo"**~~
   - ~~**Qué falta:** Se encontró que el endpoint `GET /api/admin/org-config` (usado por el panel de configuración del gimnasio) también inflaba el contador de uso del límite del plan SaaS usando el conteo total de `OrganizationMember`. Fue corregido (commit `b17a780` aprox) para usar `UserMembership.status = "active"`. Las exportaciones CSV y lógicas de pertenencia (asignación de rutinas, stats, reseteo de password) usan `OrganizationMember` correctamente para validar pertenencia al centro, sin implicar pagos. Auditoría completada y limpia.~~
   - ~~**Por qué importa:** La confusión entre `OrganizationMember` (pertenencia/acceso) y `UserMembership` (plan pagado) es un vector de lógica incorrecta — por ejemplo, límites de capacidad mal calculados o reportes financieros inflados.~~
