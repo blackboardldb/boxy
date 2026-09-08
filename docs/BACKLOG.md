@@ -70,10 +70,10 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - ~~**Qué NO hacer:** No cambiar el mecanismo de promoción lazy para que también acepte `"approved"` — eso rompe el invariante global. No arreglar solo el `MembershipRenewal` sin corregir también el `UserMembership` (o viceversa); los dos estados deben ser consistentes entre sí. Ver ARCHITECTURE.md §15 para el invariante completo y el snippet de corrección.~~
 
 - [x] ~~**`today` en `finance-compare` y `stats` puede leer el mes incorrecto a fin de mes en Chile**~~
-  - **Qué falta:** En `app/api/admin/finance-compare/route.ts` y `app/api/admin/stats/route.ts`, el "mes actual" se calcula con `today.getUTCFullYear()` y `today.getUTCMonth()`. A las 21:00-23:59 del último día del mes en Santiago, `today` en UTC ya es el día 1 del mes siguiente — los rangos de mes quedan desplazados.
-  - **Por qué importa:** Un admin que revisa el dashboard a esa hora verá datos del mes equivocado. En fin de mes puede ocultar o mostrar ingresos incorrectamente.
-  - **Fix correcto:** Se reemplazó el uso nativo de `Date` por `getCurrentChileTime()` (que usa `toZonedTime(new Date(), "America/Santiago")` internamente) y *crucialmente* se leen sus componentes usando `.getUTCFullYear()` y `.getUTCMonth()` (los getters UTC son mandatorios porque `toZonedTime` desplaza el timestamp UTC interno; los getters locales reintroducirían el bug según el TZ de la máquina).
-  - **Qué NO hacer:** No cambiar `getUTCMonth()` por `getMonth()` — en Vercel el servidor también corre en UTC, el problema sería idéntico. Hay que hacer la conversión explícita a `America/Santiago` primero.
+  - ~~**Qué falta:** En `app/api/admin/finance-compare/route.ts` y `app/api/admin/stats/route.ts`, el "mes actual" se calcula con `today.getUTCFullYear()` y `today.getUTCMonth()`. A las 21:00-23:59 del último día del mes en Santiago, `today` en UTC ya es el día 1 del mes siguiente — los rangos de mes quedan desplazados.~~
+  - ~~**Por qué importa:** Un admin que revisa el dashboard a esa hora verá datos del mes equivocado. En fin de mes puede ocultar o mostrar ingresos incorrectamente.~~
+  - ~~**Fix correcto:** Se reemplazó el uso nativo de `Date` por `getCurrentChileTime()` (que usa `toZonedTime(new Date(), "America/Santiago")` internamente) y *crucialmente* se leen sus componentes usando `.getUTCFullYear()` y `.getUTCMonth()` (los getters UTC son mandatorios porque `toZonedTime` desplaza el timestamp UTC interno; los getters locales reintroducirían el bug según el TZ de la máquina).~~
+  - ~~**Qué NO hacer:** No cambiar `getUTCMonth()` por `getMonth()` — en Vercel el servidor también corre en UTC, el problema sería idéntico. Hay que hacer la conversión explícita a `America/Santiago` primero.~~
 
 - [x] ~~**¿Ya se revirtió el flag `--webpack` del `package.json` porque Turbopack solucionó el OOM?**~~
   - **Resolución:** No se revirtió ni se debe revertir por ahora.
