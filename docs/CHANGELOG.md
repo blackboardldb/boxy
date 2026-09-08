@@ -21,6 +21,12 @@
 |---|---|---|
 | `d3862cf` | Feat: Bloqueo de endpoints de mutación en `/hub` (proxy) para roles exentos en centros suspendidos. Permite solo lectura y descarga de CSVs. | Restricciones de operación en estado `SUSPENDED` validadas. |
 
+## 2026-08-31
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| `4e0f2da` | Fix crítico: Desfase de zona horaria en `finance-compare` y `stats` a fin de mes. Reemplaza `new Date()` con `getCurrentChileTime()` para cálculos de rango. | Cálculos determinísticos en `TZ=UTC`. |
+
 ## 2026-08-24
 
 | Commit | Cambio | Verificación |
