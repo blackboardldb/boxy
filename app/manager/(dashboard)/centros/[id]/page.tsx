@@ -115,6 +115,10 @@ export default async function CentroDetailPage({
                   {org.orgType} <span className="text-zinc-600 font-normal">| {new Date(org.createdAt).toLocaleDateString("es-CL")}</span>
                 </p>
               </div>
+              <div className="col-span-2 pt-1 border-t border-zinc-800/50">
+                <p className="text-xs text-zinc-500">ID del Centro</p>
+                <p className="font-mono text-xs text-zinc-400 mt-0.5 select-all">{org.id}</p>
+              </div>
             </div>
           </div>
         </div>
