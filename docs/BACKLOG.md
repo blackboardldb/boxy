@@ -90,10 +90,6 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - **Por qué importa:** El flag `--webpack` (junto con `--max-old-space-size=4096`) es la mitigación activa para evitar el deadlock de Turbopack. El alto uso de RAM reportado localmente (2.6GB) y los logs múltiples de Prisma (`CREATING NEW PRISMA CLIENT INSTANCE!`) son el comportamiento normal esperado del compilador Webpack de Next.js aislando procesos.
   - **Qué NO hacer:** No forzar Turbopack ni borrar el límite de memoria bajo la falsa premisa de un "memory leak".
 
-## Reglas de negocio para /hub en centros SUSPENDED
-- **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
-- **Por qué importa:** Hoy "admin pasa" solo resuelve visibilidad (puede ver su dashboard y pagar), pero no restringe operación — un centro podría seguir operando con normalidad plena sin pagarle a Boxy, salvo por el banner.
-- **Qué NO hacer:** No bloquear todo `/hub` de forma ciega (eso ya lo evita el fix actual) ni tampoco dejarlo 100% abierto sin ninguna restricción — ambos extremos son fáciles de implementar mal rápido; hace falta decidir la lista de acciones restringidas antes de tocar código.
 
 ## Auditoría de Caché y Estado Local (PWA)
 
