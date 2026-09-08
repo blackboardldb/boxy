@@ -57,9 +57,10 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
 - [x] ~~**Definir qué puede hacer el admin en `/hub` cuando está suspendido**~~
   - ~~**Decisión de Negocio:** Solo vista lectura y descargar los CSVs de alumnos y finanzas. Ya implementado.~~
 
-- [ ] **Restricciones de operación en estado SUSPENDED**
-  - **Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).
-  - **Qué NO hacer:** No bloquear todo `/hub` de forma ciega ni tampoco dejarlo 100% abierto sin ninguna restricción — hace falta decidir la lista de acciones restringidas antes de tocar código.
+- [x] ~~**Restricciones de operación en estado SUSPENDED**~~
+  - ~~**Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).~~
+  - ~~**Qué NO hacer:** No bloquear todo `/hub` de forma ciega ni tampoco dejarlo 100% abierto sin ninguna restricción — hace falta decidir la lista de acciones restringidas antes de tocar código.~~
+  - ~~**Resolución:** Ya implementado vía proxy (`d3862cf`). Se bloquearon las mutaciones (agregar alumnos, clases) pero se mantuvo lectura libre (dashboard, descargas CSV).~~
 
 ## Pendientes de Correctitud y Finanzas
 

@@ -15,6 +15,12 @@
 |---|---|---|
 | `bd6fb43` | Fix preventivo: desfase UTC en `ClassSession.dateTime` — 3 archivos (`class-service.ts`, `classes/route.ts`, `validation-service.ts`) usaban `toISOString().split("T")[0]` que devuelve el día en UTC en vez del día en Chile. Fix: `Intl.DateTimeFormat` para extracción del día + `startOfDayChile`/`endOfDayChile` para rangos. | `tsc --noEmit` limpio. Query en BD: 0 sesiones afectadas (bug preventivo). |
 
+## 2026-09-01
+
+| Commit | Cambio | Verificación |
+|---|---|---|
+| `d3862cf` | Feat: Bloqueo de endpoints de mutación en `/hub` (proxy) para roles exentos en centros suspendidos. Permite solo lectura y descarga de CSVs. | Restricciones de operación en estado `SUSPENDED` validadas. |
+
 ## 2026-08-24
 
 | Commit | Cambio | Verificación |
