@@ -1,32 +1,12 @@
 # Backlog y Deuda Técnica (Boxy)
-*Última actualización: 07 de septiembre de 2026*
+*Última actualización: 08 de septiembre de 2026*
 
 Este documento registra los hallazgos, decisiones pospuestas y deuda técnica identificada durante las sesiones de auditoría y desarrollo. **Ningún ticket "no bloqueante" debe quedar solo en la memoria del chat.**
 
 Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reconstruir la discusión original:
 **Qué falta → Por qué importa → Qué NO hacer (decisiones descartadas).**
 
-## Pendientes de Correctitud y Finanzas
-
-- [x] ~~**Bug crítico: `calculateBillingPeriodEnd` usa horario UTC crudo y tiene un off-by-one en el día exacto del ciclo**~~
-  - ~~**Qué falta:** `calculateBillingPeriodEnd` (`lib/services/manager-service.ts`) usa `new Date()`, `d.getDate()` y `d.setHours(23,59,59,999)` sin convertir a horario de Chile. El cron de suspensión (`app/manager/api/cron/billing/route.ts`) compara contra `new Date()` crudo también. Esto suspende centros en horario prime (20:00-21:00 hrs Chile) en vez de a medianoche, y además puede dar o quitar un mes completo de margen dependiendo de si el pago cae antes o después de las 20-21hrs Chile del día límite.~~
-  - ~~**Por qué importa:** Corta el acceso de un negocio real en pleno horario de clases vespertinas — el peor momento posible para un gimnasio. Puede además otorgar un mes gratis o cero días de gracia dependiendo de la hora exacta del pago, de forma no determinista para el usuario.~~
-  - ~~**Qué NO hacer:** No usar `getMonth()`/`getDate()`/`getHours()` nativos ni asumir que "restar horas" alcanza — ya se corrigió un bug idéntico en `finance-compare`/`stats` (ver entrada de agosto) usando `toZonedTime(..., "America/Santiago")` primero y **luego** los getters UTC sobre el resultado zonificado. Aplicar el mismo patrón acá, no reinventar la conversión.~~
-
-- [x] ~~**Fix preventivo: desfase de zona horaria en `ClassSession.dateTime` — calendar, registro y validación de cupos**~~
-  - ~~**Qué faltaba:** Tres archivos usaban `toISOString().split("T")[0]` para extraer el "día" de un instante real de clase, lo que devuelve el día en UTC, no en Chile. Una clase a las 21:30 del lunes en Chile es 00:30 UTC del martes — el código los confundía.~~
-  - ~~**Por qué importaba:** Clases programadas entre las 21:00 y 23:59 Chile habrían sido: (1) invisibles en el calendario del alumno, (2) contabilizadas en el cupo del día *siguiente*, (3) bloqueadas por el advisory lock del día incorrecto.~~
-  - ~~**Por qué no se detectó antes:** Ningún gimnasio había programado clases en esa franja (confirmado: 0 de 160 sesiones en BD). El bug era preventivo, no un incendio activo. "Sin quejas" no significaba "sin bug".~~
-  - ~~**Archivos corregidos:** `lib/services/class-service.ts`, `app/api/users/[id]/classes/route.ts`, `lib/validation-service.ts`.~~
-  - ~~**Qué NO hacer:** No extender este mismo fix a `RoutineAssignment.assignedDate` (tipo `@db.Date`, Prisma lo coerciona a medianoche UTC) ni a `UserMembership.(currentPeriodStart/End)` (proxy de strings `YYYY-MM-DD`, el fix rompería la normalización). Ver §9 de `ARCHITECTURE.md` para la distinción completa.~~
-
-- [x] ~~**Comportamiento del Cron de facturación: `TRIAL` centers con `billingPeriodEnd: NULL`**~~
-  - ~~**Decisión de Negocio (07-Sep):** "NO LO VAMOS A USAR EN PRODUCCIÓN". No se requiere acción. El cron ignora silenciosamente estos registros.~~
-
-- [x] ~~**Campos de ubicación en el frontend del Manager**~~
-  - ~~**Qué falta:** Agregar los inputs de formulario para `country`, `region` y `city` en las vistas de creación (`app/manager/(dashboard)/centros/nuevo/page.tsx`) y edición (`app/manager/(dashboard)/centros/components/edit-center-form.tsx`) de centros.~~
-  - ~~**Por qué importa:** El backend (`manager-service.ts`) y la base de datos (Prisma) ya soportan completamente estos campos, pero actualmente no se pueden modificar visualmente desde el panel del superadmin.~~
-  - ~~**Qué NO hacer:** No crear componentes complejos de select dependientes (ej. si elige región X, mostrar ciudades de X) todavía — empezar con simples inputs de texto para destrabar la edición de datos básicos.~~
+## Pendientes
 
 - [ ] **Soporte multi-moneda / Internacionalización (Pendiente a largo plazo)**
   - **Qué falta:** Desacoplar la lógica de moneda (actualmente hardcodeada a CLP x100) y el país por defecto ("Chile") a nivel global.
@@ -53,7 +33,29 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
     - No migrar todo el flujo de golpe — empezar solo con staging para migraciones de schema.
   - **Qué NO hacer:** No crear staging apurado solo para "tener la casilla marcada" — si la sincronización entre ambientes no se diseña bien desde el principio, genera más fricción y falsos positivos que el problema que resuelve.
 
-## Reglas de negocio para /hub en centros SUSPENDED
+
+## Realizados
+
+- [x] ~~**Bug crítico: `calculateBillingPeriodEnd` usa horario UTC crudo y tiene un off-by-one en el día exacto del ciclo**~~
+  - ~~**Qué falta:** `calculateBillingPeriodEnd` (`lib/services/manager-service.ts`) usa `new Date()`, `d.getDate()` y `d.setHours(23,59,59,999)` sin convertir a horario de Chile. El cron de suspensión (`app/manager/api/cron/billing/route.ts`) compara contra `new Date()` crudo también. Esto suspende centros en horario prime (20:00-21:00 hrs Chile) en vez de a medianoche, y además puede dar o quitar un mes completo de margen dependiendo de si el pago cae antes o después de las 20-21hrs Chile del día límite.~~
+  - ~~**Por qué importa:** Corta el acceso de un negocio real en pleno horario de clases vespertinas — el peor momento posible para un gimnasio. Puede además otorgar un mes gratis o cero días de gracia dependiendo de la hora exacta del pago, de forma no determinista para el usuario.~~
+  - ~~**Qué NO hacer:** No usar `getMonth()`/`getDate()`/`getHours()` nativos ni asumir que "restar horas" alcanza — ya se corrigió un bug idéntico en `finance-compare`/`stats` (ver entrada de agosto) usando `toZonedTime(..., "America/Santiago")` primero y **luego** los getters UTC sobre el resultado zonificado. Aplicar el mismo patrón acá, no reinventar la conversión.~~
+
+- [x] ~~**Fix preventivo: desfase de zona horaria en `ClassSession.dateTime` — calendar, registro y validación de cupos**~~
+  - ~~**Qué faltaba:** Tres archivos usaban `toISOString().split("T")[0]` para extraer el "día" de un instante real de clase, lo que devuelve el día en UTC, no en Chile. Una clase a las 21:30 del lunes en Chile es 00:30 UTC del martes — el código los confundía.~~
+  - ~~**Por qué importaba:** Clases programadas entre las 21:00 y 23:59 Chile habrían sido: (1) invisibles en el calendario del alumno, (2) contabilizadas en el cupo del día *siguiente*, (3) bloqueadas por el advisory lock del día incorrecto.~~
+  - ~~**Por qué no se detectó antes:** Ningún gimnasio había programado clases en esa franja (confirmado: 0 de 160 sesiones en BD). El bug era preventivo, no un incendio activo. "Sin quejas" no significaba "sin bug".~~
+  - ~~**Archivos corregidos:** `lib/services/class-service.ts`, `app/api/users/[id]/classes/route.ts`, `lib/validation-service.ts`.~~
+  - ~~**Qué NO hacer:** No extender este mismo fix a `RoutineAssignment.assignedDate` (tipo `@db.Date`, Prisma lo coerciona a medianoche UTC) ni a `UserMembership.(currentPeriodStart/End)` (proxy de strings `YYYY-MM-DD`, el fix rompería la normalización). Ver §9 de `ARCHITECTURE.md` para la distinción completa.~~
+
+- [x] ~~**Comportamiento del Cron de facturación: `TRIAL` centers con `billingPeriodEnd: NULL`**~~
+  - ~~**Decisión de Negocio (07-Sep):** "NO LO VAMOS A USAR EN PRODUCCIÓN". No se requiere acción. El cron ignora silenciosamente estos registros.~~
+
+- [x] ~~**Campos de ubicación en el frontend del Manager**~~
+  - ~~**Qué falta:** Agregar los inputs de formulario para `country`, `region` y `city` en las vistas de creación (`app/manager/(dashboard)/centros/nuevo/page.tsx`) y edición (`app/manager/(dashboard)/centros/components/edit-center-form.tsx`) de centros.~~
+  - ~~**Por qué importa:** El backend (`manager-service.ts`) y la base de datos (Prisma) ya soportan completamente estos campos, pero actualmente no se pueden modificar visualmente desde el panel del superadmin.~~
+  - ~~**Qué NO hacer:** No crear componentes complejos de select dependientes (ej. si elige región X, mostrar ciudades de X) todavía — empezar con simples inputs de texto para destrabar la edición de datos básicos.~~
+
 - [x] ~~**Definir qué puede hacer el admin en `/hub` cuando está suspendido**~~
   - ~~**Decisión de Negocio:** Solo vista lectura y descargar los CSVs de alumnos y finanzas. Ya implementado.~~
 
@@ -61,8 +63,6 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
   - ~~**Qué falta:** Definir y aplicar reglas de negocio para qué acciones quedan permitidas dentro de `/hub` cuando `Organization.status === "SUSPENDED"` (¿puede seguir creando alumnos? ¿puede seguir registrando pagos manuales/reservas mientras no paga la suscripción de Boxy?).~~
   - ~~**Qué NO hacer:** No bloquear todo `/hub` de forma ciega ni tampoco dejarlo 100% abierto sin ninguna restricción — hace falta decidir la lista de acciones restringidas antes de tocar código.~~
   - ~~**Resolución:** Ya implementado vía proxy (`d3862cf`). Se bloquearon las mutaciones (agregar alumnos, clases) pero se mantuvo lectura libre (dashboard, descargas CSV).~~
-
-## Pendientes de Correctitud y Finanzas
 
 - [x] ~~**Bug: `autoApprove` activa membresías futuras como `active` de inmediato (sin pasar por `scheduled`)**~~
   - ~~**Qué falta:** En `app/api/users/[id]/renewal/route.ts` (líneas 179 y 239), cuando el admin asigna un plan con `autoApprove: true` y `startDate` en el futuro, el sistema guarda `MembershipRenewal.status = "approved"` y `UserMembership.status = "active"` de forma inmediata. La corrección es comparar `startDateNormalized > new Date()` y asignar `"scheduled"` en ambos campos cuando la fecha aún no llegó.~~
@@ -89,9 +89,6 @@ Cada ítem debe mantener el contexto necesario para retomarlo sin tener que reco
     *(El request del HTML principal a `/hub` quedó colgado eternamente hasta matar el proceso).*
   - **Por qué importa:** El flag `--webpack` (junto con `--max-old-space-size=4096`) es la mitigación activa para evitar el deadlock de Turbopack. El alto uso de RAM reportado localmente (2.6GB) y los logs múltiples de Prisma (`CREATING NEW PRISMA CLIENT INSTANCE!`) son el comportamiento normal esperado del compilador Webpack de Next.js aislando procesos.
   - **Qué NO hacer:** No forzar Turbopack ni borrar el límite de memoria bajo la falsa premisa de un "memory leak".
-
-
-## Auditoría de Caché y Estado Local (PWA)
 
 - [x] ~~**Bug UI Stale Data (PWA / Mobile)**~~
   - ~~**Qué falta:**~~
