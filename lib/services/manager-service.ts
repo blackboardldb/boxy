@@ -46,6 +46,7 @@ export interface OrgDetail {
   billingPeriodEnd: Date | null;
   saasPlanId: string | null;
   saasPlanLimit: number | null;
+  saasPlanPrice: number | null;
   plan: { id: string; name: string } | null;
   overrideMaxActiveStudents: number | null;
   customIconUrl: string | null;
@@ -206,7 +207,7 @@ export const managerService = {
     if (!basePlan) {
       throw new Error("Plan por defecto 'BASE' no encontrado. Asegúrese de haber corrido el backfill o creado el plan base.");
     }
-    const defaultPlanSnapshot = { saasPlanId: basePlan.id, saasPlanLimit: basePlan.maxActiveStudents };
+    const defaultPlanSnapshot = { saasPlanId: basePlan.id, saasPlanLimit: basePlan.maxActiveStudents, saasPlanPrice: basePlan.priceMonthly };
 
     // 1. Crear organización primero (para obtener ID)
     const org = await prisma.organization.create({
@@ -322,6 +323,7 @@ export const managerService = {
       billingPeriodEnd: org.billingPeriodEnd,
       saasPlanId: org.saasPlanId,
       saasPlanLimit: org.saasPlanLimit,
+      saasPlanPrice: org.saasPlanPrice,
       plan: org.plan ? { id: org.plan.id, name: org.plan.name } : null,
       overrideMaxActiveStudents: org.overrideMaxActiveStudents,
       customIconUrl: org.customIconUrl,
