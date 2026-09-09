@@ -14,8 +14,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset",
-    "db:fix-dst": "tsx maintenance/dst-tools/fix-class-dst.ts"
+    "db:reset": "prisma migrate reset"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
